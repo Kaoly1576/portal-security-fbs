@@ -1,34 +1,36 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal Security FBS</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+<div class="topbar">
 
-    :root {
-      --bg: #0f1117;
-      --surface: #171d27;
-      --surface-2: #1d2430;
-      --surface-3: #232b38;
-      --border: #2d3748;
-      --text: #f8fafc;
-      --text-soft: #b8c3d6;
-      --text-muted: #94a3b8;
-      --orange-1: #ff6a00;
-      --orange-2: #f4475f;
-      --green: #16a34a;
-      --blue: #60a5fa;
-      --purple-bg: #2a2140;
-      --purple-text: #c084fc;
-      --shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-    }
+  <div class="logo-box">
+    <img src="/images/logo.png">
+    <div>
+      <div class="portal-title">Portal Security FBS</div>
+      <div style="font-size:12px">Sistema de Controle de Acesso</div>
+    </div>
+  </div>
+
+  <div class="user-menu" onclick="toggleMenu()">
+      <img src="/images/user.png">
+      <div>
+        <div>Caique Nascimento</div>
+        <div style="font-size:12px">aprovador</div>
+      </div>
+
+      <div class="user-dropdown" id="userDropdown">
+
+        <a href="/perfil">👤 Perfil</a>
+
+        <a href="/aprovacoes">
+        📋 Aprovações Pendentes
+        </a>
+
+        <a href="/logout">
+        🚪 Logout
+        </a>
+
+      </div>
+  </div>
+
+</div>
 
     body {
       background: var(--bg);

@@ -1,144 +1,59 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal Security FBS</title>
-  <link rel="stylesheet" href="/style.css" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="logo-box">
-        <img src="/images/logo.png" alt="Logo Security" class="brand-logo" />
-        <div class="brand-text">
-          <div class="portal-title">Portal Security FBS</div>
-          <div class="portal-subtitle">Sistema de Controle de Acesso</div>
-        </div>
-      </div>
-
-      <div class="user-menu-wrapper">
-        <button class="user-menu-btn" id="userMenuBtn" type="button">
-          <img
-            id="userPhoto"
-            class="user-photo"
-            src="/images/default-user.png"
-            alt="Usuário"
-          />
-          <div class="user-meta">
-            <div class="user-name" id="userName">Carregando...</div>
-            <div class="user-role" id="userRole">Carregando...</div>
-          </div>
-          <span class="user-arrow">▾</span>
-        </button>
-
-        <div class="user-dropdown" id="userDropdown">
-          <a href="/perfil">👤 Perfil</a>
-          <a href="/aprovacoes">📋 Aprovações Pendentes</a>
-          <a href="/logout">🚪 Logout</a>
-        </div>
+<section class="modules" id="modulesContainer">
+  <a href="/dashboard" class="module-card" data-name="Controle de Acesso" data-sector="abs">
+    <div class="module-top">
+      <div class="module-icon">🔐</div>
+      <div>
+        <div class="module-title">Controle de Acesso</div>
+        <div class="module-level">Nível 5+</div>
       </div>
     </div>
-  </header>
+    <div class="module-desc">Gestão de acessos, aprovações e controle operacional</div>
+  </a>
 
-  <main class="portal-page">
-    <section class="hero-section">
-      <h1>Bem-vindo(a), <span id="welcomeName">Usuário</span>! 👋</h1>
-      <p>Aqui estão as opções disponíveis para seu nível de acesso.</p>
-    </section>
-
-    <section class="toolbar">
-      <div class="search-box">
-        <span class="search-icon">🔎</span>
-        <input type="text" id="searchInput" placeholder="Pesquisar opções..." />
+  <a href="/dashboard" class="module-card" data-name="AV Lost" data-sector="dashboard">
+    <div class="module-top">
+      <div class="module-icon">📊</div>
+      <div>
+        <div class="module-title">AV Lost</div>
+        <div class="module-level">Nível 5+</div>
       </div>
+    </div>
+    <div class="module-desc">Visualização de indicadores, valores e ocorrências AV</div>
+  </a>
 
-      <div class="sector-box">
-        <span class="sector-icon">📁</span>
-        <select id="sectorFilter">
-          <option value="">Todos os Setores</option>
-          <option value="security">Security</option>
-          <option value="abs">ABS</option>
-          <option value="dashboard">Dashboard</option>
-          <option value="operacao">Operação</option>
-        </select>
+  <a href="/hc" class="module-card" data-name="Warehouse" data-sector="security">
+    <div class="module-top">
+      <div class="module-icon">🏬</div>
+      <div>
+        <div class="module-title">Warehouse</div>
+        <div class="module-level">Nível 5+</div>
       </div>
-    </section>
+    </div>
+    <div class="module-desc">Headcount, absenteísmo e análise por warehouse</div>
+  </a>
 
-    <div class="options-count" id="optionsCount">Mostrando 0 opções disponíveis</div>
-
-    <section class="modules" id="modulesContainer">
-      <a href="/dashboard" class="module-card" data-name="Controle de ABS" data-sector="abs">
-        <div class="module-top">
-          <div class="module-icon">📄</div>
-          <div>
-            <div class="module-title">Controle de ABS</div>
-            <div class="module-level">Nível 5+</div>
-          </div>
-        </div>
-        <div class="module-desc">Controle de Absenteísmo</div>
-      </a>
-
-      <a href="/hc" class="module-card" data-name="Dashboard HC" data-sector="dashboard">
-        <div class="module-top">
-          <div class="module-icon">👥</div>
-          <div>
-            <div class="module-title">Dashboard HC</div>
-            <div class="module-level">Nível 5+</div>
-          </div>
-        </div>
-        <div class="module-desc">Headcount, absenteísmo e análise por setor/warehouse</div>
-      </a>
-
-      <a href="/chamada-agentes" class="module-card" data-name="Chamada Agentes FBS" data-sector="operacao">
-        <div class="module-top">
-          <div class="module-icon">🗓️</div>
-          <div>
-            <div class="module-title">Chamada Agentes FBS</div>
-            <div class="module-level">Nível 5+</div>
-          </div>
-        </div>
-        <div class="module-desc">Registrar presença diária da equipe</div>
-      </a>
-
-      <a href="/agentes-fbs" class="module-card" data-name="Painel de Agentes FBS" data-sector="security">
-        <div class="module-top">
-          <div class="module-icon">👤</div>
-          <div>
-            <div class="module-title">Painel de Agentes FBS</div>
-            <div class="module-level">Nível 5+</div>
-          </div>
-        </div>
-        <div class="module-desc">Contagem de agentes por unidade FBS com filtro e nomes dos colaboradores</div>
-      </a>
-
-      <a href="/dashboard" class="module-card" data-name="Dashboard AV Lost" data-sector="dashboard">
-        <div class="module-top">
-          <div class="module-icon">📊</div>
-          <div>
-            <div class="module-title">Dashboard AV Lost</div>
-            <div class="module-level">Nível 5+</div>
-          </div>
-        </div>
-        <div class="module-desc">Visualização de indicadores e gráficos do Security</div>
-      </a>
-    </section>
-
-    <section class="info-card">
-      <div class="info-title">
-        <div class="info-icon">i</div>
-        <span>Suas Informações</span>
+  <a href="/agentes-fbs" class="module-card" data-name="Agentes" data-sector="security">
+    <div class="module-top">
+      <div class="module-icon">👥</div>
+      <div>
+        <div class="module-title">Agentes</div>
+        <div class="module-level">Nível 5+</div>
       </div>
+    </div>
+    <div class="module-desc">Painel de agentes, nomes, filtros e estrutura operacional</div>
+  </a>
 
-      <div class="info-list">
-        <div><strong>Email:</strong> <span id="infoEmail">-</span></div>
-        <div><strong>Cargo:</strong> <span id="infoRole">-</span></div>
-        <div><strong>Nível de Acesso:</strong> <span id="infoLevel">5</span></div>
-        <div><strong>Status:</strong> <span class="status-approved">APROVADO ✓</span></div>
+  <a href="/chamada-agentes" class="module-card" data-name="FBS" data-sector="security">
+    <div class="module-top">
+      <div class="module-icon">🗂️</div>
+      <div>
+        <div class="module-title">FBS</div>
+        <div class="module-level">Nível 5+</div>
       </div>
-    </section>
-  </main>
-
+    </div>
+    <div class="module-desc">Chamada diária, presença e controle das equipes FBS</div>
+  </a>
+</section>
   <script>
     const modulesContainer = document.getElementById("modulesContainer");
     const moduleCards = [...modulesContainer.querySelectorAll(".module-card")];

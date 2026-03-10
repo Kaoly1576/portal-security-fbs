@@ -1,390 +1,66 @@
-<div class="topbar">
-
-  <div class="logo-box">
-    <img src="/images/logo.png">
-    <div>
-      <div class="portal-title">Portal Security FBS</div>
-      <div style="font-size:12px">Sistema de Controle de Acesso</div>
-    </div>
-  </div>
-
-  <div class="user-menu" onclick="toggleMenu()">
-      <img src="/images/user.png">
-      <div>
-        <div>Caique Nascimento</div>
-        <div style="font-size:12px">aprovador</div>
-      </div>
-
-      <div class="user-dropdown" id="userDropdown">
-
-        <a href="/perfil">👤 Perfil</a>
-
-        <a href="/aprovacoes">
-        📋 Aprovações Pendentes
-        </a>
-
-        <a href="/logout">
-        🚪 Logout
-        </a>
-
-      </div>
-  </div>
-
-</div>
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .topbar {
-      background: linear-gradient(90deg, var(--orange-1), var(--orange-2));
-      color: #fff;
-      min-height: 146px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 20px 30px;
-      position: relative;
-    }
-
-    .topbar-inner {
-      width: 100%;
-      max-width: 1140px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-top: 8px;
-    }
-
-    .brand-logo {
-      width: 96px;
-      height: 96px;
-      object-fit: contain;
-      border-radius: 12px;
-    }
-
-    .brand-text h1 {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 2px;
-      color: #fff;
-    }
-
-    .brand-text p {
-      font-size: 13px;
-      opacity: 0.95;
-      color: #fff;
-    }
-
-    .user-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      min-width: 190px;
-      margin-top: 2px;
-    }
-
-    .user-photo {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid rgba(255,255,255,0.7);
-      margin-bottom: 8px;
-      background: #fff;
-    }
-
-    .user-name {
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.2;
-      color: #fff;
-    }
-
-    .user-role {
-      font-size: 13px;
-      margin-top: 3px;
-      opacity: 0.95;
-      color: #fff;
-    }
-
-    .logout {
-      margin-top: 8px;
-      color: #fff;
-      font-size: 13px;
-      text-decoration: underline;
-    }
-
-    .page {
-      width: 100%;
-      max-width: 1140px;
-      margin: 0 auto;
-      padding: 22px 26px 50px;
-      background: var(--bg);
-    }
-
-    .hero {
-      margin-top: 2px;
-      margin-bottom: 16px;
-    }
-
-    .hero h2 {
-      font-size: 28px;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-
-    .hero p {
-      color: var(--text-soft);
-      font-size: 14px;
-    }
-
-    .toolbar {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 12px;
-      margin: 16px 0 10px;
-    }
-
-    .search-box,
-    .sector-box {
-      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      height: 46px;
-      display: flex;
-      align-items: center;
-      padding: 0 14px;
-      box-shadow: var(--shadow);
-    }
-
-    .search-box span,
-    .sector-box span:first-child {
-      margin-right: 10px;
-      color: var(--text-muted);
-      font-size: 18px;
-    }
-
-    .search-box input {
-      border: none;
-      outline: none;
-      width: 100%;
-      font-size: 14px;
-      color: var(--text);
-      background: transparent;
-    }
-
-    .search-box input::placeholder {
-      color: var(--text-muted);
-    }
-
-    .sector-box select {
-      border: none;
-      outline: none;
-      width: 100%;
-      font-size: 14px;
-      background: transparent;
-      color: var(--text);
-      cursor: pointer;
-    }
-
-    .sector-box select option {
-      color: #111;
-      background: #fff;
-    }
-
-    .options-count {
-      color: var(--text-soft);
-      font-size: 14px;
-      margin-bottom: 16px;
-    }
-
-    .modules {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 300px));
-      gap: 22px;
-      margin-bottom: 24px;
-    }
-
-    .module-card {
-      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-      padding: 22px;
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-    }
-
-    .module-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 28px rgba(0,0,0,0.28);
-      border-color: var(--orange-1);
-    }
-
-    .module-top {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .module-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--purple-bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      color: var(--purple-text);
-      flex-shrink: 0;
-    }
-
-    .module-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .module-level {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .module-desc {
-      color: var(--text-soft);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .info-card {
-      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-      padding: 22px;
-    }
-
-    .info-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 18px;
-    }
-
-    .info-icon {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: var(--blue);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-    }
-
-    .info-list {
-      display: grid;
-      gap: 10px;
-      font-size: 15px;
-      color: var(--text-soft);
-    }
-
-    .info-list strong {
-      color: var(--text);
-    }
-
-    .status-approved {
-      color: var(--green);
-      font-weight: 700;
-    }
-
-    @media (max-width: 900px) {
-      .topbar {
-        min-height: auto;
-      }
-
-      .topbar-inner {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .user-box {
-        align-items: flex-start;
-        text-align: left;
-      }
-
-      .toolbar {
-        grid-template-columns: 1fr;
-      }
-
-      .modules {
-        grid-template-columns: 1fr;
-      }
-
-      .module-card {
-        width: 100%;
-      }
-    }
-  </style>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Security FBS</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand">
-        <img src="images/logo.png" alt="Logo" class="brand-logo" />
+      <div class="logo-box">
+        <img src="/images/logo.png" alt="Logo Security" class="brand-logo" />
         <div class="brand-text">
-          <h1>Portal Security FBS</h1>
-          <p>Sistema de Controle de Acesso</p>
+          <div class="portal-title">Portal Security FBS</div>
+          <div class="portal-subtitle">Sistema de Controle de Acesso</div>
         </div>
       </div>
 
-      <div class="user-box">
-        <img id="userPhoto" class="user-photo" src="images/default-user.png" alt="Usuário" />
-        <div class="user-name" id="userName">Carregando...</div>
-        <div class="user-role" id="userRole">Carregando cargo...</div>
-        <a href="/logout" class="logout">Sair</a>
+      <div class="user-menu-wrapper">
+        <button class="user-menu-btn" id="userMenuBtn" type="button">
+          <img
+            id="userPhoto"
+            class="user-photo"
+            src="/images/default-user.png"
+            alt="Usuário"
+          />
+          <div class="user-meta">
+            <div class="user-name" id="userName">Carregando...</div>
+            <div class="user-role" id="userRole">Carregando...</div>
+          </div>
+          <span class="user-arrow">▾</span>
+        </button>
+
+        <div class="user-dropdown" id="userDropdown">
+          <a href="/perfil">👤 Perfil</a>
+          <a href="/aprovacoes">📋 Aprovações Pendentes</a>
+          <a href="/logout">🚪 Logout</a>
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="page">
-    <section class="hero">
-      <h2>Bem-vindo(a), <span id="welcomeName">Usuário</span>! 👋</h2>
+  <main class="portal-page">
+    <section class="hero-section">
+      <h1>Bem-vindo(a), <span id="welcomeName">Usuário</span>! 👋</h1>
       <p>Aqui estão as opções disponíveis para seu nível de acesso.</p>
     </section>
 
     <section class="toolbar">
       <div class="search-box">
-        <span>🔎</span>
+        <span class="search-icon">🔎</span>
         <input type="text" id="searchInput" placeholder="Pesquisar opções..." />
       </div>
 
       <div class="sector-box">
-        <span>📁</span>
+        <span class="sector-icon">📁</span>
         <select id="sectorFilter">
           <option value="">Todos os Setores</option>
           <option value="security">Security</option>
           <option value="abs">ABS</option>
           <option value="dashboard">Dashboard</option>
+          <option value="operacao">Operação</option>
         </select>
       </div>
     </section>
@@ -403,7 +79,7 @@
         <div class="module-desc">Controle de Absenteísmo</div>
       </a>
 
-      <a href="/hc" class="module-card" data-name="Dashboard HC" data-sector="security">
+      <a href="/hc" class="module-card" data-name="Dashboard HC" data-sector="dashboard">
         <div class="module-top">
           <div class="module-icon">👥</div>
           <div>
@@ -414,7 +90,7 @@
         <div class="module-desc">Headcount, absenteísmo e análise por setor/warehouse</div>
       </a>
 
-      <a href="/chamada-calendario" class="module-card" data-name="Chamada Agentes FBS" data-sector="security">
+      <a href="/chamada-agentes" class="module-card" data-name="Chamada Agentes FBS" data-sector="operacao">
         <div class="module-top">
           <div class="module-icon">🗓️</div>
           <div>
@@ -427,7 +103,7 @@
 
       <a href="/agentes-fbs" class="module-card" data-name="Painel de Agentes FBS" data-sector="security">
         <div class="module-top">
-          <div class="module-icon">👥</div>
+          <div class="module-icon">👤</div>
           <div>
             <div class="module-title">Painel de Agentes FBS</div>
             <div class="module-level">Nível 5+</div>
@@ -469,6 +145,8 @@
     const searchInput = document.getElementById("searchInput");
     const sectorFilter = document.getElementById("sectorFilter");
     const optionsCount = document.getElementById("optionsCount");
+    const userMenuBtn = document.getElementById("userMenuBtn");
+    const userDropdown = document.getElementById("userDropdown");
 
     function updateModuleVisibility() {
       const search = searchInput.value.trim().toLowerCase();
@@ -494,9 +172,15 @@
       optionsCount.textContent = `Mostrando ${visibleCount} opções disponíveis`;
     }
 
-    searchInput.addEventListener("input", updateModuleVisibility);
-    sectorFilter.addEventListener("change", updateModuleVisibility);
-    updateModuleVisibility();
+    function toggleUserMenu(event) {
+      event.stopPropagation();
+      const isOpen = userDropdown.classList.contains("show");
+      userDropdown.classList.toggle("show", !isOpen);
+    }
+
+    function closeUserMenu() {
+      userDropdown.classList.remove("show");
+    }
 
     async function loadUser() {
       try {
@@ -506,7 +190,7 @@
         const nome = user.nome || "Usuário";
         const email = user.email || "-";
         const perfil = user.perfil || "Usuário";
-        const foto = user.foto || "images/default-user.png";
+        const foto = user.foto || "/images/default-user.png";
 
         document.getElementById("userName").textContent = nome;
         document.getElementById("welcomeName").textContent = nome;
@@ -518,9 +202,22 @@
         document.getElementById("userName").textContent = "Usuário";
         document.getElementById("welcomeName").textContent = "Usuário";
         document.getElementById("userRole").textContent = "Supervisor";
+        document.getElementById("infoEmail").textContent = "-";
+        document.getElementById("infoRole").textContent = "Supervisor";
       }
     }
 
+    searchInput.addEventListener("input", updateModuleVisibility);
+    sectorFilter.addEventListener("change", updateModuleVisibility);
+    userMenuBtn.addEventListener("click", toggleUserMenu);
+
+    document.addEventListener("click", (event) => {
+      if (!userDropdown.contains(event.target) && !userMenuBtn.contains(event.target)) {
+        closeUserMenu();
+      }
+    });
+
+    updateModuleVisibility();
     loadUser();
   </script>
 </body>

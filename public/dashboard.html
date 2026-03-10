@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security FBS - Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    html, body{
+      overflow-x:hidden;
+    }
+
+    body{
+      background:#0b1220;
+      color:#f8fafc;
+    }
+
+    .topbar{
+      height:52px;
+      background:linear-gradient(90deg,#ff5a00,#ff3c00);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 16px;
+      box-shadow:0 4px 16px rgba(0,0,0,0.24);
+    }
+
+    .topbar h2{
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .topbar a{
+      color:#fff;
+      text-decoration:none;
+      font-weight:700;
+      padding:6px 12px;
+      border:1px solid rgba(255,255,255,0.35);
+      border-radius:10px;
+      font-size:12px;
+    }
+
+    .layout{
+      display:flex;
+      min-height:calc(100vh - 52px);
+    }
+
+    .sidebar{
+      width:110px;
+      background:#091327;
+      border-right:1px solid rgba(255,255,255,0.05);
+      padding:14px 10px;
+      flex-shrink:0;
+    }
+
+    .sidebar h3{
+      color:#94a3b8;
+      font-size:11px;
+      letter-spacing:1px;
+      margin-bottom:14px;
+    }
+
+    .sidebar a{
+      display:block;
+      color:#fff;
+      text-decoration:none;
+      font-size:12px;
+      font-weight:600;
+      padding:10px 10px;
+      border-radius:14px;
+      margin-bottom:8px;
+      line-height:1.3;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active{
+      background:#1a2942;
+    }
+
+    .content{
+      flex:1;
+      padding:14px 18px 18px;
+      overflow-x:hidden;
+      min-width:0;
+    }
+
+    .header-row{
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:flex-start;
+      margin-bottom:14px;
+    }
+
+    .header-row h1{
+      font-size:32px;
+      margin-bottom:4px;
+    }
+
+    .header-row p{
+      font-size:12px;
+      color:#94a3b8;
+    }
+
+    .meta{
+      text-align:right;
+      color:#93c5fd;
+      font-size:11px;
+      padding-top:4px;
+      line-height:1.4;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0, 1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .card{
+      background:#1e293b;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:18px;
+      padding:14px 16px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.20);
+      min-width:0;
+    }
+
+    .card .label{
+      color:#9ca3af;
+      font-size:12px;
+      margin-bottom:8px;
+    }
+
+    .card .value{
+      font-size:clamp(16px, 1.7vw, 24px);
+      font-weight:700;
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .panel{
+      background:#1e293b;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:18px;
+      padding:14px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.20);
+      margin-bottom:16px;
+    }
+
+    .panel h2{
+      font-size:18px;
+      margin-bottom:12px;
+    }
+
+    .filters-top{
+      display:grid;
+      grid-template-columns:repeat(7, minmax(0, 1fr));
+      gap:10px;
+      margin-bottom:8px;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+      min-width:0;
+      position:relative;
+    }
+
+    .field label{
+      color:#b8c1cc;
+      font-size:11px;
+    }
+
+    .field input{
+      background:#071225;
+      border:1px solid rgba(255,255,255,0.08);
+      color:#fff;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      outline:none;
+      width:100%;
+      min-width:0;
+      height:40px;
+    }
+
+    .field input::placeholder{
+      color:#6b7280;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:end;
+      margin-bottom:0;
+    }
+
+    .btn{
+      background:#ff5a00;
+      color:#fff;
+      border:none;
+      border-radius:12px;
+      padding:10px 16px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      height:40px;
+    }
+
+    .btn:hover{
+      background:#ff6f1e;
+    }
+
+    .charts-grid{
+      display:grid;
+      grid-template-columns:1.15fr 0.95fr 0.8fr;
+      gap:12px;
+      margin-bottom:16px;
+      align-items:stretch;
+    }
+
+    .chart-card{
+      background:#1e293b;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:18px;
+      padding:12px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.20);
+      min-width:0;
+    }
+
+    .chart-title{
+      text-align:center;
+      font-weight:700;
+      font-size:14px;
+      color:#ff6f1e;
+      margin-bottom:8px;
+    }
+
+    .chart-wrap{
+      position:relative;
+      width:100%;
+      height:180px;
+    }
+
+    .chart-wrap.top-chart{
+      height:255px;
+    }
+
+    .right-summary{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .mini-card{
+      background:#1e293b;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.20);
+      min-width:0;
+    }
+
+    .mini-card .mini-label{
+      font-size:11px;
+      color:#9ca3af;
+      margin-bottom:6px;
+      text-transform:uppercase;
+    }
+
+    .mini-card .mini-value{
+      font-size:clamp(15px, 1.3vw, 22px);
+      font-weight:700;
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .wide-chart{
+      background:#1e293b;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:18px;
+      padding:12px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.20);
+      margin-bottom:16px;
+    }
+
+    .wide-chart .chart-wrap{
+      height:220px;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px;
+      max-height:260px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1200px;
+      background:#0b1220;
+    }
+
+    th, td{
+      padding:8px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      text-align:left;
+      font-size:11px;
+      white-space:nowrap;
+    }
+
+    th{
+      background:#111c33;
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+
+    tr:hover td{
+      background:#13203b;
+    }
+
+    .empty{
+      color:#94a3b8;
+      padding:18px;
+      font-size:12px;
+    }
+
+    canvas{
+      max-width:100% !important;
+    }
+
+    .multi-select{
+      position:relative;
+      width:100%;
+    }
+
+    .multi-select-trigger{
+      background:#071225;
+      border:1px solid rgba(255,255,255,0.08);
+      color:#fff;
+      border-radius:12px;
+      padding:10px 34px 10px 12px;
+      font-size:12px;
+      height:40px;
+      display:flex;
+      align-items:center;
+      cursor:pointer;
+      position:relative;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .multi-select-trigger::after{
+      content:"▼";
+      position:absolute;
+      right:12px;
+      font-size:10px;
+      color:#cbd5e1;
+      pointer-events:none;
+    }
+
+    .multi-select-menu{
+      position:absolute;
+      top:44px;
+      left:0;
+      width:100%;
+      background:#071225;
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px;
+      max-height:180px;
+      overflow-y:auto;
+      display:none;
+      z-index:50;
+      box-shadow:0 10px 24px rgba(0,0,0,0.35);
+      padding:6px;
+    }
+
+    .multi-select.open .multi-select-menu{
+      display:block;
+    }
+
+    .multi-option{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:12px;
+      color:#fff;
+    }
+
+    .multi-option:hover{
+      background:#1a2942;
+    }
+
+    .multi-option input{
+      width:auto;
+      height:auto;
+      accent-color:#ff6f1e;
+    }
+
+    .multi-actions{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      padding:6px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      margin-bottom:4px;
+    }
+
+    .multi-actions button{
+      flex:1;
+      background:#1a2942;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      padding:6px 8px;
+      font-size:11px;
+      cursor:pointer;
+    }
+
+    .multi-actions button:hover{
+      background:#243756;
+    }
+
+    @media (max-width: 1300px){
+      .cards{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+      }
+
+      .filters-top{
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+      }
+
+      .charts-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 900px){
+      .sidebar{
+        display:none;
+      }
+
+      .cards,
+      .filters-top{
+        grid-template-columns:1fr;
+      }
+
+      .header-row{
+        flex-direction:column;
+      }
+
+      .header-row h1{
+        font-size:28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h2>SECURITY FBS - AV LOST DASHBOARD</h2>
+    <a href="/logout">Sair</a>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>MENU</h3>
+      <a href="/portal">🏠 Portal</a>
+      <a href="/dashboard" class="active">📊 Dashboard</a>
+      <a href="/aprovacoes">✔ Aprovações</a>
+    </aside>
+
+    <main class="content">
+      <div class="header-row">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Painel completo com todos os dados da planilha</p>
+        </div>
+        <div class="meta">
+          <div id="userInfo">Carregando usuário...</div>
+          <div id="sheetInfo">Carregando planilha...</div>
+        </div>
+      </div>
+
+      <section class="cards">
+        <div class="card">
+          <div class="label">Total Registros</div>
+          <div class="value" id="totalRegistros">0</div>
+        </div>
+
+        <div class="card">
+          <div class="label">Total US$ Encontrado</div>
+          <div class="value" id="totalUsd">$0.00</div>
+        </div>
+
+        <div class="card">
+          <div class="label">Total R$ Encontrado</div>
+          <div class="value" id="totalBrl">R$ 0,00</div>
+        </div>
+
+        <div class="card">
+          <div class="label">Total Colunas</div>
+          <div class="value" id="totalColunas">0</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Filtros</h2>
+
+        <div class="filters-top">
+          <div class="field">
+            <label>Ano</label>
+            <div class="multi-select" id="multiAno">
+              <div class="multi-select-trigger" id="triggerAno">Todos</div>
+              <div class="multi-select-menu" id="menuAno"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Mês</label>
+            <div class="multi-select" id="multiMes">
+              <div class="multi-select-trigger" id="triggerMes">Todos</div>
+              <div class="multi-select-menu" id="menuMes"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Dia</label>
+            <div class="multi-select" id="multiDia">
+              <div class="multi-select-trigger" id="triggerDia">Todos</div>
+              <div class="multi-select-menu" id="menuDia"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Semana</label>
+            <div class="multi-select" id="multiSemana">
+              <div class="multi-select-trigger" id="triggerSemana">Todas</div>
+              <div class="multi-select-menu" id="menuSemana"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Colaborador</label>
+            <div class="multi-select" id="multiColaborador">
+              <div class="multi-select-trigger" id="triggerColaborador">Todos</div>
+              <div class="multi-select-menu" id="menuColaborador"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Unidade</label>
+            <div class="multi-select" id="multiUnidade">
+              <div class="multi-select-trigger" id="triggerUnidade">Todas</div>
+              <div class="multi-select-menu" id="menuUnidade"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Status Retorno</label>
+            <div class="multi-select" id="multiStatus">
+              <div class="multi-select-trigger" id="triggerStatus">Todos</div>
+              <div class="multi-select-menu" id="menuStatus"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="field" style="width:280px;">
+            <label>Busca geral</label>
+            <input type="text" id="globalSearch" placeholder="Buscar em todas as colunas..." />
+          </div>
+
+          <button class="btn" id="clearFilters">Limpar filtros</button>
+        </div>
+      </section>
+
+      <section class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Ocorrências Por FF</div>
+          <div class="chart-wrap top-chart">
+            <canvas id="chartFF"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">% Encontrada por Colaborador</div>
+          <div class="chart-wrap top-chart">
+            <canvas id="chartColaboradorPie"></canvas>
+          </div>
+        </div>
+
+        <div>
+          <div class="right-summary">
+            <div class="mini-card">
+              <div class="mini-label">AV Encontrado</div>
+              <div class="mini-value" id="metricAv">0</div>
+            </div>
+
+            <div class="mini-card">
+              <div class="mini-label">R$ Encontrado</div>
+              <div class="mini-value" id="metricBrlMini">R$ 0,00</div>
+            </div>
+
+            <div class="mini-card">
+              <div class="mini-label">US$ Encontrado</div>
+              <div class="mini-value" id="metricUsd">\$0.00</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-title">Resumo por Status</div>
+            <div class="chart-wrap">
+              <canvas id="chartStatus"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="wide-chart">
+        <div class="chart-title">Encontrados Por Dia</div>
+        <div class="chart-wrap">
+          <canvas id="chartDia"></canvas>
+        </div>
+      </section>
+
+      <section class="wide-chart">
+        <div class="chart-title">Validação Por Colaborador</div>
+        <div class="chart-wrap">
+          <canvas id="chartValidacao"></canvas>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Dados da Planilha</h2>
+        <div class="table-wrap" id="tableWrap"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    let rawData = [];
+    let filteredData = [];
+    let headers = [];
+
+    let chartFF;
+    let chartColaboradorPie;
+    let chartDia;
+    let chartValidacao;
+    let chartStatus;
+
+    const totalRegistrosEl = document.getElementById("totalRegistros");
+    const totalUsdEl = document.getElementById("totalUsd");
+    const totalBrlEl = document.getElementById("totalBrl");
+    const totalColunasEl = document.getElementById("totalColunas");
+    const tableWrap = document.getElementById("tableWrap");
+    const userInfo = document.getElementById("userInfo");
+    const sheetInfo = document.getElementById("sheetInfo");
+
+    const globalSearch = document.getElementById("globalSearch");
+    const clearFiltersBtn = document.getElementById("clearFilters");
+
+    const DATE_COLUMN = "DATA";
+    const COLABORADOR_COLUMN = "PROBLEM SOLVER LP";
+    const UNIDADE_COLUMN = "Unidade";
+    const STATUS_COLUMN = "STATUS RETORNO";
+    const QTD_COLUMN = "QUANTIDADE ENCONTRADA";
+    const AV_COLUMN = "AV - LOST";
+    const USD_COLUMN = "US$ ENCONTRADO";
+    const BRL_COLUMN = "R$ ENCONTRADO";
+
+    const monthNames = {
+      1: "Janeiro",
+      2: "Fevereiro",
+      3: "Março",
+      4: "Abril",
+      5: "Maio",
+      6: "Junho",
+      7: "Julho",
+      8: "Agosto",
+      9: "Setembro",
+      10: "Outubro",
+      11: "Novembro",
+      12: "Dezembro"
+    };
+
+    function normalizeText(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function normalizeValue(value) {
+      return String(value || "").trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function parseMoney(value) {
+      if (value === null || value === undefined) return 0;
+      let str = String(value).trim();
+      if (!str) return 0;
+
+      str = str
+        .replace(/R\$/gi, "")
+        .replace(/US\$/gi, "")
+        .replace(/\$/g, "")
+        .replace(/\s/g, "");
+
+      if (str.includes(",") && str.includes(".")) {
+        str = str.replace(/\./g, "").replace(",", ".");
+      } else if (str.includes(",")) {
+        str = str.replace(",", ".");
+      }
+
+      str = str.replace(/[^\d.-]/g, "");
+      const num = Number(str);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function formatUsd(value) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD"
+      }).format(value || 0);
+    }
+
+    function formatBrl(value) {
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      }).format(value || 0);
+    }
+
+    function parseDateBR(value) {
+      const str = String(value || "").trim();
+      if (!str) return null;
+      const parts = str.split("/");
+      if (parts.length !== 3) return null;
+
+      const [day, month, year] = parts.map(Number);
+      if (!day || !month || !year) return null;
+      return new Date(year, month - 1, day);
+    }
+
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function buildMultiSelect(containerId, triggerId, menuId, values, placeholder) {
+      const container = document.getElementById(containerId);
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
+
+      menu.innerHTML = `
+        <div class="multi-actions">
+          <button type="button" class="select-all">Todos</button>
+          <button type="button" class="clear-all">Limpar</button>
+        </div>
+      `;
+
+      values.forEach(value => {
+        const label = document.createElement("label");
+        label.className = "multi-option";
+        label.innerHTML = `<input type="checkbox" value="${escapeHtml(value)}"><span>${escapeHtml(value)}</span>`;
+        menu.appendChild(label);
+      });
+
+      function updateTriggerText() {
+        const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+        if (selected.length === 0) {
+          trigger.textContent = placeholder;
+        } else if (selected.length === 1) {
+          trigger.textContent = selected[0];
+        } else {
+          trigger.textContent = selected.length + " selecionados";
+        }
+      }
+
+      trigger.onclick = () => {
+        document.querySelectorAll(".multi-select").forEach(el => {
+          if (el !== container) el.classList.remove("open");
+        });
+        container.classList.toggle("open");
+      };
+
+      menu.querySelector(".select-all").onclick = () => {
+        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+        updateTriggerText();
+        applyFilters();
+      };
+
+      menu.querySelector(".clear-all").onclick = () => {
+        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+        updateTriggerText();
+        applyFilters();
+      };
+
+      menu.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener("change", () => {
+          updateTriggerText();
+          applyFilters();
+        });
+      });
+
+      container.dataset.placeholder = placeholder;
+      updateTriggerText();
+    }
+
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".multi-select").forEach(container => {
+        if (!container.contains(e.target)) {
+          container.classList.remove("open");
+        }
+      });
+    });
+
+    function getSelectedValues(menuId) {
+      return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+        .map(i => i.value);
+    }
+
+    function buildTopFilters() {
+      const years = [...new Set(rawData.map(r => String(r._year)).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
+      const months = [...new Set(rawData.map(r => String(r._month)).filter(Boolean))].sort((a,b) => Number(a) - Number(b)).map(m => monthNames[m]);
+      const days = [...new Set(rawData.map(r => String(r._day)).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
+      const weeks = [...new Set(rawData.map(r => String(r._week)).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
+      const colaboradores = [...new Set(rawData.map(r => normalizeValue(r[COLABORADOR_COLUMN])).filter(Boolean))].sort((a,b) => a.localeCompare(b, "pt-BR"));
+      const unidades = [...new Set(rawData.map(r => normalizeValue(r[UNIDADE_COLUMN])).filter(Boolean))].sort((a,b) => a.localeCompare(b, "pt-BR"));
+      const status = [...new Set(rawData.map(r => normalizeValue(r[STATUS_COLUMN])).filter(Boolean))].sort((a,b) => a.localeCompare(b, "pt-BR"));
+
+      buildMultiSelect("multiAno", "triggerAno", "menuAno", years, "Todos");
+      buildMultiSelect("multiMes", "triggerMes", "menuMes", months, "Todos");
+      buildMultiSelect("multiDia", "triggerDia", "menuDia", days, "Todos");
+      buildMultiSelect("multiSemana", "triggerSemana", "menuSemana", weeks, "Todas");
+      buildMultiSelect("multiColaborador", "triggerColaborador", "menuColaborador", colaboradores, "Todos");
+      buildMultiSelect("multiUnidade", "triggerUnidade", "menuUnidade", unidades, "Todas");
+      buildMultiSelect("multiStatus", "triggerStatus", "menuStatus", status, "Todos");
+    }
+
+    function applyFilters() {
+      const globalValue = normalizeText(globalSearch.value);
+
+      const anos = getSelectedValues("menuAno");
+      const meses = getSelectedValues("menuMes");
+      const dias = getSelectedValues("menuDia");
+      const semanas = getSelectedValues("menuSemana");
+      const colaboradores = getSelectedValues("menuColaborador");
+      const unidades = getSelectedValues("menuUnidade");
+      const status = getSelectedValues("menuStatus");
+
+      filteredData = rawData.filter(row => {
+        const globalOk = !globalValue || headers.some(header =>
+          normalizeText(row[header]).includes(globalValue)
+        );
+
+        const anoOk = anos.length === 0 || anos.includes(String(row._year));
+        const mesOk = meses.length === 0 || meses.includes(monthNames[row._month]);
+        const diaOk = dias.length === 0 || dias.includes(String(row._day));
+        const semanaOk = semanas.length === 0 || semanas.includes(String(row._week));
+        const colaboradorOk = colaboradores.length === 0 || colaboradores.includes(normalizeValue(row[COLABORADOR_COLUMN]));
+        const unidadeOk = unidades.length === 0 || unidades.includes(normalizeValue(row[UNIDADE_COLUMN]));
+        const statusOk = status.length === 0 || status.includes(normalizeValue(row[STATUS_COLUMN]));
+
+        return globalOk && anoOk && mesOk && diaOk && semanaOk && colaboradorOk && unidadeOk && statusOk;
+      });
+
+      updateCards();
+      updateMiniCards();
+      renderTable();
+      renderCharts();
+    }
+
+    function updateCards() {
+      const totalRegistros = filteredData.length;
+      const totalColunas = headers.length;
+      const totalUsd = filteredData.reduce((sum, row) => sum + parseMoney(row[USD_COLUMN] || 0), 0);
+      const totalBrl = filteredData.reduce((sum, row) => sum + parseMoney(row[BRL_COLUMN] || 0), 0);
+
+      totalRegistrosEl.textContent = new Intl.NumberFormat("pt-BR").format(totalRegistros);
+      totalUsdEl.textContent = formatUsd(totalUsd);
+      totalBrlEl.textContent = formatBrl(totalBrl);
+      totalColunasEl.textContent = totalColunas;
+
+      sheetInfo.textContent =
+        "Linhas: " + new Intl.NumberFormat("pt-BR").format(rawData.length) +
+        " | Filtradas: " + new Intl.NumberFormat("pt-BR").format(filteredData.length) +
+        " | Colunas: " + headers.length;
+    }
+
+    function updateMiniCards() {
+      const totalAv = filteredData.reduce((sum, row) => sum + Number(row[AV_COLUMN] || 0), 0);
+      const totalUsd = filteredData.reduce((sum, row) => sum + parseMoney(row[USD_COLUMN] || 0), 0);
+      const totalBrl = filteredData.reduce((sum, row) => sum + parseMoney(row[BRL_COLUMN] || 0), 0);
+
+      document.getElementById("metricAv").textContent =
+        new Intl.NumberFormat("pt-BR").format(totalAv);
+
+      document.getElementById("metricUsd").textContent = formatUsd(totalUsd);
+      document.getElementById("metricBrlMini").textContent = formatBrl(totalBrl);
+    }
+
+    function destroyCharts() {
+      if (chartFF) chartFF.destroy();
+      if (chartColaboradorPie) chartColaboradorPie.destroy();
+      if (chartDia) chartDia.destroy();
+      if (chartValidacao) chartValidacao.destroy();
+      if (chartStatus) chartStatus.destroy();
+    }
+
+    function renderCharts() {
+      destroyCharts();
+
+      const ffMap = {};
+      filteredData.forEach(row => {
+        const label = normalizeValue(row[UNIDADE_COLUMN]) || "Sem valor";
+        ffMap[label] = (ffMap[label] || 0) + Number(row[AV_COLUMN] || 0);
+      });
+
+      chartFF = new Chart(document.getElementById("chartFF"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(ffMap),
+          datasets: [{
+            label: "AV Encontrado",
+            data: Object.values(ffMap),
+            backgroundColor: "#1d4ed8",
+            borderRadius: 8,
+            barPercentage: 0.72,
+            categoryPercentage: 0.82
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: "#cbd5e1",
+                font: { size: 11 },
+                boxWidth: 10
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.04)" }
+            },
+            y: {
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.06)" },
+              beginAtZero: true
+            }
+          },
+          layout: {
+            padding: {
+              top: 6,
+              bottom: 0,
+              left: 0,
+              right: 0
+            }
+          }
+        }
+      });
+
+      const colaboradorMap = {};
+      filteredData.forEach(row => {
+        const label = normalizeValue(row[COLABORADOR_COLUMN]) || "Sem valor";
+        colaboradorMap[label] = (colaboradorMap[label] || 0) + Number(row[AV_COLUMN] || 0);
+      });
+
+      chartColaboradorPie = new Chart(document.getElementById("chartColaboradorPie"), {
+        type: "doughnut",
+        data: {
+          labels: Object.keys(colaboradorMap),
+          datasets: [{
+            data: Object.values(colaboradorMap),
+            backgroundColor: [
+              "#1d4ed8","#2563eb","#3b82f6","#60a5fa","#93c5fd",
+              "#334155","#475569","#64748b","#94a3b8","#cbd5e1"
+            ],
+            borderWidth: 0,
+            radius: "96%"
+          }]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          cutout:"50%",
+          layout: {
+            padding: 6
+          },
+          plugins:{
+            legend:{
+              position:"right",
+              labels:{
+                color:"#cbd5e1",
+                boxWidth:10,
+                font:{ size:10 }
+              }
+            }
+          }
+        }
+      });
+
+      const byDay = {};
+      filteredData.forEach(row => {
+        const day = row._day || 0;
+        if (!day) return;
+        byDay[day] = (byDay[day] || 0) + Number(row[AV_COLUMN] || 0);
+      });
+
+      const dayLabels = Object.keys(byDay).sort((a,b)=> Number(a) - Number(b));
+      chartDia = new Chart(document.getElementById("chartDia"), {
+        type: "line",
+        data: {
+          labels: dayLabels,
+          datasets: [{
+            label: "AV Encontrado",
+            data: dayLabels.map(day => byDay[day]),
+            borderColor: "#60a5fa",
+            backgroundColor: "#60a5fa",
+            tension:0.35,
+            pointRadius:2,
+            pointHoverRadius:4
+          }]
+        },
+        options: chartOptions(false)
+      });
+
+      const validMap = {};
+      const qtdMap = {};
+      filteredData.forEach(row => {
+        const label = normalizeValue(row[COLABORADOR_COLUMN]) || "Sem valor";
+        validMap[label] = (validMap[label] || 0) + Number(row[AV_COLUMN] || 0);
+        qtdMap[label] = (qtdMap[label] || 0) + Number(row[QTD_COLUMN] || 0);
+      });
+
+      const validLabels = Object.keys(validMap).sort((a,b) => validMap[b] - validMap[a]);
+
+      chartValidacao = new Chart(document.getElementById("chartValidacao"), {
+        type: "bar",
+        data: {
+          labels: validLabels,
+          datasets: [
+            {
+              label: "AV Encontrado",
+              data: validLabels.map(label => validMap[label] || 0),
+              backgroundColor: "#2563eb",
+              borderRadius: 8
+            },
+            {
+              label: "Endereços Validados",
+              data: validLabels.map(label => qtdMap[label] || 0),
+              backgroundColor: "#94a3b8",
+              borderRadius: 8
+            }
+          ]
+        },
+        options: chartOptions(true)
+      });
+
+      const statusMap = {};
+      filteredData.forEach(row => {
+        const label = normalizeValue(row[STATUS_COLUMN]) || "Sem valor";
+        statusMap[label] = (statusMap[label] || 0) + 1;
+      });
+
+      chartStatus = new Chart(document.getElementById("chartStatus"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(statusMap),
+          datasets: [{
+            label: "Registros",
+            data: Object.values(statusMap),
+            backgroundColor: "#f97316",
+            borderRadius: 8
+          }]
+        },
+        options: chartOptions(false)
+      });
+    }
+
+    function chartOptions(horizontal) {
+      return {
+        indexAxis: horizontal ? "y" : "x",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              color: "#cbd5e1",
+              font: { size: 10 },
+              boxWidth: 10
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#cbd5e1", font:{ size:10 } },
+            grid: { color: "rgba(255,255,255,0.06)" },
+            beginAtZero: true
+          },
+          y: {
+            ticks: { color: "#cbd5e1", font:{ size:10 } },
+            grid: { color: "rgba(255,255,255,0.06)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    function renderTable() {
+      if (!filteredData.length) {
+        tableWrap.innerHTML = '<div class="empty">Nenhum dado encontrado com os filtros aplicados.</div>';
+        return;
+      }
+
+      let html = "<table><thead><tr>";
+      headers.forEach(header => {
+        html += "<th>" + escapeHtml(header) + "</th>";
+      });
+      html += "</tr></thead><tbody>";
+
+      filteredData.slice(0, 300).forEach(row => {
+        html += "<tr>";
+        headers.forEach(header => {
+          html += "<td>" + escapeHtml(row[header] || "") + "</td>";
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody></table>";
+      tableWrap.innerHTML = html;
+    }
+
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/me");
+        const user = await res.json();
+        userInfo.textContent = (user.nome || "Usuário") + " | " + (user.perfil || "usuario");
+      } catch {
+        userInfo.textContent = "Usuário não identificado";
+      }
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch("/api/dados");
+        const data = await res.json();
+
+        rawData = Array.isArray(data) ? data : [];
+        headers = [...new Set(rawData.flatMap(row => Object.keys(row)))];
+
+        rawData = rawData.map(row => {
+          const dt = parseDateBR(row[DATE_COLUMN]);
+          return {
+            ...row,
+            _date: dt,
+            _year: dt ? dt.getFullYear() : "",
+            _month: dt ? dt.getMonth() + 1 : "",
+            _day: dt ? dt.getDate() : "",
+            _week: dt ? getWeekNumber(dt) : ""
+          };
+        });
+
+        buildTopFilters();
+        filteredData = [...rawData];
+
+        updateCards();
+        updateMiniCards();
+        renderTable();
+        renderCharts();
+      } catch (error) {
+        console.error(error);
+        tableWrap.innerHTML = '<div class="empty">Erro ao carregar os dados da planilha.</div>';
+      }
+    }
+
+    globalSearch.addEventListener("input", applyFilters);
+
+    clearFiltersBtn.addEventListener("click", () => {
+      globalSearch.value = "";
+
+      document.querySelectorAll('.multi-select-menu input[type="checkbox"]').forEach(input => {
+        input.checked = false;
+      });
+
+      document.getElementById("triggerAno").textContent = "Todos";
+      document.getElementById("triggerMes").textContent = "Todos";
+      document.getElementById("triggerDia").textContent = "Todos";
+      document.getElementById("triggerSemana").textContent = "Todas";
+      document.getElementById("triggerColaborador").textContent = "Todos";
+      document.getElementById("triggerUnidade").textContent = "Todas";
+      document.getElementById("triggerStatus").textContent = "Todos";
+
+      applyFilters();
+    });
+
+    loadUser();
+    loadData();
+  </script>
+</body>
+</html>

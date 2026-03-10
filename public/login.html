@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Portal Security FBS</title>
+
+<link rel="stylesheet" href="login.css">
+
+<style>
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:linear-gradient(180deg,#ff5a00,#ff3c00);
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.login-container{
+background:white;
+width:420px;
+padding:30px;
+border-radius:15px;
+box-shadow:0 15px 40px rgba(0,0,0,0.2);
+}
+
+.logo{
+display:flex;
+align-items:center;
+gap:12px;
+margin-bottom:20px;
+}
+
+.logo img{
+width:50px;
+}
+
+.logo h1{
+font-size:20px;
+color:#ff3c00;
+margin:0;
+}
+
+.logo p{
+font-size:12px;
+margin:0;
+opacity:0.8;
+}
+
+.titulo{
+text-align:center;
+margin-bottom:25px;
+}
+
+.titulo h2{
+margin:0;
+}
+
+.titulo p{
+font-size:14px;
+opacity:0.7;
+}
+
+.btn-google{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:10px;
+border:1px solid #ddd;
+border-radius:10px;
+padding:12px;
+text-decoration:none;
+color:black;
+font-weight:bold;
+transition:0.2s;
+}
+
+.btn-google:hover{
+background:#f5f5f5;
+}
+
+.info{
+background:#eef4ff;
+padding:15px;
+border-radius:10px;
+margin-top:20px;
+font-size:13px;
+}
+
+.footer{
+margin-top:15px;
+text-align:center;
+font-size:12px;
+opacity:0.7;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="login-container">
+
+<div class="logo">
+
+<img src="images/logo.png">
+
+<div>
+<h1>Portal Security FBS</h1>
+<p>Sistema de Controle de Acesso</p>
+</div>
+
+</div>
+
+<div class="titulo">
+<h2>Portal de Controle</h2>
+<p>Faça login para continuar</p>
+</div>
+
+<!-- BOTÃO GOOGLE -->
+
+<a class="btn-google" href="/auth/google">
+
+<img src="https://www.svgrepo.com/show/475656/google-color.svg" width="20">
+
+Entrar com Google
+
+</a>
+
+<div class="info">
+
+<b>Como funciona:</b>
+
+<ol>
+<li>Clique em "Entrar com Google"</li>
+<li>Use seu e-mail corporativo</li>
+<li>Seu acesso será criado automaticamente</li>
+<li>O Security irá aprovar seu acesso</li>
+</ol>
+
+</div>
+
+<div class="footer">
+
+🔒 Sistema seguro<br>
+🛡️ Seus dados estão protegidos
+
+</div>
+
+</div>
+
+</body>
+</html>

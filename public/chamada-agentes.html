@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chamada Agentes FBS</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #111111;
+      --panel: #2f2f31;
+      --panel-2: #373739;
+      --border: #47474b;
+      --text: #ffffff;
+      --muted: #b8c0cc;
+      --blue: #2d9cff;
+      --green: #47c156;
+      --yellow: #ffca1a;
+      --purple: #b132c7;
+      --orange: #f7a30b;
+      --red: #dc2626;
+      --cyan: #0ea5e9;
+      --save: #2f9cf5;
+      --reload: #57b947;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px 26px 40px;
+    }
+
+    .topbar {
+      background: linear-gradient(90deg, #2b2b2d 0%, #2f2f31 50%, #2a2a2c 100%);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 220px 1fr 220px;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #424244;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-weight: 700;
+      font-size: 14px;
+      width: fit-content;
+    }
+
+    .title-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .title-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #f0f0f0;
+      color: #1c1c1c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .topbar-date {
+      text-align: right;
+      color: #c7d2e1;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(280px, 1.7fr) 190px 126px 90px 90px 90px 90px 130px 110px;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .search-box,
+    .filter-box,
+    .field-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      min-width: 0;
+    }
+
+    .search-box input,
+    .filter-box select,
+    .field-box select,
+    .field-box input {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    .search-box input::placeholder {
+      color: #c2c9d6;
+    }
+
+    .search-icon {
+      margin-right: 10px;
+      color: #9fb0c7;
+      font-size: 18px;
+      flex: 0 0 auto;
+    }
+
+    /* Corrige a cor do texto do dropdown */
+    .filter-box select,
+    .field-box input,
+    .field-box select {
+      color: #ffffff;
+      background-color: transparent;
+    }
+
+    .filter-box select option,
+    .field-box select option {
+      color: #111111;
+      background: #ffffff;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 10px;
+      height: 46px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 16px;
+      white-space: nowrap;
+    }
+
+    .btn-red    { background: var(--red); }
+    .btn-cyan   { background: var(--cyan); }
+    .btn-purple { background: var(--purple); }
+    .btn-green  { background: var(--green); }
+    .btn-reload { background: var(--reload); }
+    .btn-save   { background: var(--save); }
+
+    .stats {
+      background: linear-gradient(90deg, #333335 0%, #353537 50%, #303032 100%);
+      border: 1px solid #454548;
+      border-radius: 10px;
+      padding: 22px 10px 18px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .stat-label {
+      color: #d0d7e4;
+      font-size: 18px;
+    }
+
+    .stat.total .stat-number { color: var(--blue); }
+    .stat.marked .stat-number { color: var(--green); }
+    .stat.pending .stat-number { color: var(--yellow); }
+
+    .message {
+      display: none;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .message.success {
+      display: block;
+      background: rgba(71, 193, 86, 0.15);
+      border: 1px solid rgba(71, 193, 86, 0.55);
+      color: #d9ffe0;
+    }
+
+    .message.error {
+      display: block;
+      background: rgba(255, 82, 82, 0.12);
+      border: 1px solid rgba(255, 82, 82, 0.5);
+      color: #ffd7d7;
+    }
+
+    .agents-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .agent-card {
+      background: linear-gradient(90deg, #2f2f31 0%, #353537 50%, #2f2f31 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 16px;
+      display: grid;
+      grid-template-columns: 1fr 290px;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .agent-left {
+      min-width: 0;
+    }
+
+    .agent-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    /* Nome reduzido */
+    .agent-name {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.15;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: 800;
+      min-width: 96px;
+    }
+
+    .badge.pending {
+      background: var(--yellow);
+      color: #111;
+    }
+
+    .badge.marked {
+      background: var(--green);
+      color: #fff;
+    }
+
+    .agent-meta {
+      color: #c0cad8;
+      font-size: 14px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .agent-right select {
+      width: 100%;
+      height: 56px;
+      border-radius: 8px;
+      border: 1px solid #59595d;
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-size: 18px;
+      padding: 0 16px;
+      outline: none;
+    }
+
+    .agent-right select option {
+      color: #111111;
+      background: #ffffff;
+    }
+
+    .footer-space {
+      height: 20px;
+    }
+
+    @media (max-width: 1500px) {
+      .toolbar {
+        grid-template-columns: minmax(240px, 1.5fr) 180px 120px 80px 80px 80px 80px 120px 100px;
+      }
+    }
+
+    @media (max-width: 1280px) {
+      .topbar {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .btn-back {
+        margin: 0 auto;
+      }
+
+      .topbar-date {
+        text-align: center;
+      }
+
+      .toolbar {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .agent-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 780px) {
+      .page {
+        padding: 14px;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .agent-name {
+        font-size: 17px;
+      }
+
+      .agent-meta {
+        font-size: 13px;
+      }
+
+      .agent-right select {
+        height: 46px;
+        font-size: 16px;
+      }
+
+      .stat-number {
+        font-size: 28px;
+      }
+
+      .stat-label {
+        font-size: 15px;
+      }
+
+      .title-wrap {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div>
+        <a class="btn-back" href="/portal">← Calendário</a>
+      </div>
+
+      <div class="title-wrap">
+        <span class="title-icon">✓</span>
+        <span>Marcação</span>
+      </div>
+
+      <div class="topbar-date" id="topbar-date">Dia --</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">⌕</span>
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Pesquisar colaborador..."
+          oninput="filtrarAgentes()"
+        />
+      </div>
+
+      <div class="filter-box">
+        <select id="supervisor" onchange="carregarAgentes()">
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+
+      <div class="field-box">
+        <input type="date" id="data" onchange="atualizarDataTopo()" />
+      </div>
+
+      <button class="action-btn btn-red" onclick="aplicarStatusTodos('F')">
+        F
+      </button>
+
+      <button class="action-btn btn-cyan" onclick="aplicarStatusTodos('FE')">
+        FE
+      </button>
+
+      <button class="action-btn btn-purple" onclick="aplicarStatusTodos('FC')">
+        FC
+      </button>
+
+      <button class="action-btn btn-green" onclick="aplicarStatusTodos('P')">
+        P
+      </button>
+
+      <button class="action-btn btn-reload" onclick="carregarAgentes()">
+        Recarregar
+      </button>
+
+      <button class="action-btn btn-save" onclick="salvarChamada()">
+        Salvar
+      </button>
+    </div>
+
+    <div class="stats">
+      <div class="stat total">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+
+      <div class="stat marked">
+        <div class="stat-number" id="stat-marked">0</div>
+        <div class="stat-label">Marcados</div>
+      </div>
+
+      <div class="stat pending">
+        <div class="stat-number" id="stat-pending">0</div>
+        <div class="stat-label">Pendentes</div>
+      </div>
+    </div>
+
+    <div id="message" class="message"></div>
+    <div id="agents-list" class="agents-list"></div>
+    <div class="footer-space"></div>
+  </div>
+
+  <script>
+    let agentes = [];
+    let agentesFiltrados = [];
+
+    const STATUS_OPTIONS = [
+      { value: "", label: "-- Selecione --" },
+      { value: "P", label: "P - Presença" },
+      { value: "F", label: "F - Falta" },
+      { value: "DSR", label: "DSR - Descanso Semanal Remunerado" },
+      { value: "FE", label: "FE - Férias" },
+      { value: "AT", label: "AT - Atestado" },
+      { value: "FC", label: "FC - Falta coberta" }
+    ];
+
+    function todayISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatDateLong(isoDate) {
+      if (!isoDate) return "Dia --";
+      const [year, month, day] = isoDate.split("-");
+      const meses = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+      ];
+      return `Dia ${Number(day)} - ${meses[Number(month) - 1]} ${year}`;
+    }
+
+    function atualizarDataTopo() {
+      const data = document.getElementById("data").value;
+      document.getElementById("topbar-date").textContent = formatDateLong(data);
+    }
+
+    function exibirMensagem(texto, tipo) {
+      const el = document.getElementById("message");
+      el.className = `message ${tipo}`;
+      el.textContent = texto;
+    }
+
+    function limparMensagem() {
+      const el = document.getElementById("message");
+      el.className = "message";
+      el.textContent = "";
+    }
+
+    function calcularResumo() {
+      const total = agentesFiltrados.length;
+      const marked = agentesFiltrados.filter(a => a.status && a.status.trim() !== "").length;
+      const pending = total - marked;
+
+      document.getElementById("stat-total").textContent = total;
+      document.getElementById("stat-marked").textContent = marked;
+      document.getElementById("stat-pending").textContent = pending;
+    }
+
+    function statusBadge(status) {
+      if (status && status.trim() !== "") {
+        return `<span class="badge marked">MARCADO</span>`;
+      }
+      return `<span class="badge pending">PENDENTE</span>`;
+    }
+
+    function renderAgentes() {
+      const container = document.getElementById("agents-list");
+      container.innerHTML = "";
+
+      if (!agentesFiltrados.length) {
+        container.innerHTML = `
+          <div class="agent-card">
+            <div class="agent-left">
+              <div class="agent-name">Nenhum colaborador encontrado</div>
+              <div class="agent-meta">Ajuste os filtros ou carregue a equipe.</div>
+            </div>
+          </div>
+        `;
+        calcularResumo();
+        return;
+      }
+
+      agentesFiltrados.forEach((agente) => {
+        const originalIndex = agentes.findIndex(a => a.re === agente.re);
+
+        const optionsHtml = STATUS_OPTIONS.map(opt => `
+          <option value="${opt.value}" ${agente.status === opt.value ? "selected" : ""}>
+            ${opt.label}
+          </option>
+        `).join("");
+
+        const card = document.createElement("div");
+        card.className = "agent-card";
+
+        card.innerHTML = `
+          <div class="agent-left">
+            <div class="agent-top">
+              <div class="agent-name">${agente.colaborador || "-"}</div>
+              ${statusBadge(agente.status)}
+            </div>
+
+            <div class="agent-meta">
+              RE: ${agente.re || "-"} |
+              ${agente.unidade || "-"} |
+              ${agente.cargo || "-"} |
+              Escala: ${agente.escala || "-"}
+            </div>
+          </div>
+
+          <div class="agent-right">
+            <select onchange="alterarStatus(${originalIndex}, this.value)">
+              ${optionsHtml}
+            </select>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      calcularResumo();
+    }
+
+    function filtrarAgentes() {
+      const termo = document.getElementById("search-input").value.trim().toLowerCase();
+
+      if (!termo) {
+        agentesFiltrados = [...agentes];
+      } else {
+        agentesFiltrados = agentes.filter((a) => {
+          const nome = String(a.colaborador || "").toLowerCase();
+          const re = String(a.re || "").toLowerCase();
+          const unidade = String(a.unidade || "").toLowerCase();
+          return nome.includes(termo) || re.includes(termo) || unidade.includes(termo);
+        });
+      }
+
+      renderAgentes();
+    }
+
+    function alterarStatus(index, status) {
+      if (index < 0 || index >= agentes.length) return;
+      agentes[index].status = status;
+      filtrarAgentes();
+    }
+
+    function aplicarStatusTodos(status) {
+      if (!agentes.length) {
+        exibirMensagem("Carregue a equipe antes de aplicar ação em massa.", "error");
+        return;
+      }
+
+      agentes = agentes.map(a => ({ ...a, status }));
+      filtrarAgentes();
+      exibirMensagem(`Status ${status} aplicado para todos.`, "success");
+    }
+
+    async function carregarSupervisores() {
+      try {
+        const res = await fetch("/api/chamada/supervisores");
+        const data = await res.json();
+
+        const select = document.getElementById("supervisor");
+        select.innerHTML = '<option value="">Selecione...</option>';
+
+        data.forEach((nome) => {
+          const opt = document.createElement("option");
+          opt.value = nome;
+          opt.textContent = nome;
+          select.appendChild(opt);
+        });
+      } catch (error) {
+        exibirMensagem("Erro ao carregar supervisores.", "error");
+      }
+    }
+
+    async function carregarAgentes() {
+      const supervisor = document.getElementById("supervisor").value;
+
+      try {
+        limparMensagem();
+
+        if (!supervisor) {
+          agentes = [];
+          agentesFiltrados = [];
+          renderAgentes();
+          return;
+        }
+
+        const res = await fetch(`/api/chamada/agentes?supervisor=${encodeURIComponent(supervisor)}`);
+        const dataJson = await res.json();
+
+        if (!res.ok) {
+          exibirMensagem(dataJson.error || "Erro ao carregar agentes.", "error");
+          return;
+        }
+
+        agentes = dataJson.map((a) => ({
+          ...a,
+          status: a.status || ""
+        }));
+
+        agentesFiltrados = [...agentes];
+        renderAgentes();
+        exibirMensagem(`${agentes.length} agentes carregados.`, "success");
+      } catch (error) {
+        exibirMensagem("Erro ao carregar equipe.", "error");
+      }
+    }
+
+    async function salvarChamada() {
+      const supervisor = document.getElementById("supervisor").value;
+      const data = document.getElementById("data").value;
+
+      if (!supervisor) {
+        exibirMensagem("Selecione um supervisor.", "error");
+        return;
+      }
+
+      if (!data) {
+        exibirMensagem("Selecione uma data.", "error");
+        return;
+      }
+
+      if (!agentes.length) {
+        exibirMensagem("Nenhum agente carregado.", "error");
+        return;
+      }
+
+      const marcacoes = agentes
+        .filter((a) => a.status && a.status.trim() !== "")
+        .map((a) => ({
+          re: a.re,
+          status: a.status
+        }));
+
+      if (!marcacoes.length) {
+        exibirMensagem("Selecione pelo menos uma marcação antes de salvar.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/chamada/salvar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            supervisor,
+            data,
+            marcacoes
+          })
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          exibirMensagem(result.error || "Erro ao salvar chamada.", "error");
+          return;
+        }
+
+        exibirMensagem(result.message || "Chamada salva com sucesso.", "success");
+      } catch (error) {
+        exibirMensagem("Erro ao salvar chamada.", "error");
+      }
+    }
+
+    document.getElementById("data").value = todayISO();
+    atualizarDataTopo();
+    carregarSupervisores();
+  </script>
+</body>
+</html>

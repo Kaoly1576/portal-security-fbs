@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HC Agentes FBS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    body{background:#171717;color:#fff}
+    .page{padding:20px;max-width:1400px;margin:0 auto}
+    .top-actions{margin-bottom:14px}
+    .back-btn{display:inline-block;background:#444;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:14px}
+    .status-bar{background:#4caf50;color:#fff;border-radius:12px;padding:14px 16px;font-weight:700;margin-bottom:16px}
+    .hero{background:linear-gradient(90deg,#222,#1c1c1c);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+    .hero h1{font-size:22px;margin-bottom:6px}
+    .hero p{color:#bdbdbd;font-size:14px;margin-bottom:12px}
+    .hero-right{text-align:right;font-size:13px;color:#d1d5db;min-width:160px}
+    .filters{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:12px;margin-top:8px;align-items:end}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:12px;color:#cbd5e1}
+    .field input,.field select{height:42px;border:none;border-radius:8px;padding:0 12px;background:#3a3a3a;color:#fff;font-size:14px;outline:none}
+    .btn{height:42px;border:none;border-radius:8px;padding:0 16px;background:#29b6f6;color:#fff;font-weight:700;cursor:pointer}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:14px;margin-bottom:16px}
+    .cards-small{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+    .card{background:#2d2d2d;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:18px;min-height:130px}
+    .card-small{background:#2d2d2d;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;min-height:96px}
+    .card-title{font-size:12px;color:#cbd5e1;margin-bottom:14px;text-transform:uppercase;letter-spacing:.8px}
+    .card-value{font-size:24px;font-weight:800;margin-bottom:12px;word-break:break-word}
+    .card-footer{font-size:12px;color:#cbd5e1}
+    .blue{color:#3ea6ff}
+    .green{color:#4caf50}
+    .red{color:#ff4d4f}
+    .orange{color:#ff9800}
+    .purple{color:#c084fc}
+    .yellow{color:#facc15}
+    .chart-card,.table-card{background:#2d2d2d;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;margin-bottom:20px}
+    .chart-title,.table-title{font-size:14px;font-weight:700;margin-bottom:12px}
+    .chart-box{position:relative;height:320px}
+    .table-wrap{overflow:auto;border-radius:10px}
+    table{width:100%;border-collapse:collapse;min-width:1200px}
+    th,td{text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
+    th{color:#cbd5e1;font-size:12px;background:#252525;position:sticky;top:0}
+    .muted{color:#a1a1aa}
+    @media (max-width:1200px){
+      .filters{grid-template-columns:repeat(3,minmax(170px,1fr))}
+      .cards{grid-template-columns:repeat(2,minmax(220px,1fr))}
+      .cards-small{grid-template-columns:repeat(3,minmax(160px,1fr))}
+    }
+    @media (max-width:900px){
+      .hero{flex-direction:column}
+      .hero-right{text-align:left}
+      .filters{grid-template-columns:repeat(2,minmax(170px,1fr))}
+    }
+    @media (max-width:700px){
+      .filters,.cards,.cards-small{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-actions">
+      <a href="/portal" class="back-btn">← Voltar ao Portal</a>
+    </div>
+
+    <div class="status-bar">Dashboard Integrado</div>
+
+    <section class="hero">
+      <div>
+        <h1>📊 Dashboard Integrado - HC Agentes FBS</h1>
+        <p>Dados consolidados por data lateral da planilha ABS AGENTES FBS.</p>
+
+        <div class="filters">
+          <div class="field">
+            <label>Data</label>
+            <select id="filtroData">
+              <option value="">Selecione a data</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Unidade</label>
+            <select id="filtroUnidade">
+              <option value="">Todas as Unidades</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Líder</label>
+            <select id="filtroLider">
+              <option value="">Todos os Líderes</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Escala</label>
+            <select id="filtroEscala">
+              <option value="">Todas as Escalas</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn" id="btnAtualizar">🔄 Atualizar Dados</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div>Última atualização</div>
+        <div id="ultimaAtualizacao" style="font-size:18px;font-weight:800;color:#3ea6ff;">--:--</div>
+      </div>
+    </section>
+
+    <section class="cards">
+      <div class="card">
+        <div class="card-title">Headcount Total</div>
+        <div class="card-value blue" id="hcTotal">0</div>
+        <div class="card-footer">base filtrada</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Total de Presenças</div>
+        <div class="card-value green" id="presencaTotal">0</div>
+        <div class="card-footer">status P na data</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Taxa de Absenteísmo</div>
+        <div class="card-value red" id="absRate">0.00%</div>
+        <div class="card-footer">F + AT + FC / (P + F + AT + FC)</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Data Selecionada</div>
+        <div class="card-value orange" id="dataSelecionadaLabel">-</div>
+        <div class="card-footer">coluna lateral da planilha</div>
+      </div>
+    </section>
+
+    <section class="cards-small">
+      <div class="card-small">
+        <div class="card-title">Faltas</div>
+        <div class="card-value red" id="faltasTotal">0</div>
+      </div>
+
+      <div class="card-small">
+        <div class="card-title">DSR</div>
+        <div class="card-value blue" id="dsrTotal">0</div>
+      </div>
+
+      <div class="card-small">
+        <div class="card-title">Férias</div>
+        <div class="card-value yellow" id="feTotal">0</div>
+      </div>
+
+      <div class="card-small">
+        <div class="card-title">Atestado</div>
+        <div class="card-value purple" id="atTotal">0</div>
+      </div>
+
+      <div class="card-small">
+        <div class="card-title">Falta Coberta</div>
+        <div class="card-value orange" id="fcTotal">0</div>
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-title">📁 HC por Unidade</div>
+      <div class="chart-box">
+        <canvas id="chartUnidade"></canvas>
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-title">🏢 Resumo por Unidade</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>UNIDADE</th>
+              <th>HC</th>
+              <th>P</th>
+              <th>F</th>
+              <th>DSR</th>
+              <th>FE</th>
+              <th>AT</th>
+              <th>FC</th>
+              <th>% ABS</th>
+              <th>LÍDER</th>
+              <th>ESCALA</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaResumo"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let rawData = [];
+    let chartUnidade = null;
+
+    function normalize(v) {
+      return String(v || "").trim();
+    }
+
+    function formatNumber(v) {
+      return new Intl.NumberFormat("pt-BR").format(v || 0);
+    }
+
+    function formatPercent(v) {
+      return `${(v || 0).toFixed(2)}%`;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("ultimaAtualizacao").textContent =
+        now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function fillFilters(data) {
+      const datas = [...new Set(
+        data.flatMap(item => (item.dias || []).map(d => normalize(d.data))).filter(Boolean)
+      )];
+
+      const unidades = [...new Set(data.map(item => normalize(item.unidade)).filter(Boolean))].sort();
+      const lideres = [...new Set(data.map(item => normalize(item.lider)).filter(Boolean))].sort();
+      const escalas = [...new Set(data.map(item => normalize(item.escala)).filter(Boolean))].sort();
+
+      const dataSel = document.getElementById("filtroData");
+      const unidadeSel = document.getElementById("filtroUnidade");
+      const liderSel = document.getElementById("filtroLider");
+      const escalaSel = document.getElementById("filtroEscala");
+
+      dataSel.innerHTML = `<option value="">Selecione a data</option>`;
+      unidadeSel.innerHTML = `<option value="">Todas as Unidades</option>`;
+      liderSel.innerHTML = `<option value="">Todos os Líderes</option>`;
+      escalaSel.innerHTML = `<option value="">Todas as Escalas</option>`;
+
+      datas.forEach(v => dataSel.innerHTML += `<option value="${v}">${v}</option>`);
+      unidades.forEach(v => unidadeSel.innerHTML += `<option value="${v}">${v}</option>`);
+      lideres.forEach(v => liderSel.innerHTML += `<option value="${v}">${v}</option>`);
+      escalas.forEach(v => escalaSel.innerHTML += `<option value="${v}">${v}</option>`);
+
+      if (datas.length && !dataSel.value) {
+        dataSel.value = datas[0];
+      }
+    }
+
+    function getValorNoDia(item, dataSelecionada) {
+      if (!item.dias || !dataSelecionada) return "";
+      const achado = item.dias.find(d => normalize(d.data) === normalize(dataSelecionada));
+      return normalize(achado?.valor).toUpperCase();
+    }
+
+    function getFilteredData() {
+      const dataSelecionada = normalize(document.getElementById("filtroData").value);
+      const unidade = normalize(document.getElementById("filtroUnidade").value);
+      const lider = normalize(document.getElementById("filtroLider").value);
+      const escala = normalize(document.getElementById("filtroEscala").value);
+
+      return rawData
+        .filter(item => {
+          const okUnidade = !unidade || normalize(item.unidade) === unidade;
+          const okLider = !lider || normalize(item.lider) === lider;
+          const okEscala = !escala || normalize(item.escala) === escala;
+          return okUnidade && okLider && okEscala;
+        })
+        .map(item => ({
+          ...item,
+          statusDia: getValorNoDia(item, dataSelecionada)
+        }));
+    }
+
+    function contarStatus(data) {
+      const totais = {
+        hc: data.length,
+        p: 0,
+        f: 0,
+        dsr: 0,
+        fe: 0,
+        at: 0,
+        fc: 0
+      };
+
+      data.forEach(item => {
+        const st = normalize(item.statusDia).toUpperCase();
+
+        if (st === "P") totais.p++;
+        else if (st === "F") totais.f++;
+        else if (st === "DSR") totais.dsr++;
+        else if (st === "FE") totais.fe++;
+        else if (st === "AT") totais.at++;
+        else if (st === "FC") totais.fc++;
+      });
+
+      return totais;
+    }
+
+    function calcularAbs(totais) {
+      const numerador = totais.f + totais.at + totais.fc;
+      const denominador = totais.p + totais.f + totais.at + totais.fc;
+      return denominador ? (numerador / denominador) * 100 : 0;
+    }
+
+    function renderCards(data) {
+      const totais = contarStatus(data);
+      const abs = calcularAbs(totais);
+      const dataSelecionada = normalize(document.getElementById("filtroData").value);
+
+      document.getElementById("hcTotal").textContent = formatNumber(totais.hc);
+      document.getElementById("presencaTotal").textContent = formatNumber(totais.p);
+      document.getElementById("absRate").textContent = formatPercent(abs);
+      document.getElementById("dataSelecionadaLabel").textContent = dataSelecionada || "-";
+
+      document.getElementById("faltasTotal").textContent = formatNumber(totais.f);
+      document.getElementById("dsrTotal").textContent = formatNumber(totais.dsr);
+      document.getElementById("feTotal").textContent = formatNumber(totais.fe);
+      document.getElementById("atTotal").textContent = formatNumber(totais.at);
+      document.getElementById("fcTotal").textContent = formatNumber(totais.fc);
+    }
+
+    function renderChart(data) {
+      const grouped = {};
+
+      data.forEach(item => {
+        const unidade = normalize(item.unidade) || "SEM UNIDADE";
+        if (!grouped[unidade]) grouped[unidade] = 0;
+        grouped[unidade]++;
+      });
+
+      const labels = Object.keys(grouped);
+      const values = Object.values(grouped);
+
+      if (chartUnidade) chartUnidade.destroy();
+
+      chartUnidade = new Chart(document.getElementById("chartUnidade"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "HC",
+            data: values,
+            backgroundColor: "#ff6a00",
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#fff" }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#d1d5db" },
+              grid: { color: "rgba(255,255,255,0.06)" }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: "#d1d5db" },
+              grid: { color: "rgba(255,255,255,0.06)" }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("tabelaResumo");
+      tbody.innerHTML = "";
+
+      const grouped = {};
+
+      data.forEach(item => {
+        const unidade = normalize(item.unidade) || "SEM UNIDADE";
+
+        if (!grouped[unidade]) {
+          grouped[unidade] = {
+            hc: 0,
+            p: 0,
+            f: 0,
+            dsr: 0,
+            fe: 0,
+            at: 0,
+            fc: 0,
+            lideres: new Set(),
+            escalas: new Set()
+          };
+        }
+
+        const g = grouped[unidade];
+        g.hc++;
+
+        const st = normalize(item.statusDia).toUpperCase();
+
+        if (st === "P") g.p++;
+        else if (st === "F") g.f++;
+        else if (st === "DSR") g.dsr++;
+        else if (st === "FE") g.fe++;
+        else if (st === "AT") g.at++;
+        else if (st === "FC") g.fc++;
+
+        if (normalize(item.lider)) g.lideres.add(normalize(item.lider));
+        if (normalize(item.escala)) g.escalas.add(normalize(item.escala));
+      });
+
+      Object.entries(grouped).forEach(([unidade, g]) => {
+        const abs = calcularAbs(g);
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${unidade}</td>
+            <td>${formatNumber(g.hc)}</td>
+            <td style="color:#4caf50">${formatNumber(g.p)}</td>
+            <td style="color:#ff4d4f">${formatNumber(g.f)}</td>
+            <td style="color:#3ea6ff">${formatNumber(g.dsr)}</td>
+            <td style="color:#facc15">${formatNumber(g.fe)}</td>
+            <td style="color:#c084fc">${formatNumber(g.at)}</td>
+            <td style="color:#ff9800">${formatNumber(g.fc)}</td>
+            <td>${formatPercent(abs)}</td>
+            <td>${[...g.lideres].join(", ") || "-"}</td>
+            <td>${[...g.escalas].join(", ") || "-"}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderAll() {
+      const data = getFilteredData();
+      renderCards(data);
+      renderChart(data);
+      renderTable(data);
+      updateClock();
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch("/api/hc-agentes-fbs");
+        rawData = await res.json();
+        fillFilters(rawData);
+        renderAll();
+      } catch (error) {
+        console.error("Erro ao carregar HC AGENTES FBS:", error);
+      }
+    }
+
+    document.getElementById("btnAtualizar").addEventListener("click", renderAll);
+    document.getElementById("filtroData").addEventListener("change", renderAll);
+    document.getElementById("filtroUnidade").addEventListener("change", renderAll);
+    document.getElementById("filtroLider").addEventListener("change", renderAll);
+    document.getElementById("filtroEscala").addEventListener("change", renderAll);
+
+    loadData();
+  </script>
+</body>
+</html>

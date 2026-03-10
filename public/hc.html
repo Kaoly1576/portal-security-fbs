@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard HC</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    body{
+      background:#171717;
+      color:#fff;
+    }
+
+    .page{
+      padding:20px;
+      max-width:1400px;
+      margin:0 auto;
+    }
+
+    .top-actions{
+      margin-bottom:14px;
+    }
+
+    .back-btn{
+      display:inline-block;
+      background:#444;
+      color:#fff;
+      text-decoration:none;
+      padding:10px 16px;
+      border-radius:8px;
+      font-weight:700;
+      font-size:14px;
+    }
+
+    .status-bar{
+      background:#4caf50;
+      color:#fff;
+      border-radius:12px;
+      padding:14px 16px;
+      font-weight:700;
+      margin-bottom:16px;
+    }
+
+    .hero{
+      background:linear-gradient(90deg,#222,#1c1c1c);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:16px;
+      padding:22px;
+      margin-bottom:20px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+    }
+
+    .hero h1{
+      font-size:22px;
+      margin-bottom:6px;
+    }
+
+    .hero p{
+      color:#bdbdbd;
+      font-size:14px;
+      margin-bottom:12px;
+    }
+
+    .hero-right{
+      text-align:right;
+      font-size:13px;
+      color:#d1d5db;
+    }
+
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(180px, 1fr));
+      gap:12px;
+      margin-top:8px;
+      align-items:end;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:12px;
+      color:#cbd5e1;
+    }
+
+    .field input,
+    .field select{
+      height:42px;
+      border:none;
+      border-radius:8px;
+      padding:0 12px;
+      background:#3a3a3a;
+      color:#fff;
+      font-size:14px;
+      outline:none;
+    }
+
+    .btn{
+      height:42px;
+      border:none;
+      border-radius:8px;
+      padding:0 16px;
+      background:#29b6f6;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .tabs{
+      display:flex;
+      gap:28px;
+      margin:14px 0 20px;
+      border-bottom:1px solid rgba(255,255,255,0.12);
+      padding-bottom:10px;
+      flex-wrap:wrap;
+    }
+
+    .tab{
+      color:#cbd5e1;
+      font-size:15px;
+      cursor:pointer;
+      padding-bottom:6px;
+    }
+
+    .tab.active{
+      color:#3ea6ff;
+      border-bottom:2px solid #3ea6ff;
+      font-weight:700;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(220px, 1fr));
+      gap:14px;
+      margin-bottom:20px;
+    }
+
+    .card{
+      background:#2d2d2d;
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px;
+      padding:18px;
+      min-height:130px;
+      position:relative;
+    }
+
+    .card-title{
+      font-size:12px;
+      color:#cbd5e1;
+      margin-bottom:14px;
+      text-transform:uppercase;
+      letter-spacing:.8px;
+    }
+
+    .card-value{
+      font-size:24px;
+      font-weight:800;
+      margin-bottom:12px;
+    }
+
+    .blue{ color:#3ea6ff; }
+    .green{ color:#4caf50; }
+    .red{ color:#ff4d4f; }
+    .orange{ color:#ff9800; }
+
+    .card-footer{
+      font-size:12px;
+      color:#cbd5e1;
+    }
+
+    .badge{
+      display:inline-block;
+      margin-left:6px;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:11px;
+      background:#3f3f46;
+    }
+
+    .badge.green{ background:#225c2c; color:#7CFC8A; }
+    .badge.red{ background:#5c2222; color:#ff8080; }
+    .badge.gray{ background:#4b5563; color:#d1d5db; }
+
+    .chart-card,
+    .table-card{
+      background:#2d2d2d;
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px;
+      padding:16px;
+      margin-bottom:20px;
+    }
+
+    .chart-title,
+    .table-title{
+      font-size:14px;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+
+    .chart-box{
+      position:relative;
+      height:280px;
+    }
+
+    .tables{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:13px;
+    }
+
+    th, td{
+      text-align:left;
+      padding:10px 8px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+
+    th{
+      color:#cbd5e1;
+      font-size:12px;
+      background:#252525;
+    }
+
+    @media (max-width: 1100px){
+      .cards{
+        grid-template-columns:repeat(2, minmax(220px, 1fr));
+      }
+
+      .tables{
+        grid-template-columns:1fr;
+      }
+
+      .filters{
+        grid-template-columns:repeat(2, minmax(180px, 1fr));
+      }
+    }
+
+    @media (max-width: 700px){
+      .cards,
+      .filters{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        flex-direction:column;
+      }
+
+      .hero-right{
+        text-align:left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top-actions">
+      <a href="/portal" class="back-btn">← Voltar ao Portal</a>
+    </div>
+
+    <div class="status-bar">Dashboard Integrado</div>
+
+    <section class="hero">
+      <div>
+        <h1>📈 Dashboard Integrado - HC & Produtividade</h1>
+        <p>Dados consolidados: base HC + absenteísmo</p>
+
+        <div class="filters">
+          <div class="field">
+            <label>Data</label>
+            <input type="date" id="filtroData" />
+          </div>
+
+          <div class="field">
+            <label>Warehouse</label>
+            <select id="filtroWarehouse">
+              <option value="">Todos os Warehouses</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Setor (HC)</label>
+            <select id="filtroSetor">
+              <option value="">Todos os Setores</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <button class="btn" id="btnAtualizar">🔄 Atualizar Dados</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div>Última atualização</div>
+        <div id="ultimaAtualizacao" style="font-size:18px; font-weight:800; color:#3ea6ff;">--:--</div>
+      </div>
+    </section>
+
+    <div class="tabs">
+      <div class="tab active">👥 Headcount & Absenteísmo</div>
+      <div class="tab">📊 Processados</div>
+      <div class="tab">🕒 Produtividade (Criar)</div>
+    </div>
+
+    <section class="cards">
+      <div class="card">
+        <div class="card-title">Headcount Total</div>
+        <div class="card-value blue" id="hcTotal">0</div>
+        <div class="card-footer">vs dia anterior: <span class="badge gray" id="hcDelta">0.00%</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Total de Presenças</div>
+        <div class="card-value green" id="presencasTotal">0</div>
+        <div class="card-footer">vs dia anterior: <span class="badge gray" id="presencaDelta">0.00%</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Taxa de Absenteísmo</div>
+        <div class="card-value red" id="taxaAbs">0.00%</div>
+        <div class="card-footer">vs dia anterior: <span class="badge gray" id="absDelta">0.00%</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Taxa de Turnover</div>
+        <div class="card-value orange" id="taxaTurnover">0.00%</div>
+        <div class="card-footer">vs dia anterior: <span class="badge gray" id="turnDelta">0.00%</span></div>
+      </div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-title">📁 Tendência HC - Últimos 30 Dias</div>
+      <div class="chart-box">
+        <canvas id="chartTendencia"></canvas>
+      </div>
+    </section>
+
+    <section class="tables">
+      <div class="table-card">
+        <div class="table-title">🏢 Análise por Setor</div>
+        <table>
+          <thead>
+            <tr>
+              <th>SETOR</th>
+              <th>HC</th>
+              <th>PRESENÇA</th>
+              <th>FALTAS</th>
+              <th>% ABS</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaSetor"></tbody>
+        </table>
+      </div>
+
+      <div class="table-card">
+        <div class="table-title">🏬 Análise por Warehouse</div>
+        <table>
+          <thead>
+            <tr>
+              <th>WH</th>
+              <th>HC</th>
+              <th>PRESENÇA</th>
+              <th>FALTAS</th>
+              <th>% ABS</th>
+              <th>% TURN</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaWarehouse"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let rawData = [];
+    let chartTendencia = null;
+
+    function normalize(v) {
+      return String(v || "").trim();
+    }
+
+    function toNumber(v) {
+      if (v === null || v === undefined || v === "") return 0;
+      const num = Number(String(v).replace(",", "."));
+      return Number.isNaN(num) ? 0 : num;
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(value || 0);
+    }
+
+    function formatPercent(value) {
+      return `${(value || 0).toFixed(2)}%`;
+    }
+
+    function formatTimeNow() {
+      const now = new Date();
+      return now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function fillSelect(selectId, values, firstLabel) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = `<option value="">${firstLabel}</option>`;
+      values.forEach(v => {
+        const option = document.createElement("option");
+        option.value = v;
+        option.textContent = v;
+        select.appendChild(option);
+      });
+    }
+
+    function getAvailableDates() {
+      return [...new Set(rawData.map(r => normalize(r["data"])).filter(Boolean))].sort();
+    }
+
+    function getSelectedDate() {
+      const inputDate = document.getElementById("filtroData").value;
+      if (inputDate) return inputDate;
+
+      const dates = getAvailableDates();
+      return dates.length ? dates[dates.length - 1] : "";
+    }
+
+    function getFilteredData() {
+      const warehouse = document.getElementById("filtroWarehouse").value;
+      const setor = document.getElementById("filtroSetor").value;
+      const dataSelecionada = getSelectedDate();
+
+      return rawData.filter(row => {
+        const rowWarehouse = normalize(row["wh"]);
+        const rowSetor = normalize(row["setor"]);
+        const rowData = normalize(row["data"]);
+
+        const okWarehouse = !warehouse || rowWarehouse === warehouse;
+        const okSetor = !setor || rowSetor === setor;
+        const okData = !dataSelecionada || rowData === dataSelecionada;
+
+        return okWarehouse && okSetor && okData;
+      });
+    }
+
+    function getPreviousDate(currentDate) {
+      const dates = getAvailableDates();
+      const idx = dates.indexOf(currentDate);
+      if (idx > 0) return dates[idx - 1];
+      return "";
+    }
+
+    function getDataByDate(dateValue) {
+      const warehouse = document.getElementById("filtroWarehouse").value;
+      const setor = document.getElementById("filtroSetor").value;
+
+      return rawData.filter(row => {
+        const rowWarehouse = normalize(row["wh"]);
+        const rowSetor = normalize(row["setor"]);
+        const rowData = normalize(row["data"]);
+
+        const okWarehouse = !warehouse || rowWarehouse === warehouse;
+        const okSetor = !setor || rowSetor === setor;
+
+        return rowData === dateValue && okWarehouse && okSetor;
+      });
+    }
+
+    function calculateMetrics(data) {
+      const hcTotal = data.reduce((sum, row) => sum + toNumber(row["qtd_pessoas"]), 0);
+      const presencas = data.reduce((sum, row) => sum + toNumber(row["total_presencas"]), 0);
+      const faltas = data.reduce((sum, row) => sum + toNumber(row["falta não planejado"]), 0);
+      const turnover = data.reduce((sum, row) => sum + toNumber(row["TR"]), 0);
+
+      const taxaAbs = hcTotal ? (faltas / hcTotal) * 100 : 0;
+      const taxaTurn = hcTotal ? (turnover / hcTotal) * 100 : 0;
+
+      return { hcTotal, presencas, faltas, turnover, taxaAbs, taxaTurn };
+    }
+
+    function calculateDelta(current, previous) {
+      if (!previous) return 0;
+      return ((current - previous) / previous) * 100;
+    }
+
+    function applyBadge(elId, value) {
+      const el = document.getElementById(elId);
+      el.textContent = `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+      el.className = "badge";
+
+      if (value > 0) {
+        el.classList.add("green");
+      } else if (value < 0) {
+        el.classList.add("red");
+      } else {
+        el.classList.add("gray");
+      }
+    }
+
+    function renderCards(data) {
+      const currentDate = getSelectedDate();
+      const previousDate = getPreviousDate(currentDate);
+
+      const atual = calculateMetrics(data);
+      const anterior = previousDate ? calculateMetrics(getDataByDate(previousDate)) : {
+        hcTotal: 0,
+        presencas: 0,
+        taxaAbs: 0,
+        taxaTurn: 0
+      };
+
+      document.getElementById("hcTotal").textContent = formatNumber(atual.hcTotal);
+      document.getElementById("presencasTotal").textContent = formatNumber(atual.presencas);
+      document.getElementById("taxaAbs").textContent = formatPercent(atual.taxaAbs);
+      document.getElementById("taxaTurnover").textContent = formatPercent(atual.taxaTurn);
+
+      applyBadge("hcDelta", calculateDelta(atual.hcTotal, anterior.hcTotal));
+      applyBadge("presencaDelta", calculateDelta(atual.presencas, anterior.presencas));
+      applyBadge("absDelta", atual.taxaAbs - anterior.taxaAbs);
+      applyBadge("turnDelta", atual.taxaTurn - anterior.taxaTurn);
+
+      document.getElementById("ultimaAtualizacao").textContent = formatTimeNow();
+    }
+
+    function renderTendencia() {
+      const warehouse = document.getElementById("filtroWarehouse").value;
+      const setor = document.getElementById("filtroSetor").value;
+      const agrupado = {};
+
+      rawData.forEach(row => {
+        const rowWarehouse = normalize(row["wh"]);
+        const rowSetor = normalize(row["setor"]);
+        const rowData = normalize(row["data"]);
+
+        const okWarehouse = !warehouse || rowWarehouse === warehouse;
+        const okSetor = !setor || rowSetor === setor;
+
+        if (!rowData || !okWarehouse || !okSetor) return;
+
+        if (!agrupado[rowData]) agrupado[rowData] = 0;
+        agrupado[rowData] += toNumber(row["qtd_pessoas"]);
+      });
+
+      const labels = Object.keys(agrupado).sort().slice(-30);
+      const values = labels.map(label => agrupado[label]);
+
+      if (chartTendencia) {
+        chartTendencia.destroy();
+      }
+
+      const canvas = document.getElementById("chartTendencia");
+      const ctx = canvas.getContext("2d");
+
+      chartTendencia = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "HC Total",
+            data: values,
+            borderColor: "#2ea8ff",
+            backgroundColor: "rgba(46,168,255,0.15)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#fff" }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#d1d5db" },
+              grid: { color: "rgba(255,255,255,0.06)" }
+            },
+            y: {
+              ticks: { color: "#d1d5db" },
+              grid: { color: "rgba(255,255,255,0.06)" }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTabelaSetor(data) {
+      const agrupado = {};
+
+      data.forEach(row => {
+        const setor = normalize(row["setor"]) || "SEM SETOR";
+
+        if (!agrupado[setor]) {
+          agrupado[setor] = { hc: 0, presenca: 0, faltas: 0 };
+        }
+
+        agrupado[setor].hc += toNumber(row["qtd_pessoas"]);
+        agrupado[setor].presenca += toNumber(row["total_presencas"]);
+        agrupado[setor].faltas += toNumber(row["falta não planejado"]);
+      });
+
+      const tbody = document.getElementById("tabelaSetor");
+      tbody.innerHTML = "";
+
+      Object.entries(agrupado)
+        .sort((a, b) => b[1].hc - a[1].hc)
+        .forEach(([setor, info]) => {
+          const perc = info.hc ? (info.faltas / info.hc) * 100 : 0;
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${setor}</td>
+              <td>${formatNumber(info.hc)}</td>
+              <td style="color:#4caf50">${formatNumber(info.presenca)}</td>
+              <td style="color:#ff4d4f">${formatNumber(info.faltas)}</td>
+              <td>${formatPercent(perc)}</td>
+            </tr>
+          `;
+        });
+    }
+
+    function renderTabelaWarehouse(data) {
+      const agrupado = {};
+
+      data.forEach(row => {
+        const wh = normalize(row["wh"]) || "SEM WH";
+
+        if (!agrupado[wh]) {
+          agrupado[wh] = { hc: 0, presenca: 0, faltas: 0, turnover: 0 };
+        }
+
+        agrupado[wh].hc += toNumber(row["qtd_pessoas"]);
+        agrupado[wh].presenca += toNumber(row["total_presencas"]);
+        agrupado[wh].faltas += toNumber(row["falta não planejado"]);
+        agrupado[wh].turnover += toNumber(row["TR"]);
+      });
+
+      const tbody = document.getElementById("tabelaWarehouse");
+      tbody.innerHTML = "";
+
+      Object.entries(agrupado)
+        .sort((a, b) => b[1].hc - a[1].hc)
+        .forEach(([wh, info]) => {
+          const percAbs = info.hc ? (info.faltas / info.hc) * 100 : 0;
+          const percTurn = info.hc ? (info.turnover / info.hc) * 100 : 0;
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${wh}</td>
+              <td>${formatNumber(info.hc)}</td>
+              <td style="color:#4caf50">${formatNumber(info.presenca)}</td>
+              <td style="color:#ff4d4f">${formatNumber(info.faltas)}</td>
+              <td>${formatPercent(percAbs)}</td>
+              <td style="color:#ff9800">${formatPercent(percTurn)}</td>
+            </tr>
+          `;
+        });
+    }
+
+    function renderAll() {
+      const data = getFilteredData();
+      renderCards(data);
+      renderTendencia();
+      renderTabelaSetor(data);
+      renderTabelaWarehouse(data);
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch("/api/hc-dados");
+        rawData = await res.json();
+
+        console.log("HC carregado:", rawData);
+
+        const warehouses = [...new Set(rawData.map(r => normalize(r["wh"])).filter(Boolean))].sort();
+        const setores = [...new Set(rawData.map(r => normalize(r["setor"])).filter(Boolean))].sort();
+        const datas = getAvailableDates();
+
+        fillSelect("filtroWarehouse", warehouses, "Todos os Warehouses");
+        fillSelect("filtroSetor", setores, "Todos os Setores");
+
+        const inputData = document.getElementById("filtroData");
+        if (datas.length) {
+          inputData.value = datas[datas.length - 1];
+        }
+
+        renderAll();
+      } catch (error) {
+        console.error("Erro ao carregar HC:", error);
+        alert("Erro ao carregar dados do dashboard HC. Veja o console do navegador.");
+      }
+    }
+
+    document.getElementById("filtroData").addEventListener("change", renderAll);
+    document.getElementById("filtroWarehouse").addEventListener("change", renderAll);
+    document.getElementById("filtroSetor").addEventListener("change", renderAll);
+    document.getElementById("btnAtualizar").addEventListener("click", loadData);
+
+    loadData();
+  </script>
+</body>
+</html>

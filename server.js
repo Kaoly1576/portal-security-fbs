@@ -806,7 +806,7 @@ async function buscarPlanilhaAccess() {
   return response.data.values || [];
 }
 
-app.get("/api/access-debug", requireAuth, async (req, res) => {
+app.get("/api/access", requireAuth, async (req, res) => {
   try {
     const sheets = await conectarSheets();
 

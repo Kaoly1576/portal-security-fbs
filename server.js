@@ -793,48 +793,30 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
 // ================== ACCESS DASHBOARD ==================
 
-app.get("/access", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "access.html"));
-});
-
 async function buscarPlanilhaAccess() {
-  const sheets = await conectarSheets();
-
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-    range: "Solicitações'!A:AE",
-  });
-
-  return response.data.values || [];
-}
-
-app.get("/api/access-dados", requireAuth, async (req, res) => {
   try {
-    const dados = await buscarPlanilhaAccess();
+    const sheets = await conectarSheets();
 
-    if (!dados.length) {
-      return res.json([]);
-    }
-
-    const cabecalho = dados[0] || [];
-    const linhas = dados.slice(1);
-
-    const objetos = linhas.map((linha) => {
-      const obj = {};
-
-      cabecalho.forEach((col, i) => {
-        obj[col] = linha[i] ?? "";
-      });
-
-      return obj;
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+      range: "'Solicitações'!A1:AE1000",
     });
 
-    return res.json(objetos);
+    console.log("ACCESS OK");
+    console.log("ACCESS linhas:", response.data.values?.length || 0);
+
+    return response.data.values || [];
   } catch (error) {
-    console.log("Erro /api/access-dados:", error);
-    return res.json([]);
+    console.log("ERRO ACCESS:");
+    console.log(error.message);
+
+    if (error.response?.data) {
+      console.log(JSON.stringify(error.response.data, null, 2));
+    }
+
+    return [];
   }
-});
+}
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

@@ -4,44 +4,673 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Portal Security FBS</title>
-  <link rel="stylesheet" href="/style.css" />
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    body{
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
+        linear-gradient(180deg,#4b5563 0%, #111827 24%, #050c18 52%, #050c18 100%);
+      color:#fff;
+      min-height:100vh;
+    }
+
+    .page-shell{
+      width:100%;
+      max-width:1240px;
+      margin:0 auto;
+      padding:20px 22px 40px;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:20px;
+      margin-bottom:18px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+
+    .brand-logo-wrap{
+      width:72px;
+      height:72px;
+      border-radius:18px;
+      background:rgba(255,255,255,0.05);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 8px 24px rgba(0,0,0,0.18);
+      border:1px solid rgba(255,255,255,0.06);
+    }
+
+    .brand-logo{
+      width:58px;
+      height:58px;
+      object-fit:contain;
+      border-radius:10px;
+    }
+
+    .brand-text h1{
+      font-size:21px;
+      font-weight:800;
+      margin-bottom:4px;
+      color:#ff7a1a;
+    }
+
+    .brand-text p{
+      font-size:13px;
+      color:#f8fafc;
+      opacity:0.9;
+    }
+
+    .top-user-card{
+      background:linear-gradient(135deg,#162238,#1b2740);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:18px;
+      padding:10px 14px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:180px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.22);
+      position:relative;
+    }
+
+    .top-user-photo{
+      width:50px;
+      height:50px;
+      border-radius:50%;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,0.75);
+      background:#fff;
+      flex-shrink:0;
+    }
+
+    .top-user-info{
+      min-width:0;
+    }
+
+    .top-user-name{
+      font-size:14px;
+      font-weight:700;
+      color:#fff;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:140px;
+    }
+
+    .top-user-role{
+      font-size:13px;
+      color:#d1d5db;
+      margin-top:2px;
+    }
+
+    .top-user-menu{
+      margin-left:auto;
+      color:#fff;
+      font-size:13px;
+      cursor:pointer;
+      user-select:none;
+      padding:6px 4px;
+    }
+
+    .dropdown{
+      position:absolute;
+      top:calc(100% + 8px);
+      right:0;
+      width:240px;
+      background:linear-gradient(135deg,#111827,#172033);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px;
+      box-shadow:0 16px 32px rgba(0,0,0,0.3);
+      padding:12px;
+      display:none;
+      z-index:100;
+    }
+
+    .dropdown.open{
+      display:block;
+    }
+
+    .dropdown-header{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding-bottom:10px;
+      margin-bottom:10px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+
+    .dropdown-header img{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      object-fit:cover;
+      background:#fff;
+      border:2px solid rgba(255,255,255,0.75);
+    }
+
+    .dropdown-header strong{
+      display:block;
+      font-size:14px;
+      color:#fff;
+      line-height:1.2;
+    }
+
+    .dropdown-header span{
+      display:block;
+      font-size:12px;
+      color:#cbd5e1;
+      margin-top:2px;
+    }
+
+    .dropdown-list{
+      display:grid;
+      gap:8px;
+    }
+
+    .dropdown-item{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:12px;
+      background:rgba(255,255,255,0.03);
+    }
+
+    .dropdown-item-icon{
+      width:30px;
+      height:30px;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(124,58,237,0.16);
+      color:#c084fc;
+      flex-shrink:0;
+      font-size:15px;
+    }
+
+    .dropdown-item-title{
+      font-size:13px;
+      font-weight:700;
+      color:#fff;
+      line-height:1.1;
+      margin-bottom:3px;
+    }
+
+    .dropdown-item-value{
+      font-size:12px;
+      color:#d1d5db;
+      line-height:1.2;
+    }
+
+    .dropdown-item-value.status-ok{
+      color:#22c55e;
+      font-weight:700;
+    }
+
+    .dropdown-logout{
+      display:block;
+      text-align:center;
+      text-decoration:none;
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:linear-gradient(90deg,#ff6a00,#f4475f);
+      color:#fff;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns:1.2fr 0.95fr;
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .hero-card,
+    .profile-card{
+      background:linear-gradient(135deg,#14203a,#16233c 55%, #1a2845);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:24px;
+      box-shadow:0 12px 28px rgba(0,0,0,0.24);
+    }
+
+    .hero-card{
+      padding:28px 22px 22px;
+    }
+
+    .hero-card h2{
+      font-size:40px;
+      line-height:1.05;
+      font-weight:900;
+      margin-bottom:12px;
+      color:#fff;
+    }
+
+    .hero-card p{
+      color:#d1d5db;
+      font-size:15px;
+      line-height:1.55;
+      max-width:95%;
+    }
+
+    .hero-metrics{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-top:30px;
+    }
+
+    .metric-box{
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:18px;
+      padding:16px 16px 14px;
+    }
+
+    .metric-label{
+      font-size:12px;
+      color:#b8c1cc;
+      margin-bottom:10px;
+      text-transform:uppercase;
+      font-weight:700;
+    }
+
+    .metric-value{
+      font-size:22px;
+      font-weight:900;
+      color:#fff;
+    }
+
+    .profile-card{
+      padding:20px;
+    }
+
+    .profile-top{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:14px;
+    }
+
+    .profile-photo{
+      width:74px;
+      height:74px;
+      border-radius:50%;
+      object-fit:cover;
+      background:#fff;
+      border:2px solid rgba(255,255,255,0.85);
+      flex-shrink:0;
+    }
+
+    .profile-name{
+      font-size:18px;
+      font-weight:800;
+      color:#fff;
+      margin-bottom:4px;
+    }
+
+    .profile-role{
+      font-size:14px;
+      color:#d1d5db;
+    }
+
+    .profile-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .profile-mini,
+    .profile-wide{
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:18px;
+      padding:14px;
+    }
+
+    .profile-wide{
+      grid-column:1 / -1;
+    }
+
+    .profile-mini-label,
+    .profile-wide-label{
+      font-size:12px;
+      color:#b8c1cc;
+      margin-bottom:8px;
+    }
+
+    .profile-mini-value,
+    .profile-wide-value{
+      font-size:16px;
+      font-weight:800;
+      color:#fff;
+    }
+
+    .profile-mini-value.green{
+      color:#22c55e;
+    }
+
+    .toolbar{
+      display:grid;
+      grid-template-columns:1fr 265px;
+      gap:14px;
+      margin-bottom:16px;
+    }
+
+    .search-box,
+    .sector-box{
+      height:48px;
+      border-radius:14px;
+      background:linear-gradient(135deg,#111827,#162238);
+      border:1px solid rgba(255,255,255,0.08);
+      display:flex;
+      align-items:center;
+      padding:0 16px;
+      box-shadow:0 8px 18px rgba(0,0,0,0.18);
+    }
+
+    .search-box span,
+    .sector-box span:first-child{
+      margin-right:10px;
+      font-size:18px;
+      color:#aeb8c7;
+    }
+
+    .search-box input{
+      border:none;
+      outline:none;
+      width:100%;
+      background:transparent;
+      color:#fff;
+      font-size:14px;
+    }
+
+    .search-box input::placeholder{
+      color:#7c8aa5;
+    }
+
+    .sector-box select{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:#fff;
+      font-size:14px;
+      cursor:pointer;
+    }
+
+    .options-count{
+      color:#cbd5e1;
+      font-size:14px;
+      margin-bottom:16px;
+    }
+
+    .main-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr 0.9fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    .module-card,
+    .side-card{
+      background:linear-gradient(135deg,#111827,#16233c 60%, #172740);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:22px;
+      box-shadow:0 12px 26px rgba(0,0,0,0.22);
+    }
+
+    .module-card{
+      padding:22px;
+      text-decoration:none;
+      color:#fff;
+      min-height:182px;
+      display:block;
+      transition:all 0.2s ease;
+    }
+
+    .module-card:hover{
+      transform:translateY(-4px);
+      border-color:rgba(255,122,26,0.5);
+      box-shadow:0 14px 30px rgba(0,0,0,0.28);
+    }
+
+    .module-top{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .module-icon{
+      width:50px;
+      height:50px;
+      border-radius:16px;
+      background:rgba(124,58,237,0.18);
+      color:#c084fc;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      flex-shrink:0;
+      border:1px solid rgba(192,132,252,0.16);
+    }
+
+    .module-title{
+      font-size:18px;
+      font-weight:800;
+      margin-bottom:4px;
+      color:#fff;
+    }
+
+    .module-level{
+      font-size:13px;
+      color:#86efac;
+      font-weight:700;
+    }
+
+    .module-desc{
+      font-size:14px;
+      line-height:1.5;
+      color:#d1d5db;
+    }
+
+    .stack{
+      display:grid;
+      gap:16px;
+    }
+
+    .side-card{
+      padding:18px;
+      min-height:182px;
+    }
+
+    .side-title{
+      font-size:18px;
+      font-weight:900;
+      color:#fff;
+      margin-bottom:18px;
+    }
+
+    .bullet-list{
+      display:grid;
+      gap:0;
+    }
+
+    .bullet-item{
+      display:flex;
+      gap:12px;
+      padding:14px 0;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+
+    .bullet-item:last-child{
+      border-bottom:none;
+    }
+
+    .bullet-icon{
+      width:34px;
+      height:34px;
+      border-radius:11px;
+      background:rgba(96,165,250,0.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#60a5fa;
+      flex-shrink:0;
+      font-size:16px;
+    }
+
+    .bullet-title{
+      font-size:14px;
+      font-weight:800;
+      color:#fff;
+      margin-bottom:4px;
+    }
+
+    .bullet-desc{
+      font-size:12px;
+      color:#d1d5db;
+      line-height:1.4;
+    }
+
+    .summary-item{
+      display:flex;
+      gap:12px;
+      padding:14px 0;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+
+    .summary-item:last-child{
+      border-bottom:none;
+    }
+
+    .summary-icon{
+      width:40px;
+      height:40px;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,0.06);
+      flex-shrink:0;
+      font-size:18px;
+    }
+
+    .summary-title{
+      font-size:14px;
+      font-weight:800;
+      color:#fff;
+      margin-bottom:4px;
+    }
+
+    .summary-desc{
+      font-size:13px;
+      color:#d1d5db;
+      line-height:1.35;
+    }
+
+    .summary-green{
+      color:#22c55e;
+      font-weight:700;
+    }
+
+    @media (max-width: 1180px){
+      .main-grid{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .stack{
+        grid-column:1 / -1;
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    @media (max-width: 980px){
+      .hero-grid{
+        grid-template-columns:1fr;
+      }
+
+      .toolbar{
+        grid-template-columns:1fr;
+      }
+
+      .main-grid{
+        grid-template-columns:1fr;
+      }
+
+      .stack{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 760px){
+      .page-shell{
+        padding:16px 14px 28px;
+      }
+
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .top-user-card{
+        width:100%;
+      }
+
+      .hero-card h2{
+        font-size:30px;
+      }
+
+      .hero-metrics,
+      .profile-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="page-shell">
     <header class="topbar">
       <div class="brand">
         <div class="brand-logo-wrap">
-          <img src="/images/logo.png" alt="Logo Security FBS" class="brand-logo" />
+          <img src="images/logo.png" alt="Logo" class="brand-logo" />
         </div>
-
         <div class="brand-text">
           <h1>Portal Security FBS</h1>
           <p>Sistema de Controle de Acesso</p>
         </div>
       </div>
 
-      <div class="top-user-card" id="topUserCard">
-        <img
-          id="topUserPhoto"
-          class="top-user-photo"
-          src="/images/default-user.png"
-          alt="Usuário"
-        />
-
+      <div class="top-user-card">
+        <img id="topUserPhoto" class="top-user-photo" src="images/default-user.png" alt="Usuário">
         <div class="top-user-info">
           <div class="top-user-name" id="topUserName">Usuário</div>
           <div class="top-user-role" id="topUserRole">Supervisor</div>
         </div>
-
-        <button type="button" class="top-user-menu" id="userMenuButton">▼</button>
+        <div class="top-user-menu" id="userMenuButton">▼</div>
 
         <div class="dropdown" id="userDropdown">
           <div class="dropdown-header">
-            <img
-              id="dropdownUserPhoto"
-              src="/images/default-user.png"
-              alt="Usuário"
-            />
+            <img id="dropdownUserPhoto" src="images/default-user.png" alt="Usuário">
             <div>
               <strong id="dropdownUserName">Usuário</strong>
               <span id="dropdownUserRole">Supervisor</span>
@@ -69,12 +698,12 @@
               <div class="dropdown-item-icon">🔓</div>
               <div>
                 <div class="dropdown-item-title">Acesso</div>
-                <div class="dropdown-item-value" id="dropdownAcesso">Módulos Security liberados</div>
+                <div class="dropdown-item-value">Módulos Security liberados</div>
               </div>
             </div>
           </div>
 
-          <button type="button" class="dropdown-logout" id="dropdownLogout">Sair</button>
+          <a href="/logout" class="dropdown-logout">Sair</a>
         </div>
       </div>
     </header>
@@ -92,22 +721,16 @@
             <div class="metric-label">Ambiente</div>
             <div class="metric-value">Portal FBS</div>
           </div>
-
           <div class="metric-box">
             <div class="metric-label">Nível de acesso</div>
-            <div class="metric-value" id="heroNivel">5+</div>
+            <div class="metric-value">5+</div>
           </div>
         </div>
       </div>
 
       <div class="profile-card">
         <div class="profile-top">
-          <img
-            id="profileUserPhoto"
-            class="profile-photo"
-            src="/images/default-user.png"
-            alt="Usuário"
-          />
+          <img id="profileUserPhoto" class="profile-photo" src="images/default-user.png" alt="Usuário">
           <div>
             <div class="profile-name" id="profileUserName">Usuário</div>
             <div class="profile-role" id="profileUserRole">Supervisor</div>
@@ -117,12 +740,12 @@
         <div class="profile-grid">
           <div class="profile-mini">
             <div class="profile-mini-label">Status</div>
-            <div class="profile-mini-value green" id="profileStatus">Aprovado</div>
+            <div class="profile-mini-value green">Aprovado</div>
           </div>
 
           <div class="profile-mini">
             <div class="profile-mini-label">Nível</div>
-            <div class="profile-mini-value" id="profileNivel">5</div>
+            <div class="profile-mini-value">5</div>
           </div>
 
           <div class="profile-wide">
@@ -273,6 +896,7 @@
   </div>
 
   <script>
+    const modulesContainer = document.getElementById("modulesContainer");
     const moduleCards = [...document.querySelectorAll(".module-card")];
     const searchInput = document.getElementById("searchInput");
     const sectorFilter = document.getElementById("sectorFilter");
@@ -280,7 +904,6 @@
 
     const userMenuButton = document.getElementById("userMenuButton");
     const userDropdown = document.getElementById("userDropdown");
-    const dropdownLogout = document.getElementById("dropdownLogout");
 
     function updateModuleVisibility() {
       const search = searchInput.value.trim().toLowerCase();
@@ -288,7 +911,7 @@
 
       let visibleCount = 0;
 
-      moduleCards.forEach((card) => {
+      moduleCards.forEach(card => {
         const name = (card.dataset.name || "").toLowerCase();
         const cardSector = (card.dataset.sector || "").toLowerCase();
 
@@ -308,34 +931,28 @@
 
     searchInput.addEventListener("input", updateModuleVisibility);
     sectorFilter.addEventListener("change", updateModuleVisibility);
+    updateModuleVisibility();
 
-    userMenuButton.addEventListener("click", function (e) {
-      e.preventDefault();
+    userMenuButton.addEventListener("click", (e) => {
       e.stopPropagation();
       userDropdown.classList.toggle("open");
     });
 
-    document.addEventListener("click", function (e) {
-      if (!userDropdown.contains(e.target) && !userMenuButton.contains(e.target)) {
+    document.addEventListener("click", (e) => {
+      if (!userDropdown.contains(e.target) && e.target !== userMenuButton) {
         userDropdown.classList.remove("open");
       }
     });
 
-    dropdownLogout.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      window.location.href = "/logout";
-    });
-
     async function loadUser() {
       try {
-        const res = await fetch("/api/me", { credentials: "same-origin" });
+        const res = await fetch("/api/me");
         const user = await res.json();
 
         const nome = user.nome || "Usuário";
         const email = user.email || "-";
-        const perfil = user.perfil || "Supervisor";
-        const foto = user.foto || "/images/default-user.png";
+        const perfil = user.perfil || "Usuário";
+        const foto = user.foto || "images/default-user.png";
 
         document.getElementById("topUserName").textContent = nome;
         document.getElementById("topUserRole").textContent = perfil;
@@ -360,7 +977,6 @@
       }
     }
 
-    updateModuleVisibility();
     loadUser();
   </script>
 </body>

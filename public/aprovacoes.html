@@ -3,29 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aprovações</title>
+  <title>Painel de Aprovações</title>
   <link rel="stylesheet" href="/portal.css" />
   <style>
-    .aprovacoes-wrap {
-      max-width: 1100px;
-      margin: 30px auto;
-      padding: 20px;
+    .aprovacoes-page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
     }
 
-    .aprovacoes-header {
+    .aprovacoes-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      gap: 16px;
+      margin-bottom: 22px;
     }
 
     .aprovacoes-title {
-      font-size: 28px;
+      font-size: 30px;
       font-weight: 800;
       color: #ff7a1a;
     }
 
-    .aprovacoes-lista {
+    .aprovacoes-subtitle {
+      color: #e5e7eb;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .btn-voltar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(90deg, #1f2b44 0%, #13213a 100%);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-weight: 800;
+      min-width: 170px;
+    }
+
+    .aprovacoes-grid {
       display: grid;
       gap: 16px;
     }
@@ -33,86 +53,157 @@
     .aprovacao-card {
       background: linear-gradient(135deg, #1c2a45 0%, #13213a 100%);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px;
-      padding: 18px;
-      color: #fff;
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+    }
+
+    .aprovacao-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      flex-wrap: wrap;
     }
 
     .aprovacao-nome {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
+      color: #fff;
       margin-bottom: 6px;
     }
 
     .aprovacao-email {
+      font-size: 14px;
       color: #d1d5db;
-      margin-bottom: 14px;
+      margin-bottom: 6px;
     }
 
-    .aprovacao-btn {
+    .aprovacao-meta {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    .aprovacao-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-aprovar {
       background: linear-gradient(90deg, #ff7a1a 0%, #ff4d4d 100%);
       color: #fff;
       border: none;
       border-radius: 12px;
-      padding: 10px 16px;
+      padding: 12px 18px;
+      font-size: 14px;
       font-weight: 800;
       cursor: pointer;
     }
 
-    .voltar-btn {
-      display: inline-block;
-      background: #1c2a45;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 10px 14px;
+    .btn-aprovar:hover {
+      opacity: 0.95;
     }
 
-    .vazio {
+    .empty-box {
       background: linear-gradient(135deg, #1c2a45 0%, #13213a 100%);
-      border-radius: 20px;
-      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+      padding: 24px;
       color: #d1d5db;
+      font-size: 15px;
+    }
+
+    .loading-box {
+      background: linear-gradient(135deg, #1c2a45 0%, #13213a 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+      padding: 24px;
+      color: #fff;
+      font-size: 15px;
+    }
+
+    @media (max-width: 780px) {
+      .aprovacoes-top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn-voltar {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="aprovacoes-wrap">
-    <div class="aprovacoes-header">
-      <div class="aprovacoes-title">Painel de Aprovações</div>
-      <a href="/portal" class="voltar-btn">Voltar ao portal</a>
+  <div class="aprovacoes-page">
+    <div class="aprovacoes-top">
+      <div>
+        <div class="aprovacoes-title">Painel de Aprovações</div>
+        <div class="aprovacoes-subtitle">
+          Aprove ou acompanhe usuários pendentes no portal.
+        </div>
+      </div>
+
+      <a href="/portal" class="btn-voltar">← Voltar ao portal</a>
     </div>
 
-    <div id="listaPendentes" class="aprovacoes-lista"></div>
+    <div id="listaPendentes" class="aprovacoes-grid">
+      <div class="loading-box">Carregando usuários pendentes...</div>
+    </div>
   </div>
 
   <script>
     async function carregarPendentes() {
       const container = document.getElementById("listaPendentes");
-      container.innerHTML = "<div class='vazio'>Carregando...</div>";
+      container.innerHTML = `<div class="loading-box">Carregando usuários pendentes...</div>`;
 
       try {
         const res = await fetch("/api/aprovacoes/pendentes", {
           credentials: "same-origin"
         });
 
+        if (!res.ok) {
+          throw new Error("Erro ao buscar pendentes");
+        }
+
         const users = await res.json();
 
         if (!Array.isArray(users) || users.length === 0) {
-          container.innerHTML = "<div class='vazio'>Nenhum usuário pendente.</div>";
+          container.innerHTML = `
+            <div class="empty-box">
+              Nenhum usuário pendente no momento.
+            </div>
+          `;
           return;
         }
 
         container.innerHTML = users.map(user => `
           <div class="aprovacao-card">
-            <div class="aprovacao-nome">${user.nome || "Sem nome"}</div>
-            <div class="aprovacao-email">${user.email || "-"}</div>
-            <button class="aprovacao-btn" onclick="aprovarUsuario(${user.id})">Aprovar</button>
+            <div class="aprovacao-header">
+              <div>
+                <div class="aprovacao-nome">${escapeHtml(user.nome || "Sem nome")}</div>
+                <div class="aprovacao-email">${escapeHtml(user.email || "-")}</div>
+                <div class="aprovacao-meta">
+                  Perfil: ${escapeHtml(user.perfil || "usuario")} • Status: ${escapeHtml(user.status || "pendente")}
+                </div>
+              </div>
+
+              <div class="aprovacao-actions">
+                <button class="btn-aprovar" onclick="aprovarUsuario(${Number(user.id)})">
+                  Aprovar
+                </button>
+              </div>
+            </div>
           </div>
         `).join("");
       } catch (error) {
         console.error(error);
-        container.innerHTML = "<div class='vazio'>Erro ao carregar usuários pendentes.</div>";
+        container.innerHTML = `
+          <div class="empty-box">
+            Erro ao carregar usuários pendentes.
+          </div>
+        `;
       }
     }
 
@@ -128,15 +219,24 @@
 
         const result = await res.json();
 
-        if (result.success) {
-          carregarPendentes();
-        } else {
-          alert("Não foi possível aprovar o usuário.");
+        if (!res.ok || !result.success) {
+          throw new Error(result.error || "Erro ao aprovar usuário");
         }
+
+        await carregarPendentes();
       } catch (error) {
         console.error(error);
         alert("Erro ao aprovar usuário.");
       }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     carregarPendentes();

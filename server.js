@@ -791,34 +791,30 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
 // ================== ACCESS DASHBOARD ==================
 
+// ================== ACCESS DASHBOARD ==================
+
 app.get("/access", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "access.html"));
 });
 
 async function buscarPlanilhaAccess() {
-  try {
+  const sheets = await conectarSheets();
 
-    const sheets = await conectarSheets();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+    range: "A:AE",
+  });
 
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-      range: "'Solicitações'!A:AE",
-    });
-
-    console.log("Resposta:", response.data);
-
-    return response.data.values || [];
-
-  } catch (error) {
-
-    console.log("ERRO GOOGLE SHEETS:");
-    console.log(error.message);
-    console.log(error.response?.data);
-
-    return [];
-
-  }
+  return response.data.values || [];
 }
+
+app.get("/api/access-dados", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaAccess();
+
+    if (!dados.length) {
+      return res.json([]);
+    }
 
     const cabecalho = dados[0] || [];
     const linhas = dados.slice(1);
@@ -839,7 +835,6 @@ async function buscarPlanilhaAccess() {
     return res.json([]);
   }
 });
-
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

@@ -800,7 +800,7 @@ async function buscarPlanilhaAccess() {
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-    range: "'Solicitações'!A:AE",
+    range: "'Solicitações' !A1:AE",
   });
 
   return response.data.values || [];

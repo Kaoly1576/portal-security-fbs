@@ -793,30 +793,99 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
 // ================== ACCESS DASHBOARD ==================
 
+app.get("/access", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "access.html"));
+});
+
 async function buscarPlanilhaAccess() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+    range: "'Solicitações'!A1:AE1000",
+  });
+
+  return response.data.values || [];
+}
+
+app.get("/api/access-debug", requireAuth, async (req, res) => {
   try {
     const sheets = await conectarSheets();
 
-    const response = await sheets.spreadsheets.values.get({
+    const meta = await sheets.spreadsheets.get({
       spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-      range: "'Solicitações'!A1:AE1000",
     });
 
-    console.log("ACCESS OK");
-    console.log("ACCESS linhas:", response.data.values?.length || 0);
+    const abas = (meta.data.sheets || []).map(
+      (s) => s.properties?.title || "SEM_NOME"
+    );
 
-    return response.data.values || [];
-  } catch (error) {
-    console.log("ERRO ACCESS:");
-    console.log(error.message);
+    let values = [];
+    let erroLeitura = null;
 
-    if (error.response?.data) {
-      console.log(JSON.stringify(error.response.data, null, 2));
+    try {
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+        range: "'Solicitações'!A1:AE20",
+      });
+
+      values = response.data.values || [];
+    } catch (err) {
+      erroLeitura = {
+        message: err.message,
+        details: err.response?.data || null,
+      };
     }
 
-    return [];
+    return res.json({
+      ok: true,
+      spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+      abas,
+      totalLinhasTeste: values.length,
+      primeiraLinha: values[0] || null,
+      erroLeitura,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
   }
-}
+});
+
+app.get("/api/access-dados", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaAccess();
+
+    if (!dados.length) {
+      return res.status(500).json({
+        ok: false,
+        error: "A leitura da planilha não retornou linhas.",
+      });
+    }
+
+    const cabecalho = dados[0] || [];
+    const linhas = dados.slice(1);
+
+    const objetos = linhas.map((linha) => {
+      const obj = {};
+      cabecalho.forEach((col, i) => {
+        obj[col] = linha[i] ?? "";
+      });
+      return obj;
+    });
+
+    return res.json(objetos);
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

@@ -791,8 +791,6 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
 // ================== ACCESS DASHBOARD ==================
 
-// ================== ACCESS DASHBOARD ==================
-
 app.get("/access", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "access.html"));
 });
@@ -802,7 +800,7 @@ async function buscarPlanilhaAccess() {
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-    range: "'Solicitações'!A1:AE1000",
+    range: "'Solicitações'!A1:AE200000",
   });
 
   return response.data.values || [];
@@ -862,6 +860,7 @@ app.get("/api/access-dados", requireAuth, async (req, res) => {
       return res.status(500).json({
         ok: false,
         error: "A leitura da planilha não retornou linhas.",
+        hint: "Verifique compartilhamento da planilha com o client_email do credentials.json e o nome da aba.",
       });
     }
 

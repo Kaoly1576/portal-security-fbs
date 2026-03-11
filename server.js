@@ -789,6 +789,51 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
   }
 });
 
+// ================== ACCESS DASHBOARD ==================
+
+app.get("/access", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "access.html"));
+});
+
+async function buscarPlanilhaAccess() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+    range: "A:AE",
+  });
+
+  return response.data.values || [];
+}
+
+app.get("/api/access-dados", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaAccess();
+
+    if (!dados.length) {
+      return res.json([]);
+    }
+
+    const cabecalho = dados[0] || [];
+    const linhas = dados.slice(1);
+
+    const objetos = linhas.map((linha) => {
+      const obj = {};
+
+      cabecalho.forEach((col, i) => {
+        obj[col] = linha[i] ?? "";
+      });
+
+      return obj;
+    });
+
+    return res.json(objetos);
+  } catch (error) {
+    console.log("Erro /api/access-dados:", error);
+    return res.json([]);
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

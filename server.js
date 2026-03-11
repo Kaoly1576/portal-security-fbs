@@ -826,7 +826,7 @@ app.get("/api/access-debug", requireAuth, async (req, res) => {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-        range: "'Solicitações'!A1:AE20",
+        range: "'Solicitações'!A1:AE200000",
       });
 
       values = response.data.values || [];

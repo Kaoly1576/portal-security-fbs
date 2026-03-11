@@ -318,12 +318,6 @@
       margin-bottom:12px;
     }
 
-    .panel p{
-      font-size:14px;
-      color:#d7e1ee;
-      line-height:1.6;
-    }
-
     .panel-list{
       display:grid;
       gap:14px;
@@ -366,70 +360,6 @@
       line-height:1.45;
     }
 
-    .search-row{
-      display:grid;
-      grid-template-columns:1fr 280px;
-      gap:14px;
-      margin:0 0 18px;
-    }
-
-    .search-box,
-    .sector-box{
-      background:rgba(13,22,40,0.55);
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:14px;
-      height:50px;
-      display:flex;
-      align-items:center;
-      padding:0 14px;
-      backdrop-filter:blur(10px);
-    }
-
-    .search-box span,
-    .sector-box span:first-child{
-      margin-right:10px;
-      color:#aeb8c7;
-      font-size:18px;
-    }
-
-    .search-box input{
-      border:none;
-      outline:none;
-      width:100%;
-      font-size:14px;
-      color:#fff;
-      background:transparent;
-    }
-
-    .search-box input::placeholder{
-      color:#8b96aa;
-    }
-
-    .sector-box select{
-      border:none;
-      outline:none;
-      width:100%;
-      font-size:14px;
-      background:transparent;
-      color:#fff;
-      cursor:pointer;
-    }
-
-    .status-green{
-      color:#4ade80;
-      font-weight:800;
-    }
-
-    .status-blue{
-      color:#7dd3fc;
-      font-weight:800;
-    }
-
-    .status-orange{
-      color:#fdba74;
-      font-weight:800;
-    }
-
     @media (max-width: 1100px){
       .hero-grid,
       .section-grid,
@@ -442,10 +372,6 @@
       .topbar{
         flex-direction:column;
         align-items:flex-start;
-      }
-
-      .search-row{
-        grid-template-columns:1fr;
       }
 
       .welcome-card h2{
@@ -515,12 +441,12 @@
         <div class="profile-info">
           <div class="profile-box">
             <div class="profile-box-label">Status</div>
-            <div class="profile-box-value status-green">Aprovado</div>
+            <div class="profile-box-value" style="color:#4ade80;">Aprovado</div>
           </div>
 
           <div class="profile-box">
             <div class="profile-box-label">Nível</div>
-            <div class="profile-box-value status-blue">5</div>
+            <div class="profile-box-value" style="color:#7dd3fc;">5</div>
           </div>
 
           <div class="profile-box" style="grid-column:1 / -1;">
@@ -531,40 +457,8 @@
       </div>
     </section>
 
-    <section class="search-row">
-      <div class="search-box">
-        <span>🔎</span>
-        <input type="text" id="searchInput" placeholder="Pesquisar opções..." />
-      </div>
-
-      <div class="sector-box">
-        <span>📁</span>
-        <select id="sectorFilter">
-          <option value="">Todos os Setores</option>
-          <option value="controle">Controle</option>
-          <option value="av">AV</option>
-          <option value="warehouse">Warehouse</option>
-          <option value="agentes">Agentes</option>
-          <option value="fbs">FBS</option>
-        </select>
-      </div>
-    </section>
-
-    <section class="section-grid" id="modulesContainer">
-      <a href="/aprovacoes" class="glass feature-card" data-name="Controle de Acesso" data-sector="controle">
-        <div>
-          <div class="feature-top">
-            <div class="feature-icon">🔐</div>
-            <div>
-              <div class="feature-title">Controle de Acesso</div>
-              <div class="feature-level">Nível 5+</div>
-            </div>
-          </div>
-          <div class="feature-desc">Gestão de acessos, aprovações e controle operacional.</div>
-        </div>
-      </a>
-
-      <a href="/dashboard" class="glass feature-card" data-name="AV Lost" data-sector="av">
+    <section class="section-grid" id="topCards">
+      <a href="/dashboard" class="glass feature-card">
         <div>
           <div class="feature-top">
             <div class="feature-icon">📊</div>
@@ -577,7 +471,7 @@
         </div>
       </a>
 
-      <a href="/hc" class="glass feature-card" data-name="Warehouse" data-sector="warehouse">
+      <a href="/hc" class="glass feature-card">
         <div>
           <div class="feature-top">
             <div class="feature-icon">🏬</div>
@@ -589,24 +483,24 @@
           <div class="feature-desc">Headcount, absenteísmo e análise por warehouse.</div>
         </div>
       </a>
+
+      <a href="/agentes-fbs" class="glass feature-card">
+        <div>
+          <div class="feature-top">
+            <div class="feature-icon">👥</div>
+            <div>
+              <div class="feature-title">Agentes</div>
+              <div class="feature-level">Nível 5+</div>
+            </div>
+          </div>
+          <div class="feature-desc">Painel de agentes, nomes, filtros e estrutura operacional.</div>
+        </div>
+      </a>
     </section>
 
     <section class="bottom-grid">
-      <div class="stack">
-        <a href="/agentes-fbs" class="glass feature-card" data-name="Agentes" data-sector="agentes">
-          <div>
-            <div class="feature-top">
-              <div class="feature-icon">👥</div>
-              <div>
-                <div class="feature-title">Agentes</div>
-                <div class="feature-level">Nível 5+</div>
-              </div>
-            </div>
-            <div class="feature-desc">Painel de agentes, nomes, filtros e estrutura operacional.</div>
-          </div>
-        </a>
-
-        <a href="/chamada-agentes" class="glass feature-card" data-name="FBS" data-sector="fbs">
+      <div class="stack" id="leftCards">
+        <a href="/chamada-agentes" class="glass feature-card">
           <div>
             <div class="feature-top">
               <div class="feature-icon">🗂️</div>
@@ -656,7 +550,7 @@
             <div class="panel-badge">✅</div>
             <div>
               <strong>Status</strong>
-              <span class="status-green">Aprovado e ativo no portal.</span>
+              <span style="color:#4ade80;font-weight:700;">Aprovado e ativo no portal.</span>
             </div>
           </div>
 
@@ -672,7 +566,7 @@
             <div class="panel-badge">🔓</div>
             <div>
               <strong>Acesso</strong>
-              <span class="status-orange">Módulos Security liberados.</span>
+              <span style="color:#fdba74;font-weight:700;">Módulos Security liberados.</span>
             </div>
           </div>
         </div>
@@ -681,32 +575,6 @@
   </main>
 
   <script>
-    const modulesContainer = document.getElementById("modulesContainer");
-    const searchInput = document.getElementById("searchInput");
-    const sectorFilter = document.getElementById("sectorFilter");
-
-    function getAllCards() {
-      return [...document.querySelectorAll("[data-name][data-sector]")];
-    }
-
-    function updateModuleVisibility() {
-      const search = searchInput.value.trim().toLowerCase();
-      const sector = sectorFilter.value.trim().toLowerCase();
-
-      getAllCards().forEach(card => {
-        const name = (card.dataset.name || "").toLowerCase();
-        const cardSector = (card.dataset.sector || "").toLowerCase();
-
-        const matchesSearch = !search || name.includes(search);
-        const matchesSector = !sector || cardSector === sector;
-
-        card.style.display = (matchesSearch && matchesSector) ? "" : "none";
-      });
-    }
-
-    searchInput.addEventListener("input", updateModuleVisibility);
-    sectorFilter.addEventListener("change", updateModuleVisibility);
-
     async function loadUser() {
       try {
         const res = await fetch("/api/me");
@@ -726,18 +594,58 @@
         document.getElementById("infoEmail").textContent = email;
         document.getElementById("userPhoto").src = foto;
         document.getElementById("userPhotoTop").src = foto;
+
+        const topCards = document.getElementById("topCards");
+        const leftCards = document.getElementById("leftCards");
+
+        if (perfil === "aprovador" || perfil === "admin") {
+          const aprovacoesCard = document.createElement("a");
+          aprovacoesCard.href = "/aprovacoes";
+          aprovacoesCard.className = "glass feature-card";
+          aprovacoesCard.innerHTML = `
+            <div>
+              <div class="feature-top">
+                <div class="feature-icon">🔐</div>
+                <div>
+                  <div class="feature-title">Aprovações</div>
+                  <div class="feature-level">Nível ${perfil}</div>
+                </div>
+              </div>
+              <div class="feature-desc">Gerenciar acessos pendentes, aprovar usuários e definir perfis.</div>
+            </div>
+          `;
+          leftCards.prepend(aprovacoesCard);
+        }
+
+        if (perfil === "admin") {
+          const usuariosCard = document.createElement("a");
+          usuariosCard.href = "/aprovacoes";
+          usuariosCard.className = "glass feature-card";
+          usuariosCard.innerHTML = `
+            <div>
+              <div class="feature-top">
+                <div class="feature-icon">🧾</div>
+                <div>
+                  <div class="feature-title">Usuários</div>
+                  <div class="feature-level">Nível admin</div>
+                </div>
+              </div>
+              <div class="feature-desc">Acompanhar usuários do sistema e gerenciar perfis de acesso.</div>
+            </div>
+          `;
+          topCards.appendChild(usuariosCard);
+        }
       } catch (error) {
         document.getElementById("userName").textContent = "Usuário";
         document.getElementById("userNameTop").textContent = "Usuário";
         document.getElementById("welcomeName").textContent = "Usuário";
-        document.getElementById("userRole").textContent = "Supervisor";
-        document.getElementById("userRoleTop").textContent = "Supervisor";
-        document.getElementById("infoRole").textContent = "Supervisor";
+        document.getElementById("userRole").textContent = "Usuário";
+        document.getElementById("userRoleTop").textContent = "Usuário";
+        document.getElementById("infoRole").textContent = "Usuário";
       }
     }
 
     loadUser();
-    updateModuleVisibility();
   </script>
 </body>
 </html>

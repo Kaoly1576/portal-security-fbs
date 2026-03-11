@@ -854,34 +854,36 @@ app.get("/api/access-debug", requireAuth, async (req, res) => {
 
 app.get("/api/access-dados", requireAuth, async (req, res) => {
   try {
+
     const dados = await buscarPlanilhaAccess();
 
-    if (!dados.length) {
-      return res.status(500).json({
-        ok: false,
-        error: "A leitura da planilha não retornou linhas.",
-        hint: "Verifique compartilhamento da planilha com o client_email do credentials.json e o nome da aba.",
-      });
+    if (!dados || dados.length < 2) {
+      return res.json([]);
     }
 
-    const cabecalho = dados[0] || [];
+    const cabecalho = dados[0];
     const linhas = dados.slice(1);
 
     const objetos = linhas.map((linha) => {
       const obj = {};
+
       cabecalho.forEach((col, i) => {
         obj[col] = linha[i] ?? "";
       });
+
       return obj;
     });
 
+    console.log("ACCESS registros enviados:", objetos.length);
+
     return res.json(objetos);
+
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-      details: error.response?.data || null,
-    });
+
+    console.log("ERRO ACCESS:", error);
+
+    return res.json([]);
+
   }
 });
 

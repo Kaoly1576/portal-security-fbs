@@ -339,3 +339,70 @@ grid-template-columns:1fr;
   margin-bottom:4px;
   color:#ff6a00;
 }
+
+.user-dropdown{
+position:relative;
+display:flex;
+align-items:center;
+gap:10px;
+cursor:pointer;
+}
+
+.user-photo{
+width:40px;
+height:40px;
+border-radius:50%;
+object-fit:cover;
+border:2px solid rgba(255,255,255,0.6);
+}
+
+.user-name{
+font-size:14px;
+font-weight:600;
+}
+
+.dropdown-menu{
+position:absolute;
+top:50px;
+right:0;
+
+background:#0f172a;
+border:1px solid rgba(255,255,255,0.08);
+
+border-radius:12px;
+
+width:200px;
+
+padding:10px;
+
+display:none;
+
+box-shadow:0 8px 20px rgba(0,0,0,0.4);
+}
+
+.user-dropdown:hover .dropdown-menu{
+display:block;
+}
+
+.dropdown-item{
+display:flex;
+justify-content:space-between;
+font-size:13px;
+padding:6px 4px;
+color:#d1d5db;
+}
+
+.dropdown-divider{
+height:1px;
+background:rgba(255,255,255,0.08);
+margin:8px 0;
+}
+
+.dropdown-logout{
+display:block;
+text-align:center;
+padding:6px;
+font-size:13px;
+color:#ff6a00;
+text-decoration:none;
+}

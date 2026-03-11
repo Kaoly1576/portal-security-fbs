@@ -796,23 +796,29 @@ app.get("/access", requireAuth, (req, res) => {
 });
 
 async function buscarPlanilhaAccess() {
-  const sheets = await conectarSheets();
-
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-    range: "'Solicitações' !A1:AE",
-  });
-
-  return response.data.values || [];
-}
-
-app.get("/api/access-dados", requireAuth, async (req, res) => {
   try {
-    const dados = await buscarPlanilhaAccess();
 
-    if (!dados.length) {
-      return res.json([]);
-    }
+    const sheets = await conectarSheets();
+
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+      range: "'Solicitações'!A:AE",
+    });
+
+    console.log("Resposta:", response.data);
+
+    return response.data.values || [];
+
+  } catch (error) {
+
+    console.log("ERRO GOOGLE SHEETS:");
+    console.log(error.message);
+    console.log(error.response?.data);
+
+    return [];
+
+  }
+}
 
     const cabecalho = dados[0] || [];
     const linhas = dados.slice(1);

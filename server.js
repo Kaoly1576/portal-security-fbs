@@ -65,7 +65,7 @@ db.serialize(() => {
   `);
 });
 
-// ================== CRIAR ADMIN INICIAL ==================
+// ================== ADMIN INICIAL ==================
 
 const senhaHashAdmin = bcrypt.hashSync("Kaoly1576;", 10);
 
@@ -405,7 +405,7 @@ app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
 
-// ================== ROTAS PROTEGIDAS ==================
+// ================== ROTAS DE PÁGINAS ==================
 
 app.get("/portal", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "portal.html"));
@@ -427,6 +427,12 @@ app.get("/chamada-agentes", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "chamada-agentes.html"));
 });
 
+app.get("/aprovacoes", requireAprovador, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "aprovacoes.html"));
+});
+
+// ================== API USUÁRIO ==================
+
 app.get("/api/me", requireAuth, (req, res) => {
   return res.json({
     id: req.session.userId,
@@ -435,6 +441,71 @@ app.get("/api/me", requireAuth, (req, res) => {
     perfil: req.session.perfil || "",
     foto: req.session.foto || "",
   });
+});
+
+app.get("/api/usuarios", requireAprovador, (req, res) => {
+  db.all(
+    "SELECT id, nome, email, perfil, status FROM usuarios ORDER BY nome ASC",
+    (err, users) => {
+      if (err) {
+        return res.status(500).json({ error: "Erro ao listar usuários." });
+      }
+      return res.json(users);
+    }
+  );
+});
+
+// ================== APROVAÇÕES ==================
+
+app.post("/aprovar/:id", requireAprovador, (req, res) => {
+  const perfilEscolhido = String(req.body.perfil || "").trim();
+  const perfisPermitidos = ["usuario", "aprovador", "admin"];
+
+  if (!perfisPermitidos.includes(perfilEscolhido)) {
+    return res.status(400).send("Perfil inválido.");
+  }
+
+  if (perfilEscolhido === "admin" && req.session.perfil !== "admin") {
+    return res.status(403).send("Somente admin pode aprovar outro admin.");
+  }
+
+  db.run(
+    "UPDATE usuarios SET status = 'aprovado', perfil = ? WHERE id = ?",
+    [perfilEscolhido, req.params.id],
+    (err) => {
+      if (err) return res.status(500).send("Erro ao aprovar usuário.");
+      return res.json({ success: true });
+    }
+  );
+});
+
+app.post("/rejeitar/:id", requireAprovador, (req, res) => {
+  db.run(
+    "UPDATE usuarios SET status = 'rejeitado' WHERE id = ?",
+    [req.params.id],
+    (err) => {
+      if (err) return res.status(500).send("Erro ao rejeitar usuário.");
+      return res.json({ success: true });
+    }
+  );
+});
+
+app.post("/usuarios/perfil/:id", requireAdmin, (req, res) => {
+  const perfil = String(req.body.perfil || "").trim();
+  const perfisPermitidos = ["usuario", "aprovador", "admin"];
+
+  if (!perfisPermitidos.includes(perfil)) {
+    return res.status(400).send("Perfil inválido.");
+  }
+
+  db.run(
+    "UPDATE usuarios SET perfil = ? WHERE id = ?",
+    [perfil, req.params.id],
+    (err) => {
+      if (err) return res.status(500).send("Erro ao atualizar perfil.");
+      return res.json({ success: true });
+    }
+  );
 });
 
 // ================== GOOGLE SHEETS DASHBOARD AV ==================
@@ -469,156 +540,6 @@ app.get("/api/dados", requireAuth, async (req, res) => {
     console.log("Erro /api/dados:", e);
     return res.json([]);
   }
-});
-
-// ================== APROVAÇÕES ==================
-
-app.get("/aprovacoes", requireAprovador, (req, res) => {
-  db.all("SELECT * FROM usuarios WHERE status = 'pendente' ORDER BY nome ASC", (err, users) => {
-    if (err) return res.send("Erro ao listar usuários.");
-
-    const lista = users
-      .map(
-        (u) => `
-        <div style="margin-bottom:20px; padding:15px; border:1px solid #ccc; border-radius:10px;">
-          <strong>${u.nome}</strong><br>
-          ${u.email}<br><br>
-
-          <form method="POST" action="/aprovar/${u.id}" style="display:inline-block; margin-right:10px;">
-            <select name="perfil" required>
-              <option value="usuario">Usuário</option>
-              <option value="aprovador">Aprovador</option>
-              ${
-                req.session.perfil === "admin"
-                  ? '<option value="admin">Admin</option>'
-                  : ""
-              }
-            </select>
-            <button type="submit">Aprovar</button>
-          </form>
-
-          <form method="POST" action="/rejeitar/${u.id}" style="display:inline-block;">
-            <button type="submit" style="background:red; color:white;">Rejeitar</button>
-          </form>
-        </div>
-      `
-      )
-      .join("");
-
-    res.send(`
-      <h2>Painel de Aprovação</h2>
-      ${users.length === 0 ? "Nenhum usuário pendente." : lista}
-      <br><br>
-      <a href="/portal">Voltar</a>
-    `);
-  });
-});
-
-app.post("/aprovar/:id", requireAprovador, (req, res) => {
-  const perfilEscolhido = String(req.body.perfil || "").trim();
-  const perfisPermitidos = ["usuario", "aprovador", "admin"];
-
-  if (!perfisPermitidos.includes(perfilEscolhido)) {
-    return res.send("Perfil inválido.");
-  }
-
-  if (perfilEscolhido === "admin" && req.session.perfil !== "admin") {
-    return res.status(403).send("Somente admin pode aprovar outro admin.");
-  }
-
-  db.run(
-    "UPDATE usuarios SET status = 'aprovado', perfil = ? WHERE id = ?",
-    [perfilEscolhido, req.params.id],
-    (err) => {
-      if (err) return res.send("Erro ao aprovar usuário.");
-      return res.redirect("/aprovacoes");
-    }
-  );
-});
-
-app.post("/rejeitar/:id", requireAprovador, (req, res) => {
-  db.run(
-    "UPDATE usuarios SET status = 'rejeitado' WHERE id = ?",
-    [req.params.id],
-    (err) => {
-      if (err) return res.send("Erro ao rejeitar usuário.");
-      return res.redirect("/aprovacoes");
-    }
-  );
-});
-
-// ================== USUÁRIOS / ADMIN ==================
-
-app.get("/usuarios", requireAprovador, (req, res) => {
-  db.all(
-    "SELECT id, nome, email, perfil, status FROM usuarios ORDER BY nome ASC",
-    (err, users) => {
-      if (err) return res.send("Erro ao listar usuários.");
-
-      const linhas = users
-        .map(
-          (u) => `
-          <tr>
-            <td>${u.nome}</td>
-            <td>${u.email}</td>
-            <td>${u.perfil}</td>
-            <td>${u.status}</td>
-            <td>
-              ${
-                req.session.perfil === "admin"
-                  ? `
-                    <form method="POST" action="/usuarios/perfil/${u.id}" style="display:inline-block;">
-                      <select name="perfil">
-                        <option value="usuario" ${u.perfil === "usuario" ? "selected" : ""}>Usuário</option>
-                        <option value="aprovador" ${u.perfil === "aprovador" ? "selected" : ""}>Aprovador</option>
-                        <option value="admin" ${u.perfil === "admin" ? "selected" : ""}>Admin</option>
-                      </select>
-                      <button type="submit">Salvar</button>
-                    </form>
-                  `
-                  : "-"
-              }
-            </td>
-          </tr>
-        `
-        )
-        .join("");
-
-      res.send(`
-        <h2>Usuários do Sistema</h2>
-        <table border="1" cellpadding="8" cellspacing="0">
-          <tr>
-            <th>Nome</th>
-            <th>Email</th>
-            <th>Perfil</th>
-            <th>Status</th>
-            <th>Ação</th>
-          </tr>
-          ${linhas}
-        </table>
-        <br><br>
-        <a href="/portal">Voltar</a>
-      `);
-    }
-  );
-});
-
-app.post("/usuarios/perfil/:id", requireAdmin, (req, res) => {
-  const perfil = String(req.body.perfil || "").trim();
-  const perfisPermitidos = ["usuario", "aprovador", "admin"];
-
-  if (!perfisPermitidos.includes(perfil)) {
-    return res.send("Perfil inválido.");
-  }
-
-  db.run(
-    "UPDATE usuarios SET perfil = ? WHERE id = ?",
-    [perfil, req.params.id],
-    (err) => {
-      if (err) return res.send("Erro ao atualizar perfil.");
-      return res.redirect("/usuarios");
-    }
-  );
 });
 
 // ================== DADOS DASHBOARD LOCAL ==================
@@ -755,10 +676,6 @@ app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
         };
       });
 
-    console.log("Linha da data detectada:", DATE_ROW_INDEX + 1);
-    console.log("Primeira coluna da data detectada:", FIXED_COLS + 1);
-    console.log("Total registros HC AGENTES FBS:", lista.length);
-
     return res.json(lista);
   } catch (err) {
     console.log("Erro HC AGENTES FBS:", err);
@@ -864,8 +781,6 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
   try {
     const { data, supervisor, marcacoes } = req.body;
 
-    console.log("Body recebido /api/chamada/salvar:", req.body);
-
     if (!data || !supervisor || !Array.isArray(marcacoes)) {
       return res.status(400).json({
         error: "Campos obrigatórios: data, supervisor e marcacoes[].",
@@ -881,25 +796,17 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
     }
 
     const allowedStatus = ["P", "F", "DSR", "FE", "AT", "FC"];
-
     const { lateralDates, agents } = await lerSheetChamada();
-
-    console.log("Data convertida:", dataBR);
-    console.log("Supervisor recebido:", supervisor);
-    console.log("Total agentes encontrados:", agents.length);
 
     const targetDate = lateralDates.find(
       (d) => normalizeText(d.date) === normalizeText(dataBR)
     );
 
     if (!targetDate) {
-      console.log("Datas disponíveis:", lateralDates.map((d) => d.date));
       return res.status(404).json({
         error: `Data ${dataBR} não encontrada na planilha.`,
       });
     }
-
-    console.log("Coluna da data encontrada:", targetDate);
 
     const updates = [];
 
@@ -917,15 +824,7 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
           normalizeText(a.lider) === normalizeText(supervisor)
       );
 
-      if (!agent) {
-        console.log(
-          "Agente não encontrado para RE:",
-          re,
-          "Supervisor:",
-          supervisor
-        );
-        continue;
-      }
+      if (!agent) continue;
 
       const a1Column = toA1Column(targetDate.colIndex);
       const a1Row = agent.rowIndex + 1;
@@ -934,13 +833,6 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
       updates.push({
         range,
         values: [[status]],
-      });
-
-      console.log("Update montado:", {
-        re,
-        colaborador: agent.colaborador,
-        status,
-        range,
       });
     }
 
@@ -952,15 +844,13 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
     const sheets = await conectarSheetsEdicao();
 
-    const result = await sheets.spreadsheets.values.batchUpdate({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: CHAMADA_SPREADSHEET_ID,
       requestBody: {
         valueInputOption: "USER_ENTERED",
         data: updates,
       },
     });
-
-    console.log("Resultado batchUpdate:", result.data);
 
     return res.json({
       success: true,

@@ -12,11 +12,6 @@ const path = require("path");
 
 const app = express();
 
-// ================== CONFIG ==================
-
-const PORT = process.env.PORT || 3000;
-const DB_PATH = path.join(__dirname, "database.db");
-
 // ================== MIDDLEWARES ==================
 
 app.set("trust proxy", 1);
@@ -42,30 +37,28 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ================== DATABASE ==================
 
-const db = new sqlite3.Database(DB_PATH);
+const db = new sqlite3.Database("./database.db");
 
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS usuarios (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nome TEXT,
-      email TEXT UNIQUE,
-      senha TEXT,
-      perfil TEXT DEFAULT 'usuario',
-      status TEXT DEFAULT 'pendente'
-    )
-  `);
+db.run(`
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT,
+  email TEXT UNIQUE,
+  senha TEXT,
+  perfil TEXT DEFAULT 'usuario',
+  status TEXT DEFAULT 'pendente'
+)
+`);
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS registros (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      valor_usd REAL DEFAULT 0,
-      valor_brl REAL DEFAULT 0
-    )
-  `);
-});
+db.run(`
+CREATE TABLE IF NOT EXISTS registros (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  valor_usd REAL DEFAULT 0,
+  valor_brl REAL DEFAULT 0
+)
+`);
 
-// ================== CRIAR ADMIN INICIAL ==================
+// ================== CRIAR APROVADOR ==================
 
 const senhaHashAdmin = bcrypt.hashSync("Kaoly1576;", 10);
 
@@ -78,7 +71,7 @@ db.run(
     "Caique Nascimento",
     "caique.nascimento@shopee.com",
     senhaHashAdmin,
-    "admin",
+    "aprovador",
     "aprovado",
   ]
 );
@@ -100,41 +93,37 @@ passport.use(
         const nome = profile?.displayName || "Usuário";
         const foto = profile?.photos?.[0]?.value || "";
 
-        if (!email || !email.endsWith("@shopee.com")) {
+        if (!email.endsWith("@shopee.com")) {
           return done(null, false);
         }
 
-        db.get(
-          "SELECT * FROM usuarios WHERE email = ?",
-          [email],
-          (err, user) => {
-            if (err) return done(err);
+        db.get("SELECT * FROM usuarios WHERE email = ?", [email], (err, user) => {
+          if (err) return done(err);
 
-            if (user) {
-              return done(null, { ...user, foto });
-            }
-
-            db.run(
-              `
-              INSERT INTO usuarios (nome, email, senha, perfil, status)
-              VALUES (?, ?, ?, ?, ?)
-              `,
-              [nome, email, "", "usuario", "pendente"],
-              function (insErr) {
-                if (insErr) return done(insErr);
-
-                db.get(
-                  "SELECT * FROM usuarios WHERE id = ?",
-                  [this.lastID],
-                  (selErr, newUser) => {
-                    if (selErr) return done(selErr);
-                    return done(null, { ...newUser, foto });
-                  }
-                );
-              }
-            );
+          if (user) {
+            return done(null, { ...user, foto });
           }
-        );
+
+          db.run(
+            `
+            INSERT INTO usuarios (nome, email, senha, perfil, status)
+            VALUES (?, ?, ?, ?, ?)
+            `,
+            [nome, email, "", "usuario", "pendente"],
+            function (insErr) {
+              if (insErr) return done(insErr);
+
+              db.get(
+                "SELECT * FROM usuarios WHERE id = ?",
+                [this.lastID],
+                (selErr, newUser) => {
+                  if (selErr) return done(selErr);
+                  return done(null, { ...newUser, foto });
+                }
+              );
+            }
+          );
+        });
       } catch (e) {
         return done(e);
       }
@@ -151,25 +140,33 @@ function requireAuth(req, res, next) {
 
 function requireAprovador(req, res, next) {
   if (!req.session.userId) return res.redirect("/login");
-
-  if (
-    req.session.perfil !== "aprovador" &&
-    req.session.perfil !== "admin"
-  ) {
+  if (req.session.perfil !== "aprovador") {
     return res.status(403).send("Acesso negado.");
   }
-
   next();
 }
 
-function requireAdmin(req, res, next) {
-  if (!req.session.userId) return res.redirect("/login");
+async function conectarSheets() {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "credentials.json",
+    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+  });
 
-  if (req.session.perfil !== "admin") {
-    return res.status(403).send("Acesso negado.");
-  }
+  return google.sheets({ version: "v4", auth });
+}
 
-  next();
+async function conectarSheetsEdicao() {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "credentials.json",
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+
+  const client = await auth.getClient();
+
+  return google.sheets({
+    version: "v4",
+    auth: client,
+  });
 }
 
 function normalizeText(value = "") {
@@ -255,29 +252,49 @@ function detectarLinhaDatas(rows) {
   };
 }
 
-// ================== GOOGLE SHEETS ==================
+async function lerSheetChamada() {
+  const sheets = await conectarSheetsEdicao();
 
-async function conectarSheets() {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: "credentials.json",
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: "1OLFfhaPKAL92co8vaHqpy_OiOU9oFEEqOrpgqo3nMJ0",
+    range: "'ABS AGENTES FBS'!A1:AZ",
   });
 
-  return google.sheets({ version: "v4", auth });
-}
+  const rows = response.data.values || [];
 
-async function conectarSheetsEdicao() {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: "credentials.json",
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
+  if (!rows.length) {
+    throw new Error("A planilha está vazia.");
+  }
 
-  const client = await auth.getClient();
+  const { dateRowIndex, firstDateColIndex, lateralDates } = detectarLinhaDatas(rows);
 
-  return google.sheets({
-    version: "v4",
-    auth: client,
-  });
+  const DATA_START_ROW = dateRowIndex + 3;
+
+  const agents = rows
+    .slice(DATA_START_ROW)
+    .map((r, idx) => ({
+      rowIndex: DATA_START_ROW + idx,
+      genero: String(r[0] || "").trim(),
+      colaborador: String(r[1] || "").trim(),
+      hora: String(r[2] || "").trim(),
+      escala: String(r[3] || "").trim(),
+      dia_inicio: String(r[4] || "").trim(),
+      re: String(r[5] || "").trim(),
+      unidade: String(r[6] || "").trim(),
+      lider: String(r[7] || "").trim(),
+      admissao: String(r[8] || "").trim(),
+      desligamento: String(r[9] || "").trim(),
+      cargo: String(r[10] || "").trim(),
+    }))
+    .filter((a) => a.colaborador && a.re);
+
+  return {
+    rows,
+    dateRowIndex,
+    firstDateColIndex,
+    lateralDates,
+    agents,
+  };
 }
 
 // ================== ROTAS PÚBLICAS ==================
@@ -290,10 +307,6 @@ app.get("/", (req, res) => {
 app.get("/login", (req, res) => {
   if (req.session.userId) return res.redirect("/portal");
   return res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-app.get("/cadastro", (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
 });
 
 // ================== LOGIN GOOGLE ==================
@@ -317,9 +330,7 @@ app.get(
 
     if (req.user.status !== "aprovado") {
       req.session.destroy(() => {
-        return res.send(
-          "Seu acesso ainda está pendente de aprovação pelo Security."
-        );
+        return res.send("Seu acesso ainda está pendente de aprovação pelo Security.");
       });
       return;
     }
@@ -336,6 +347,10 @@ app.get(
 
 // ================== CADASTRO ==================
 
+app.get("/cadastro", (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
+});
+
 app.post("/cadastro", async (req, res) => {
   const { nome, email, senha } = req.body;
 
@@ -347,22 +362,16 @@ app.post("/cadastro", async (req, res) => {
     return res.send("Somente e-mails @shopee.com permitidos.");
   }
 
-  try {
-    const senhaHash = await bcrypt.hash(senha, 10);
+  const senhaHash = await bcrypt.hash(senha, 10);
 
-    db.run(
-      `INSERT INTO usuarios (nome, email, senha, perfil, status) VALUES (?, ?, ?, ?, ?)`,
-      [nome, email, senhaHash, "usuario", "pendente"],
-      function (err) {
-        if (err) {
-          return res.send("Usuário já existe ou erro no cadastro.");
-        }
-        return res.send("Cadastro realizado! Aguarde aprovação do Security.");
-      }
-    );
-  } catch (error) {
-    return res.send("Erro ao cadastrar usuário.");
-  }
+  db.run(
+    `INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)`,
+    [nome, email, senhaHash],
+    function (err) {
+      if (err) return res.send("Usuário já existe ou erro no cadastro.");
+      return res.send("Cadastro realizado! Aguarde aprovação do Security.");
+    }
+  );
 });
 
 // ================== LOGIN LOCAL ==================
@@ -374,29 +383,25 @@ app.post("/login", (req, res) => {
     return res.send("Informe e-mail e senha.");
   }
 
-  db.get(
-    "SELECT * FROM usuarios WHERE email = ?",
-    [email],
-    async (err, user) => {
-      if (err) return res.send("Erro no servidor.");
-      if (!user) return res.send("Usuário não encontrado.");
+  db.get("SELECT * FROM usuarios WHERE email = ?", [email], async (err, user) => {
+    if (err) return res.send("Erro no servidor.");
+    if (!user) return res.send("Usuário não encontrado.");
 
-      if (user.status !== "aprovado") {
-        return res.send("Usuário ainda não aprovado pelo Security.");
-      }
-
-      const senhaValida = await bcrypt.compare(senha, user.senha || "");
-      if (!senhaValida) return res.send("Senha incorreta.");
-
-      req.session.userId = user.id;
-      req.session.nome = user.nome;
-      req.session.email = user.email;
-      req.session.perfil = user.perfil;
-      req.session.foto = "";
-
-      return res.redirect("/portal");
+    if (user.status !== "aprovado") {
+      return res.send("Usuário ainda não aprovado pelo Security.");
     }
-  );
+
+    const senhaValida = await bcrypt.compare(senha, user.senha);
+    if (!senhaValida) return res.send("Senha incorreta.");
+
+    req.session.userId = user.id;
+    req.session.nome = user.nome;
+    req.session.email = user.email;
+    req.session.perfil = user.perfil;
+    req.session.foto = "";
+
+    return res.redirect("/portal");
+  });
 });
 
 // ================== LOGOUT ==================
@@ -474,149 +479,34 @@ app.get("/api/dados", requireAuth, async (req, res) => {
 // ================== APROVAÇÕES ==================
 
 app.get("/aprovacoes", requireAprovador, (req, res) => {
-  db.all("SELECT * FROM usuarios WHERE status = 'pendente' ORDER BY nome ASC", (err, users) => {
-    if (err) return res.send("Erro ao listar usuários.");
-
-    const lista = users
-      .map(
-        (u) => `
-        <div style="margin-bottom:20px; padding:15px; border:1px solid #ccc; border-radius:10px;">
-          <strong>${u.nome}</strong><br>
-          ${u.email}<br><br>
-
-          <form method="POST" action="/aprovar/${u.id}" style="display:inline-block; margin-right:10px;">
-            <select name="perfil" required>
-              <option value="usuario">Usuário</option>
-              <option value="aprovador">Aprovador</option>
-              ${
-                req.session.perfil === "admin"
-                  ? '<option value="admin">Admin</option>'
-                  : ""
-              }
-            </select>
-            <button type="submit">Aprovar</button>
-          </form>
-
-          <form method="POST" action="/rejeitar/${u.id}" style="display:inline-block;">
-            <button type="submit" style="background:red; color:white;">Rejeitar</button>
-          </form>
-        </div>
-      `
-      )
-      .join("");
-
-    res.send(`
-      <h2>Painel de Aprovação</h2>
-      ${users.length === 0 ? "Nenhum usuário pendente." : lista}
-      <br><br>
-      <a href="/portal">Voltar</a>
-    `);
-  });
+  return res.sendFile(path.join(__dirname, "public", "aprovacoes.html"));
 });
 
-app.post("/aprovar/:id", requireAprovador, (req, res) => {
-  const perfilEscolhido = String(req.body.perfil || "").trim();
-  const perfisPermitidos = ["usuario", "aprovador", "admin"];
-
-  if (!perfisPermitidos.includes(perfilEscolhido)) {
-    return res.send("Perfil inválido.");
-  }
-
-  if (perfilEscolhido === "admin" && req.session.perfil !== "admin") {
-    return res.status(403).send("Somente admin pode aprovar outro admin.");
-  }
-
-  db.run(
-    "UPDATE usuarios SET status = 'aprovado', perfil = ? WHERE id = ?",
-    [perfilEscolhido, req.params.id],
-    (err) => {
-      if (err) return res.send("Erro ao aprovar usuário.");
-      return res.redirect("/aprovacoes");
-    }
-  );
-});
-
-app.post("/rejeitar/:id", requireAprovador, (req, res) => {
-  db.run(
-    "UPDATE usuarios SET status = 'rejeitado' WHERE id = ?",
-    [req.params.id],
-    (err) => {
-      if (err) return res.send("Erro ao rejeitar usuário.");
-      return res.redirect("/aprovacoes");
-    }
-  );
-});
-
-// ================== USUÁRIOS / ADMIN ==================
-
-app.get("/usuarios", requireAprovador, (req, res) => {
+app.get("/api/aprovacoes/pendentes", requireAprovador, (req, res) => {
   db.all(
-    "SELECT id, nome, email, perfil, status FROM usuarios ORDER BY nome ASC",
+    "SELECT id, nome, email, perfil, status FROM usuarios WHERE status = 'pendente' ORDER BY id DESC",
     (err, users) => {
-      if (err) return res.send("Erro ao listar usuários.");
+      if (err) {
+        console.log("Erro ao listar pendentes:", err);
+        return res.status(500).json({ error: "Erro ao listar usuários pendentes." });
+      }
 
-      const linhas = users
-        .map(
-          (u) => `
-          <tr>
-            <td>${u.nome}</td>
-            <td>${u.email}</td>
-            <td>${u.perfil}</td>
-            <td>${u.status}</td>
-            <td>
-              ${
-                req.session.perfil === "admin"
-                  ? `
-                    <form method="POST" action="/usuarios/perfil/${u.id}" style="display:inline-block;">
-                      <select name="perfil">
-                        <option value="usuario" ${u.perfil === "usuario" ? "selected" : ""}>Usuário</option>
-                        <option value="aprovador" ${u.perfil === "aprovador" ? "selected" : ""}>Aprovador</option>
-                        <option value="admin" ${u.perfil === "admin" ? "selected" : ""}>Admin</option>
-                      </select>
-                      <button type="submit">Salvar</button>
-                    </form>
-                  `
-                  : "-"
-              }
-            </td>
-          </tr>
-        `
-        )
-        .join("");
-
-      res.send(`
-        <h2>Usuários do Sistema</h2>
-        <table border="1" cellpadding="8" cellspacing="0">
-          <tr>
-            <th>Nome</th>
-            <th>Email</th>
-            <th>Perfil</th>
-            <th>Status</th>
-            <th>Ação</th>
-          </tr>
-          ${linhas}
-        </table>
-        <br><br>
-        <a href="/portal">Voltar</a>
-      `);
+      return res.json(users || []);
     }
   );
 });
 
-app.post("/usuarios/perfil/:id", requireAdmin, (req, res) => {
-  const perfil = String(req.body.perfil || "").trim();
-  const perfisPermitidos = ["usuario", "aprovador", "admin"];
-
-  if (!perfisPermitidos.includes(perfil)) {
-    return res.send("Perfil inválido.");
-  }
-
+app.post("/api/aprovacoes/aprovar/:id", requireAprovador, (req, res) => {
   db.run(
-    "UPDATE usuarios SET perfil = ? WHERE id = ?",
-    [perfil, req.params.id],
-    (err) => {
-      if (err) return res.send("Erro ao atualizar perfil.");
-      return res.redirect("/usuarios");
+    "UPDATE usuarios SET status = 'aprovado' WHERE id = ?",
+    [req.params.id],
+    function (err) {
+      if (err) {
+        console.log("Erro ao aprovar usuário:", err);
+        return res.status(500).json({ error: "Erro ao aprovar usuário." });
+      }
+
+      return res.json({ success: true });
     }
   );
 });
@@ -701,8 +591,7 @@ app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
       return res.json([]);
     }
 
-    const isDate = (value) =>
-      /^\d{2}\/\d{2}\/\d{4}$/.test(String(value || "").trim());
+    const isDate = (value) => /^\d{2}\/\d{2}\/\d{4}$/.test(String(value || "").trim());
 
     const DATE_ROW_INDEX = rows.findIndex((row) => {
       const totalDatas = row.filter((cell) => isDate(cell)).length;
@@ -715,6 +604,7 @@ app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
     }
 
     const dateRow = rows[DATE_ROW_INDEX] || [];
+
     const FIXED_COLS = dateRow.findIndex((cell) => isDate(cell));
 
     if (FIXED_COLS === -1) {
@@ -730,13 +620,11 @@ app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
 
     const lista = rows
       .slice(DATA_START_ROW)
-      .filter((r) => r[0] || r[1] || r[6])
+      .filter((r) => (r[0] || r[1] || r[6]))
       .map((r) => {
         const dias = lateralDates.map((data, idx) => ({
           data,
-          valor: String(r[FIXED_COLS + idx] || "")
-            .trim()
-            .toUpperCase(),
+          valor: String(r[FIXED_COLS + idx] || "").trim().toUpperCase(),
         }));
 
         return {
@@ -755,10 +643,6 @@ app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
         };
       });
 
-    console.log("Linha da data detectada:", DATE_ROW_INDEX + 1);
-    console.log("Primeira coluna da data detectada:", FIXED_COLS + 1);
-    console.log("Total registros HC AGENTES FBS:", lista.length);
-
     return res.json(lista);
   } catch (err) {
     console.log("Erro HC AGENTES FBS:", err);
@@ -771,52 +655,6 @@ app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
 const CHAMADA_SPREADSHEET_ID = "1OLFfhaPKAL92co8vaHqpy_OiOU9oFEEqOrpgqo3nMJ0";
 const CHAMADA_SHEET_NAME = "ABS AGENTES FBS";
 const CHAMADA_RANGE = "'ABS AGENTES FBS'!A1:AZ";
-
-async function lerSheetChamada() {
-  const sheets = await conectarSheetsEdicao();
-
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: CHAMADA_SPREADSHEET_ID,
-    range: CHAMADA_RANGE,
-  });
-
-  const rows = response.data.values || [];
-
-  if (!rows.length) {
-    throw new Error("A planilha está vazia.");
-  }
-
-  const { dateRowIndex, firstDateColIndex, lateralDates } =
-    detectarLinhaDatas(rows);
-
-  const DATA_START_ROW = dateRowIndex + 3;
-
-  const agents = rows
-    .slice(DATA_START_ROW)
-    .map((r, idx) => ({
-      rowIndex: DATA_START_ROW + idx,
-      genero: String(r[0] || "").trim(),
-      colaborador: String(r[1] || "").trim(),
-      hora: String(r[2] || "").trim(),
-      escala: String(r[3] || "").trim(),
-      dia_inicio: String(r[4] || "").trim(),
-      re: String(r[5] || "").trim(),
-      unidade: String(r[6] || "").trim(),
-      lider: String(r[7] || "").trim(),
-      admissao: String(r[8] || "").trim(),
-      desligamento: String(r[9] || "").trim(),
-      cargo: String(r[10] || "").trim(),
-    }))
-    .filter((a) => a.colaborador && a.re);
-
-  return {
-    rows,
-    dateRowIndex,
-    firstDateColIndex,
-    lateralDates,
-    agents,
-  };
-}
 
 app.get("/api/chamada/supervisores", requireAuth, async (req, res) => {
   try {
@@ -864,8 +702,6 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
   try {
     const { data, supervisor, marcacoes } = req.body;
 
-    console.log("Body recebido /api/chamada/salvar:", req.body);
-
     if (!data || !supervisor || !Array.isArray(marcacoes)) {
       return res.status(400).json({
         error: "Campos obrigatórios: data, supervisor e marcacoes[].",
@@ -884,30 +720,21 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
     const { lateralDates, agents } = await lerSheetChamada();
 
-    console.log("Data convertida:", dataBR);
-    console.log("Supervisor recebido:", supervisor);
-    console.log("Total agentes encontrados:", agents.length);
-
     const targetDate = lateralDates.find(
       (d) => normalizeText(d.date) === normalizeText(dataBR)
     );
 
     if (!targetDate) {
-      console.log("Datas disponíveis:", lateralDates.map((d) => d.date));
       return res.status(404).json({
         error: `Data ${dataBR} não encontrada na planilha.`,
       });
     }
 
-    console.log("Coluna da data encontrada:", targetDate);
-
     const updates = [];
 
     for (const item of marcacoes) {
       const re = String(item.re || "").trim();
-      const status = String(item.status || "")
-        .trim()
-        .toUpperCase();
+      const status = String(item.status || "").trim().toUpperCase();
 
       if (!re || !allowedStatus.includes(status)) continue;
 
@@ -917,15 +744,7 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
           normalizeText(a.lider) === normalizeText(supervisor)
       );
 
-      if (!agent) {
-        console.log(
-          "Agente não encontrado para RE:",
-          re,
-          "Supervisor:",
-          supervisor
-        );
-        continue;
-      }
+      if (!agent) continue;
 
       const a1Column = toA1Column(targetDate.colIndex);
       const a1Row = agent.rowIndex + 1;
@@ -934,13 +753,6 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
       updates.push({
         range,
         values: [[status]],
-      });
-
-      console.log("Update montado:", {
-        re,
-        colaborador: agent.colaborador,
-        status,
-        range,
       });
     }
 
@@ -952,15 +764,13 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
     const sheets = await conectarSheetsEdicao();
 
-    const result = await sheets.spreadsheets.values.batchUpdate({
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: CHAMADA_SPREADSHEET_ID,
       requestBody: {
         valueInputOption: "USER_ENTERED",
         data: updates,
       },
     });
-
-    console.log("Resultado batchUpdate:", result.data);
 
     return res.json({
       success: true,
@@ -980,6 +790,8 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 });
 
 // ================== SERVIDOR ==================
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Servidor rodando:");

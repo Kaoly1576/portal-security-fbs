@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACCESS - Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/access.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo-wrap">
+          <img src="/images/logo.png" alt="Logo Security" class="brand-logo" />
+        </div>
+        <div class="brand-text">
+          <h1>ACCESS</h1>
+          <p>Dashboard de acessos e liberações</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <a href="/portal" class="btn-secondary">Voltar ao Portal</a>
+      </div>
+    </header>
+
+    <section class="hero-card">
+      <div>
+        <h2>Dashboard ACCESS</h2>
+        <p>
+          Monitoramento de acessos com filtros por data, estado, cidade, operação,
+          tipo de liberação, veículo, data de liberação e status.
+        </p>
+      </div>
+
+      <div class="hero-right">
+        <div>Última atualização</div>
+        <div id="ultimaAtualizacao" class="hero-time">--:--</div>
+      </div>
+    </section>
+
+    <section class="filters-card">
+      <div class="filters-grid">
+        <div class="field">
+          <label>Data inicial (solicitação)</label>
+          <input type="date" id="filtroDataInicio" />
+        </div>
+
+        <div class="field">
+          <label>Data final (solicitação)</label>
+          <input type="date" id="filtroDataFim" />
+        </div>
+
+        <div class="field">
+          <label>Data liberação inicial</label>
+          <input type="date" id="filtroLiberacaoInicio" />
+        </div>
+
+        <div class="field">
+          <label>Data liberação final</label>
+          <input type="date" id="filtroLiberacaoFim" />
+        </div>
+
+        <div class="field">
+          <label>Estado</label>
+          <select id="filtroEstado">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Cidade</label>
+          <select id="filtroCidade">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Operação</label>
+          <select id="filtroOperacao">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Tipo de Liberação</label>
+          <select id="filtroTipoLiberacao">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Vai acessar com veículo?</label>
+          <select id="filtroVeiculo">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <select id="filtroStatus">
+            <option value="">Todos</option>
+          </select>
+        </div>
+
+        <div class="field search-field">
+          <label>Busca geral</label>
+          <input type="text" id="filtroBusca" placeholder="Buscar nome, CPF, empresa, placa..." />
+        </div>
+
+        <div class="field btn-field">
+          <button class="btn-primary" id="btnLimpar">Limpar filtros</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards-grid">
+      <div class="info-card">
+        <div class="info-label">Total de acessos</div>
+        <div class="info-value orange" id="totalAcessos">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Aprovados</div>
+        <div class="info-value green" id="totalAprovados">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Reprovados</div>
+        <div class="info-value red" id="totalReprovados">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Com veículo</div>
+        <div class="info-value blue" id="totalComVeiculo">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Sem veículo</div>
+        <div class="info-value purple" id="totalSemVeiculo">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">% aprovados</div>
+        <div class="info-value orange" id="percentualAprovados">0%</div>
+      </div>
+    </section>
+
+    <section class="charts-grid">
+      <div class="panel-card">
+        <div class="panel-title">Acessos por Status</div>
+        <div class="chart-wrap">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Acessos por Estado</div>
+        <div class="chart-wrap">
+          <canvas id="chartEstado"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Acessos por Tipo de Liberação</div>
+        <div class="chart-wrap">
+          <canvas id="chartTipo"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="charts-grid two-cols">
+      <div class="panel-card">
+        <div class="panel-title">Acessos por Operação</div>
+        <div class="chart-wrap large">
+          <canvas id="chartOperacao"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Solicitações por Dia</div>
+        <div class="chart-wrap large">
+          <canvas id="chartDia"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="tables-grid">
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Cidade</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cidade</th>
+                <th>Total</th>
+                <th>Aprovados</th>
+                <th>Reprovados</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaCidade"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Operação</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Operação</th>
+                <th>Total</th>
+                <th>Aprovados</th>
+                <th>Com veículo</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaOperacao"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-title">Detalhamento dos acessos</div>
+      <div class="table-wrap big-table" id="tableWrap"></div>
+    </section>
+  </div>
+
+  <script>
+    let rawData = [];
+    let filteredData = [];
+
+    let chartStatus;
+    let chartEstado;
+    let chartTipo;
+    let chartOperacao;
+    let chartDia;
+
+    const COLUMNS = {
+      data: "Data",
+      estado: "Estado",
+      cidade: "Cidade",
+      operacao: "Operação",
+      tipoLiberacao: "Tipo de Liberação",
+      veiculo: "Vai acessar com veículo?",
+      dataLiberacao: "Data de liberação",
+      status: "Status",
+      nome: "Nome completo:",
+      cpf: "CPF",
+      empresa: "Empresa",
+      placa: "Placa"
+    };
+
+    function normalize(value) {
+      return String(value || "").trim();
+    }
+
+    function normalizeLower(value) {
+      return normalize(value).toLowerCase();
+    }
+
+    function formatNow() {
+      return new Date().toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function parseDateBR(value) {
+      const str = normalize(value);
+      if (!str) return null;
+
+      if (/^\\d{2}\\/\\d{2}\\/\\d{4}/.test(str)) {
+        const [datePart] = str.split(" ");
+        const [day, month, year] = datePart.split("/").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(str)) {
+        const [year, month, day] = str.split("-").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      return null;
+    }
+
+    function toInputDate(date) {
+      if (!date) return "";
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatPercent(value) {
+      return `${Number(value || 0).toFixed(2)}%`;
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(value || 0);
+    }
+
+    function fillSelect(id, values, firstLabel) {
+      const select = document.getElementById(id);
+      select.innerHTML = `<option value="">${firstLabel}</option>`;
+      values.forEach(v => {
+        select.innerHTML += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function getUniqueValues(column) {
+      return [...new Set(rawData.map(row => normalize(row[column])).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    }
+
+    function getFilteredData() {
+      const dataInicio = document.getElementById("filtroDataInicio").value;
+      const dataFim = document.getElementById("filtroDataFim").value;
+      const liberacaoInicio = document.getElementById("filtroLiberacaoInicio").value;
+      const liberacaoFim = document.getElementById("filtroLiberacaoFim").value;
+      const estado = document.getElementById("filtroEstado").value;
+      const cidade = document.getElementById("filtroCidade").value;
+      const operacao = document.getElementById("filtroOperacao").value;
+      const tipoLiberacao = document.getElementById("filtroTipoLiberacao").value;
+      const veiculo = document.getElementById("filtroVeiculo").value;
+      const status = document.getElementById("filtroStatus").value;
+      const busca = normalizeLower(document.getElementById("filtroBusca").value);
+
+      return rawData.filter(row => {
+        const rowData = row._dataSolicitacao;
+        const rowLiberacao = row._dataLiberacao;
+
+        const okDataInicio = !dataInicio || (rowData && toInputDate(rowData) >= dataInicio);
+        const okDataFim = !dataFim || (rowData && toInputDate(rowData) <= dataFim);
+
+        const okLiberacaoInicio = !liberacaoInicio || (rowLiberacao && toInputDate(rowLiberacao) >= liberacaoInicio);
+        const okLiberacaoFim = !liberacaoFim || (rowLiberacao && toInputDate(rowLiberacao) <= liberacaoFim);
+
+        const okEstado = !estado || normalize(row[COLUMNS.estado]) === estado;
+        const okCidade = !cidade || normalize(row[COLUMNS.cidade]) === cidade;
+        const okOperacao = !operacao || normalize(row[COLUMNS.operacao]) === operacao;
+        const okTipo = !tipoLiberacao || normalize(row[COLUMNS.tipoLiberacao]) === tipoLiberacao;
+        const okVeiculo = !veiculo || normalize(row[COLUMNS.veiculo]) === veiculo;
+        const okStatus = !status || normalize(row[COLUMNS.status]) === status;
+
+        const searchable = [
+          row[COLUMNS.nome],
+          row[COLUMNS.cpf],
+          row[COLUMNS.empresa],
+          row[COLUMNS.placa],
+          row[COLUMNS.cidade],
+          row[COLUMNS.operacao],
+          row[COLUMNS.tipoLiberacao],
+          row[COLUMNS.status]
+        ].map(normalizeLower).join(" ");
+
+        const okBusca = !busca || searchable.includes(busca);
+
+        return (
+          okDataInicio &&
+          okDataFim &&
+          okLiberacaoInicio &&
+          okLiberacaoFim &&
+          okEstado &&
+          okCidade &&
+          okOperacao &&
+          okTipo &&
+          okVeiculo &&
+          okStatus &&
+          okBusca
+        );
+      });
+    }
+
+    function renderCards(data) {
+      const total = data.length;
+      const aprovados = data.filter(r => normalizeLower(r[COLUMNS.status]) === "aprovado").length;
+      const reprovados = data.filter(r => normalizeLower(r[COLUMNS.status]) === "reprovado").length;
+      const comVeiculo = data.filter(r => normalizeLower(r[COLUMNS.veiculo]) === "sim").length;
+      const semVeiculo = data.filter(r => normalizeLower(r[COLUMNS.veiculo]) === "não" || normalizeLower(r[COLUMNS.veiculo]) === "nao").length;
+      const percAprovados = total ? (aprovados / total) * 100 : 0;
+
+      document.getElementById("totalAcessos").textContent = formatNumber(total);
+      document.getElementById("totalAprovados").textContent = formatNumber(aprovados);
+      document.getElementById("totalReprovados").textContent = formatNumber(reprovados);
+      document.getElementById("totalComVeiculo").textContent = formatNumber(comVeiculo);
+      document.getElementById("totalSemVeiculo").textContent = formatNumber(semVeiculo);
+      document.getElementById("percentualAprovados").textContent = formatPercent(percAprovados);
+      document.getElementById("ultimaAtualizacao").textContent = formatNow();
+    }
+
+    function groupCount(data, column) {
+      const map = {};
+      data.forEach(row => {
+        const key = normalize(row[column]) || "Sem valor";
+        map[key] = (map[key] || 0) + 1;
+      });
+      return map;
+    }
+
+    function destroyCharts() {
+      if (chartStatus) chartStatus.destroy();
+      if (chartEstado) chartEstado.destroy();
+      if (chartTipo) chartTipo.destroy();
+      if (chartOperacao) chartOperacao.destroy();
+      if (chartDia) chartDia.destroy();
+    }
+
+    function makeChartOptions(horizontal = false) {
+      return {
+        indexAxis: horizontal ? "y" : "x",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: "#fff"
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#d1d5db" },
+            grid: { color: "rgba(255,255,255,0.06)" }
+          },
+          y: {
+            ticks: { color: "#d1d5db" },
+            grid: { color: "rgba(255,255,255,0.06)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    function renderCharts(data) {
+      destroyCharts();
+
+      const statusMap = groupCount(data, COLUMNS.status);
+      chartStatus = new Chart(document.getElementById("chartStatus"), {
+        type: "doughnut",
+        data: {
+          labels: Object.keys(statusMap),
+          datasets: [{
+            data: Object.values(statusMap),
+            backgroundColor: ["#ff7a1a", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6", "#64748b"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#fff" }
+            }
+          }
+        }
+      });
+
+      const estadoMap = groupCount(data, COLUMNS.estado);
+      chartEstado = new Chart(document.getElementById("chartEstado"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(estadoMap),
+          datasets: [{
+            label: "Acessos",
+            data: Object.values(estadoMap),
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8
+          }]
+        },
+        options: makeChartOptions()
+      });
+
+      const tipoMap = groupCount(data, COLUMNS.tipoLiberacao);
+      chartTipo = new Chart(document.getElementById("chartTipo"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(tipoMap),
+          datasets: [{
+            label: "Acessos",
+            data: Object.values(tipoMap),
+            backgroundColor: "#f97316",
+            borderRadius: 8
+          }]
+        },
+        options: makeChartOptions(true)
+      });
+
+      const operacaoMap = groupCount(data, COLUMNS.operacao);
+      chartOperacao = new Chart(document.getElementById("chartOperacao"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(operacaoMap),
+          datasets: [{
+            label: "Acessos",
+            data: Object.values(operacaoMap),
+            backgroundColor: "#fb923c",
+            borderRadius: 8
+          }]
+        },
+        options: makeChartOptions(true)
+      });
+
+      const dayMap = {};
+      data.forEach(row => {
+        if (!row._dataSolicitacao) return;
+        const key = row._dataSolicitacao.toLocaleDateString("pt-BR");
+        dayMap[key] = (dayMap[key] || 0) + 1;
+      });
+
+      const labels = Object.keys(dayMap);
+      const values = labels.map(k => dayMap[k]);
+
+      chartDia = new Chart(document.getElementById("chartDia"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Solicitações",
+            data: values,
+            borderColor: "#ff7a1a",
+            backgroundColor: "rgba(255,122,26,0.15)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+          }]
+        },
+        options: makeChartOptions()
+      });
+    }
+
+    function renderTables(data) {
+      const cidadeMap = {};
+      const operacaoMap = {};
+
+      data.forEach(row => {
+        const cidade = normalize(row[COLUMNS.cidade]) || "Sem cidade";
+        const operacao = normalize(row[COLUMNS.operacao]) || "Sem operação";
+        const aprovado = normalizeLower(row[COLUMNS.status]) === "aprovado";
+        const reprovado = normalizeLower(row[COLUMNS.status]) === "reprovado";
+        const comVeiculo = normalizeLower(row[COLUMNS.veiculo]) === "sim";
+
+        if (!cidadeMap[cidade]) {
+          cidadeMap[cidade] = { total: 0, aprovados: 0, reprovados: 0 };
+        }
+
+        if (!operacaoMap[operacao]) {
+          operacaoMap[operacao] = { total: 0, aprovados: 0, comVeiculo: 0 };
+        }
+
+        cidadeMap[cidade].total += 1;
+        operacaoMap[operacao].total += 1;
+
+        if (aprovado) {
+          cidadeMap[cidade].aprovados += 1;
+          operacaoMap[operacao].aprovados += 1;
+        }
+
+        if (reprovado) {
+          cidadeMap[cidade].reprovados += 1;
+        }
+
+        if (comVeiculo) {
+          operacaoMap[operacao].comVeiculo += 1;
+        }
+      });
+
+      const tabelaCidade = document.getElementById("tabelaCidade");
+      tabelaCidade.innerHTML = Object.entries(cidadeMap)
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([cidade, info]) => `
+          <tr>
+            <td>${escapeHtml(cidade)}</td>
+            <td>${formatNumber(info.total)}</td>
+            <td class="green-text">${formatNumber(info.aprovados)}</td>
+            <td class="red-text">${formatNumber(info.reprovados)}</td>
+          </tr>
+        `)
+        .join("");
+
+      const tabelaOperacao = document.getElementById("tabelaOperacao");
+      tabelaOperacao.innerHTML = Object.entries(operacaoMap)
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([operacao, info]) => `
+          <tr>
+            <td>${escapeHtml(operacao)}</td>
+            <td>${formatNumber(info.total)}</td>
+            <td class="green-text">${formatNumber(info.aprovados)}</td>
+            <td class="blue-text">${formatNumber(info.comVeiculo)}</td>
+          </tr>
+        `)
+        .join("");
+    }
+
+    function renderDetailTable(data) {
+      const headers = [
+        "ID",
+        COLUMNS.data,
+        COLUMNS.dataLiberacao,
+        COLUMNS.estado,
+        COLUMNS.cidade,
+        COLUMNS.operacao,
+        COLUMNS.tipoLiberacao,
+        COLUMNS.nome,
+        COLUMNS.empresa,
+        COLUMNS.veiculo,
+        COLUMNS.placa,
+        COLUMNS.status
+      ];
+
+      let html = "<table><thead><tr>";
+      headers.forEach(h => {
+        html += `<th>${escapeHtml(h)}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
+      data.slice(0, 500).forEach(row => {
+        html += "<tr>";
+        headers.forEach(h => {
+          html += `<td>${escapeHtml(row[h] || "")}</td>`;
+        });
+        html += "</tr>";
+      });
+
+      html += "</tbody></table>";
+      document.getElementById("tableWrap").innerHTML = html;
+    }
+
+    function renderAll() {
+      filteredData = getFilteredData();
+      renderCards(filteredData);
+      renderCharts(filteredData);
+      renderTables(filteredData);
+      renderDetailTable(filteredData);
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch("/api/access-dados", {
+          credentials: "same-origin"
+        });
+
+        const data = await res.json();
+
+        rawData = (Array.isArray(data) ? data : []).map(row => ({
+          ...row,
+          _dataSolicitacao: parseDateBR(row[COLUMNS.data]),
+          _dataLiberacao: parseDateBR(row[COLUMNS.dataLiberacao])
+        }));
+
+        fillSelect("filtroEstado", getUniqueValues(COLUMNS.estado), "Todos");
+        fillSelect("filtroCidade", getUniqueValues(COLUMNS.cidade), "Todas");
+        fillSelect("filtroOperacao", getUniqueValues(COLUMNS.operacao), "Todas");
+        fillSelect("filtroTipoLiberacao", getUniqueValues(COLUMNS.tipoLiberacao), "Todos");
+        fillSelect("filtroVeiculo", getUniqueValues(COLUMNS.veiculo), "Todos");
+        fillSelect("filtroStatus", getUniqueValues(COLUMNS.status), "Todos");
+
+        renderAll();
+      } catch (error) {
+        console.error("Erro ao carregar ACCESS:", error);
+      }
+    }
+
+    [
+      "filtroDataInicio",
+      "filtroDataFim",
+      "filtroLiberacaoInicio",
+      "filtroLiberacaoFim",
+      "filtroEstado",
+      "filtroCidade",
+      "filtroOperacao",
+      "filtroTipoLiberacao",
+      "filtroVeiculo",
+      "filtroStatus",
+      "filtroBusca"
+    ].forEach(id => {
+      document.getElementById(id).addEventListener("input", renderAll);
+      document.getElementById(id).addEventListener("change", renderAll);
+    });
+
+    document.getElementById("btnLimpar").addEventListener("click", () => {
+      [
+        "filtroDataInicio",
+        "filtroDataFim",
+        "filtroLiberacaoInicio",
+        "filtroLiberacaoFim",
+        "filtroEstado",
+        "filtroCidade",
+        "filtroOperacao",
+        "filtroTipoLiberacao",
+        "filtroVeiculo",
+        "filtroStatus",
+        "filtroBusca"
+      ].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+
+      renderAll();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>

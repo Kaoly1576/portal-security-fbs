@@ -332,3 +332,10 @@ grid-template-columns:1fr;
 }
 
 }
+
+.brand-text h1{
+  font-size:21px;
+  font-weight:700;
+  margin-bottom:4px;
+  color:#ff6a00;
+}

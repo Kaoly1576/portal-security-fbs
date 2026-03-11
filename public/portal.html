@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Portal Security FBS</title>
+
   <style>
     *{
       margin:0;
@@ -13,19 +14,18 @@
     }
 
     body{
-      min-height:100vh;
-      color:#fff;
       background:
-        linear-gradient(rgba(3,10,22,0.78), rgba(3,10,22,0.88)),
-        url("images/portal-bg.jpg") center center / cover no-repeat fixed;
-      overflow-x:hidden;
+        radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
+        linear-gradient(180deg,#4b5563 0%, #111827 24%, #050c18 52%, #050c18 100%);
+      color:#fff;
+      min-height:100vh;
     }
 
-    .page{
+    .page-shell{
       width:100%;
-      max-width:1280px;
+      max-width:1240px;
       margin:0 auto;
-      padding:22px;
+      padding:20px 22px 40px;
     }
 
     .topbar{
@@ -39,499 +39,724 @@
     .brand{
       display:flex;
       align-items:center;
-      gap:16px;
+      gap:14px;
+    }
+
+    .brand-logo-wrap{
+      width:72px;
+      height:72px;
+      border-radius:18px;
+      background:rgba(255,255,255,0.05);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 8px 24px rgba(0,0,0,0.18);
+      border:1px solid rgba(255,255,255,0.06);
     }
 
     .brand-logo{
-      width:74px;
-      height:74px;
+      width:58px;
+      height:58px;
       object-fit:contain;
-      border-radius:14px;
-      background:rgba(255,255,255,0.04);
-      padding:4px;
+      border-radius:10px;
     }
 
     .brand-text h1{
-      font-size:23px;
+      font-size:21px;
       font-weight:800;
       margin-bottom:4px;
-      text-shadow:0 2px 16px rgba(0,0,0,0.35);
+      color:#ff7a1a;
     }
 
     .brand-text p{
-      font-size:14px;
-      color:rgba(255,255,255,0.82);
+      font-size:13px;
+      color:#f8fafc;
+      opacity:0.9;
     }
 
-    .user-chip{
+    .top-user-card{
+      background:linear-gradient(135deg,#162238,#1b2740);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:18px;
+      padding:10px 14px;
       display:flex;
       align-items:center;
       gap:12px;
-      background:rgba(15,23,42,0.48);
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:18px;
-      padding:10px 14px;
-      backdrop-filter:blur(12px);
-      box-shadow:0 10px 30px rgba(0,0,0,0.22);
+      min-width:180px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.22);
+      position:relative;
     }
 
-    .user-photo{
-      width:52px;
-      height:52px;
+    .top-user-photo{
+      width:50px;
+      height:50px;
       border-radius:50%;
       object-fit:cover;
       border:2px solid rgba(255,255,255,0.75);
       background:#fff;
+      flex-shrink:0;
     }
 
-    .user-meta{
+    .top-user-info{
+      min-width:0;
+    }
+
+    .top-user-name{
+      font-size:14px;
+      font-weight:700;
+      color:#fff;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:140px;
+    }
+
+    .top-user-role{
+      font-size:13px;
+      color:#d1d5db;
+      margin-top:2px;
+    }
+
+    .top-user-menu{
+      margin-left:auto;
+      color:#fff;
+      font-size:13px;
+      cursor:pointer;
+      user-select:none;
+      padding:6px 4px;
+    }
+
+    .dropdown{
+      position:absolute;
+      top:calc(100% + 8px);
+      right:0;
+      width:240px;
+      background:linear-gradient(135deg,#111827,#172033);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px;
+      box-shadow:0 16px 32px rgba(0,0,0,0.3);
+      padding:12px;
+      display:none;
+      z-index:100;
+    }
+
+    .dropdown.open{
+      display:block;
+    }
+
+    .dropdown-header{
       display:flex;
-      flex-direction:column;
-      gap:2px;
+      align-items:center;
+      gap:10px;
+      padding-bottom:10px;
+      margin-bottom:10px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
     }
 
-    .user-name{
+    .dropdown-header img{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      object-fit:cover;
+      background:#fff;
+      border:2px solid rgba(255,255,255,0.75);
+    }
+
+    .dropdown-header strong{
+      display:block;
+      font-size:14px;
+      color:#fff;
+      line-height:1.2;
+    }
+
+    .dropdown-header span{
+      display:block;
+      font-size:12px;
+      color:#cbd5e1;
+      margin-top:2px;
+    }
+
+    .dropdown-list{
+      display:grid;
+      gap:8px;
+    }
+
+    .dropdown-item{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:12px;
+      background:rgba(255,255,255,0.03);
+    }
+
+    .dropdown-item-icon{
+      width:30px;
+      height:30px;
+      border-radius:10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(124,58,237,0.16);
+      color:#c084fc;
+      flex-shrink:0;
       font-size:15px;
+    }
+
+    .dropdown-item-title{
+      font-size:13px;
+      font-weight:700;
+      color:#fff;
+      line-height:1.1;
+      margin-bottom:3px;
+    }
+
+    .dropdown-item-value{
+      font-size:12px;
+      color:#d1d5db;
+      line-height:1.2;
+    }
+
+    .dropdown-item-value.status-ok{
+      color:#22c55e;
       font-weight:700;
     }
 
-    .user-role{
-      font-size:13px;
-      color:#d7e1ee;
-    }
-
-    .logout{
-      margin-top:2px;
+    .dropdown-logout{
+      display:block;
+      text-align:center;
+      text-decoration:none;
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:linear-gradient(90deg,#ff6a00,#f4475f);
       color:#fff;
-      font-size:12px;
-      text-decoration:underline;
-      opacity:0.95;
+      font-size:13px;
+      font-weight:700;
     }
 
     .hero-grid{
       display:grid;
       grid-template-columns:1.2fr 0.95fr;
-      gap:18px;
+      gap:16px;
       margin-bottom:18px;
-      align-items:stretch;
     }
 
-    .glass{
-      background:linear-gradient(135deg, rgba(21,31,54,0.78), rgba(18,27,46,0.58));
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:22px;
-      backdrop-filter:blur(14px);
-      box-shadow:0 12px 32px rgba(0,0,0,0.24);
+    .hero-card,
+    .profile-card{
+      background:linear-gradient(135deg,#14203a,#16233c 55%, #1a2845);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:24px;
+      box-shadow:0 12px 28px rgba(0,0,0,0.24);
     }
 
-    .welcome-card{
-      padding:24px;
-      min-height:190px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
+    .hero-card{
+      padding:28px 22px 22px;
     }
 
-    .welcome-card h2{
-      font-size:42px;
-      line-height:1.08;
-      font-weight:800;
-      margin-bottom:10px;
-      text-shadow:0 3px 24px rgba(0,0,0,0.30);
+    .hero-card h2{
+      font-size:40px;
+      line-height:1.05;
+      font-weight:900;
+      margin-bottom:12px;
+      color:#fff;
     }
 
-    .welcome-card p{
-      color:#dbe5f2;
+    .hero-card p{
+      color:#d1d5db;
       font-size:15px;
-      max-width:620px;
       line-height:1.55;
+      max-width:95%;
     }
 
-    .hero-stats{
+    .hero-metrics{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:14px;
-      margin-top:18px;
+      gap:12px;
+      margin-top:30px;
     }
 
-    .mini-stat{
+    .metric-box{
       background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:16px;
-      padding:14px 16px;
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:18px;
+      padding:16px 16px 14px;
     }
 
-    .mini-stat-label{
+    .metric-label{
       font-size:12px;
-      color:#b5c2d6;
-      margin-bottom:8px;
+      color:#b8c1cc;
+      margin-bottom:10px;
       text-transform:uppercase;
-      letter-spacing:.5px;
+      font-weight:700;
     }
 
-    .mini-stat-value{
-      font-size:24px;
-      font-weight:800;
+    .metric-value{
+      font-size:22px;
+      font-weight:900;
+      color:#fff;
     }
 
-    .profile-panel{
-      padding:22px;
+    .profile-card{
+      padding:20px;
+    }
+
+    .profile-top{
       display:flex;
-      flex-direction:column;
-      gap:14px;
-      justify-content:space-between;
-      min-height:190px;
-    }
-
-    .profile-head{
-      display:flex;
-      gap:14px;
       align-items:center;
+      gap:14px;
+      margin-bottom:14px;
     }
 
     .profile-photo{
-      width:78px;
-      height:78px;
+      width:74px;
+      height:74px;
       border-radius:50%;
       object-fit:cover;
-      border:2px solid rgba(255,255,255,0.85);
       background:#fff;
+      border:2px solid rgba(255,255,255,0.85);
+      flex-shrink:0;
     }
 
     .profile-name{
-      font-size:24px;
+      font-size:18px;
       font-weight:800;
-      line-height:1.1;
+      color:#fff;
+      margin-bottom:4px;
     }
 
     .profile-role{
-      margin-top:4px;
-      color:#d7e1ee;
       font-size:14px;
+      color:#d1d5db;
     }
 
-    .profile-info{
+    .profile-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:12px;
-    }
-
-    .profile-box{
-      background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.07);
-      border-radius:16px;
-      padding:14px;
-    }
-
-    .profile-box-label{
-      font-size:12px;
-      color:#b5c2d6;
-      margin-bottom:6px;
-    }
-
-    .profile-box-value{
-      font-size:18px;
-      font-weight:800;
-    }
-
-    .section-grid{
-      display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      gap:18px;
-      margin-bottom:18px;
-    }
-
-    .feature-card{
-      min-height:190px;
-      padding:22px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      text-decoration:none;
-      color:#fff;
-      transition:transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .feature-card:hover{
-      transform:translateY(-5px);
-      border-color:rgba(83,255,196,0.28);
-      box-shadow:0 18px 34px rgba(0,0,0,0.28);
-    }
-
-    .feature-top{
-      display:flex;
-      align-items:flex-start;
-      gap:14px;
-    }
-
-    .feature-icon{
-      width:52px;
-      height:52px;
-      border-radius:16px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:24px;
-      flex-shrink:0;
-      background:linear-gradient(135deg, rgba(115,84,255,0.30), rgba(52,211,153,0.16));
-      border:1px solid rgba(255,255,255,0.08);
-      box-shadow:inset 0 0 20px rgba(255,255,255,0.03);
-    }
-
-    .feature-title{
-      font-size:18px;
-      font-weight:800;
-      margin-bottom:4px;
-    }
-
-    .feature-level{
-      font-size:13px;
-      color:#9ce7cb;
-    }
-
-    .feature-desc{
-      color:#d7e1ee;
-      font-size:14px;
-      line-height:1.6;
-      margin-top:12px;
-    }
-
-    .bottom-grid{
-      display:grid;
-      grid-template-columns:1.05fr 1fr 0.9fr;
-      gap:18px;
-    }
-
-    .stack{
-      display:grid;
-      gap:18px;
-    }
-
-    .panel{
-      padding:20px;
-      min-height:158px;
-    }
-
-    .panel h3{
-      font-size:22px;
-      font-weight:800;
       margin-bottom:12px;
     }
 
-    .panel p{
-      font-size:14px;
-      color:#d7e1ee;
-      line-height:1.6;
+    .profile-mini,
+    .profile-wide{
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:18px;
+      padding:14px;
     }
 
-    .panel-list{
+    .profile-wide{
+      grid-column:1 / -1;
+    }
+
+    .profile-mini-label,
+    .profile-wide-label{
+      font-size:12px;
+      color:#b8c1cc;
+      margin-bottom:8px;
+    }
+
+    .profile-mini-value,
+    .profile-wide-value{
+      font-size:16px;
+      font-weight:800;
+      color:#fff;
+    }
+
+    .profile-mini-value.green{
+      color:#22c55e;
+    }
+
+    .toolbar{
       display:grid;
+      grid-template-columns:1fr 265px;
       gap:14px;
-      margin-top:8px;
-    }
-
-    .panel-item{
-      display:flex;
-      align-items:flex-start;
-      gap:12px;
-      padding:12px 0;
-      border-bottom:1px solid rgba(255,255,255,0.08);
-    }
-
-    .panel-item:last-child{
-      border-bottom:none;
-    }
-
-    .panel-badge{
-      width:40px;
-      height:40px;
-      border-radius:12px;
-      background:rgba(255,255,255,0.06);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:18px;
-      flex-shrink:0;
-    }
-
-    .panel-item strong{
-      display:block;
-      font-size:15px;
-      margin-bottom:4px;
-    }
-
-    .panel-item span{
-      font-size:13px;
-      color:#d7e1ee;
-      line-height:1.45;
-    }
-
-    .search-row{
-      display:grid;
-      grid-template-columns:1fr 280px;
-      gap:14px;
-      margin:0 0 18px;
+      margin-bottom:16px;
     }
 
     .search-box,
     .sector-box{
-      background:rgba(13,22,40,0.55);
-      border:1px solid rgba(255,255,255,0.10);
+      height:48px;
       border-radius:14px;
-      height:50px;
+      background:linear-gradient(135deg,#111827,#162238);
+      border:1px solid rgba(255,255,255,0.08);
       display:flex;
       align-items:center;
-      padding:0 14px;
-      backdrop-filter:blur(10px);
+      padding:0 16px;
+      box-shadow:0 8px 18px rgba(0,0,0,0.18);
     }
 
     .search-box span,
     .sector-box span:first-child{
       margin-right:10px;
-      color:#aeb8c7;
       font-size:18px;
+      color:#aeb8c7;
     }
 
     .search-box input{
       border:none;
       outline:none;
       width:100%;
-      font-size:14px;
-      color:#fff;
       background:transparent;
+      color:#fff;
+      font-size:14px;
     }
 
     .search-box input::placeholder{
-      color:#8b96aa;
+      color:#7c8aa5;
     }
 
     .sector-box select{
+      width:100%;
       border:none;
       outline:none;
-      width:100%;
-      font-size:14px;
       background:transparent;
       color:#fff;
+      font-size:14px;
       cursor:pointer;
     }
 
-    .status-green{
-      color:#4ade80;
-      font-weight:800;
+    .options-count{
+      color:#cbd5e1;
+      font-size:14px;
+      margin-bottom:16px;
     }
 
-    .status-blue{
-      color:#7dd3fc;
-      font-weight:800;
+    .main-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr 0.9fr;
+      gap:16px;
+      align-items:start;
     }
 
-    .status-orange{
-      color:#fdba74;
-      font-weight:800;
+    .module-card,
+    .side-card{
+      background:linear-gradient(135deg,#111827,#16233c 60%, #172740);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:22px;
+      box-shadow:0 12px 26px rgba(0,0,0,0.22);
     }
 
-    @media (max-width: 1100px){
-      .hero-grid,
-      .section-grid,
-      .bottom-grid{
+    .module-card{
+      padding:22px;
+      text-decoration:none;
+      color:#fff;
+      min-height:182px;
+      display:block;
+      transition:all 0.2s ease;
+    }
+
+    .module-card:hover{
+      transform:translateY(-4px);
+      border-color:rgba(255,122,26,0.5);
+      box-shadow:0 14px 30px rgba(0,0,0,0.28);
+    }
+
+    .module-top{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .module-icon{
+      width:50px;
+      height:50px;
+      border-radius:16px;
+      background:rgba(124,58,237,0.18);
+      color:#c084fc;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      flex-shrink:0;
+      border:1px solid rgba(192,132,252,0.16);
+    }
+
+    .module-title{
+      font-size:18px;
+      font-weight:800;
+      margin-bottom:4px;
+      color:#fff;
+    }
+
+    .module-level{
+      font-size:13px;
+      color:#86efac;
+      font-weight:700;
+    }
+
+    .module-desc{
+      font-size:14px;
+      line-height:1.5;
+      color:#d1d5db;
+    }
+
+    .stack{
+      display:grid;
+      gap:16px;
+    }
+
+    .side-card{
+      padding:18px;
+      min-height:182px;
+    }
+
+    .side-title{
+      font-size:18px;
+      font-weight:900;
+      color:#fff;
+      margin-bottom:18px;
+    }
+
+    .bullet-list{
+      display:grid;
+      gap:0;
+    }
+
+    .bullet-item{
+      display:flex;
+      gap:12px;
+      padding:14px 0;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+
+    .bullet-item:last-child{
+      border-bottom:none;
+    }
+
+    .bullet-icon{
+      width:34px;
+      height:34px;
+      border-radius:11px;
+      background:rgba(96,165,250,0.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#60a5fa;
+      flex-shrink:0;
+      font-size:16px;
+    }
+
+    .bullet-title{
+      font-size:14px;
+      font-weight:800;
+      color:#fff;
+      margin-bottom:4px;
+    }
+
+    .bullet-desc{
+      font-size:12px;
+      color:#d1d5db;
+      line-height:1.4;
+    }
+
+    .summary-item{
+      display:flex;
+      gap:12px;
+      padding:14px 0;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+
+    .summary-item:last-child{
+      border-bottom:none;
+    }
+
+    .summary-icon{
+      width:40px;
+      height:40px;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,0.06);
+      flex-shrink:0;
+      font-size:18px;
+    }
+
+    .summary-title{
+      font-size:14px;
+      font-weight:800;
+      color:#fff;
+      margin-bottom:4px;
+    }
+
+    .summary-desc{
+      font-size:13px;
+      color:#d1d5db;
+      line-height:1.35;
+    }
+
+    .summary-green{
+      color:#22c55e;
+      font-weight:700;
+    }
+
+    @media (max-width: 1180px){
+      .main-grid{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .stack{
+        grid-column:1 / -1;
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    @media (max-width: 980px){
+      .hero-grid{
+        grid-template-columns:1fr;
+      }
+
+      .toolbar{
+        grid-template-columns:1fr;
+      }
+
+      .main-grid{
+        grid-template-columns:1fr;
+      }
+
+      .stack{
         grid-template-columns:1fr;
       }
     }
 
-    @media (max-width: 820px){
+    @media (max-width: 760px){
+      .page-shell{
+        padding:16px 14px 28px;
+      }
+
       .topbar{
         flex-direction:column;
         align-items:flex-start;
       }
 
-      .search-row{
-        grid-template-columns:1fr;
+      .top-user-card{
+        width:100%;
       }
 
-      .welcome-card h2{
+      .hero-card h2{
         font-size:30px;
       }
 
-      .profile-info,
-      .hero-stats{
+      .hero-metrics,
+      .profile-grid{
         grid-template-columns:1fr;
       }
     }
   </style>
 </head>
 <body>
-  <main class="page">
+  <div class="page-shell">
     <header class="topbar">
       <div class="brand">
-        <img src="images/logo.png" alt="Logo" class="brand-logo" />
+        <div class="brand-logo-wrap">
+          <img src="images/logo.png" alt="Logo" class="brand-logo" />
+        </div>
         <div class="brand-text">
-          <h1>Segurança Patrimonial</h1>
-          <p>Sistema de Controle</p>
+          <h1>Portal Security FBS</h1>
+          <p>Sistema de Controle de Acesso</p>
         </div>
       </div>
 
-      <div class="user-chip">
-        <img id="userPhotoTop" class="user-photo" src="images/default-user.png" alt="Usuário" />
-        <div class="user-meta">
-          <div class="user-name" id="userNameTop">Carregando...</div>
-          <div class="user-role" id="userRoleTop">Carregando cargo...</div>
-          <a href="/logout" class="logout">Sair</a>
+      <div class="top-user-card">
+        <img id="topUserPhoto" class="top-user-photo" src="images/default-user.png" alt="Usuário">
+        <div class="top-user-info">
+          <div class="top-user-name" id="topUserName">Usuário</div>
+          <div class="top-user-role" id="topUserRole">Supervisor</div>
+        </div>
+        <div class="top-user-menu" id="userMenuButton">▼</div>
+
+        <div class="dropdown" id="userDropdown">
+          <div class="dropdown-header">
+            <img id="dropdownUserPhoto" src="images/default-user.png" alt="Usuário">
+            <div>
+              <strong id="dropdownUserName">Usuário</strong>
+              <span id="dropdownUserRole">Supervisor</span>
+            </div>
+          </div>
+
+          <div class="dropdown-list">
+            <div class="dropdown-item">
+              <div class="dropdown-item-icon">✔</div>
+              <div>
+                <div class="dropdown-item-title">Status</div>
+                <div class="dropdown-item-value status-ok" id="dropdownStatus">Aprovado</div>
+              </div>
+            </div>
+
+            <div class="dropdown-item">
+              <div class="dropdown-item-icon">👤</div>
+              <div>
+                <div class="dropdown-item-title">Perfil</div>
+                <div class="dropdown-item-value" id="dropdownPerfil">Supervisor</div>
+              </div>
+            </div>
+
+            <div class="dropdown-item">
+              <div class="dropdown-item-icon">🔓</div>
+              <div>
+                <div class="dropdown-item-title">Acesso</div>
+                <div class="dropdown-item-value">Módulos Security liberados</div>
+              </div>
+            </div>
+          </div>
+
+          <a href="/logout" class="dropdown-logout">Sair</a>
         </div>
       </div>
     </header>
 
     <section class="hero-grid">
-      <div class="glass welcome-card">
-        <div>
-          <h2>Bem-vindo(a), <span id="welcomeName">Usuário</span> 👋</h2>
-          <p>
-            Portal principal do Security FBS com acesso rápido aos módulos operacionais,
-            dashboards, chamadas, controles e gestão das equipes.
-          </p>
-        </div>
+      <div class="hero-card">
+        <h2>Bem-vindo(a), <span id="welcomeName">Usuário</span> 👋</h2>
+        <p>
+          Portal principal do Security FBS com acesso rápido aos módulos operacionais,
+          dashboards, chamadas, controles e gestão das equipes.
+        </p>
 
-        <div class="hero-stats">
-          <div class="mini-stat">
-            <div class="mini-stat-label">Ambiente</div>
-            <div class="mini-stat-value">Portal FBS</div>
+        <div class="hero-metrics">
+          <div class="metric-box">
+            <div class="metric-label">Ambiente</div>
+            <div class="metric-value">Portal FBS</div>
           </div>
-
-          <div class="mini-stat">
-            <div class="mini-stat-label">Nível de acesso</div>
-            <div class="mini-stat-value">5+</div>
+          <div class="metric-box">
+            <div class="metric-label">Nível de acesso</div>
+            <div class="metric-value">5+</div>
           </div>
         </div>
       </div>
 
-      <div class="glass profile-panel">
-        <div class="profile-head">
-          <img id="userPhoto" class="profile-photo" src="images/default-user.png" alt="Usuário" />
+      <div class="profile-card">
+        <div class="profile-top">
+          <img id="profileUserPhoto" class="profile-photo" src="images/default-user.png" alt="Usuário">
           <div>
-            <div class="profile-name" id="userName">Carregando...</div>
-            <div class="profile-role" id="userRole">Carregando cargo...</div>
+            <div class="profile-name" id="profileUserName">Usuário</div>
+            <div class="profile-role" id="profileUserRole">Supervisor</div>
           </div>
         </div>
 
-        <div class="profile-info">
-          <div class="profile-box">
-            <div class="profile-box-label">Status</div>
-            <div class="profile-box-value status-green">Aprovado</div>
+        <div class="profile-grid">
+          <div class="profile-mini">
+            <div class="profile-mini-label">Status</div>
+            <div class="profile-mini-value green">Aprovado</div>
           </div>
 
-          <div class="profile-box">
-            <div class="profile-box-label">Nível</div>
-            <div class="profile-box-value status-blue">5</div>
+          <div class="profile-mini">
+            <div class="profile-mini-label">Nível</div>
+            <div class="profile-mini-value">5</div>
           </div>
 
-          <div class="profile-box" style="grid-column:1 / -1;">
-            <div class="profile-box-label">E-mail</div>
-            <div class="profile-box-value" id="infoEmail">-</div>
+          <div class="profile-wide">
+            <div class="profile-wide-label">E-mail</div>
+            <div class="profile-wide-value" id="profileUserEmail">-</div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="search-row">
+    <section class="toolbar">
       <div class="search-box">
         <span>🔎</span>
         <input type="text" id="searchInput" placeholder="Pesquisar opções..." />
@@ -550,162 +775,174 @@
       </div>
     </section>
 
-    <section class="section-grid" id="modulesContainer">
-      <a href="/aprovacoes" class="glass feature-card" data-name="Controle de Acesso" data-sector="controle">
-        <div>
-          <div class="feature-top">
-            <div class="feature-icon">🔐</div>
-            <div>
-              <div class="feature-title">Controle de Acesso</div>
-              <div class="feature-level">Nível 5+</div>
-            </div>
+    <div class="options-count" id="optionsCount">Mostrando 5 opções disponíveis</div>
+
+    <section class="main-grid" id="modulesContainer">
+      <a href="/aprovacoes" class="module-card" data-name="Controle de Acesso" data-sector="controle">
+        <div class="module-top">
+          <div class="module-icon">🔐</div>
+          <div>
+            <div class="module-title">Controle de Acesso</div>
+            <div class="module-level">Nível 5+</div>
           </div>
-          <div class="feature-desc">Gestão de acessos, aprovações e controle operacional.</div>
         </div>
+        <div class="module-desc">Gestão de acessos, aprovações e controle operacional.</div>
       </a>
 
-      <a href="/dashboard" class="glass feature-card" data-name="AV Lost" data-sector="av">
-        <div>
-          <div class="feature-top">
-            <div class="feature-icon">📊</div>
-            <div>
-              <div class="feature-title">AV Lost</div>
-              <div class="feature-level">Nível 5+</div>
-            </div>
+      <a href="/dashboard" class="module-card" data-name="AV Lost" data-sector="av">
+        <div class="module-top">
+          <div class="module-icon">📊</div>
+          <div>
+            <div class="module-title">AV Lost</div>
+            <div class="module-level">Nível 5+</div>
           </div>
-          <div class="feature-desc">Visualização de indicadores, valores e ocorrências AV.</div>
         </div>
+        <div class="module-desc">Visualização de indicadores, valores e ocorrências AV.</div>
       </a>
 
-      <a href="/hc" class="glass feature-card" data-name="Warehouse" data-sector="warehouse">
-        <div>
-          <div class="feature-top">
-            <div class="feature-icon">🏬</div>
-            <div>
-              <div class="feature-title">Warehouse</div>
-              <div class="feature-level">Nível 5+</div>
-            </div>
+      <a href="/hc" class="module-card" data-name="Warehouse" data-sector="warehouse">
+        <div class="module-top">
+          <div class="module-icon">🏬</div>
+          <div>
+            <div class="module-title">Warehouse</div>
+            <div class="module-level">Nível 5+</div>
           </div>
-          <div class="feature-desc">Headcount, absenteísmo e análise por warehouse.</div>
         </div>
+        <div class="module-desc">Headcount, absenteísmo e análise por warehouse.</div>
       </a>
-    </section>
 
-    <section class="bottom-grid">
+      <a href="/agentes-fbs" class="module-card" data-name="Agentes" data-sector="agentes">
+        <div class="module-top">
+          <div class="module-icon">👥</div>
+          <div>
+            <div class="module-title">Agentes</div>
+            <div class="module-level">Nível 5+</div>
+          </div>
+        </div>
+        <div class="module-desc">Painel de agentes, nomes, filtros e estrutura operacional.</div>
+      </a>
+
       <div class="stack">
-        <a href="/agentes-fbs" class="glass feature-card" data-name="Agentes" data-sector="agentes">
-          <div>
-            <div class="feature-top">
-              <div class="feature-icon">👥</div>
-              <div>
-                <div class="feature-title">Agentes</div>
-                <div class="feature-level">Nível 5+</div>
-              </div>
+        <a href="/chamada-agentes" class="module-card" data-name="FBS" data-sector="fbs">
+          <div class="module-top">
+            <div class="module-icon">📋</div>
+            <div>
+              <div class="module-title">FBS</div>
+              <div class="module-level">Nível 5+</div>
             </div>
-            <div class="feature-desc">Painel de agentes, nomes, filtros e estrutura operacional.</div>
           </div>
+          <div class="module-desc">Chamada diária, presença e controle das equipes FBS.</div>
         </a>
 
-        <a href="/chamada-agentes" class="glass feature-card" data-name="FBS" data-sector="fbs">
-          <div>
-            <div class="feature-top">
-              <div class="feature-icon">🗂️</div>
+        <div class="side-card">
+          <div class="side-title">Controle & Operação</div>
+
+          <div class="bullet-list">
+            <div class="bullet-item">
+              <div class="bullet-icon">🛡️</div>
               <div>
-                <div class="feature-title">FBS</div>
-                <div class="feature-level">Nível 5+</div>
+                <div class="bullet-title">Controle de Acesso</div>
+                <div class="bullet-desc">Fluxos de aprovação, governança e segurança de entrada.</div>
               </div>
             </div>
-            <div class="feature-desc">Chamada diária, presença e controle das equipes FBS.</div>
-          </div>
-        </a>
-      </div>
 
-      <div class="glass panel">
-        <h3>Controle & Operação</h3>
-        <div class="panel-list">
-          <div class="panel-item">
-            <div class="panel-badge">🛡️</div>
-            <div>
-              <strong>Controle de Acesso</strong>
-              <span>Fluxos de aprovação, governança e segurança de entrada.</span>
+            <div class="bullet-item">
+              <div class="bullet-icon">📈</div>
+              <div>
+                <div class="bullet-title">AV Lost</div>
+                <div class="bullet-desc">Análise de indicadores, ocorrências e valores encontrados.</div>
+              </div>
             </div>
-          </div>
 
-          <div class="panel-item">
-            <div class="panel-badge">📈</div>
-            <div>
-              <strong>AV Lost</strong>
-              <span>Indicadores, valores encontrados e análise operacional.</span>
-            </div>
-          </div>
-
-          <div class="panel-item">
-            <div class="panel-badge">🏭</div>
-            <div>
-              <strong>Warehouse</strong>
-              <span>Headcount, absenteísmo e visão consolidada por unidade.</span>
+            <div class="bullet-item">
+              <div class="bullet-icon">🏢</div>
+              <div>
+                <div class="bullet-title">Warehouse</div>
+                <div class="bullet-desc">Visão de HC, absenteísmo e estrutura por unidade.</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="glass panel">
-        <h3>Resumo rápido</h3>
-        <div class="panel-list">
-          <div class="panel-item">
-            <div class="panel-badge">✅</div>
+        <div class="side-card">
+          <div class="side-title">Resumo rápido</div>
+
+          <div class="summary-item">
+            <div class="summary-icon">✅</div>
             <div>
-              <strong>Status</strong>
-              <span class="status-green">Aprovado e ativo no portal.</span>
+              <div class="summary-title">Status</div>
+              <div class="summary-desc"><span class="summary-green">Aprovado</span> e ativo no portal.</div>
             </div>
           </div>
 
-          <div class="panel-item">
-            <div class="panel-badge">👤</div>
+          <div class="summary-item">
+            <div class="summary-icon">👤</div>
             <div>
-              <strong>Perfil</strong>
-              <span id="infoRole">-</span>
+              <div class="summary-title">Perfil</div>
+              <div class="summary-desc" id="summaryPerfil">Supervisor</div>
             </div>
           </div>
 
-          <div class="panel-item">
-            <div class="panel-badge">🔓</div>
+          <div class="summary-item">
+            <div class="summary-icon">🔐</div>
             <div>
-              <strong>Acesso</strong>
-              <span class="status-orange">Módulos Security liberados.</span>
+              <div class="summary-title">Acesso</div>
+              <div class="summary-desc">Módulos Security liberados.</div>
             </div>
           </div>
         </div>
       </div>
     </section>
-  </main>
+  </div>
 
   <script>
     const modulesContainer = document.getElementById("modulesContainer");
+    const moduleCards = [...document.querySelectorAll(".module-card")];
     const searchInput = document.getElementById("searchInput");
     const sectorFilter = document.getElementById("sectorFilter");
+    const optionsCount = document.getElementById("optionsCount");
 
-    function getAllCards() {
-      return [...document.querySelectorAll("[data-name][data-sector]")];
-    }
+    const userMenuButton = document.getElementById("userMenuButton");
+    const userDropdown = document.getElementById("userDropdown");
 
     function updateModuleVisibility() {
       const search = searchInput.value.trim().toLowerCase();
       const sector = sectorFilter.value.trim().toLowerCase();
 
-      getAllCards().forEach(card => {
+      let visibleCount = 0;
+
+      moduleCards.forEach(card => {
         const name = (card.dataset.name || "").toLowerCase();
         const cardSector = (card.dataset.sector || "").toLowerCase();
 
         const matchesSearch = !search || name.includes(search);
         const matchesSector = !sector || cardSector === sector;
 
-        card.style.display = (matchesSearch && matchesSector) ? "" : "none";
+        if (matchesSearch && matchesSector) {
+          card.style.display = "";
+          visibleCount++;
+        } else {
+          card.style.display = "none";
+        }
       });
+
+      optionsCount.textContent = `Mostrando ${visibleCount} opções disponíveis`;
     }
 
     searchInput.addEventListener("input", updateModuleVisibility);
     sectorFilter.addEventListener("change", updateModuleVisibility);
+    updateModuleVisibility();
+
+    userMenuButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      userDropdown.classList.toggle("open");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!userDropdown.contains(e.target) && e.target !== userMenuButton) {
+        userDropdown.classList.remove("open");
+      }
+    });
 
     async function loadUser() {
       try {
@@ -717,27 +954,30 @@
         const perfil = user.perfil || "Usuário";
         const foto = user.foto || "images/default-user.png";
 
-        document.getElementById("userName").textContent = nome;
-        document.getElementById("userNameTop").textContent = nome;
+        document.getElementById("topUserName").textContent = nome;
+        document.getElementById("topUserRole").textContent = perfil;
+
+        document.getElementById("dropdownUserName").textContent = nome;
+        document.getElementById("dropdownUserRole").textContent = perfil;
+        document.getElementById("dropdownPerfil").textContent = perfil;
+
         document.getElementById("welcomeName").textContent = nome;
-        document.getElementById("userRole").textContent = perfil;
-        document.getElementById("userRoleTop").textContent = perfil;
-        document.getElementById("infoRole").textContent = perfil;
-        document.getElementById("infoEmail").textContent = email;
-        document.getElementById("userPhoto").src = foto;
-        document.getElementById("userPhotoTop").src = foto;
+
+        document.getElementById("profileUserName").textContent = nome;
+        document.getElementById("profileUserRole").textContent = perfil;
+        document.getElementById("profileUserEmail").textContent = email;
+
+        document.getElementById("summaryPerfil").textContent = perfil;
+
+        document.getElementById("topUserPhoto").src = foto;
+        document.getElementById("dropdownUserPhoto").src = foto;
+        document.getElementById("profileUserPhoto").src = foto;
       } catch (error) {
-        document.getElementById("userName").textContent = "Usuário";
-        document.getElementById("userNameTop").textContent = "Usuário";
-        document.getElementById("welcomeName").textContent = "Usuário";
-        document.getElementById("userRole").textContent = "Supervisor";
-        document.getElementById("userRoleTop").textContent = "Supervisor";
-        document.getElementById("infoRole").textContent = "Supervisor";
+        console.error("Erro ao carregar usuário:", error);
       }
     }
 
     loadUser();
-    updateModuleVisibility();
   </script>
 </body>
 </html>

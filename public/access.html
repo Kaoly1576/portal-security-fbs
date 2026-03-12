@@ -232,11 +232,11 @@
     let rawData = [];
     let filteredData = [];
 
-    let chartStatus;
-    let chartEstado;
-    let chartTipo;
-    let chartOperacao;
-    let chartDia;
+    let chartStatus = null;
+    let chartEstado = null;
+    let chartTipo = null;
+    let chartOperacao = null;
+    let chartDia = null;
 
     const COLUMNS = {
       data: "Data",
@@ -261,6 +261,15 @@
       return normalize(value).toLowerCase();
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     function formatNow() {
       return new Date().toLocaleTimeString("pt-BR", {
         hour: "2-digit",
@@ -268,17 +277,27 @@
       });
     }
 
+    function formatPercent(value) {
+      return `${Number(value || 0).toFixed(2)}%`;
+    }
+
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(value || 0);
+    }
+
     function parseDateBR(value) {
       const str = normalize(value);
       if (!str) return null;
 
-      if (/^\\d{2}\\/\\d{2}\\/\\d{4}/.test(str)) {
+      // dd/mm/aaaa ou dd/mm/aaaa hh:mm:ss
+      if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
         const [datePart] = str.split(" ");
         const [day, month, year] = datePart.split("/").map(Number);
         return new Date(year, month - 1, day);
       }
 
-      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(str)) {
+      // aaaa-mm-dd
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
         const [year, month, day] = str.split("-").map(Number);
         return new Date(year, month - 1, day);
       }
@@ -294,14 +313,6 @@
       return `${year}-${month}-${day}`;
     }
 
-    function formatPercent(value) {
-      return `${Number(value || 0).toFixed(2)}%`;
-    }
-
-    function formatNumber(value) {
-      return new Intl.NumberFormat("pt-BR").format(value || 0);
-    }
-
     function fillSelect(id, values, firstLabel) {
       const select = document.getElementById(id);
       select.innerHTML = `<option value="">${firstLabel}</option>`;
@@ -310,18 +321,77 @@
       });
     }
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
     function getUniqueValues(column) {
       return [...new Set(rawData.map(row => normalize(row[column])).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    }
+
+    function isAprovado(value) {
+      const v = normalizeLower(value);
+      return v === "aprovado" || v === "aprovada";
+    }
+
+    function isReprovado(value) {
+      const v = normalizeLower(value);
+      return v === "reprovado" || v === "reprovada";
+    }
+
+    function isComVeiculo(value) {
+      return normalizeLower(value) === "sim";
+    }
+
+    function isSemVeiculo(value) {
+      const v = normalizeLower(value);
+      return v === "não" || v === "nao";
+    }
+
+    function destroyCharts() {
+      if (chartStatus) chartStatus.destroy();
+      if (chartEstado) chartEstado.destroy();
+      if (chartTipo) chartTipo.destroy();
+      if (chartOperacao) chartOperacao.destroy();
+      if (chartDia) chartDia.destroy();
+
+      chartStatus = null;
+      chartEstado = null;
+      chartTipo = null;
+      chartOperacao = null;
+      chartDia = null;
+    }
+
+    function makeChartOptions(horizontal = false) {
+      return {
+        indexAxis: horizontal ? "y" : "x",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: "#fff"
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#d1d5db" },
+            grid: { color: "rgba(255,255,255,0.06)" }
+          },
+          y: {
+            ticks: { color: "#d1d5db" },
+            grid: { color: "rgba(255,255,255,0.06)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    function groupCount(data, column) {
+      const map = {};
+      data.forEach(row => {
+        const key = normalize(row[column]) || "Sem valor";
+        map[key] = (map[key] || 0) + 1;
+      });
+      return map;
     }
 
     function getFilteredData() {
@@ -385,10 +455,10 @@
 
     function renderCards(data) {
       const total = data.length;
-      const aprovados = data.filter(r => normalizeLower(r[COLUMNS.status]) === "aprovado").length;
-      const reprovados = data.filter(r => normalizeLower(r[COLUMNS.status]) === "reprovado").length;
-      const comVeiculo = data.filter(r => normalizeLower(r[COLUMNS.veiculo]) === "sim").length;
-      const semVeiculo = data.filter(r => normalizeLower(r[COLUMNS.veiculo]) === "não" || normalizeLower(r[COLUMNS.veiculo]) === "nao").length;
+      const aprovados = data.filter(r => isAprovado(r[COLUMNS.status])).length;
+      const reprovados = data.filter(r => isReprovado(r[COLUMNS.status])).length;
+      const comVeiculo = data.filter(r => isComVeiculo(r[COLUMNS.veiculo])).length;
+      const semVeiculo = data.filter(r => isSemVeiculo(r[COLUMNS.veiculo])).length;
       const percAprovados = total ? (aprovados / total) * 100 : 0;
 
       document.getElementById("totalAcessos").textContent = formatNumber(total);
@@ -398,49 +468,6 @@
       document.getElementById("totalSemVeiculo").textContent = formatNumber(semVeiculo);
       document.getElementById("percentualAprovados").textContent = formatPercent(percAprovados);
       document.getElementById("ultimaAtualizacao").textContent = formatNow();
-    }
-
-    function groupCount(data, column) {
-      const map = {};
-      data.forEach(row => {
-        const key = normalize(row[column]) || "Sem valor";
-        map[key] = (map[key] || 0) + 1;
-      });
-      return map;
-    }
-
-    function destroyCharts() {
-      if (chartStatus) chartStatus.destroy();
-      if (chartEstado) chartEstado.destroy();
-      if (chartTipo) chartTipo.destroy();
-      if (chartOperacao) chartOperacao.destroy();
-      if (chartDia) chartDia.destroy();
-    }
-
-    function makeChartOptions(horizontal = false) {
-      return {
-        indexAxis: horizontal ? "y" : "x",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              color: "#fff"
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: { color: "#d1d5db" },
-            grid: { color: "rgba(255,255,255,0.06)" }
-          },
-          y: {
-            ticks: { color: "#d1d5db" },
-            grid: { color: "rgba(255,255,255,0.06)" },
-            beginAtZero: true
-          }
-        }
-      };
     }
 
     function renderCharts(data) {
@@ -520,7 +547,13 @@
         dayMap[key] = (dayMap[key] || 0) + 1;
       });
 
-      const labels = Object.keys(dayMap);
+      const labels = Object.keys(dayMap).sort((a, b) => {
+        const da = parseDateBR(a);
+        const db = parseDateBR(b);
+        if (!da || !db) return 0;
+        return da - db;
+      });
+
       const values = labels.map(k => dayMap[k]);
 
       chartDia = new Chart(document.getElementById("chartDia"), {
@@ -548,9 +581,9 @@
       data.forEach(row => {
         const cidade = normalize(row[COLUMNS.cidade]) || "Sem cidade";
         const operacao = normalize(row[COLUMNS.operacao]) || "Sem operação";
-        const aprovado = normalizeLower(row[COLUMNS.status]) === "aprovado";
-        const reprovado = normalizeLower(row[COLUMNS.status]) === "reprovado";
-        const comVeiculo = normalizeLower(row[COLUMNS.veiculo]) === "sim";
+        const aprovado = isAprovado(row[COLUMNS.status]);
+        const reprovado = isReprovado(row[COLUMNS.status]);
+        const comVeiculo = isComVeiculo(row[COLUMNS.veiculo]);
 
         if (!cidadeMap[cidade]) {
           cidadeMap[cidade] = { total: 0, aprovados: 0, reprovados: 0 };
@@ -648,17 +681,32 @@
 
     async function loadData() {
       try {
-        const res = await fetch("/api/access", {
+        const res = await fetch("/api/access-dados", {
           credentials: "same-origin"
         });
 
+        if (!res.ok) {
+          console.error("API ACCESS retornou erro HTTP:", res.status);
+          return;
+        }
+
         const data = await res.json();
 
-        rawData = (Array.isArray(data) ? data : []).map(row => ({
+        console.log("ACCESS dados recebidos:", data);
+        console.log("ACCESS quantidade:", Array.isArray(data) ? data.length : "não é array");
+
+        if (!Array.isArray(data)) {
+          console.error("Retorno da API não é array:", data);
+          return;
+        }
+
+        rawData = data.map(row => ({
           ...row,
           _dataSolicitacao: parseDateBR(row[COLUMNS.data]),
           _dataLiberacao: parseDateBR(row[COLUMNS.dataLiberacao])
         }));
+
+        console.log("ACCESS rawData processado:", rawData.length);
 
         fillSelect("filtroEstado", getUniqueValues(COLUMNS.estado), "Todos");
         fillSelect("filtroCidade", getUniqueValues(COLUMNS.cidade), "Todas");
@@ -686,8 +734,9 @@
       "filtroStatus",
       "filtroBusca"
     ].forEach(id => {
-      document.getElementById(id).addEventListener("input", renderAll);
-      document.getElementById(id).addEventListener("change", renderAll);
+      const el = document.getElementById(id);
+      el.addEventListener("input", renderAll);
+      el.addEventListener("change", renderAll);
     });
 
     document.getElementById("btnLimpar").addEventListener("click", () => {

@@ -1236,6 +1236,442 @@ app.get("/api/access-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== DESLIGADOS DASHBOARD ==================
+
+app.get("/desligados", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "desligados.html"));
+});
+
+// COLOQUE AQUI O ID DA PLANILHA DE DESLIGADOS
+const DESLIGADOS_SPREADSHEET_ID = "14U1f4ZdLKMWvARdkqmCxp4SOLuTdDjpA68UJsNwpXGY";
+const DESLIGADOS_RANGE = "'Desligados'!A1:Z200000";
+
+const DESLIGADOS_COLUMNS = {
+  unidade: "UNIDADE",
+  data: "DATA",
+  nome: "Nome",
+  cpf: "CPF",
+  empresa: "EMPRESA",
+  cargo: "CARGO",
+  enviado: "Enviado Condominio para Bloqueio",
+  bloqueio: "Bloqueio Efetivado",
+  motivo: "Motivo de desligamento",
+  controle: "Controle interno",
+  detalhe: "Unnamed: 10",
+};
+
+let desligadosCache = null;
+let desligadosCacheTime = 0;
+const DESLIGADOS_CACHE_TTL = 5 * 60 * 1000;
+
+function dNormalize(value) {
+  return String(value || "").trim();
+}
+
+function dNormalizeLower(value) {
+  return dNormalize(value).toLowerCase();
+}
+
+function parseDateBRDesligados(value) {
+  const str = dNormalize(value);
+  if (!str) return null;
+
+  const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  let year = Number(match[3]);
+
+  if (year < 1000) {
+    year += 2000;
+  }
+
+  if (!day || !month || !year) return null;
+
+  return new Date(year, month - 1, day);
+}
+
+function formatInputDate(date) {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+async function carregarDesligadosRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: DESLIGADOS_SPREADSHEET_ID,
+    range: DESLIGADOS_RANGE,
+  });
+
+  const values = response.data.values || [];
+
+  if (!values.length || values.length < 2) {
+    return [];
+  }
+
+  const headers = values[0].map((h) => dNormalize(h));
+  const linhas = values.slice(1);
+
+  const rows = linhas.map((linha) => {
+    const obj = {};
+
+    headers.forEach((header, index) => {
+      obj[header] = linha[index] ?? "";
+    });
+
+    obj._data = parseDateBRDesligados(obj[DESLIGADOS_COLUMNS.data]);
+    obj._mesRef = obj._data
+      ? `${obj._data.getFullYear()}-${String(obj._data.getMonth() + 1).padStart(2, "0")}`
+      : "";
+
+    return obj;
+  });
+
+  return rows;
+}
+
+async function carregarDesligadosComCache() {
+  const now = Date.now();
+
+  if (desligadosCache && now - desligadosCacheTime < DESLIGADOS_CACHE_TTL) {
+    return desligadosCache;
+  }
+
+  const data = await carregarDesligadosRaw();
+  desligadosCache = data;
+  desligadosCacheTime = now;
+
+  console.log("DESLIGADOS cache atualizado:", data.length);
+
+  return data;
+}
+
+function uniqueValues(data, column) {
+  return [...new Set(data.map((row) => dNormalize(row[column])).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+function parseMultiValue(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => dNormalize(v))
+    .filter(Boolean);
+}
+
+function matchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(dNormalize(fieldValue));
+}
+
+function filtrarDesligados(data, query) {
+  const dataInicio = dNormalize(query.dataInicio);
+  const dataFim = dNormalize(query.dataFim);
+
+  const unidades = parseMultiValue(query.unidades);
+  const empresas = parseMultiValue(query.empresas);
+  const cargos = parseMultiValue(query.cargos);
+  const enviados = parseMultiValue(query.enviados);
+  const bloqueios = parseMultiValue(query.bloqueios);
+  const motivos = parseMultiValue(query.motivos);
+  const controles = parseMultiValue(query.controles);
+
+  const busca = dNormalizeLower(query.busca);
+
+  return data.filter((row) => {
+    const dt = row._data;
+
+    const okDataInicio = !dataInicio || (dt && formatInputDate(dt) >= dataInicio);
+    const okDataFim = !dataFim || (dt && formatInputDate(dt) <= dataFim);
+
+    const okUnidade = matchesMulti(row[DESLIGADOS_COLUMNS.unidade], unidades);
+    const okEmpresa = matchesMulti(row[DESLIGADOS_COLUMNS.empresa], empresas);
+    const okCargo = matchesMulti(row[DESLIGADOS_COLUMNS.cargo], cargos);
+    const okEnviado = matchesMulti(row[DESLIGADOS_COLUMNS.enviado], enviados);
+    const okBloqueio = matchesMulti(row[DESLIGADOS_COLUMNS.bloqueio], bloqueios);
+    const okMotivo = matchesMulti(row[DESLIGADOS_COLUMNS.motivo], motivos);
+    const okControle = matchesMulti(row[DESLIGADOS_COLUMNS.controle], controles);
+
+    const searchable = [
+      row[DESLIGADOS_COLUMNS.unidade],
+      row[DESLIGADOS_COLUMNS.nome],
+      row[DESLIGADOS_COLUMNS.cpf],
+      row[DESLIGADOS_COLUMNS.empresa],
+      row[DESLIGADOS_COLUMNS.cargo],
+      row[DESLIGADOS_COLUMNS.motivo],
+      row[DESLIGADOS_COLUMNS.controle],
+      row[DESLIGADOS_COLUMNS.detalhe],
+    ]
+      .map(dNormalizeLower)
+      .join(" ");
+
+    const okBusca = !busca || searchable.includes(busca);
+
+    return (
+      okDataInicio &&
+      okDataFim &&
+      okUnidade &&
+      okEmpresa &&
+      okCargo &&
+      okEnviado &&
+      okBloqueio &&
+      okMotivo &&
+      okControle &&
+      okBusca
+    );
+  });
+}
+
+function groupCount(data, column) {
+  const map = {};
+  data.forEach((row) => {
+    const key = dNormalize(row[column]) || "Sem valor";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+app.get("/api/desligados-debug", requireAuth, async (req, res) => {
+  try {
+    const sheets = await conectarSheets();
+
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId: DESLIGADOS_SPREADSHEET_ID,
+    });
+
+    const abas = (meta.data.sheets || []).map(
+      (s) => s.properties?.title || "SEM_NOME"
+    );
+
+    let values = [];
+    let erroLeitura = null;
+
+    try {
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: DESLIGADOS_SPREADSHEET_ID,
+        range: DESLIGADOS_RANGE,
+      });
+
+      values = response.data.values || [];
+    } catch (err) {
+      erroLeitura = {
+        message: err.message,
+        details: err.response?.data || null,
+      };
+    }
+
+    return res.json({
+      ok: true,
+      spreadsheetId: DESLIGADOS_SPREADSHEET_ID,
+      abas,
+      totalLinhasTeste: values.length,
+      primeiraLinha: values[0] || null,
+      erroLeitura,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
+  }
+});
+
+app.get("/api/desligados-filtros", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarDesligadosComCache();
+
+    return res.json({
+      unidades: uniqueValues(dados, DESLIGADOS_COLUMNS.unidade),
+      empresas: uniqueValues(dados, DESLIGADOS_COLUMNS.empresa),
+      cargos: uniqueValues(dados, DESLIGADOS_COLUMNS.cargo),
+      enviados: uniqueValues(dados, DESLIGADOS_COLUMNS.enviado),
+      bloqueios: uniqueValues(dados, DESLIGADOS_COLUMNS.bloqueio),
+      motivos: uniqueValues(dados, DESLIGADOS_COLUMNS.motivo),
+      controles: uniqueValues(dados, DESLIGADOS_COLUMNS.controle),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarDesligadosComCache();
+    const filtrados = filtrarDesligados(dados, req.query);
+
+    const total = filtrados.length;
+    const enviadosSim = filtrados.filter(
+      (r) => dNormalizeLower(r[DESLIGADOS_COLUMNS.enviado]) === "sim"
+    ).length;
+    const bloqueadosSim = filtrados.filter(
+      (r) => dNormalizeLower(r[DESLIGADOS_COLUMNS.bloqueio]) === "sim"
+    ).length;
+    const pendentes = total - bloqueadosSim;
+    const empresas = new Set(
+      filtrados.map((r) => dNormalize(r[DESLIGADOS_COLUMNS.empresa])).filter(Boolean)
+    ).size;
+    const unidades = new Set(
+      filtrados.map((r) => dNormalize(r[DESLIGADOS_COLUMNS.unidade])).filter(Boolean)
+    ).size;
+    const taxaBloqueio = total ? (bloqueadosSim / total) * 100 : 0;
+
+    return res.json({
+      total,
+      enviadosSim,
+      bloqueadosSim,
+      pendentes,
+      empresas,
+      unidades,
+      taxaBloqueio,
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarDesligadosComCache();
+    const filtrados = filtrarDesligados(dados, req.query);
+
+    const enviadosMap = groupCount(filtrados, DESLIGADOS_COLUMNS.enviado);
+    const bloqueioMap = groupCount(filtrados, DESLIGADOS_COLUMNS.bloqueio);
+    const unidadeMap = groupCount(filtrados, DESLIGADOS_COLUMNS.unidade);
+    const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
+    const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
+
+    const monthMap = {};
+    filtrados.forEach((row) => {
+      if (!row._mesRef) return;
+      monthMap[row._mesRef] = (monthMap[row._mesRef] || 0) + 1;
+    });
+
+    const monthLabels = Object.keys(monthMap).sort();
+
+    const tabelaUnidade = {};
+    const tabelaEmpresa = {};
+
+    filtrados.forEach((row) => {
+      const unidade = dNormalize(row[DESLIGADOS_COLUMNS.unidade]) || "Sem unidade";
+      const empresa = dNormalize(row[DESLIGADOS_COLUMNS.empresa]) || "Sem empresa";
+      const enviado = dNormalizeLower(row[DESLIGADOS_COLUMNS.enviado]) === "sim";
+      const bloqueado = dNormalizeLower(row[DESLIGADOS_COLUMNS.bloqueio]) === "sim";
+
+      if (!tabelaUnidade[unidade]) {
+        tabelaUnidade[unidade] = { total: 0, enviados: 0, bloqueados: 0 };
+      }
+
+      if (!tabelaEmpresa[empresa]) {
+        tabelaEmpresa[empresa] = { total: 0, enviados: 0, bloqueados: 0 };
+      }
+
+      tabelaUnidade[unidade].total += 1;
+      tabelaEmpresa[empresa].total += 1;
+
+      if (enviado) {
+        tabelaUnidade[unidade].enviados += 1;
+        tabelaEmpresa[empresa].enviados += 1;
+      }
+
+      if (bloqueado) {
+        tabelaUnidade[unidade].bloqueados += 1;
+        tabelaEmpresa[empresa].bloqueados += 1;
+      }
+    });
+
+    return res.json({
+      enviados: enviadosMap,
+      bloqueio: bloqueioMap,
+      unidade: unidadeMap,
+      empresa: empresaMap,
+      motivo: motivoMap,
+      porMes: {
+        labels: monthLabels,
+        values: monthLabels.map((label) => monthMap[label]),
+      },
+      tabelaUnidade: Object.entries(tabelaUnidade)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 50)
+        .map(([unidade, info]) => ({
+          unidade,
+          total: info.total,
+          enviados: info.enviados,
+          bloqueados: info.bloqueados,
+        })),
+      tabelaEmpresa: Object.entries(tabelaEmpresa)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 50)
+        .map(([empresa, info]) => ({
+          empresa,
+          total: info.total,
+          enviados: info.enviados,
+          bloqueados: info.bloqueados,
+        })),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarDesligadosComCache();
+    const filtrados = filtrarDesligados(dados, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    const rows = filtrados.slice(start, end).map((row) => ({
+      [DESLIGADOS_COLUMNS.unidade]: row[DESLIGADOS_COLUMNS.unidade] || "",
+      [DESLIGADOS_COLUMNS.data]: row[DESLIGADOS_COLUMNS.data] || "",
+      [DESLIGADOS_COLUMNS.nome]: row[DESLIGADOS_COLUMNS.nome] || "",
+      [DESLIGADOS_COLUMNS.cpf]: row[DESLIGADOS_COLUMNS.cpf] || "",
+      [DESLIGADOS_COLUMNS.empresa]: row[DESLIGADOS_COLUMNS.empresa] || "",
+      [DESLIGADOS_COLUMNS.cargo]: row[DESLIGADOS_COLUMNS.cargo] || "",
+      [DESLIGADOS_COLUMNS.enviado]: row[DESLIGADOS_COLUMNS.enviado] || "",
+      [DESLIGADOS_COLUMNS.bloqueio]: row[DESLIGADOS_COLUMNS.bloqueio] || "",
+      [DESLIGADOS_COLUMNS.motivo]: row[DESLIGADOS_COLUMNS.motivo] || "",
+      [DESLIGADOS_COLUMNS.controle]: row[DESLIGADOS_COLUMNS.controle] || "",
+      detalhe: row[DESLIGADOS_COLUMNS.detalhe] || "",
+    }));
+
+    return res.json({
+      total: filtrados.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtrados.length / limit),
+      rows,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

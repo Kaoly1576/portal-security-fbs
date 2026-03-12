@@ -225,40 +225,25 @@
     <section class="panel-card">
       <div class="panel-title">Detalhamento dos acessos</div>
       <div class="table-wrap big-table" id="tableWrap"></div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+        <button class="btn-secondary" id="btnPrev">Anterior</button>
+        <button class="btn-secondary" id="btnNext">Próxima</button>
+      </div>
     </section>
   </div>
 
   <script>
-    let rawData = [];
-    let filteredData = [];
-
     let chartStatus = null;
     let chartEstado = null;
     let chartTipo = null;
     let chartOperacao = null;
     let chartDia = null;
 
-    const COLUMNS = {
-      data: "Data",
-      estado: "Estado",
-      cidade: "Cidade",
-      operacao: "Operação",
-      tipoLiberacao: "Tipo de Liberação",
-      veiculo: "Vai acessar com veículo?",
-      dataLiberacao: "Data de liberação",
-      status: "Status",
-      nome: "Nome completo:",
-      cpf: "CPF",
-      empresa: "Empresa",
-      placa: "Placa"
-    };
+    let currentPage = 1;
+    let totalPages = 1;
 
     function normalize(value) {
       return String(value || "").trim();
-    }
-
-    function normalizeLower(value) {
-      return normalize(value).toLowerCase();
     }
 
     function escapeHtml(value) {
@@ -270,47 +255,28 @@
         .replace(/'/g, "&#039;");
     }
 
-    function formatNow() {
-      return new Date().toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(value || 0);
     }
 
     function formatPercent(value) {
       return `${Number(value || 0).toFixed(2)}%`;
     }
 
-    function formatNumber(value) {
-      return new Intl.NumberFormat("pt-BR").format(value || 0);
-    }
-
-    function parseDateBR(value) {
-      const str = normalize(value);
-      if (!str) return null;
-
-      // dd/mm/aaaa ou dd/mm/aaaa hh:mm:ss
-      if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
-        const [datePart] = str.split(" ");
-        const [day, month, year] = datePart.split("/").map(Number);
-        return new Date(year, month - 1, day);
-      }
-
-      // aaaa-mm-dd
-      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-        const [year, month, day] = str.split("-").map(Number);
-        return new Date(year, month - 1, day);
-      }
-
-      return null;
-    }
-
-    function toInputDate(date) {
-      if (!date) return "";
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+    function getFilters() {
+      return new URLSearchParams({
+        dataInicio: document.getElementById("filtroDataInicio").value || "",
+        dataFim: document.getElementById("filtroDataFim").value || "",
+        liberacaoInicio: document.getElementById("filtroLiberacaoInicio").value || "",
+        liberacaoFim: document.getElementById("filtroLiberacaoFim").value || "",
+        estado: document.getElementById("filtroEstado").value || "",
+        cidade: document.getElementById("filtroCidade").value || "",
+        operacao: document.getElementById("filtroOperacao").value || "",
+        tipoLiberacao: document.getElementById("filtroTipoLiberacao").value || "",
+        veiculo: document.getElementById("filtroVeiculo").value || "",
+        status: document.getElementById("filtroStatus").value || "",
+        busca: document.getElementById("filtroBusca").value || "",
+      });
     }
 
     function fillSelect(id, values, firstLabel) {
@@ -321,37 +287,12 @@
       });
     }
 
-    function getUniqueValues(column) {
-      return [...new Set(rawData.map(row => normalize(row[column])).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "pt-BR"));
-    }
-
-    function isAprovado(value) {
-      const v = normalizeLower(value);
-      return v === "aprovado" || v === "aprovada";
-    }
-
-    function isReprovado(value) {
-      const v = normalizeLower(value);
-      return v === "reprovado" || v === "reprovada";
-    }
-
-    function isComVeiculo(value) {
-      return normalizeLower(value) === "sim";
-    }
-
-    function isSemVeiculo(value) {
-      const v = normalizeLower(value);
-      return v === "não" || v === "nao";
-    }
-
     function destroyCharts() {
       if (chartStatus) chartStatus.destroy();
       if (chartEstado) chartEstado.destroy();
       if (chartTipo) chartTipo.destroy();
       if (chartOperacao) chartOperacao.destroy();
       if (chartDia) chartDia.destroy();
-
       chartStatus = null;
       chartEstado = null;
       chartTipo = null;
@@ -385,101 +326,45 @@
       };
     }
 
-    function groupCount(data, column) {
-      const map = {};
-      data.forEach(row => {
-        const key = normalize(row[column]) || "Sem valor";
-        map[key] = (map[key] || 0) + 1;
-      });
-      return map;
+    async function loadFiltros() {
+      const res = await fetch("/api/access-filtros", { credentials: "same-origin" });
+      const data = await res.json();
+
+      fillSelect("filtroEstado", data.estados || [], "Todos");
+      fillSelect("filtroCidade", data.cidades || [], "Todas");
+      fillSelect("filtroOperacao", data.operacoes || [], "Todas");
+      fillSelect("filtroTipoLiberacao", data.tiposLiberacao || [], "Todos");
+      fillSelect("filtroVeiculo", data.veiculos || [], "Todos");
+      fillSelect("filtroStatus", data.status || [], "Todos");
     }
 
-    function getFilteredData() {
-      const dataInicio = document.getElementById("filtroDataInicio").value;
-      const dataFim = document.getElementById("filtroDataFim").value;
-      const liberacaoInicio = document.getElementById("filtroLiberacaoInicio").value;
-      const liberacaoFim = document.getElementById("filtroLiberacaoFim").value;
-      const estado = document.getElementById("filtroEstado").value;
-      const cidade = document.getElementById("filtroCidade").value;
-      const operacao = document.getElementById("filtroOperacao").value;
-      const tipoLiberacao = document.getElementById("filtroTipoLiberacao").value;
-      const veiculo = document.getElementById("filtroVeiculo").value;
-      const status = document.getElementById("filtroStatus").value;
-      const busca = normalizeLower(document.getElementById("filtroBusca").value);
+    async function loadResumo() {
+      const qs = getFilters().toString();
+      const res = await fetch(`/api/access-resumo?${qs}`, { credentials: "same-origin" });
+      const data = await res.json();
 
-      return rawData.filter(row => {
-        const rowData = row._dataSolicitacao;
-        const rowLiberacao = row._dataLiberacao;
-
-        const okDataInicio = !dataInicio || (rowData && toInputDate(rowData) >= dataInicio);
-        const okDataFim = !dataFim || (rowData && toInputDate(rowData) <= dataFim);
-
-        const okLiberacaoInicio = !liberacaoInicio || (rowLiberacao && toInputDate(rowLiberacao) >= liberacaoInicio);
-        const okLiberacaoFim = !liberacaoFim || (rowLiberacao && toInputDate(rowLiberacao) <= liberacaoFim);
-
-        const okEstado = !estado || normalize(row[COLUMNS.estado]) === estado;
-        const okCidade = !cidade || normalize(row[COLUMNS.cidade]) === cidade;
-        const okOperacao = !operacao || normalize(row[COLUMNS.operacao]) === operacao;
-        const okTipo = !tipoLiberacao || normalize(row[COLUMNS.tipoLiberacao]) === tipoLiberacao;
-        const okVeiculo = !veiculo || normalize(row[COLUMNS.veiculo]) === veiculo;
-        const okStatus = !status || normalize(row[COLUMNS.status]) === status;
-
-        const searchable = [
-          row[COLUMNS.nome],
-          row[COLUMNS.cpf],
-          row[COLUMNS.empresa],
-          row[COLUMNS.placa],
-          row[COLUMNS.cidade],
-          row[COLUMNS.operacao],
-          row[COLUMNS.tipoLiberacao],
-          row[COLUMNS.status]
-        ].map(normalizeLower).join(" ");
-
-        const okBusca = !busca || searchable.includes(busca);
-
-        return (
-          okDataInicio &&
-          okDataFim &&
-          okLiberacaoInicio &&
-          okLiberacaoFim &&
-          okEstado &&
-          okCidade &&
-          okOperacao &&
-          okTipo &&
-          okVeiculo &&
-          okStatus &&
-          okBusca
-        );
-      });
+      document.getElementById("totalAcessos").textContent = formatNumber(data.total);
+      document.getElementById("totalAprovados").textContent = formatNumber(data.aprovados);
+      document.getElementById("totalReprovados").textContent = formatNumber(data.reprovados);
+      document.getElementById("totalComVeiculo").textContent = formatNumber(data.comVeiculo);
+      document.getElementById("totalSemVeiculo").textContent = formatNumber(data.semVeiculo);
+      document.getElementById("percentualAprovados").textContent = formatPercent(data.percentualAprovados);
+      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
     }
 
-    function renderCards(data) {
-      const total = data.length;
-      const aprovados = data.filter(r => isAprovado(r[COLUMNS.status])).length;
-      const reprovados = data.filter(r => isReprovado(r[COLUMNS.status])).length;
-      const comVeiculo = data.filter(r => isComVeiculo(r[COLUMNS.veiculo])).length;
-      const semVeiculo = data.filter(r => isSemVeiculo(r[COLUMNS.veiculo])).length;
-      const percAprovados = total ? (aprovados / total) * 100 : 0;
+    async function loadGraficos() {
+      const qs = getFilters().toString();
+      const res = await fetch(`/api/access-graficos?${qs}`, { credentials: "same-origin" });
+      const data = await res.json();
 
-      document.getElementById("totalAcessos").textContent = formatNumber(total);
-      document.getElementById("totalAprovados").textContent = formatNumber(aprovados);
-      document.getElementById("totalReprovados").textContent = formatNumber(reprovados);
-      document.getElementById("totalComVeiculo").textContent = formatNumber(comVeiculo);
-      document.getElementById("totalSemVeiculo").textContent = formatNumber(semVeiculo);
-      document.getElementById("percentualAprovados").textContent = formatPercent(percAprovados);
-      document.getElementById("ultimaAtualizacao").textContent = formatNow();
-    }
-
-    function renderCharts(data) {
       destroyCharts();
 
-      const statusMap = groupCount(data, COLUMNS.status);
       chartStatus = new Chart(document.getElementById("chartStatus"), {
         type: "doughnut",
         data: {
-          labels: Object.keys(statusMap),
+          labels: Object.keys(data.status || {}),
           datasets: [{
-            data: Object.values(statusMap),
+            data: Object.values(data.status || {}),
             backgroundColor: ["#ff7a1a", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6", "#64748b"],
             borderWidth: 0
           }]
@@ -488,21 +373,18 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              labels: { color: "#fff" }
-            }
+            legend: { labels: { color: "#fff" } }
           }
         }
       });
 
-      const estadoMap = groupCount(data, COLUMNS.estado);
       chartEstado = new Chart(document.getElementById("chartEstado"), {
         type: "bar",
         data: {
-          labels: Object.keys(estadoMap),
+          labels: Object.keys(data.estado || {}),
           datasets: [{
             label: "Acessos",
-            data: Object.values(estadoMap),
+            data: Object.values(data.estado || {}),
             backgroundColor: "#ff7a1a",
             borderRadius: 8
           }]
@@ -510,14 +392,13 @@
         options: makeChartOptions()
       });
 
-      const tipoMap = groupCount(data, COLUMNS.tipoLiberacao);
       chartTipo = new Chart(document.getElementById("chartTipo"), {
         type: "bar",
         data: {
-          labels: Object.keys(tipoMap),
+          labels: Object.keys(data.tipoLiberacao || {}),
           datasets: [{
             label: "Acessos",
-            data: Object.values(tipoMap),
+            data: Object.values(data.tipoLiberacao || {}),
             backgroundColor: "#f97316",
             borderRadius: 8
           }]
@@ -525,14 +406,13 @@
         options: makeChartOptions(true)
       });
 
-      const operacaoMap = groupCount(data, COLUMNS.operacao);
       chartOperacao = new Chart(document.getElementById("chartOperacao"), {
         type: "bar",
         data: {
-          labels: Object.keys(operacaoMap),
+          labels: Object.keys(data.operacao || {}),
           datasets: [{
             label: "Acessos",
-            data: Object.values(operacaoMap),
+            data: Object.values(data.operacao || {}),
             backgroundColor: "#fb923c",
             borderRadius: 8
           }]
@@ -540,29 +420,13 @@
         options: makeChartOptions(true)
       });
 
-      const dayMap = {};
-      data.forEach(row => {
-        if (!row._dataSolicitacao) return;
-        const key = row._dataSolicitacao.toLocaleDateString("pt-BR");
-        dayMap[key] = (dayMap[key] || 0) + 1;
-      });
-
-      const labels = Object.keys(dayMap).sort((a, b) => {
-        const da = parseDateBR(a);
-        const db = parseDateBR(b);
-        if (!da || !db) return 0;
-        return da - db;
-      });
-
-      const values = labels.map(k => dayMap[k]);
-
       chartDia = new Chart(document.getElementById("chartDia"), {
         type: "line",
         data: {
-          labels,
+          labels: data.porDia?.labels || [],
           datasets: [{
             label: "Solicitações",
-            data: values,
+            data: data.porDia?.values || [],
             borderColor: "#ff7a1a",
             backgroundColor: "rgba(255,122,26,0.15)",
             fill: true,
@@ -572,85 +436,54 @@
         },
         options: makeChartOptions()
       });
-    }
-
-    function renderTables(data) {
-      const cidadeMap = {};
-      const operacaoMap = {};
-
-      data.forEach(row => {
-        const cidade = normalize(row[COLUMNS.cidade]) || "Sem cidade";
-        const operacao = normalize(row[COLUMNS.operacao]) || "Sem operação";
-        const aprovado = isAprovado(row[COLUMNS.status]);
-        const reprovado = isReprovado(row[COLUMNS.status]);
-        const comVeiculo = isComVeiculo(row[COLUMNS.veiculo]);
-
-        if (!cidadeMap[cidade]) {
-          cidadeMap[cidade] = { total: 0, aprovados: 0, reprovados: 0 };
-        }
-
-        if (!operacaoMap[operacao]) {
-          operacaoMap[operacao] = { total: 0, aprovados: 0, comVeiculo: 0 };
-        }
-
-        cidadeMap[cidade].total += 1;
-        operacaoMap[operacao].total += 1;
-
-        if (aprovado) {
-          cidadeMap[cidade].aprovados += 1;
-          operacaoMap[operacao].aprovados += 1;
-        }
-
-        if (reprovado) {
-          cidadeMap[cidade].reprovados += 1;
-        }
-
-        if (comVeiculo) {
-          operacaoMap[operacao].comVeiculo += 1;
-        }
-      });
 
       const tabelaCidade = document.getElementById("tabelaCidade");
-      tabelaCidade.innerHTML = Object.entries(cidadeMap)
-        .sort((a, b) => b[1].total - a[1].total)
-        .map(([cidade, info]) => `
-          <tr>
-            <td>${escapeHtml(cidade)}</td>
-            <td>${formatNumber(info.total)}</td>
-            <td class="green-text">${formatNumber(info.aprovados)}</td>
-            <td class="red-text">${formatNumber(info.reprovados)}</td>
-          </tr>
-        `)
-        .join("");
+      tabelaCidade.innerHTML = (data.tabelaCidade || []).map(item => `
+        <tr>
+          <td>${escapeHtml(item.cidade)}</td>
+          <td>${formatNumber(item.total)}</td>
+          <td class="green-text">${formatNumber(item.aprovados)}</td>
+          <td class="red-text">${formatNumber(item.reprovados)}</td>
+        </tr>
+      `).join("");
 
       const tabelaOperacao = document.getElementById("tabelaOperacao");
-      tabelaOperacao.innerHTML = Object.entries(operacaoMap)
-        .sort((a, b) => b[1].total - a[1].total)
-        .map(([operacao, info]) => `
-          <tr>
-            <td>${escapeHtml(operacao)}</td>
-            <td>${formatNumber(info.total)}</td>
-            <td class="green-text">${formatNumber(info.aprovados)}</td>
-            <td class="blue-text">${formatNumber(info.comVeiculo)}</td>
-          </tr>
-        `)
-        .join("");
+      tabelaOperacao.innerHTML = (data.tabelaOperacao || []).map(item => `
+        <tr>
+          <td>${escapeHtml(item.operacao)}</td>
+          <td>${formatNumber(item.total)}</td>
+          <td class="green-text">${formatNumber(item.aprovados)}</td>
+          <td class="blue-text">${formatNumber(item.comVeiculo)}</td>
+        </tr>
+      `).join("");
     }
 
-    function renderDetailTable(data) {
+    async function loadDetalhes(page = 1) {
+      currentPage = page;
+      const qs = getFilters();
+      qs.set("page", currentPage);
+      qs.set("limit", 50);
+
+      const res = await fetch(`/api/access-detalhes?${qs.toString()}`, {
+        credentials: "same-origin"
+      });
+
+      const data = await res.json();
+      totalPages = data.totalPages || 1;
+
       const headers = [
         "ID",
-        COLUMNS.data,
-        COLUMNS.dataLiberacao,
-        COLUMNS.estado,
-        COLUMNS.cidade,
-        COLUMNS.operacao,
-        COLUMNS.tipoLiberacao,
-        COLUMNS.nome,
-        COLUMNS.empresa,
-        COLUMNS.veiculo,
-        COLUMNS.placa,
-        COLUMNS.status
+        "Data",
+        "Data de liberação",
+        "Estado",
+        "Cidade",
+        "Operação",
+        "Tipo de Liberação",
+        "Nome completo:",
+        "Empresa",
+        "Vai acessar com veículo?",
+        "Placa",
+        "Status"
       ];
 
       let html = "<table><thead><tr>";
@@ -659,7 +492,7 @@
       });
       html += "</tr></thead><tbody>";
 
-      data.slice(0, 500).forEach(row => {
+      (data.rows || []).forEach(row => {
         html += "<tr>";
         headers.forEach(h => {
           html += `<td>${escapeHtml(row[h] || "")}</td>`;
@@ -671,54 +504,10 @@
       document.getElementById("tableWrap").innerHTML = html;
     }
 
-    function renderAll() {
-      filteredData = getFilteredData();
-      renderCards(filteredData);
-      renderCharts(filteredData);
-      renderTables(filteredData);
-      renderDetailTable(filteredData);
-    }
-
-    async function loadData() {
-      try {
-        const res = await fetch("/api/access-dados", {
-          credentials: "same-origin"
-        });
-
-        if (!res.ok) {
-          console.error("API ACCESS retornou erro HTTP:", res.status);
-          return;
-        }
-
-        const data = await res.json();
-
-        console.log("ACCESS dados recebidos:", data);
-        console.log("ACCESS quantidade:", Array.isArray(data) ? data.length : "não é array");
-
-        if (!Array.isArray(data)) {
-          console.error("Retorno da API não é array:", data);
-          return;
-        }
-
-        rawData = data.map(row => ({
-          ...row,
-          _dataSolicitacao: parseDateBR(row[COLUMNS.data]),
-          _dataLiberacao: parseDateBR(row[COLUMNS.dataLiberacao])
-        }));
-
-        console.log("ACCESS rawData processado:", rawData.length);
-
-        fillSelect("filtroEstado", getUniqueValues(COLUMNS.estado), "Todos");
-        fillSelect("filtroCidade", getUniqueValues(COLUMNS.cidade), "Todas");
-        fillSelect("filtroOperacao", getUniqueValues(COLUMNS.operacao), "Todas");
-        fillSelect("filtroTipoLiberacao", getUniqueValues(COLUMNS.tipoLiberacao), "Todos");
-        fillSelect("filtroVeiculo", getUniqueValues(COLUMNS.veiculo), "Todos");
-        fillSelect("filtroStatus", getUniqueValues(COLUMNS.status), "Todos");
-
-        renderAll();
-      } catch (error) {
-        console.error("Erro ao carregar ACCESS:", error);
-      }
+    async function loadAll(page = 1) {
+      await loadResumo();
+      await loadGraficos();
+      await loadDetalhes(page);
     }
 
     [
@@ -735,8 +524,8 @@
       "filtroBusca"
     ].forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener("input", renderAll);
-      el.addEventListener("change", renderAll);
+      el.addEventListener("change", () => loadAll(1));
+      el.addEventListener("input", () => loadAll(1));
     });
 
     document.getElementById("btnLimpar").addEventListener("click", () => {
@@ -756,10 +545,25 @@
         document.getElementById(id).value = "";
       });
 
-      renderAll();
+      loadAll(1);
     });
 
-    loadData();
+    document.getElementById("btnPrev").addEventListener("click", () => {
+      if (currentPage > 1) {
+        loadDetalhes(currentPage - 1);
+      }
+    });
+
+    document.getElementById("btnNext").addEventListener("click", () => {
+      if (currentPage < totalPages) {
+        loadDetalhes(currentPage + 1);
+      }
+    });
+
+    (async function init() {
+      await loadFiltros();
+      await loadAll(1);
+    })();
   </script>
 </body>
 </html>

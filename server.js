@@ -795,23 +795,215 @@ app.get("/access", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "access.html"));
 });
 
-async function buscarPlanilhaAccess() {
+const ACCESS_SPREADSHEET_ID = "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU";
+const ACCESS_RANGE = "'Solicitações'!A1:AE200000";
+
+const ACCESS_COLUMNS = {
+  data: "Data",
+  estado: "Estado",
+  cidade: "Cidade",
+  operacao: "Operação",
+  tipoLiberacao: "Tipo de Liberação",
+  veiculo: "Vai acessar com veículo?",
+  dataLiberacao: "Data de liberação",
+  status: "Status",
+  nome: "Nome completo:",
+  cpf: "CPF",
+  empresa: "Empresa",
+  placa: "Placa",
+};
+
+let accessCache = null;
+let accessCacheTime = 0;
+const ACCESS_CACHE_TTL = 5 * 60 * 1000; // 5 min
+
+function accessNormalize(value) {
+  return String(value || "").trim();
+}
+
+function accessNormalizeLower(value) {
+  return accessNormalize(value).toLowerCase();
+}
+
+function parseDateBRAccess(value) {
+  const str = accessNormalize(value);
+  if (!str) return null;
+
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [year, month, day] = str.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return null;
+}
+
+function formatInputDate(date) {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isStatusAprovado(value) {
+  const v = accessNormalizeLower(value);
+  return v === "aprovado" || v === "aprovada";
+}
+
+function isStatusReprovado(value) {
+  const v = accessNormalizeLower(value);
+  return v === "reprovado" || v === "reprovada";
+}
+
+function isComVeiculo(value) {
+  return accessNormalizeLower(value) === "sim";
+}
+
+function isSemVeiculo(value) {
+  const v = accessNormalizeLower(value);
+  return v === "não" || v === "nao";
+}
+
+async function buscarPlanilhaAccessRaw() {
   const sheets = await conectarSheets();
 
   const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-    range: "'Solicitações'!A1:AE",
+    spreadsheetId: ACCESS_SPREADSHEET_ID,
+    range: ACCESS_RANGE,
   });
 
   return response.data.values || [];
 }
 
-app.get("/api/access", requireAuth, async (req, res) => {
+async function buscarPlanilhaAccessComCache() {
+  const now = Date.now();
+
+  if (accessCache && (now - accessCacheTime) < ACCESS_CACHE_TTL) {
+    return accessCache;
+  }
+
+  const dados = await buscarPlanilhaAccessRaw();
+
+  if (!dados || dados.length < 2) {
+    accessCache = [];
+    accessCacheTime = now;
+    return accessCache;
+  }
+
+  const cabecalho = dados[0] || [];
+  const linhas = dados.slice(1);
+
+  const objetos = linhas.map((linha) => {
+    const obj = {};
+    cabecalho.forEach((col, i) => {
+      obj[col] = linha[i] ?? "";
+    });
+
+    obj._dataSolicitacao = parseDateBRAccess(obj[ACCESS_COLUMNS.data]);
+    obj._dataLiberacao = parseDateBRAccess(obj[ACCESS_COLUMNS.dataLiberacao]);
+
+    return obj;
+  });
+
+  accessCache = objetos;
+  accessCacheTime = now;
+
+  console.log("ACCESS cache atualizado:", objetos.length);
+
+  return accessCache;
+}
+
+function getUniqueValuesAccess(data, column) {
+  return [...new Set(data.map((row) => accessNormalize(row[column])).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+function groupCountAccess(data, column) {
+  const map = {};
+  data.forEach((row) => {
+    const key = accessNormalize(row[column]) || "Sem valor";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+function filtrarAccessData(data, query) {
+  const dataInicio = accessNormalize(query.dataInicio);
+  const dataFim = accessNormalize(query.dataFim);
+  const liberacaoInicio = accessNormalize(query.liberacaoInicio);
+  const liberacaoFim = accessNormalize(query.liberacaoFim);
+  const estado = accessNormalize(query.estado);
+  const cidade = accessNormalize(query.cidade);
+  const operacao = accessNormalize(query.operacao);
+  const tipoLiberacao = accessNormalize(query.tipoLiberacao);
+  const veiculo = accessNormalize(query.veiculo);
+  const status = accessNormalize(query.status);
+  const busca = accessNormalizeLower(query.busca);
+
+  return data.filter((row) => {
+    const rowData = row._dataSolicitacao;
+    const rowLiberacao = row._dataLiberacao;
+
+    const okDataInicio = !dataInicio || (rowData && formatInputDate(rowData) >= dataInicio);
+    const okDataFim = !dataFim || (rowData && formatInputDate(rowData) <= dataFim);
+
+    const okLiberacaoInicio =
+      !liberacaoInicio || (rowLiberacao && formatInputDate(rowLiberacao) >= liberacaoInicio);
+    const okLiberacaoFim =
+      !liberacaoFim || (rowLiberacao && formatInputDate(rowLiberacao) <= liberacaoFim);
+
+    const okEstado = !estado || accessNormalize(row[ACCESS_COLUMNS.estado]) === estado;
+    const okCidade = !cidade || accessNormalize(row[ACCESS_COLUMNS.cidade]) === cidade;
+    const okOperacao = !operacao || accessNormalize(row[ACCESS_COLUMNS.operacao]) === operacao;
+    const okTipo =
+      !tipoLiberacao ||
+      accessNormalize(row[ACCESS_COLUMNS.tipoLiberacao]) === tipoLiberacao;
+    const okVeiculo = !veiculo || accessNormalize(row[ACCESS_COLUMNS.veiculo]) === veiculo;
+    const okStatus = !status || accessNormalize(row[ACCESS_COLUMNS.status]) === status;
+
+    const searchable = [
+      row[ACCESS_COLUMNS.nome],
+      row[ACCESS_COLUMNS.cpf],
+      row[ACCESS_COLUMNS.empresa],
+      row[ACCESS_COLUMNS.placa],
+      row[ACCESS_COLUMNS.cidade],
+      row[ACCESS_COLUMNS.operacao],
+      row[ACCESS_COLUMNS.tipoLiberacao],
+      row[ACCESS_COLUMNS.status],
+    ]
+      .map(accessNormalizeLower)
+      .join(" ");
+
+    const okBusca = !busca || searchable.includes(busca);
+
+    return (
+      okDataInicio &&
+      okDataFim &&
+      okLiberacaoInicio &&
+      okLiberacaoFim &&
+      okEstado &&
+      okCidade &&
+      okOperacao &&
+      okTipo &&
+      okVeiculo &&
+      okStatus &&
+      okBusca
+    );
+  });
+}
+
+app.get("/api/access-debug", requireAuth, async (req, res) => {
   try {
     const sheets = await conectarSheets();
 
     const meta = await sheets.spreadsheets.get({
-      spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+      spreadsheetId: ACCESS_SPREADSHEET_ID,
     });
 
     const abas = (meta.data.sheets || []).map(
@@ -823,8 +1015,8 @@ app.get("/api/access", requireAuth, async (req, res) => {
 
     try {
       const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
-        range: "'Solicitações'!A1:AE200000",
+        spreadsheetId: ACCESS_SPREADSHEET_ID,
+        range: ACCESS_RANGE,
       });
 
       values = response.data.values || [];
@@ -837,7 +1029,7 @@ app.get("/api/access", requireAuth, async (req, res) => {
 
     return res.json({
       ok: true,
-      spreadsheetId: "11b7_2P62T1c1h1gnfYWYUQW2zQSNjteQTBn9jmW9QjU",
+      spreadsheetId: ACCESS_SPREADSHEET_ID,
       abas,
       totalLinhasTeste: values.length,
       primeiraLinha: values[0] || null,
@@ -852,38 +1044,195 @@ app.get("/api/access", requireAuth, async (req, res) => {
   }
 });
 
-app.get("/api/access-dados", requireAuth, async (req, res) => {
+app.get("/api/access-filtros", requireAuth, async (req, res) => {
   try {
+    const dados = await buscarPlanilhaAccessComCache();
 
-    const dados = await buscarPlanilhaAccess();
+    return res.json({
+      estados: getUniqueValuesAccess(dados, ACCESS_COLUMNS.estado),
+      cidades: getUniqueValuesAccess(dados, ACCESS_COLUMNS.cidade),
+      operacoes: getUniqueValuesAccess(dados, ACCESS_COLUMNS.operacao),
+      tiposLiberacao: getUniqueValuesAccess(dados, ACCESS_COLUMNS.tipoLiberacao),
+      veiculos: getUniqueValuesAccess(dados, ACCESS_COLUMNS.veiculo),
+      status: getUniqueValuesAccess(dados, ACCESS_COLUMNS.status),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
+  }
+});
 
-    if (!dados || dados.length < 2) {
-      return res.json([]);
-    }
+app.get("/api/access-resumo", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaAccessComCache();
+    const filtrados = filtrarAccessData(dados, req.query);
 
-    const cabecalho = dados[0];
-    const linhas = dados.slice(1);
+    const total = filtrados.length;
+    const aprovados = filtrados.filter((r) => isStatusAprovado(r[ACCESS_COLUMNS.status])).length;
+    const reprovados = filtrados.filter((r) => isStatusReprovado(r[ACCESS_COLUMNS.status])).length;
+    const comVeiculo = filtrados.filter((r) => isComVeiculo(r[ACCESS_COLUMNS.veiculo])).length;
+    const semVeiculo = filtrados.filter((r) => isSemVeiculo(r[ACCESS_COLUMNS.veiculo])).length;
+    const percentualAprovados = total ? (aprovados / total) * 100 : 0;
 
-    const objetos = linhas.map((linha) => {
-      const obj = {};
+    return res.json({
+      total,
+      aprovados,
+      reprovados,
+      comVeiculo,
+      semVeiculo,
+      percentualAprovados,
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
+  }
+});
 
-      cabecalho.forEach((col, i) => {
-        obj[col] = linha[i] ?? "";
-      });
+app.get("/api/access-graficos", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaAccessComCache();
+    const filtrados = filtrarAccessData(dados, req.query);
 
-      return obj;
+    const statusMap = groupCountAccess(filtrados, ACCESS_COLUMNS.status);
+    const estadoMap = groupCountAccess(filtrados, ACCESS_COLUMNS.estado);
+    const tipoMap = groupCountAccess(filtrados, ACCESS_COLUMNS.tipoLiberacao);
+    const operacaoMap = groupCountAccess(filtrados, ACCESS_COLUMNS.operacao);
+
+    const dayMap = {};
+    filtrados.forEach((row) => {
+      if (!row._dataSolicitacao) return;
+      const key = row._dataSolicitacao.toLocaleDateString("pt-BR");
+      dayMap[key] = (dayMap[key] || 0) + 1;
     });
 
-    console.log("ACCESS registros enviados:", objetos.length);
+    const diaLabels = Object.keys(dayMap).sort((a, b) => {
+      const da = parseDateBRAccess(a);
+      const db = parseDateBRAccess(b);
+      if (!da || !db) return 0;
+      return da - db;
+    });
 
-    return res.json(objetos);
+    const cidadeMap = {};
+    const operacaoResumoMap = {};
 
+    filtrados.forEach((row) => {
+      const cidade = accessNormalize(row[ACCESS_COLUMNS.cidade]) || "Sem cidade";
+      const operacao = accessNormalize(row[ACCESS_COLUMNS.operacao]) || "Sem operação";
+      const aprovado = isStatusAprovado(row[ACCESS_COLUMNS.status]);
+      const reprovado = isStatusReprovado(row[ACCESS_COLUMNS.status]);
+      const comVeic = isComVeiculo(row[ACCESS_COLUMNS.veiculo]);
+
+      if (!cidadeMap[cidade]) {
+        cidadeMap[cidade] = { total: 0, aprovados: 0, reprovados: 0 };
+      }
+
+      if (!operacaoResumoMap[operacao]) {
+        operacaoResumoMap[operacao] = { total: 0, aprovados: 0, comVeiculo: 0 };
+      }
+
+      cidadeMap[cidade].total += 1;
+      operacaoResumoMap[operacao].total += 1;
+
+      if (aprovado) {
+        cidadeMap[cidade].aprovados += 1;
+        operacaoResumoMap[operacao].aprovados += 1;
+      }
+
+      if (reprovado) {
+        cidadeMap[cidade].reprovados += 1;
+      }
+
+      if (comVeic) {
+        operacaoResumoMap[operacao].comVeiculo += 1;
+      }
+    });
+
+    return res.json({
+      status: statusMap,
+      estado: estadoMap,
+      tipoLiberacao: tipoMap,
+      operacao: operacaoMap,
+      porDia: {
+        labels: diaLabels,
+        values: diaLabels.map((label) => dayMap[label]),
+      },
+      tabelaCidade: Object.entries(cidadeMap)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 50)
+        .map(([cidade, info]) => ({
+          cidade,
+          total: info.total,
+          aprovados: info.aprovados,
+          reprovados: info.reprovados,
+        })),
+      tabelaOperacao: Object.entries(operacaoResumoMap)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 50)
+        .map(([operacao, info]) => ({
+          operacao,
+          total: info.total,
+          aprovados: info.aprovados,
+          comVeiculo: info.comVeiculo,
+        })),
+    });
   } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
+  }
+});
 
-    console.log("ERRO ACCESS:", error);
+app.get("/api/access-detalhes", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaAccessComCache();
+    const filtrados = filtrarAccessData(dados, req.query);
 
-    return res.json([]);
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
 
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    const rows = filtrados.slice(start, end).map((row) => ({
+      ID: row["ID"] || "",
+      [ACCESS_COLUMNS.data]: row[ACCESS_COLUMNS.data] || "",
+      [ACCESS_COLUMNS.dataLiberacao]: row[ACCESS_COLUMNS.dataLiberacao] || "",
+      [ACCESS_COLUMNS.estado]: row[ACCESS_COLUMNS.estado] || "",
+      [ACCESS_COLUMNS.cidade]: row[ACCESS_COLUMNS.cidade] || "",
+      [ACCESS_COLUMNS.operacao]: row[ACCESS_COLUMNS.operacao] || "",
+      [ACCESS_COLUMNS.tipoLiberacao]: row[ACCESS_COLUMNS.tipoLiberacao] || "",
+      [ACCESS_COLUMNS.nome]: row[ACCESS_COLUMNS.nome] || "",
+      [ACCESS_COLUMNS.empresa]: row[ACCESS_COLUMNS.empresa] || "",
+      [ACCESS_COLUMNS.veiculo]: row[ACCESS_COLUMNS.veiculo] || "",
+      [ACCESS_COLUMNS.placa]: row[ACCESS_COLUMNS.placa] || "",
+      [ACCESS_COLUMNS.status]: row[ACCESS_COLUMNS.status] || "",
+    }));
+
+    return res.json({
+      total: filtrados.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtrados.length / limit),
+      rows,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
   }
 });
 

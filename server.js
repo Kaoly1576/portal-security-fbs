@@ -1672,6 +1672,450 @@ app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== CCO FBS DASHBOARD ==================
+
+app.get("/cco-fbs", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "cco-fbs.html"));
+});
+
+const CCO_FBS_SPREADSHEET_ID = "122nrPqL6ajMDIMzLZiNwacpCVk9BjpFMM30a0a-t8ws";
+
+let ccoCache = null;
+let ccoCacheTime = 0;
+let ccoSheetTitle = null;
+const CCO_CACHE_TTL = 5 * 60 * 1000;
+
+function ccoNormalize(value) {
+  return String(value || "").trim();
+}
+
+function ccoNormalizeLower(value) {
+  return ccoNormalize(value).toLowerCase();
+}
+
+function ccoEscapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function ccoParseDate(value) {
+  const str = ccoNormalize(value);
+  if (!str) return null;
+
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return null;
+}
+
+function ccoFormatInputDate(date) {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function ccoIsUsefulHeader(header) {
+  const h = ccoNormalize(header);
+  return h && !/^unnamed/i.test(h);
+}
+
+function ccoLooksLikeDateHeader(header) {
+  const h = ccoNormalizeLower(header);
+  return /data|date|dia/.test(h);
+}
+
+function ccoLooksNumeric(value) {
+  const str = ccoNormalize(value)
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+  if (!str) return false;
+  return !Number.isNaN(Number(str));
+}
+
+function ccoToNumber(value) {
+  const str = ccoNormalize(value)
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+  const num = Number(str);
+  return Number.isNaN(num) ? 0 : num;
+}
+
+async function ccoGetSheetTitle() {
+  if (ccoSheetTitle) return ccoSheetTitle;
+
+  const sheets = await conectarSheets();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+  });
+
+  const firstSheet = (meta.data.sheets || [])[0];
+  ccoSheetTitle = firstSheet?.properties?.title || "Página1";
+  return ccoSheetTitle;
+}
+
+async function ccoLoadRaw() {
+  const sheets = await conectarSheets();
+  const sheetTitle = await ccoGetSheetTitle();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+    range: `'${sheetTitle}'!A1:AZ200000`,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return { headers: [], rows: [], sheetTitle };
+
+  const rawHeaders = values[0].map((h, idx) => {
+    const header = ccoNormalize(h);
+    return header || `COL_${idx + 1}`;
+  });
+
+  const rows = values.slice(1).map((line) => {
+    const obj = {};
+    rawHeaders.forEach((header, i) => {
+      obj[header] = line[i] ?? "";
+    });
+    return obj;
+  });
+
+  return { headers: rawHeaders, rows, sheetTitle };
+}
+
+async function ccoLoadWithCache() {
+  const now = Date.now();
+
+  if (ccoCache && now - ccoCacheTime < CCO_CACHE_TTL) {
+    return ccoCache;
+  }
+
+  const { headers, rows, sheetTitle } = await ccoLoadRaw();
+
+  const usefulHeaders = headers.filter(ccoIsUsefulHeader);
+
+  const detectedDateColumns = usefulHeaders.filter((header) => {
+    if (!ccoLooksLikeDateHeader(header)) return false;
+    const sample = rows.find((r) => ccoNormalize(r[header]));
+    return sample ? !!ccoParseDate(sample[header]) : false;
+  });
+
+  const primaryDateColumn = detectedDateColumns[0] || null;
+
+  const enrichedRows = rows.map((row) => ({
+    ...row,
+    _primaryDate: primaryDateColumn ? ccoParseDate(row[primaryDateColumn]) : null,
+  }));
+
+  const categoricalHeaders = usefulHeaders.filter((header) => {
+    const distinct = new Set(
+      enrichedRows.map((r) => ccoNormalize(r[header])).filter(Boolean).slice(0, 5000)
+    );
+    return distinct.size > 1 && distinct.size <= 300;
+  });
+
+  const numericHeaders = usefulHeaders.filter((header) => {
+    const sample = enrichedRows
+      .map((r) => r[header])
+      .filter((v) => ccoNormalize(v))
+      .slice(0, 100);
+    return sample.length > 0 && sample.every(ccoLooksNumeric);
+  });
+
+  ccoCache = {
+    sheetTitle,
+    headers: usefulHeaders,
+    rows: enrichedRows,
+    primaryDateColumn,
+    dateColumns: detectedDateColumns,
+    categoricalHeaders,
+    numericHeaders,
+  };
+
+  ccoCacheTime = now;
+  console.log("CCO FBS cache atualizado:", enrichedRows.length);
+
+  return ccoCache;
+}
+
+function ccoParseMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => ccoNormalize(v))
+    .filter(Boolean);
+}
+
+function ccoApplyFilters(data, query, allowedHeaders) {
+  const dataInicio = ccoNormalize(query.dataInicio);
+  const dataFim = ccoNormalize(query.dataFim);
+  const busca = ccoNormalizeLower(query.busca);
+
+  return data.filter((row) => {
+    const dt = row._primaryDate;
+
+    const okDataInicio = !dataInicio || (dt && ccoFormatInputDate(dt) >= dataInicio);
+    const okDataFim = !dataFim || (dt && ccoFormatInputDate(dt) <= dataFim);
+
+    if (!okDataInicio || !okDataFim) return false;
+
+    for (const header of allowedHeaders) {
+      const selected = ccoParseMulti(query[`f_${header}`]);
+      if (selected.length && !selected.includes(ccoNormalize(row[header]))) {
+        return false;
+      }
+    }
+
+    if (busca) {
+      const searchable = Object.values(row).map(ccoNormalizeLower).join(" ");
+      if (!searchable.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function ccoGroupCount(data, header) {
+  const map = {};
+  data.forEach((row) => {
+    const key = ccoNormalize(row[header]) || "Sem valor";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
+  try {
+    const sheets = await conectarSheets();
+
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+    });
+
+    const abas = (meta.data.sheets || []).map(
+      (s) => s.properties?.title || "SEM_NOME"
+    );
+
+    const firstSheetTitle = abas[0] || "SEM_ABA";
+
+    let values = [];
+    let erroLeitura = null;
+
+    try {
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+        range: `'${firstSheetTitle}'!A1:AZ200000`,
+      });
+
+      values = response.data.values || [];
+    } catch (err) {
+      erroLeitura = {
+        message: err.message,
+        details: err.response?.data || null,
+      };
+    }
+
+    return res.json({
+      ok: true,
+      spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+      abas,
+      abaUsada: firstSheetTitle,
+      totalLinhasTeste: values.length,
+      primeiraLinha: values[0] || null,
+      erroLeitura,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null,
+    });
+  }
+});
+
+app.get("/api/cco-fbs-filtros", requireAuth, async (req, res) => {
+  try {
+    const meta = await ccoLoadWithCache();
+
+    const filtros = meta.categoricalHeaders.slice(0, 10).map((header) => ({
+      key: header,
+      label: header,
+      values: [...new Set(meta.rows.map((r) => ccoNormalize(r[header])).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR")),
+    }));
+
+    return res.json({
+      sheetTitle: meta.sheetTitle,
+      totalHeaders: meta.headers.length,
+      dateColumn: meta.primaryDateColumn,
+      filtros,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/api/cco-fbs-resumo", requireAuth, async (req, res) => {
+  try {
+    const meta = await ccoLoadWithCache();
+    const filterHeaders = meta.categoricalHeaders.slice(0, 10);
+    const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
+
+    const preenchidos = filtrados.reduce((acc, row) => {
+      return acc + meta.headers.filter((h) => ccoNormalize(row[h])).length;
+    }, 0);
+
+    const mediaPreenchimento = filtrados.length
+      ? preenchidos / (filtrados.length * meta.headers.length) * 100
+      : 0;
+
+    const total = filtrados.length;
+    const totalColunas = meta.headers.length;
+    const totalFiltros = filterHeaders.length;
+
+    const primaryGroupHeader = filterHeaders[0] || null;
+    const secondaryGroupHeader = filterHeaders[1] || null;
+
+    const topGrupo = primaryGroupHeader
+      ? Object.entries(ccoGroupCount(filtrados, primaryGroupHeader)).sort((a, b) => b[1] - a[1])[0]
+      : null;
+
+    return res.json({
+      total,
+      totalColunas,
+      totalFiltros,
+      mediaPreenchimento,
+      topGrupo: topGrupo ? { nome: topGrupo[0], total: topGrupo[1], coluna: primaryGroupHeader } : null,
+      segundaColuna: secondaryGroupHeader,
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
+  try {
+    const meta = await ccoLoadWithCache();
+    const filterHeaders = meta.categoricalHeaders.slice(0, 10);
+    const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
+
+    const chartHeaders = meta.categoricalHeaders.slice(0, 4);
+
+    const charts = chartHeaders.map((header) => {
+      const grouped = ccoGroupCount(filtrados, header);
+      const ordered = Object.entries(grouped)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15);
+
+      return {
+        header,
+        labels: ordered.map((x) => x[0]),
+        values: ordered.map((x) => x[1]),
+      };
+    });
+
+    const byDay = {};
+    filtrados.forEach((row) => {
+      if (!row._primaryDate) return;
+      const key = row._primaryDate.toLocaleDateString("pt-BR");
+      byDay[key] = (byDay[key] || 0) + 1;
+    });
+
+    const dayLabels = Object.keys(byDay).sort((a, b) => {
+      const da = ccoParseDate(a);
+      const db = ccoParseDate(b);
+      if (!da || !db) return 0;
+      return da - db;
+    });
+
+    const tableAHeader = chartHeaders[0] || meta.headers[0];
+    const tableBHeader = chartHeaders[1] || meta.headers[1] || meta.headers[0];
+
+    const tableA = Object.entries(ccoGroupCount(filtrados, tableAHeader))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .map(([nome, total]) => ({ nome, total }));
+
+    const tableB = Object.entries(ccoGroupCount(filtrados, tableBHeader))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .map(([nome, total]) => ({ nome, total }));
+
+    return res.json({
+      charts,
+      porDia: {
+        labels: dayLabels,
+        values: dayLabels.map((label) => byDay[label]),
+      },
+      tableAHeader,
+      tableBHeader,
+      tableA,
+      tableB,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
+  try {
+    const meta = await ccoLoadWithCache();
+    const filterHeaders = meta.categoricalHeaders.slice(0, 10);
+    const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    const rows = filtrados.slice(start, end).map((row) => {
+      const obj = {};
+      meta.headers.forEach((header) => {
+        obj[header] = row[header] || "";
+      });
+      return obj;
+    });
+
+    return res.json({
+      headers: meta.headers,
+      total: filtrados.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtrados.length / limit),
+      rows,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

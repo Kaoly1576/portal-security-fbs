@@ -1674,8 +1674,6 @@ app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
 
 // ================== CCO FBS DASHBOARD ==================
 
-// ================== CCO FBS DASHBOARD ==================
-
 app.get("/cco-fbs", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "cco-fbs.html"));
 });
@@ -1745,7 +1743,7 @@ function ccoFindHeader(headers, possibilities) {
   return null;
 }
 
-async function ccoGetSheetTitle() {
+async function ccoGetBestSheetTitle() {
   if (ccoSheetTitle) return ccoSheetTitle;
 
   const sheets = await conectarSheets();
@@ -1753,14 +1751,46 @@ async function ccoGetSheetTitle() {
     spreadsheetId: CCO_FBS_SPREADSHEET_ID,
   });
 
-  const firstSheet = (meta.data.sheets || [])[0];
-  ccoSheetTitle = firstSheet?.properties?.title || "Página1";
+  const abas = (meta.data.sheets || []).map((s) => s.properties?.title).filter(Boolean);
+
+  let bestTitle = abas[0] || "Página1";
+  let bestScore = -1;
+
+  for (const title of abas) {
+    try {
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+        range: `'${title}'!A1:AZ2000`,
+      });
+
+      const values = response.data.values || [];
+      if (!values.length) continue;
+
+      const headers = values[0].map((h) => ccoNormalize(h));
+      const usefulHeaders = headers.filter(
+        (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityAnalystHeader(header)
+      );
+
+      const rowCount = Math.max(values.length - 1, 0);
+      const score = rowCount * 100 + usefulHeaders.length;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestTitle = title;
+      }
+    } catch (e) {
+      console.log("Erro ao avaliar aba CCO:", title, e.message);
+    }
+  }
+
+  ccoSheetTitle = bestTitle;
+  console.log("CCO aba escolhida:", ccoSheetTitle);
   return ccoSheetTitle;
 }
 
 async function ccoLoadRaw() {
   const sheets = await conectarSheets();
-  const sheetTitle = await ccoGetSheetTitle();
+  const sheetTitle = await ccoGetBestSheetTitle();
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: CCO_FBS_SPREADSHEET_ID,
@@ -1768,7 +1798,9 @@ async function ccoLoadRaw() {
   });
 
   const values = response.data.values || [];
-  if (!values.length || values.length < 2) return { headers: [], rows: [], sheetTitle };
+  if (!values.length || values.length < 2) {
+    return { headers: [], rows: [], sheetTitle };
+  }
 
   const rawHeaders = values[0].map((h, idx) => {
     const header = ccoNormalize(h);
@@ -1807,15 +1839,20 @@ async function ccoLoadWithCache() {
 
   const primaryDateColumn = detectedDateColumns[0] || null;
 
-  const enrichedRows = rows.map((row) => {
-    const cleanRow = {};
-    usefulHeaders.forEach((header) => {
-      cleanRow[header] = row[header] ?? "";
-    });
+  const enrichedRows = rows
+    .map((row) => {
+      const cleanRow = {};
+      usefulHeaders.forEach((header) => {
+        cleanRow[header] = row[header] ?? "";
+      });
 
-    cleanRow._primaryDate = primaryDateColumn ? ccoParseDate(cleanRow[primaryDateColumn]) : null;
-    return cleanRow;
-  });
+      cleanRow._primaryDate = primaryDateColumn ? ccoParseDate(cleanRow[primaryDateColumn]) : null;
+      return cleanRow;
+    })
+    .filter((row) => {
+      const filled = usefulHeaders.filter((header) => ccoNormalize(row[header])).length;
+      return filled > 0;
+    });
 
   const categoricalHeaders = usefulHeaders.filter((header) => {
     const distinct = new Set(
@@ -1829,13 +1866,13 @@ async function ccoLoadWithCache() {
     "Unidade",
     "Site",
     "Base",
-    "Operação"
+    "Operação",
   ]);
 
   const statusHeader = ccoFindHeader(usefulHeaders, [
     "Status",
     "Situação",
-    "Situacao"
+    "Situacao",
   ]);
 
   ccoCache = {
@@ -1850,7 +1887,15 @@ async function ccoLoadWithCache() {
   };
 
   ccoCacheTime = now;
-  console.log("CCO FBS cache atualizado:", enrichedRows.length);
+
+  console.log("CCO cache atualizado:", {
+    sheetTitle,
+    totalRows: enrichedRows.length,
+    totalHeaders: usefulHeaders.length,
+    primaryDateColumn,
+    unidadeHeader,
+    statusHeader,
+  });
 
   return ccoCache;
 }
@@ -1905,6 +1950,29 @@ function ccoGroupCount(data, header) {
   return map;
 }
 
+app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
+  try {
+    const meta = await ccoLoadWithCache();
+
+    return res.json({
+      ok: true,
+      abaUsada: meta.sheetTitle,
+      totalLinhas: meta.rows.length,
+      totalColunas: meta.headers.length,
+      primaryDateColumn: meta.primaryDateColumn,
+      unidadeHeader: meta.unidadeHeader,
+      statusHeader: meta.statusHeader,
+      filtrosDetectados: meta.categoricalHeaders.slice(0, 20),
+      primeiraLinha: meta.rows[0] || null,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
 app.get("/api/cco-fbs-filtros", requireAuth, async (req, res) => {
   try {
     const meta = await ccoLoadWithCache();
@@ -1938,17 +2006,13 @@ app.get("/api/cco-fbs-resumo", requireAuth, async (req, res) => {
     const total = filtrados.length;
 
     const totalUnidades = meta.unidadeHeader
-      ? new Set(
-          filtrados.map((r) => ccoNormalize(r[meta.unidadeHeader])).filter(Boolean)
-        ).size
+      ? new Set(filtrados.map((r) => ccoNormalize(r[meta.unidadeHeader])).filter(Boolean)).size
       : 0;
 
-    const statusMap = meta.statusHeader
-      ? ccoGroupCount(filtrados, meta.statusHeader)
-      : {};
+    const statusMap = meta.statusHeader ? ccoGroupCount(filtrados, meta.statusHeader) : {};
 
     const ativos = Object.entries(statusMap)
-      .filter(([key]) => /ativo/i.test(key))
+      .filter(([key]) => /ativo/i.test(key) && !/inativo/i.test(key))
       .reduce((acc, [, val]) => acc + val, 0);
 
     const pendentes = Object.entries(statusMap)

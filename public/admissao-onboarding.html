@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admissão + Onboarding</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --bg: #041325;
+      --card: #142744;
+      --card-2: #11233c;
+      --line: rgba(255,255,255,0.08);
+      --text: #ffffff;
+      --muted: #c7d2e0;
+      --orange: #ff7a1a;
+      --blue: #58a6ff;
+      --green: #22c55e;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --yellow: #f59e0b;
+    }
+
+    body {
+      background: linear-gradient(180deg, #03101f 0%, #041325 100%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: #0f2138;
+      padding: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .brand-text h1 {
+      color: var(--orange);
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 2px;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .btn {
+      background: #163154;
+      border: 1px solid var(--line);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 900px;
+    }
+
+    .hero-right {
+      text-align: right;
+      min-width: 150px;
+    }
+
+    .hero-right .small {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .hero-right .time {
+      color: var(--orange);
+      font-weight: 900;
+      font-size: 22px;
+    }
+
+    .filters {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: 150px 150px minmax(240px, 1fr) minmax(180px, 220px);
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      color: #dfe8f4;
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 38px;
+      background: #0a1b32;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: #fff;
+      padding: 0 10px;
+      outline: none;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      height: 38px;
+      border: none;
+      border-radius: 10px;
+      padding: 0 14px;
+      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-ghost {
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0 14px;
+      background: #0d213b;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--orange);
+      margin: 18px 0 10px;
+      padding-left: 4px;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .kpi {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 92px;
+    }
+
+    .kpi-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #dbe4ef;
+      margin-bottom: 10px;
+    }
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .orange { color: var(--orange); }
+    .blue { color: var(--blue); }
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+    .purple { color: var(--purple); }
+    .yellow { color: var(--yellow); }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panel {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      overflow: hidden;
+      min-height: 250px;
+    }
+
+    .panel.short {
+      min-height: 220px;
+    }
+
+    .panel.large {
+      min-height: 280px;
+    }
+
+    .panel-title {
+      color: var(--orange);
+      font-weight: 900;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .compact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .compact-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 56px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .compact-left {
+      min-width: 0;
+    }
+
+    .compact-name {
+      font-size: 12px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+
+    .compact-value {
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+      color: #fff;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 9px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff7a1a, #ff9540);
+      border-radius: 999px;
+    }
+
+    .chart-box {
+      height: 220px;
+      position: relative;
+    }
+
+    .chart-box.line {
+      height: 260px;
+    }
+
+    .detail-switch {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .detail-tab {
+      background: #0d213b;
+      color: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .detail-tab.active {
+      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
+      border-color: transparent;
+    }
+
+    .wide-panel {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .detail-wrap {
+      overflow: auto;
+      max-height: 520px;
+      border-radius: 12px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      font-size: 12px;
+    }
+
+    .detail-table th,
+    .detail-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .detail-table th {
+      position: sticky;
+      top: 0;
+      background: #10233f;
+      z-index: 1;
+    }
+
+    .pager {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pager-info {
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+    }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      height: 100%;
+      min-height: 120px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1280px) {
+      .filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-3,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .filters-grid,
+      .kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-right {
+        text-align: left;
+      }
+
+      .kpi-value {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/images/logo.png" alt="Logo" class="brand-logo" />
+        <div class="brand-text">
+          <h1>HEADCOUNT / ONBOARDING</h1>
+          <p>Dashboard consolidado de admissões e onboarding</p>
+        </div>
+      </div>
+
+      <a href="/portal" class="btn">Voltar ao Portal</a>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h2>Dashboard Admissão + Onboarding</h2>
+        <p id="heroDescription">
+          Painel consolidado com os principais números de admissões e onboarding no padrão visual do portal.
+        </p>
+      </div>
+
+      <div class="hero-right">
+        <div class="small">Última atualização</div>
+        <div class="time" id="ultimaAtualizacao">--:--</div>
+      </div>
+    </section>
+
+    <section class="filters">
+      <div class="filters-grid">
+        <div class="field">
+          <label>Data inicial</label>
+          <input type="date" id="filtroDataInicio" />
+        </div>
+
+        <div class="field">
+          <label>Data final</label>
+          <input type="date" id="filtroDataFim" />
+        </div>
+
+        <div class="field">
+          <label>Busca geral</label>
+          <input type="text" id="filtroBusca" placeholder="Buscar..." />
+        </div>
+
+        <div class="field">
+          <label>Unidade</label>
+          <select id="filtroUnidade">
+            <option value="">Todas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="btnAplicar">Aplicar</button>
+        <button class="btn-ghost" id="btnLimpar">Limpar</button>
+      </div>
+    </section>
+
+    <div class="section-title">Admissão</div>
+
+    <section class="kpis">
+      <div class="kpi">
+        <div class="kpi-title">Total de admissões</div>
+        <div class="kpi-value orange" id="kpiAdmTotal">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Empresas</div>
+        <div class="kpi-value blue" id="kpiAdmEmpresas">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Cargos</div>
+        <div class="kpi-value purple" id="kpiAdmCargos">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Unidades</div>
+        <div class="kpi-value green" id="kpiAdmUnidades">0</div>
+      </div>
+    </section>
+
+    <section class="grid-3">
+      <div class="panel short">
+        <div class="panel-title">Admitidos por FF / Unidade</div>
+        <div id="cardAdmUnidade" class="compact-list"></div>
+      </div>
+
+      <div class="panel short">
+        <div class="panel-title">Admitidos por Empresa</div>
+        <div class="chart-box">
+          <canvas id="chartAdmEmpresa"></canvas>
+        </div>
+      </div>
+
+      <div class="panel short">
+        <div class="panel-title">Admitidos por Cargo</div>
+        <div id="cardAdmCargo" class="compact-list"></div>
+      </div>
+    </section>
+
+    <section class="wide-panel">
+      <div class="panel-title">Admitidos por Dia</div>
+      <div class="chart-box line">
+        <canvas id="chartAdmDia"></canvas>
+      </div>
+    </section>
+
+    <div class="section-title">Onboarding</div>
+
+    <section class="kpis">
+      <div class="kpi">
+        <div class="kpi-title">Total de onboardings</div>
+        <div class="kpi-value orange" id="kpiOnbTotal">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Cargos</div>
+        <div class="kpi-value blue" id="kpiOnbCargos">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Filiais</div>
+        <div class="kpi-value purple" id="kpiOnbFiliais">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Instrutores</div>
+        <div class="kpi-value green" id="kpiOnbInstrutores">0</div>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel large">
+        <div class="panel-title">Onboarding Aplicados por Dia</div>
+        <div class="chart-box line">
+          <canvas id="chartOnbDia"></canvas>
+        </div>
+      </div>
+
+      <div class="panel short">
+        <div class="panel-title">Onboarding Aplicados por Cargo</div>
+        <div id="cardOnbCargo" class="compact-list"></div>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel short">
+        <div class="panel-title">Total de Participantes em Onboarding por Filial</div>
+        <div id="cardOnbFilial" class="compact-list"></div>
+      </div>
+
+      <div class="panel short">
+        <div class="panel-title">Total de Participantes em Onboarding por Instrutor</div>
+        <div id="cardOnbInstrutor" class="compact-list"></div>
+      </div>
+    </section>
+
+    <section class="wide-panel">
+      <div class="panel-title">Detalhamento</div>
+
+      <div class="detail-switch">
+        <button class="detail-tab active" id="tabAdmissao" data-tipo="admissao">Admissão</button>
+        <button class="detail-tab" id="tabOnboarding" data-tipo="onboarding">Onboarding</button>
+      </div>
+
+      <div class="detail-wrap" id="detailWrap"></div>
+
+      <div class="pager">
+        <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
+        <button class="btn-ghost" id="btnPrev">Anterior</button>
+        <button class="btn-ghost" id="btnNext">Próxima</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let currentPage = 1;
+    let totalPages = 1;
+    let detalheTipo = "admissao";
+
+    let chartAdmEmpresaInstance = null;
+    let chartAdmDiaInstance = null;
+    let chartOnbDiaInstance = null;
+
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function fmt(n) {
+      return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
+    }
+
+    function getFiltersQuery(page = 1, tipo = detalheTipo) {
+      const qs = new URLSearchParams();
+      qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
+      qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
+      qs.set("busca", document.getElementById("filtroBusca").value || "");
+      qs.set("unidade", document.getElementById("filtroUnidade").value || "");
+      qs.set("page", page);
+      qs.set("limit", 50);
+      qs.set("tipo", tipo);
+      return qs.toString();
+    }
+
+    function renderCompactCard(elId, rows, topN = 6) {
+      const container = document.getElementById(elId);
+      if (!container) return;
+
+      const safeRows = (rows || []).slice(0, topN);
+
+      if (!safeRows.length) {
+        container.innerHTML = `<div class="empty-state">Sem dados</div>`;
+        return;
+      }
+
+      const max = Math.max(...safeRows.map(r => Number(r.total || 0)), 1);
+
+      container.innerHTML = safeRows.map(item => {
+        const total = Number(item.total || 0);
+        return `
+          <div class="compact-item">
+            <div class="compact-left">
+              <div class="compact-name">${esc(item.nome || "-")}</div>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:${(total / max) * 100}%"></div>
+              </div>
+            </div>
+            <div class="compact-value">${fmt(total)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function getDayOnlyLabels(labels) {
+      return (labels || []).map(label => {
+        const str = String(label || "").trim();
+        if (/^\d{2}$/.test(str)) return str;
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(8, 10);
+        const match = str.match(/(\d{1,2})(?!.*\d)/);
+        return match ? match[1].padStart(2, "0") : str;
+      });
+    }
+
+    function destroyCharts() {
+      if (chartAdmEmpresaInstance) chartAdmEmpresaInstance.destroy();
+      if (chartAdmDiaInstance) chartAdmDiaInstance.destroy();
+      if (chartOnbDiaInstance) chartOnbDiaInstance.destroy();
+    }
+
+    function createLineChart(canvasId, labels, values) {
+      return new Chart(document.getElementById(canvasId), {
+        type: "line",
+        data: {
+          labels: getDayOnlyLabels(labels || []),
+          datasets: [{
+            label: "Total",
+            data: values || [],
+            borderColor: "#58a6ff",
+            backgroundColor: "rgba(88,166,255,0.15)",
+            fill: false,
+            tension: 0.35,
+            pointRadius: 3,
+            pointBackgroundColor: "#58a6ff"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.05)" },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    async function loadFilters() {
+      const res = await fetch("/api/adm-onb-filtros", { credentials: "same-origin" });
+      const data = await res.json();
+
+      const select = document.getElementById("filtroUnidade");
+      select.innerHTML = `<option value="">Todas</option>` +
+        (data.unidade || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
+    }
+
+    async function loadGraficos() {
+      const res = await fetch(`/api/adm-onb-graficos?${getFiltersQuery(currentPage)}`, {
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      destroyCharts();
+
+      const adm = data.admissao || {};
+      const onb = data.onboarding || {};
+
+      document.getElementById("kpiAdmTotal").textContent = fmt(adm.total || 0);
+      document.getElementById("kpiAdmEmpresas").textContent = fmt((adm.porEmpresa || []).length);
+      document.getElementById("kpiAdmCargos").textContent = fmt((adm.porCargo || []).length);
+      document.getElementById("kpiAdmUnidades").textContent = fmt((adm.porUnidade || []).length);
+
+      document.getElementById("kpiOnbTotal").textContent = fmt(onb.total || 0);
+      document.getElementById("kpiOnbCargos").textContent = fmt((onb.porCargo || []).length);
+      document.getElementById("kpiOnbFiliais").textContent = fmt((onb.porFilial || []).length);
+      document.getElementById("kpiOnbInstrutores").textContent = fmt((onb.porInstrutor || []).length);
+
+      renderCompactCard("cardAdmUnidade", adm.porUnidade || [], 6);
+      renderCompactCard("cardAdmCargo", adm.porCargo || [], 8);
+      renderCompactCard("cardOnbCargo", onb.porCargo || [], 8);
+      renderCompactCard("cardOnbFilial", onb.porFilial || [], 6);
+      renderCompactCard("cardOnbInstrutor", onb.porInstrutor || [], 6);
+
+      const empresaLabels = (adm.porEmpresa || []).map(x => x.nome);
+      const empresaValues = (adm.porEmpresa || []).map(x => x.total);
+
+      chartAdmEmpresaInstance = new Chart(document.getElementById("chartAdmEmpresa"), {
+        type: "bar",
+        data: {
+          labels: empresaLabels,
+          datasets: [{
+            label: "Qtd",
+            data: empresaValues,
+            backgroundColor: "#ff7a1a",
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.05)" },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
+      chartAdmDiaInstance = createLineChart(
+        "chartAdmDia",
+        adm.porDia?.labels || [],
+        adm.porDia?.values || []
+      );
+
+      chartOnbDiaInstance = createLineChart(
+        "chartOnbDia",
+        onb.porDia?.labels || [],
+        onb.porDia?.values || []
+      );
+
+      document.getElementById("ultimaAtualizacao").textContent =
+        new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    async function loadDetalhes() {
+      const res = await fetch(`/api/adm-onb-detalhes?${getFiltersQuery(currentPage, detalheTipo)}`, {
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      totalPages = data.totalPages || 1;
+      document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
+
+      let html = `<table class="detail-table"><thead><tr>`;
+      (data.headers || []).forEach((header) => {
+        html += `<th>${esc(header)}</th>`;
+      });
+      html += `</tr></thead><tbody>`;
+
+      (data.rows || []).forEach((row) => {
+        html += `<tr>`;
+        (data.headers || []).forEach((header) => {
+          html += `<td>${esc(row[header] || "")}</td>`;
+        });
+        html += `</tr>`;
+      });
+
+      if (!(data.rows || []).length) {
+        html += `<tr><td colspan="${(data.headers || []).length || 1}" style="text-align:center; color:#c7d2e0;">Sem dados para os filtros aplicados.</td></tr>`;
+      }
+
+      html += `</tbody></table>`;
+      document.getElementById("detailWrap").innerHTML = html;
+    }
+
+    async function loadAll(page = 1) {
+      currentPage = page;
+      await loadGraficos();
+      await loadDetalhes();
+    }
+
+    function setActiveTab(tipo) {
+      detalheTipo = tipo;
+      document.getElementById("tabAdmissao").classList.toggle("active", tipo === "admissao");
+      document.getElementById("tabOnboarding").classList.toggle("active", tipo === "onboarding");
+    }
+
+    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
+
+    document.getElementById("btnLimpar").addEventListener("click", () => {
+      document.getElementById("filtroDataInicio").value = "";
+      document.getElementById("filtroDataFim").value = "";
+      document.getElementById("filtroBusca").value = "";
+      document.getElementById("filtroUnidade").value = "";
+      loadAll(1);
+    });
+
+    document.getElementById("btnPrev").addEventListener("click", () => {
+      if (currentPage > 1) loadAll(currentPage - 1);
+    });
+
+    document.getElementById("btnNext").addEventListener("click", () => {
+      if (currentPage < totalPages) loadAll(currentPage + 1);
+    });
+
+    document.getElementById("tabAdmissao").addEventListener("click", () => {
+      setActiveTab("admissao");
+      loadAll(1);
+    });
+
+    document.getElementById("tabOnboarding").addEventListener("click", () => {
+      setActiveTab("onboarding");
+      loadAll(1);
+    });
+
+    (async function init() {
+      await loadFilters();
+      setActiveTab("admissao");
+      await loadAll(1);
+    })();
+  </script>
+</body>
+</html>

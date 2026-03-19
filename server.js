@@ -2171,6 +2171,288 @@ app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== ADMISSAO + ONBOARDING DASHBOARD ==================
+
+app.get("/admissao-onboarding", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "admissao-onboarding.html"));
+});
+
+const ADM_ONB_SPREADSHEET_ID = "1_1w_up0cxnqVZklpJV1cQRx6B5ptqQuGeWhWPpmNqfY";
+
+let admOnbCache = null;
+let admOnbCacheTime = 0;
+const ADM_ONB_CACHE_TTL = 5 * 60 * 1000;
+
+function admNorm(v) {
+  return String(v || "").trim();
+}
+
+function admNormLower(v) {
+  return admNorm(v).toLowerCase();
+}
+
+function admParseDate(value) {
+  const str = admNorm(value);
+  if (!str) return null;
+
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return null;
+}
+
+function admFormatDate(date) {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function countBy(rows, field, limit = 10) {
+  const map = {};
+  rows.forEach((row) => {
+    const key = admNorm(row[field]) || "Sem valor";
+    map[key] = (map[key] || 0) + 1;
+  });
+
+  return Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([nome, total]) => ({ nome, total }));
+}
+
+function filterByDate(rows, start, end, fieldDate) {
+  return rows.filter((row) => {
+    const dt = row[fieldDate];
+    if (!dt) return false;
+
+    const iso = admFormatDate(dt);
+    if (start && iso < start) return false;
+    if (end && iso > end) return false;
+
+    return true;
+  });
+}
+
+function filterByText(rows, busca, fields) {
+  const term = admNormLower(busca);
+  if (!term) return rows;
+
+  return rows.filter((row) => {
+    const text = fields.map((f) => admNormLower(row[f])).join(" ");
+    return text.includes(term);
+  });
+}
+
+function getDaySeries(rows, dateField) {
+  const byDay = {};
+
+  rows.forEach((row) => {
+    const dt = row[dateField];
+    if (!dt) return;
+    const day = String(dt.getDate()).padStart(2, "0");
+    byDay[day] = (byDay[day] || 0) + 1;
+  });
+
+  const labels = Object.keys(byDay).sort((a, b) => Number(a) - Number(b));
+  return {
+    labels,
+    values: labels.map((d) => byDay[d]),
+  };
+}
+
+async function admOnbLoadRaw() {
+  const sheets = await conectarSheets();
+
+  const [admRes, onbRes] = await Promise.all([
+    sheets.spreadsheets.values.get({
+      spreadsheetId: ADM_ONB_SPREADSHEET_ID,
+      range: "'Admissões'!A1:Z200000",
+    }),
+    sheets.spreadsheets.values.get({
+      spreadsheetId: ADM_ONB_SPREADSHEET_ID,
+      range: "'Onboarding'!A1:Z200000",
+    }),
+  ]);
+
+  const admValues = admRes.data.values || [];
+  const onbValues = onbRes.data.values || [];
+
+  const admHeaders = (admValues[0] || []).map((h, i) => admNorm(h) || `COL_${i + 1}`);
+  const onbHeaders = (onbValues[0] || []).map((h, i) => admNorm(h) || `COL_${i + 1}`);
+
+  const admRows = admValues.slice(1).map((line) => {
+    const row = {};
+    admHeaders.forEach((h, i) => {
+      row[h] = line[i] ?? "";
+    });
+    row._date = admParseDate(row["Data Admissão"]);
+    return row;
+  }).filter((r) => admNorm(r["Colaborador(a)"]) || admNorm(r["Empresa"]) || admNorm(r["Cargo"]));
+
+  const onbRows = onbValues.slice(1).map((line) => {
+    const row = {};
+    onbHeaders.forEach((h, i) => {
+      row[h] = line[i] ?? "";
+    });
+    row._date = admParseDate(row["DATA"]);
+    return row;
+  }).filter((r) => admNorm(r["02. NOME COMPLETO"]) || admNorm(r["10. INSTRUTOR"]) || admNorm(r["05. CARGO"]));
+
+  return { admRows, onbRows };
+}
+
+async function admOnbLoadWithCache() {
+  const now = Date.now();
+
+  if (admOnbCache && now - admOnbCacheTime < ADM_ONB_CACHE_TTL) {
+    return admOnbCache;
+  }
+
+  const data = await admOnbLoadRaw();
+  admOnbCache = data;
+  admOnbCacheTime = now;
+
+  return data;
+}
+
+app.get("/api/adm-onb-filtros", requireAuth, async (req, res) => {
+  try {
+    const { admRows, onbRows } = await admOnbLoadWithCache();
+
+    const unidadeSet = new Set();
+    [...admRows, ...onbRows].forEach((r) => {
+      const a = admNorm(r["Unidade"]);
+      const b = admNorm(r["01. UNIDADE"]);
+      if (a) unidadeSet.add(a);
+      if (b) unidadeSet.add(b);
+    });
+
+    return res.json({
+      unidade: [...unidadeSet].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/adm-onb-graficos", requireAuth, async (req, res) => {
+  try {
+    const { admRows, onbRows } = await admOnbLoadWithCache();
+
+    const dataInicio = admNorm(req.query.dataInicio);
+    const dataFim = admNorm(req.query.dataFim);
+    const busca = admNorm(req.query.busca);
+    const unidade = admNorm(req.query.unidade);
+
+    let admFiltrado = filterByDate(admRows, dataInicio, dataFim, "_date");
+    let onbFiltrado = filterByDate(onbRows, dataInicio, dataFim, "_date");
+
+    if (unidade) {
+      admFiltrado = admFiltrado.filter((r) => admNorm(r["Unidade"]) === unidade);
+      onbFiltrado = onbFiltrado.filter((r) => admNorm(r["01. UNIDADE"]) === unidade);
+    }
+
+    admFiltrado = filterByText(admFiltrado, busca, ["Empresa", "Colaborador(a)", "Cargo", "Unidade"]);
+    onbFiltrado = filterByText(onbFiltrado, busca, [
+      "01. UNIDADE",
+      "02. NOME COMPLETO",
+      "05. CARGO",
+      "06. EMPRESA",
+      "10. INSTRUTOR",
+    ]);
+
+    return res.json({
+      admissao: {
+        porUnidade: countBy(admFiltrado, "Unidade", 10),
+        porEmpresa: countBy(admFiltrado, "Empresa", 10),
+        porCargo: countBy(admFiltrado, "Cargo", 12),
+        porDia: getDaySeries(admFiltrado, "_date"),
+        total: admFiltrado.length,
+      },
+      onboarding: {
+        porDia: getDaySeries(onbFiltrado, "_date"),
+        porCargo: countBy(onbFiltrado, "05. CARGO", 12),
+        porFilial: countBy(onbFiltrado, "01. UNIDADE", 10),
+        porInstrutor: countBy(onbFiltrado, "10. INSTRUTOR", 10),
+        total: onbFiltrado.length,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/adm-onb-detalhes", requireAuth, async (req, res) => {
+  try {
+    const { admRows, onbRows } = await admOnbLoadWithCache();
+
+    const tipo = admNorm(req.query.tipo || "admissao");
+    const dataInicio = admNorm(req.query.dataInicio);
+    const dataFim = admNorm(req.query.dataFim);
+    const busca = admNorm(req.query.busca);
+    const unidade = admNorm(req.query.unidade);
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+
+    let rows = tipo === "onboarding" ? onbRows : admRows;
+    rows = filterByDate(rows, dataInicio, dataFim, "_date");
+
+    if (tipo === "onboarding" && unidade) {
+      rows = rows.filter((r) => admNorm(r["01. UNIDADE"]) === unidade);
+    }
+    if (tipo === "admissao" && unidade) {
+      rows = rows.filter((r) => admNorm(r["Unidade"]) === unidade);
+    }
+
+    if (tipo === "onboarding") {
+      rows = filterByText(rows, busca, [
+        "01. UNIDADE",
+        "02. NOME COMPLETO",
+        "05. CARGO",
+        "06. EMPRESA",
+        "10. INSTRUTOR",
+      ]);
+    } else {
+      rows = filterByText(rows, busca, ["Empresa", "Colaborador(a)", "Cargo", "Unidade"]);
+    }
+
+    const headers = tipo === "onboarding"
+      ? ["DATA", "01. UNIDADE", "02. NOME COMPLETO", "05. CARGO", "06. EMPRESA", "10. INSTRUTOR"]
+      : ["Data Admissão", "Colaborador(a)", "Empresa", "Cargo", "Unidade"];
+
+    const start = (page - 1) * limit;
+    const pageRows = rows.slice(start, start + limit).map((row) => {
+      const obj = {};
+      headers.forEach((h) => {
+        obj[h] = row[h] || "";
+      });
+      return obj;
+    });
+
+    return res.json({
+      headers,
+      rows: pageRows,
+      total: rows.length,
+      page,
+      limit,
+      totalPages: Math.ceil(rows.length / limit),
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

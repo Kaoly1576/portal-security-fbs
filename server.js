@@ -71,8 +71,8 @@ db.run(
     "Caique Nascimento",
     "caique.nascimento@shopee.com",
     senhaHashAdmin,
-    "Aprovador",
-    "Aprovado",
+    "aprovador",
+    "aprovado",
   ]
 );
 

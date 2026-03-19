@@ -71,8 +71,8 @@ db.run(
     "Caique Nascimento",
     "caique.nascimento@shopee.com",
     senhaHashAdmin,
-    "aprovador",
-    "aprovado",
+    "Aprovador",
+    "Aprovado",
   ]
 );
 
@@ -2051,59 +2051,81 @@ app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
     const filterHeaders = meta.categoricalHeaders.slice(0, 8);
     const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
 
-    const chartHeaders = meta.categoricalHeaders.slice(0, 4);
+    const headers = meta.headers;
 
-    const charts = chartHeaders.map((header) => {
-      const grouped = ccoGroupCount(filtrados, header);
-      const ordered = Object.entries(grouped)
+    // 🔥 MAPEAMENTO INTELIGENTE (NÃO MAIS ALEATÓRIO)
+    function findHeader(names) {
+      return headers.find(h =>
+        names.some(n => ccoNormalizeLower(h).includes(ccoNormalizeLower(n)))
+      );
+    }
+
+    const tipoHeader = findHeader(["tipo de solicitacao", "tipo de solicitação", "tipo"]);
+    const ocorrenciaHeader = findHeader(["ocorrencia", "ocorrência"]);
+    const unidadeHeader = findHeader(["unidade", "site", "base"]);
+    const setorHeader = findHeader(["setor"]);
+    const statusHeader = findHeader(["status"]);
+    const solicitanteHeader = findHeader([
+      "email do solicitante",
+      "e-mail do solicitante",
+      "solicitante",
+      "requisitante"
+    ]);
+
+    // 🔥 FUNÇÃO PADRÃO
+    function buildTable(header) {
+      if (!header) return [];
+
+      return Object.entries(ccoGroupCount(filtrados, header))
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 15);
+        .slice(0, 50)
+        .map(([nome, total]) => ({ nome, total }));
+    }
 
-      return {
-        header,
-        labels: ordered.map((x) => x[0]),
-        values: ordered.map((x) => x[1]),
-      };
-    });
+    const tableTipo = buildTable(tipoHeader);
+    const tableOcorrencia = buildTable(ocorrenciaHeader);
+    const tableUnidade = buildTable(unidadeHeader);
+    const tableSetor = buildTable(setorHeader);
+    const tableStatus = buildTable(statusHeader);
 
+    // 🔥 GRÁFICO DE SOLICITANTE (ÚNICO)
+    const solicitanteGrouped = solicitanteHeader
+      ? Object.entries(ccoGroupCount(filtrados, solicitanteHeader))
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 15)
+      : [];
+
+    const chartSolicitante = {
+      labels: solicitanteGrouped.map(x => x[0]),
+      values: solicitanteGrouped.map(x => x[1]),
+    };
+
+    // 🔥 AGRUPAMENTO POR DIA (CORRIGIDO)
     const byDay = {};
     filtrados.forEach((row) => {
       if (!row._primaryDate) return;
-      const key = row._primaryDate.toLocaleDateString("pt-BR");
-      byDay[key] = (byDay[key] || 0) + 1;
+
+      const d = row._primaryDate;
+      const day = String(d.getDate()).padStart(2, "0");
+
+      byDay[day] = (byDay[day] || 0) + 1;
     });
 
-    const dayLabels = Object.keys(byDay).sort((a, b) => {
-      const da = ccoParseDate(a);
-      const db = ccoParseDate(b);
-      if (!da || !db) return 0;
-      return da - db;
-    });
-
-    const tableAHeader = chartHeaders[0] || meta.headers[0];
-    const tableBHeader = chartHeaders[1] || meta.headers[1] || meta.headers[0];
-
-    const tableA = Object.entries(ccoGroupCount(filtrados, tableAHeader))
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 50)
-      .map(([nome, total]) => ({ nome, total }));
-
-    const tableB = Object.entries(ccoGroupCount(filtrados, tableBHeader))
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 50)
-      .map(([nome, total]) => ({ nome, total }));
+    const dayLabels = Object.keys(byDay).sort((a, b) => Number(a) - Number(b));
 
     return res.json({
-      charts,
+      tableTipo,
+      tableOcorrencia,
+      tableUnidade,
+      tableSetor,
+      tableStatus,
+      chartSolicitante,
       porDia: {
         labels: dayLabels,
-        values: dayLabels.map((label) => byDay[label]),
-      },
-      tableAHeader,
-      tableBHeader,
-      tableA,
-      tableB,
+        values: dayLabels.map(d => byDay[d]),
+      }
     });
+
   } catch (error) {
     return res.status(500).json({
       ok: false,
@@ -2111,7 +2133,6 @@ app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
     });
   }
 });
-
 app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
   try {
     const meta = await ccoLoadWithCache();

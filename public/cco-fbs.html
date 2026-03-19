@@ -15,539 +15,253 @@
     }
 
     :root {
-      --bg: #041325;
-      --card: #142744;
-      --card-2: #11233c;
-      --line: rgba(255,255,255,0.08);
-      --text: #ffffff;
-      --muted: #c7d2e0;
-      --orange: #ff7a1a;
-      --blue: #58a6ff;
-      --green: #22c55e;
-      --red: #ef4444;
-      --purple: #8b5cf6;
-      --yellow: #f59e0b;
+      --bg: #ececec;
+      --card: #f6f6f6;
+      --line: #d2d2d2;
+      --text: #17345d;
+      --muted: #666;
+      --orange: #f15a24;
+      --navy: #0f2f5f;
+      --navy2: #425b7d;
+      --navy3: #95a4b8;
+      --white: #ffffff;
     }
 
     body {
-      background: linear-gradient(180deg, #03101f 0%, #041325 100%);
+      background: #ececec;
       color: var(--text);
     }
 
     .page {
-      max-width: 1500px;
+      width: 100%;
+      max-width: 1460px;
       margin: 0 auto;
-      padding: 18px;
+      padding: 14px 16px 24px;
     }
 
     .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .brand-logo {
-      width: 58px;
-      height: 58px;
-      object-fit: contain;
-      border-radius: 14px;
-      background: #0f2138;
-      padding: 6px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-
-    .brand-text h1 {
-      color: var(--orange);
-      font-size: 22px;
-      font-weight: 900;
-      margin-bottom: 2px;
-    }
-
-    .brand-text p {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .btn {
-      background: #163154;
-      border: 1px solid var(--line);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .hero {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px 20px;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
-
-    .hero h2 {
-      font-size: 20px;
+      background: #fff;
+      border: 1px solid #d8d8d8;
+      padding: 12px 12px 8px;
       margin-bottom: 8px;
-    }
-
-    .hero p {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-      max-width: 800px;
-    }
-
-    .hero-right {
-      text-align: right;
-      min-width: 150px;
-    }
-
-    .hero-right .small {
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-
-    .hero-right .time {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 22px;
-    }
-
-    .filters {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 12px;
-      margin-bottom: 14px;
-    }
-
-    .filters-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .filters-title {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 14px;
-    }
-
-    .filters-toggle {
-      background: #0d213b;
-      border: 1px solid var(--line);
-      color: #fff;
-      border-radius: 10px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 12px;
-    }
-
-    .filters-body {
-      display: none;
-    }
-
-    .filters.open .filters-body {
-      display: block;
-    }
-
-    .filters-grid {
-      display: grid;
-      grid-template-columns: 140px 140px minmax(220px, 1fr) auto;
-      gap: 10px;
-      align-items: end;
-    }
-
-    .field {
-      min-width: 0;
-    }
-
-    .field label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 11px;
-      color: #dfe8f4;
-      font-weight: 700;
-    }
-
-    .field input {
-      width: 100%;
-      height: 38px;
-      background: #0a1b32;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      color: #fff;
-      padding: 0 10px;
-      outline: none;
-      font-size: 13px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      align-items: end;
-      flex-wrap: wrap;
-    }
-
-    .btn-primary {
-      height: 38px;
-      border: none;
-      border-radius: 10px;
-      padding: 0 14px;
-      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
-      color: #fff;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .btn-ghost {
-      height: 38px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 0 14px;
-      background: #0d213b;
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .dynamic-filters {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .multi {
       position: relative;
     }
 
-    .multi-trigger {
-      width: 100%;
-      min-height: 38px;
-      background: #0a1b32;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      color: #fff;
-      padding: 8px 10px;
-      text-align: left;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .multi-trigger span {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 12px;
-    }
-
-    .multi-menu {
-      position: absolute;
-      top: 42px;
-      left: 0;
-      width: 100%;
-      background: #0c1d34;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 10px;
-      display: none;
-      z-index: 30;
-      max-height: 260px;
-      overflow-y: auto;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.28);
-    }
-
-    .multi.open .multi-menu {
+    .topbar::after {
+      content: "";
       display: block;
+      height: 5px;
+      background: linear-gradient(90deg, #f7b500, #f15a24);
+      margin: 8px -12px -8px;
     }
 
-    .multi-actions {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .multi-actions button {
-      flex: 1;
-      border: none;
-      border-radius: 8px;
-      background: #173152;
-      color: #fff;
-      padding: 7px 8px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .multi-option {
-      display: flex;
+    .topbar-row {
+      display: grid;
+      grid-template-columns: 250px 1fr 220px;
       align-items: center;
-      gap: 8px;
-      padding: 6px 4px;
-      font-size: 13px;
-      color: #fff;
-    }
-
-    .quick-summary {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 2px;
-    }
-
-    .quick-chip {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--line);
-      color: #dbe4ef;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 14px;
     }
 
-    .kpi {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
+    .logo-wrap img {
+      height: 34px;
+      object-fit: contain;
     }
 
-    .kpi-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #dbe4ef;
-      margin-bottom: 10px;
-    }
-
-    .kpi-value {
-      font-size: 22px;
+    .title {
+      text-align: center;
       font-weight: 900;
-      line-height: 1.1;
+      font-size: 20px;
+      color: #17345d;
+      line-height: 1.2;
     }
 
-    .orange { color: var(--orange); }
-    .blue { color: var(--blue); }
-    .green { color: var(--green); }
-    .red { color: var(--red); }
-    .purple { color: var(--purple); }
-    .yellow { color: var(--yellow); }
-
-    .grid-main {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 14px;
+    .period-box {
+      justify-self: end;
+      min-width: 180px;
     }
 
-    .grid-secondary {
+    .period-box select {
+      width: 100%;
+      height: 34px;
+      border: 1px solid #cfcfcf;
+      background: #f7f7f7;
+      color: #1d365d;
+      padding: 0 12px;
+      font-size: 13px;
+    }
+
+    .filters {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 8px;
+      margin: 8px 0 16px;
+    }
+
+    .filter select,
+    .filter input {
+      width: 100%;
+      height: 28px;
+      border: 1px solid #c8c8c8;
+      background: #f7f7f7;
+      color: #666;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 14px;
     }
 
     .panel {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
-      overflow: hidden;
+      background: #efefef;
+      border: 1px solid #cfcfcf;
+      min-height: 180px;
+      padding: 0;
     }
 
     .panel-title {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
       color: var(--orange);
-      font-weight: 900;
-      font-size: 14px;
-      margin-bottom: 10px;
-      text-align: left;
-    }
-
-    .panel-subtitle {
-      color: var(--muted);
-      font-size: 11px;
-      margin-bottom: 10px;
+      padding: 8px 8px 4px;
     }
 
     .mini-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    .mini-table th,
-    .mini-table td {
-      padding: 7px 4px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      vertical-align: middle;
-    }
-
-    .mini-table th {
-      text-align: left;
-      color: #fff;
+      table-layout: fixed;
       font-size: 11px;
-      text-transform: uppercase;
+      color: #17345d;
     }
 
-    .mini-table td:nth-child(2),
-    .mini-table th:nth-child(2) {
+    .mini-table thead th {
+      background: #d9d9d9;
+      color: #111;
+      text-align: left;
+      padding: 4px 6px;
+      font-size: 11px;
+      border-bottom: 1px solid #c6c6c6;
+    }
+
+    .mini-table thead th:nth-child(2),
+    .mini-table tbody td:nth-child(2) {
+      width: 80px;
       text-align: right;
-      width: 70px;
-      white-space: nowrap;
     }
 
-    .mini-table td:last-child,
-    .mini-table th:last-child {
-      width: 45%;
+    .mini-table thead th:nth-child(3),
+    .mini-table tbody td:nth-child(3) {
+      width: 50%;
+    }
+
+    .mini-table tbody td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #e3e3e3;
+      vertical-align: middle;
+      background: #f3f3f3;
     }
 
     .bar-track {
       width: 100%;
-      background: rgba(255,255,255,0.06);
-      height: 8px;
-      border-radius: 999px;
+      height: 22px;
+      background: #d5d9df;
+      position: relative;
       overflow: hidden;
     }
 
     .bar-fill {
-      height: 8px;
-      background: linear-gradient(90deg, #ff7a1a, #ff9a4a);
-      border-radius: 999px;
+      height: 100%;
+      background: linear-gradient(90deg, #0e2d5b, #5c7291);
     }
 
     .chart-box {
-      height: 300px;
+      height: 185px;
+      padding: 6px 10px 10px;
       position: relative;
     }
 
     .chart-box.line {
-      height: 260px;
+      height: 190px;
     }
 
-    .wide-panel {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
-      margin-bottom: 14px;
+    .full-row {
+      grid-column: span 3;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background: #163154;
+      border: 1px solid #27456e;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
     }
 
     .detail-wrap {
+      max-height: 420px;
       overflow: auto;
-      max-height: 520px;
-      border-radius: 12px;
+      background: #f7f7f7;
     }
 
     .detail-table {
       width: 100%;
       border-collapse: collapse;
       min-width: 900px;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .detail-table th,
     .detail-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid #ddd;
       white-space: nowrap;
+      text-align: left;
     }
 
     .detail-table th {
       position: sticky;
       top: 0;
-      background: #10233f;
+      background: #d9d9d9;
+      color: #111;
       z-index: 1;
     }
 
     .pager {
-      margin-top: 12px;
       display: flex;
       justify-content: flex-end;
       gap: 8px;
-      flex-wrap: wrap;
+      padding: 10px;
     }
 
-    .pager-info {
-      margin-right: auto;
-      color: var(--muted);
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-    }
-
-    @media (max-width: 1200px) {
-      .filters-grid {
-        grid-template-columns: 1fr 1fr;
+    @media (max-width: 1100px) {
+      .filters {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
-      .dynamic-filters {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .kpis {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .grid-main {
+      .grid {
         grid-template-columns: 1fr;
       }
 
-      .grid-secondary {
+      .full-row {
+        grid-column: span 1;
+      }
+
+      .topbar-row {
         grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .filters-grid,
-      .dynamic-filters,
-      .kpis {
-        grid-template-columns: 1fr;
+        text-align: center;
       }
 
-      .hero-right {
-        text-align: left;
-      }
-
-      .kpi-value {
-        font-size: 20px;
-      }
-
-      .chart-box,
-      .chart-box.line {
-        height: 260px;
+      .period-box {
+        justify-self: center;
       }
     }
   </style>
@@ -555,185 +269,135 @@
 <body>
   <div class="page">
     <header class="topbar">
-      <div class="brand">
-        <img src="/images/logo.png" alt="Logo" class="brand-logo" />
-        <div class="brand-text">
-          <h1>CCO FBS</h1>
-          <p>Dashboard operacional com visão compacta</p>
+      <div class="topbar-row">
+        <div class="logo-wrap">
+          <img src="/images/logo.png" alt="Logo">
+        </div>
+
+        <div class="title">
+          DASHBOARD DE CENTRO DE CONTROLE OPERACIONAL &nbsp; | &nbsp; FF BR - SPX
+        </div>
+
+        <div class="period-box">
+          <select id="periodoSelect">
+            <option value="">Selecionar período</option>
+            <option value="hoje">Hoje</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+          </select>
         </div>
       </div>
-
-      <a href="/portal" class="btn">Voltar ao Portal</a>
     </header>
 
-    <section class="hero">
-      <div>
-        <h2>Dashboard CCO FBS</h2>
-        <p id="heroDescription">Carregando informações da base...</p>
-        <div class="quick-summary">
-          <span class="quick-chip" id="chipBase">Base: --</span>
-          <span class="quick-chip" id="chipPagina">Página 1</span>
-        </div>
-      </div>
-
-      <div class="hero-right">
-        <div class="small">Última atualização</div>
-        <div class="time" id="ultimaAtualizacao">--:--</div>
-      </div>
+    <section class="filters" id="dynamicFiltersTop">
+      <div class="filter"><input type="date" id="filtroDataInicio"></div>
+      <div class="filter"><input type="date" id="filtroDataFim"></div>
+      <div class="filter"><input type="text" id="filtroBusca" placeholder="Busca geral"></div>
+      <div class="filter" id="filterAno"></div>
+      <div class="filter" id="filterMes"></div>
+      <div class="filter" id="filterUnidade"></div>
+      <div class="filter" id="filterSetor"></div>
+      <div class="filter" id="filterTipo"></div>
     </section>
 
-    <section class="filters open" id="filtersCard">
-      <div class="filters-header">
-        <div class="filters-title">Filtros</div>
-        <button class="filters-toggle" id="toggleFilters">Recolher filtros</button>
-      </div>
+    <div class="actions">
+      <button class="btn" id="btnAplicar">Aplicar</button>
+      <button class="btn" id="btnLimpar">Limpar</button>
+      <a href="/portal" class="btn" style="text-decoration:none;">Voltar ao Portal</a>
+    </div>
 
-      <div class="filters-body">
-        <div class="filters-grid">
-          <div class="field">
-            <label>Data inicial</label>
-            <input type="date" id="filtroDataInicio" />
-          </div>
-
-          <div class="field">
-            <label>Data final</label>
-            <input type="date" id="filtroDataFim" />
-          </div>
-
-          <div class="field">
-            <label>Busca geral</label>
-            <input type="text" id="filtroBusca" placeholder="Buscar em toda a base..." />
-          </div>
-
-          <div class="actions">
-            <button class="btn-primary" id="btnAplicar">Aplicar</button>
-            <button class="btn-ghost" id="btnLimpar">Limpar</button>
-          </div>
-        </div>
-
-        <div class="dynamic-filters" id="dynamicFilters"></div>
-      </div>
-    </section>
-
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-title">Total de registros</div>
-        <div class="kpi-value orange" id="kpiTotal">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Unidade</div>
-        <div class="kpi-value blue" id="kpiUnidade">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Tipos de solicitação</div>
-        <div class="kpi-value purple" id="kpiTipos">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Ocorrências</div>
-        <div class="kpi-value yellow" id="kpiOcorrencias">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Locais</div>
-        <div class="kpi-value green" id="kpiLocais">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Solicitante dominante</div>
-        <div class="kpi-value orange" id="kpiDominante">-</div>
-      </div>
-    </section>
-
-    <section class="grid-main">
+    <section class="grid" style="margin-top:14px;">
       <div class="panel">
         <div class="panel-title">Tipo de Solicitação</div>
-        <div class="panel-subtitle">Principais volumes da base</div>
         <table class="mini-table">
           <thead>
             <tr>
-              <th id="headTabelaA">Grupo</th>
+              <th>Tipo de solicitação</th>
               <th>Qtd</th>
               <th></th>
             </tr>
           </thead>
-          <tbody id="tabelaA"></tbody>
+          <tbody id="tabelaTipo"></tbody>
         </table>
       </div>
 
       <div class="panel">
-        <div class="panel-title">Ocorrência</div>
-        <div class="panel-subtitle">Principais registros por ocorrência</div>
-        <table class="mini-table">
-          <thead>
-            <tr>
-              <th id="headTabelaB">Grupo</th>
-              <th>Qtd</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="tabelaB"></tbody>
-        </table>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Nome do Solicitante</div>
-        <div class="panel-subtitle">Único gráfico principal de distribuição</div>
+        <div class="panel-title">Solicitações por Requisitante</div>
         <div class="chart-box">
           <canvas id="chartSolicitante"></canvas>
         </div>
       </div>
-    </section>
 
-    <section class="grid-secondary">
       <div class="panel">
-        <div class="panel-title">Local</div>
-        <div class="panel-subtitle">Resumo por local</div>
+        <div class="panel-title">Ocorrência</div>
         <table class="mini-table">
           <thead>
             <tr>
-              <th id="headTabelaC">Grupo</th>
+              <th>Ocorrência</th>
               <th>Qtd</th>
               <th></th>
             </tr>
           </thead>
-          <tbody id="tabelaC"></tbody>
+          <tbody id="tabelaOcorrencia"></tbody>
         </table>
       </div>
 
       <div class="panel">
         <div class="panel-title">Unidade</div>
-        <div class="panel-subtitle">Resumo por unidade</div>
         <table class="mini-table">
           <thead>
             <tr>
-              <th id="headTabelaD">Grupo</th>
+              <th>Unidade</th>
               <th>Qtd</th>
               <th></th>
             </tr>
           </thead>
-          <tbody id="tabelaD"></tbody>
+          <tbody id="tabelaUnidade"></tbody>
         </table>
       </div>
-    </section>
 
-    <section class="panel" style="margin-bottom: 14px;">
-      <div class="panel-title">Registros por Dia</div>
-      <div class="panel-subtitle">Evolução diária dos registros</div>
-      <div class="chart-box line">
-        <canvas id="chartDia"></canvas>
+      <div class="panel">
+        <div class="panel-title">Status das Solicitações</div>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Qtd</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tabelaStatus"></tbody>
+        </table>
       </div>
-    </section>
 
-    <section class="wide-panel">
-      <div class="panel-title">Detalhamento</div>
-      <div class="detail-wrap" id="detailWrap"></div>
-      <div class="pager">
-        <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
-        <button class="btn-ghost" id="btnPrev">Anterior</button>
-        <button class="btn-ghost" id="btnNext">Próxima</button>
+      <div class="panel">
+        <div class="panel-title">Solicitações por Setor</div>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Setor</th>
+              <th>Qtd</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tabelaSetor"></tbody>
+        </table>
+      </div>
+
+      <div class="panel full-row">
+        <div class="panel-title">Solicitações Realizadas por Dia</div>
+        <div class="chart-box line">
+          <canvas id="chartDia"></canvas>
+        </div>
+      </div>
+
+      <div class="panel full-row">
+        <div class="panel-title">Detalhamento</div>
+        <div class="detail-wrap" id="detailWrap"></div>
+        <div class="pager">
+          <button class="btn" id="btnPrev">Anterior</button>
+          <button class="btn" id="btnNext">Próxima</button>
+        </div>
       </div>
     </section>
   </div>
@@ -771,72 +435,56 @@
       qs.set("page", page);
       qs.set("limit", 50);
 
-      dynamicFilterKeys.forEach((key) => {
-        const selected = [...document.querySelectorAll(`#menu_${cssSafe(key)} input[type="checkbox"]:checked`)]
-          .map((el) => el.value)
-          .join("|");
+      const periodo = document.getElementById("periodoSelect").value || "";
+      qs.set("periodo", periodo);
 
-        qs.set(`f_${key}`, selected);
+      dynamicFilterKeys.forEach((key) => {
+        const el = document.getElementById(`f_${cssSafe(key)}`);
+        qs.set(`f_${key}`, el ? el.value : "");
       });
 
       return qs.toString();
     }
 
-    function updateMultiTrigger(key) {
-      const safe = cssSafe(key);
-      const checked = [...document.querySelectorAll(`#menu_${safe} input[type="checkbox"]:checked`)]
-        .map((el) => el.value);
-
-      const trigger = document.getElementById(`trigger_${safe}`);
-      if (!trigger) return;
-
-      const label = trigger.querySelector(".label");
-      if (!label) return;
-
-      if (!checked.length) {
-        label.textContent = "Todos";
-      } else if (checked.length === 1) {
-        label.textContent = checked[0];
-      } else {
-        label.textContent = `${checked.length} selecionados`;
-      }
+    function normalizeText(v) {
+      return String(v || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
     }
 
-    function closeAllMulti() {
-      document.querySelectorAll(".multi").forEach((m) => m.classList.remove("open"));
+    function pickByTerms(groups, terms) {
+      if (!Array.isArray(groups)) return [];
+      const normalizedTerms = terms.map(normalizeText);
+
+      const found = groups.find(item => {
+        const name = normalizeText(item.header || item.nome || item.title || "");
+        return normalizedTerms.some(term => name.includes(term));
+      });
+
+      return found?.rows || found?.items || found?.values || [];
     }
 
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest(".multi")) closeAllMulti();
-    });
+    function pickChartByTerms(charts, terms) {
+      if (!Array.isArray(charts)) return null;
+      const normalizedTerms = terms.map(normalizeText);
 
-    function buildMultiFilter(filter) {
-      const safe = cssSafe(filter.key);
+      return charts.find(item => {
+        const header = normalizeText(item.header || item.title || "");
+        return normalizedTerms.some(term => header.includes(term));
+      }) || null;
+    }
 
-      return `
-        <div class="field">
-          <label>${esc(filter.label)}</label>
-          <div class="multi" id="multi_${safe}">
-            <button type="button" class="multi-trigger" id="trigger_${safe}">
-              <span class="label">Todos</span>
-              <span>▼</span>
-            </button>
+    function buildSimpleSelect(containerId, label, key, values) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
 
-            <div class="multi-menu" id="menu_${safe}">
-              <div class="multi-actions">
-                <button type="button" data-action="all" data-key="${esc(filter.key)}">Todos</button>
-                <button type="button" data-action="clear" data-key="${esc(filter.key)}">Limpar</button>
-              </div>
-
-              ${(filter.values || []).map(v => `
-                <label class="multi-option">
-                  <input type="checkbox" value="${esc(v)}" data-key="${esc(filter.key)}" />
-                  <span>${esc(v)}</span>
-                </label>
-              `).join("")}
-            </div>
-          </div>
-        </div>
+      container.innerHTML = `
+        <select id="f_${cssSafe(key)}">
+          <option value="">${esc(label)}</option>
+          ${(values || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("")}
+        </select>
       `;
     }
 
@@ -844,80 +492,24 @@
       const res = await fetch("/api/cco-fbs-filtros", { credentials: "same-origin" });
       const data = await res.json();
 
-      dynamicFilterKeys = (data.filtros || []).map((f) => f.key);
+      dynamicFilterKeys = (data.filtros || []).map(f => f.key);
 
-      document.getElementById("heroDescription").textContent =
-        `Aba utilizada: ${data.sheetTitle || "N/A"} | Layout compacto com filtros recolhíveis e foco nos números mais importantes.`;
+      const filtros = data.filtros || [];
 
-      document.getElementById("chipBase").textContent = `Base: ${data.sheetTitle || "N/A"}`;
-
-      const container = document.getElementById("dynamicFilters");
-      container.innerHTML = (data.filtros || []).map(buildMultiFilter).join("");
-
-      dynamicFilterKeys.forEach((key) => {
-        const safe = cssSafe(key);
-        const multi = document.getElementById(`multi_${safe}`);
-        const trigger = document.getElementById(`trigger_${safe}`);
-
-        if (!multi || !trigger) return;
-
-        trigger.addEventListener("click", (e) => {
-          e.stopPropagation();
-          document.querySelectorAll(".multi").forEach((m) => {
-            if (m !== multi) m.classList.remove("open");
-          });
-          multi.classList.toggle("open");
+      const getValues = (...possibleNames) => {
+        const found = filtros.find(f => {
+          const key = normalizeText(f.key);
+          const label = normalizeText(f.label);
+          return possibleNames.some(name => key.includes(normalizeText(name)) || label.includes(normalizeText(name)));
         });
-      });
+        return found?.values || [];
+      };
 
-      container.querySelectorAll("input[type='checkbox']").forEach((input) => {
-        input.addEventListener("change", () => {
-          updateMultiTrigger(input.dataset.key);
-        });
-      });
-
-      container.querySelectorAll("[data-action='all']").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          const safe = cssSafe(key);
-          document.querySelectorAll(`#menu_${safe} input[type='checkbox']`).forEach((el) => {
-            el.checked = true;
-          });
-          updateMultiTrigger(key);
-        });
-      });
-
-      container.querySelectorAll("[data-action='clear']").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          const safe = cssSafe(key);
-          document.querySelectorAll(`#menu_${safe} input[type='checkbox']`).forEach((el) => {
-            el.checked = false;
-          });
-          updateMultiTrigger(key);
-        });
-      });
-    }
-
-    function countUniqueNames(rows, fallback = 0) {
-      if (!Array.isArray(rows) || !rows.length) return fallback;
-      return rows.filter(r => String(r.nome || "").trim()).length || fallback;
-    }
-
-    function getTopName(rows) {
-      if (!Array.isArray(rows) || !rows.length) return "-";
-      return rows[0]?.nome || "-";
-    }
-
-    async function loadResumo() {
-      const res = await fetch(`/api/cco-fbs-resumo?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      document.getElementById("kpiTotal").textContent = fmt(data.total);
-      document.getElementById("kpiUnidades").textContent = fmt(data.totalUnidades || data.unidades || 0);
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+      buildSimpleSelect("filterAno", "Ano", "ano", getValues("ano"));
+      buildSimpleSelect("filterMes", "Mês", "mes", getValues("mes", "mês"));
+      buildSimpleSelect("filterUnidade", "Unidade", "unidade", getValues("unidade"));
+      buildSimpleSelect("filterSetor", "Setor", "setor", getValues("setor"));
+      buildSimpleSelect("filterTipo", "Tipo de solicitação", "tipo_solicitacao", getValues("tipo de solicitacao", "tipo de solicitação", "tipo"));
     }
 
     function renderMiniTable(elId, rows) {
@@ -927,27 +519,30 @@
       if (!rows || !rows.length) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="3" style="text-align:center; color:#c7d2e0; padding: 12px;">
-              Sem dados
-            </td>
+            <td colspan="3" style="text-align:center;">Sem dados</td>
           </tr>
         `;
         return;
       }
 
-      const max = Math.max(...rows.map(r => Number(r.total) || 0), 1);
+      const max = Math.max(...rows.map(r => Number(r.total || r.qtd || r.valor || 0)), 1);
 
-      tbody.innerHTML = rows.map((item) => `
-        <tr>
-          <td>${esc(item.nome)}</td>
-          <td>${fmt(item.total)}</td>
-          <td>
-            <div class="bar-track">
-              <div class="bar-fill" style="width:${((Number(item.total) || 0) / max) * 100}%"></div>
-            </div>
-          </td>
-        </tr>
-      `).join("");
+      tbody.innerHTML = rows.map((item) => {
+        const nome = item.nome || item.label || item.chave || item.grupo || "-";
+        const total = Number(item.total || item.qtd || item.valor || 0);
+
+        return `
+          <tr>
+            <td>${esc(nome)}</td>
+            <td>${fmt(total)}</td>
+            <td>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:${(total / max) * 100}%"></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
     }
 
     function destroyCharts() {
@@ -955,62 +550,17 @@
       if (chartDiaInstance) chartDiaInstance.destroy();
     }
 
-    function lineChartOptions() {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: "#fff", boxWidth: 10, font: { size: 11 } }
-          }
-        },
-        scales: {
-          x: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
-            grid: { color: "rgba(255,255,255,0.05)" }
-          },
-          y: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
-            grid: { color: "rgba(255,255,255,0.05)" },
-            beginAtZero: true
-          }
+    function getDayLabels(labels) {
+      return (labels || []).map(label => {
+        const str = String(label || "").trim();
+
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+          return str.slice(8, 10);
         }
-      };
-    }
 
-    function horizontalBarOptions() {
-      return {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
-        scales: {
-          x: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
-            grid: { color: "rgba(255,255,255,0.05)" },
-            beginAtZero: true
-          },
-          y: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
-            grid: { display: false }
-          }
-        }
-      };
-    }
-
-    function getChartByHeader(charts, terms) {
-      if (!Array.isArray(charts)) return null;
-
-      const normalizedTerms = terms.map(t => String(t).toLowerCase());
-
-      return charts.find(chart => {
-        const header = String(chart?.header || "").toLowerCase();
-        return normalizedTerms.some(term => header.includes(term));
-      }) || null;
+        const match = str.match(/(\d{1,2})(?!.*\d)/);
+        return match ? match[1].padStart(2, "0") : str;
+      });
     }
 
     async function loadGraficos() {
@@ -1021,56 +571,53 @@
 
       destroyCharts();
 
-      const tableA = data.tableA || [];
-      const tableB = data.tableB || [];
+      const groups = data.groups || data.tabelas || data.tables || [];
+      const charts = data.charts || [];
 
-      let tableC = data.tableC || [];
-      let tableD = data.tableD || [];
+      const tipoRows =
+        data.tableTipo ||
+        data.tipoSolicitacao ||
+        pickByTerms(groups, ["tipo de solicitacao", "tipo de solicitação", "tipo"]) ||
+        data.tableA ||
+        [];
+
+      const ocorrenciaRows =
+        data.tableOcorrencia ||
+        data.ocorrencia ||
+        pickByTerms(groups, ["ocorrencia", "ocorrência"]) ||
+        data.tableB ||
+        [];
+
+      const unidadeRows =
+        data.tableUnidade ||
+        data.unidade ||
+        pickByTerms(groups, ["unidade"]) ||
+        data.tableC ||
+        [];
+
+      const statusRows =
+        data.tableStatus ||
+        data.status ||
+        pickByTerms(groups, ["status"]) ||
+        [];
+
+      const setorRows =
+        data.tableSetor ||
+        data.setor ||
+        pickByTerms(groups, ["setor"]) ||
+        [];
+
+      renderMiniTable("tabelaTipo", tipoRows);
+      renderMiniTable("tabelaOcorrencia", ocorrenciaRows);
+      renderMiniTable("tabelaUnidade", unidadeRows);
+      renderMiniTable("tabelaStatus", statusRows);
+      renderMiniTable("tabelaSetor", setorRows);
 
       const solicitanteChart =
-        getChartByHeader(data.charts, ["solicitante", "nome do solicitante", "solicitante nome"]) ||
-        (Array.isArray(data.charts) ? data.charts[0] : null) ||
-        { header: "Nome do Solicitante", labels: [], values: [] };
-
-      const localChart =
-        getChartByHeader(data.charts, ["local"]) ||
-        { header: "Local", labels: [], values: [] };
-
-      const unidadeChart =
-        getChartByHeader(data.charts, ["unidade"]) ||
-        { header: "Unidade", labels: [], values: [] };
-
-      if (!tableC.length && localChart.labels?.length) {
-        tableC = localChart.labels.map((label, index) => ({
-          nome: label,
-          total: localChart.values?.[index] || 0
-        }));
-      }
-
-      if (!tableD.length && unidadeChart.labels?.length) {
-        tableD = unidadeChart.labels.map((label, index) => ({
-          nome: label,
-          total: unidadeChart.values?.[index] || 0
-        }));
-      }
-
-      document.getElementById("headTabelaA").textContent = data.tableAHeader || "Tipo de Solicitação";
-      document.getElementById("headTabelaB").textContent = data.tableBHeader || "Ocorrência";
-      document.getElementById("headTabelaC").textContent = "Local";
-      document.getElementById("headTabelaD").textContent = "Unidade";
-
-      renderMiniTable("tabelaA", tableA);
-      renderMiniTable("tabelaB", tableB);
-      renderMiniTable("tabelaC", tableC);
-      renderMiniTable("tabelaD", tableD);
-
-      document.getElementById("kpiTipos").textContent = fmt(countUniqueNames(tableA));
-      document.getElementById("kpiOcorrencias").textContent = fmt(countUniqueNames(tableB));
-      document.getElementById("kpiLocais").textContent = fmt(countUniqueNames(tableC));
-      document.getElementById("kpiDominante").textContent = getTopName(solicitanteChart.labels?.map((label, i) => ({
-        nome: label,
-        total: solicitanteChart.values?.[i] || 0
-      })));
+        data.chartSolicitante ||
+        pickChartByTerms(charts, ["solicitante", "requisitante", "e-mail do solicitante", "email do solicitante"]) ||
+        charts[0] ||
+        { labels: [], values: [] };
 
       chartSolicitanteInstance = new Chart(document.getElementById("chartSolicitante"), {
         type: "bar",
@@ -1079,28 +626,64 @@
           datasets: [{
             label: "Qtd",
             data: solicitanteChart.values || [],
-            backgroundColor: "#ff7a1a",
-            borderRadius: 6
+            backgroundColor: "#0f2f5f",
+            borderRadius: 0
           }]
         },
-        options: horizontalBarOptions()
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#17345d", font: { size: 10 } },
+              grid: { color: "rgba(0,0,0,0.06)" },
+              beginAtZero: true
+            },
+            y: {
+              ticks: { color: "#17345d", font: { size: 10 } },
+              grid: { display: false }
+            }
+          }
+        }
       });
 
       chartDiaInstance = new Chart(document.getElementById("chartDia"), {
         type: "line",
         data: {
-          labels: data.porDia?.labels || [],
+          labels: getDayLabels(data.porDia?.labels || []),
           datasets: [{
-            label: "Registros",
+            label: "Solicitações",
             data: data.porDia?.values || [],
-            borderColor: "#58a6ff",
-            backgroundColor: "rgba(88,166,255,0.15)",
+            borderColor: "#0f2f5f",
+            backgroundColor: "rgba(15,47,95,0.10)",
             fill: false,
-            tension: 0.35,
-            pointRadius: 3
+            tension: 0.25,
+            pointRadius: 3,
+            pointBackgroundColor: "#0f2f5f"
           }]
         },
-        options: lineChartOptions()
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#17345d", font: { size: 10 } },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: "#17345d", font: { size: 10 } },
+              grid: { color: "rgba(0,0,0,0.06)" },
+              beginAtZero: true
+            }
+          }
+        }
       });
     }
 
@@ -1111,9 +694,6 @@
       const data = await res.json();
 
       totalPages = data.totalPages || 1;
-
-      document.getElementById("chipPagina").textContent = `Página ${currentPage}`;
-      document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
 
       let html = `<table class="detail-table"><thead><tr>`;
       (data.headers || []).forEach((header) => {
@@ -1129,17 +709,12 @@
         html += `</tr>`;
       });
 
-      if (!(data.rows || []).length) {
-        html += `<tr><td colspan="${(data.headers || []).length || 1}" style="text-align:center; color:#c7d2e0;">Sem dados para os filtros aplicados.</td></tr>`;
-      }
-
       html += `</tbody></table>`;
       document.getElementById("detailWrap").innerHTML = html;
     }
 
     async function loadAll(page = 1) {
       currentPage = page;
-      await loadResumo();
       await loadGraficos();
       await loadDetalhes();
     }
@@ -1150,12 +725,11 @@
       document.getElementById("filtroDataInicio").value = "";
       document.getElementById("filtroDataFim").value = "";
       document.getElementById("filtroBusca").value = "";
+      document.getElementById("periodoSelect").value = "";
 
       dynamicFilterKeys.forEach((key) => {
-        document.querySelectorAll(`#menu_${cssSafe(key)} input[type="checkbox"]`).forEach((el) => {
-          el.checked = false;
-        });
-        updateMultiTrigger(key);
+        const el = document.getElementById(`f_${cssSafe(key)}`);
+        if (el) el.value = "";
       });
 
       loadAll(1);
@@ -1167,13 +741,6 @@
 
     document.getElementById("btnNext").addEventListener("click", () => {
       if (currentPage < totalPages) loadAll(currentPage + 1);
-    });
-
-    document.getElementById("toggleFilters").addEventListener("click", () => {
-      const card = document.getElementById("filtersCard");
-      card.classList.toggle("open");
-      document.getElementById("toggleFilters").textContent =
-        card.classList.contains("open") ? "Recolher filtros" : "Expandir filtros";
     });
 
     (async function init() {

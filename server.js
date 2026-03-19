@@ -1760,7 +1760,7 @@ async function ccoGetBestSheetTitle() {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: CCO_FBS_SPREADSHEET_ID,
-        range: `'${title}'!A1:AZ2000`,
+        range: '"Solicitações de imagens"!A1:AZ2000',
       });
 
       const values = response.data.values || [];

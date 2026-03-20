@@ -423,22 +423,18 @@
       margin-bottom:16px;
     }
 
-    .main-grid{
+    .modules-grid{
       display:grid;
-      grid-template-columns:1fr 1fr 0.9fr;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
       gap:16px;
       align-items:start;
     }
 
-    .module-card,
-    .side-card{
+    .module-card{
       background:linear-gradient(135deg,#111827,#16233c 60%, #172740);
       border:1px solid rgba(255,255,255,0.08);
       border-radius:22px;
       box-shadow:0 12px 26px rgba(0,0,0,0.22);
-    }
-
-    .module-card{
       padding:22px;
       text-decoration:none;
       color:#fff;
@@ -493,113 +489,8 @@
       color:#d1d5db;
     }
 
-    .stack{
-      display:grid;
-      gap:16px;
-    }
-
-    .side-card{
-      padding:18px;
-      min-height:182px;
-    }
-
-    .side-title{
-      font-size:18px;
-      font-weight:900;
-      color:#fff;
-      margin-bottom:18px;
-    }
-
-    .bullet-list{
-      display:grid;
-      gap:0;
-    }
-
-    .bullet-item{
-      display:flex;
-      gap:12px;
-      padding:14px 0;
-      border-bottom:1px solid rgba(255,255,255,0.08);
-    }
-
-    .bullet-item:last-child{
-      border-bottom:none;
-    }
-
-    .bullet-icon{
-      width:34px;
-      height:34px;
-      border-radius:11px;
-      background:rgba(96,165,250,0.12);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#60a5fa;
-      flex-shrink:0;
-      font-size:16px;
-    }
-
-    .bullet-title{
-      font-size:14px;
-      font-weight:800;
-      color:#fff;
-      margin-bottom:4px;
-    }
-
-    .bullet-desc{
-      font-size:12px;
-      color:#d1d5db;
-      line-height:1.4;
-    }
-
-    .summary-item{
-      display:flex;
-      gap:12px;
-      padding:14px 0;
-      border-bottom:1px solid rgba(255,255,255,0.08);
-    }
-
-    .summary-item:last-child{
-      border-bottom:none;
-    }
-
-    .summary-icon{
-      width:40px;
-      height:40px;
-      border-radius:12px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:rgba(255,255,255,0.06);
-      flex-shrink:0;
-      font-size:18px;
-    }
-
-    .summary-title{
-      font-size:14px;
-      font-weight:800;
-      color:#fff;
-      margin-bottom:4px;
-    }
-
-    .summary-desc{
-      font-size:13px;
-      color:#d1d5db;
-      line-height:1.35;
-    }
-
-    .summary-green{
-      color:#22c55e;
-      font-weight:700;
-    }
-
     @media (max-width: 1180px){
-      .main-grid{
-        grid-template-columns:1fr 1fr;
-      }
-
-      .stack{
-        grid-column:1 / -1;
+      .modules-grid{
         grid-template-columns:1fr 1fr;
       }
     }
@@ -613,12 +504,8 @@
         grid-template-columns:1fr;
       }
 
-      .main-grid{
-        grid-template-columns:1fr;
-      }
-
-      .stack{
-        grid-template-columns:1fr;
+      .modules-grid{
+        grid-template-columns:1fr 1fr;
       }
     }
 
@@ -642,6 +529,10 @@
 
       .hero-metrics,
       .profile-grid{
+        grid-template-columns:1fr;
+      }
+
+      .modules-grid{
         grid-template-columns:1fr;
       }
     }
@@ -771,14 +662,18 @@
           <option value="warehouse">Warehouse</option>
           <option value="agentes">Agentes</option>
           <option value="fbs">FBS</option>
+          <option value="cco">CCO</option>
+          <option value="onboarding">Onboarding</option>
+          <option value="rondas">Rondas</option>
+          <option value="aprovacoes">Aprovações</option>
         </select>
       </div>
     </section>
 
-    <div class="options-count" id="optionsCount">Mostrando 5 opções disponíveis</div>
+    <div class="options-count" id="optionsCount">Mostrando 11 opções disponíveis</div>
 
-    <section class="main-grid" id="modulesContainer">
-      <a href="/aprovacoes" class="module-card" data-name="Controle de Acesso" data-sector="controle">
+    <section class="modules-grid" id="modulesContainer">
+      <a href="/access" class="module-card" data-name="Controle de Acesso" data-sector="controle">
         <div class="module-top">
           <div class="module-icon">🔐</div>
           <div>
@@ -822,81 +717,86 @@
         <div class="module-desc">Painel de agentes, nomes, filtros e estrutura operacional.</div>
       </a>
 
-      <div class="stack">
-        <a href="/chamada-agentes" class="module-card" data-name="FBS" data-sector="fbs">
-          <div class="module-top">
-            <div class="module-icon">📋</div>
-            <div>
-              <div class="module-title">FBS</div>
-              <div class="module-level">Nível 5+</div>
-            </div>
-          </div>
-          <div class="module-desc">Chamada diária, presença e controle das equipes FBS.</div>
-        </a>
-
-        <div class="side-card">
-          <div class="side-title">Controle & Operação</div>
-
-          <div class="bullet-list">
-            <div class="bullet-item">
-              <div class="bullet-icon">🛡️</div>
-              <div>
-                <div class="bullet-title">Controle de Acesso</div>
-                <div class="bullet-desc">Fluxos de aprovação, governança e segurança de entrada.</div>
-              </div>
-            </div>
-
-            <div class="bullet-item">
-              <div class="bullet-icon">📈</div>
-              <div>
-                <div class="bullet-title">AV Lost</div>
-                <div class="bullet-desc">Análise de indicadores, ocorrências e valores encontrados.</div>
-              </div>
-            </div>
-
-            <div class="bullet-item">
-              <div class="bullet-icon">🏢</div>
-              <div>
-                <div class="bullet-title">Warehouse</div>
-                <div class="bullet-desc">Visão de HC, absenteísmo e estrutura por unidade.</div>
-              </div>
-            </div>
+      <a href="/chamada-agentes" class="module-card" data-name="FBS" data-sector="fbs">
+        <div class="module-top">
+          <div class="module-icon">📋</div>
+          <div>
+            <div class="module-title">FBS</div>
+            <div class="module-level">Nível 5+</div>
           </div>
         </div>
+        <div class="module-desc">Chamada diária, presença e controle das equipes FBS.</div>
+      </a>
 
-        <div class="side-card">
-          <div class="side-title">Resumo rápido</div>
-
-          <div class="summary-item">
-            <div class="summary-icon">✅</div>
-            <div>
-              <div class="summary-title">Status</div>
-              <div class="summary-desc"><span class="summary-green">Aprovado</span> e ativo no portal.</div>
-            </div>
-          </div>
-
-          <div class="summary-item">
-            <div class="summary-icon">👤</div>
-            <div>
-              <div class="summary-title">Perfil</div>
-              <div class="summary-desc" id="summaryPerfil">Supervisor</div>
-            </div>
-          </div>
-
-          <div class="summary-item">
-            <div class="summary-icon">🔐</div>
-            <div>
-              <div class="summary-title">Acesso</div>
-              <div class="summary-desc">Módulos Security liberados.</div>
-            </div>
+      <a href="/cco-fbs" class="module-card" data-name="CCO FBS" data-sector="cco">
+        <div class="module-top">
+          <div class="module-icon">🧭</div>
+          <div>
+            <div class="module-title">CCO FBS</div>
+            <div class="module-level">Nível 5+</div>
           </div>
         </div>
-      </div>
+        <div class="module-desc">Dashboard operacional CCO com tipo, ocorrência, unidade e solicitantes.</div>
+      </a>
+
+      <a href="/admissao-onboarding" class="module-card" data-name="Admissão Onboarding" data-sector="onboarding">
+        <div class="module-top">
+          <div class="module-icon">🧑‍💼</div>
+          <div>
+            <div class="module-title">Admissão + Onboarding</div>
+            <div class="module-level">Nível 5+</div>
+          </div>
+        </div>
+        <div class="module-desc">Visão consolidada de admissões, onboarding, cargos, empresas e instrutores.</div>
+      </a>
+
+      <a href="/ronda-geral" class="module-card" data-name="Ronda Geral" data-sector="rondas">
+        <div class="module-top">
+          <div class="module-icon">🛡️</div>
+          <div>
+            <div class="module-title">Ronda Geral</div>
+            <div class="module-level">Nível 5+</div>
+          </div>
+        </div>
+        <div class="module-desc">Painel geral de rondas com unidade, plantão, colaborador e ocorrências.</div>
+      </a>
+
+      <a href="/ronda-portas-emergencia" class="module-card" data-name="Ronda Portas de Emergência" data-sector="rondas">
+        <div class="module-top">
+          <div class="module-icon">🚪</div>
+          <div>
+            <div class="module-title">Ronda Portas de Emergência</div>
+            <div class="module-level">Nível 5+</div>
+          </div>
+        </div>
+        <div class="module-desc">Monitoramento de rondas em portas de emergência e controle de lacres.</div>
+      </a>
+
+      <a href="/ronda-estoque" class="module-card" data-name="Ronda Estoque" data-sector="rondas">
+        <div class="module-top">
+          <div class="module-icon">📦</div>
+          <div>
+            <div class="module-title">Ronda Estoque</div>
+            <div class="module-level">Nível 5+</div>
+          </div>
+        </div>
+        <div class="module-desc">Indicadores de rondas em estoque com visão operacional e detalhamento.</div>
+      </a>
+
+      <a href="/aprovacoes" class="module-card" data-name="Aprovações" data-sector="aprovacoes">
+        <div class="module-top">
+          <div class="module-icon">✅</div>
+          <div>
+            <div class="module-title">Aprovações</div>
+            <div class="module-level">Nível 5+</div>
+          </div>
+        </div>
+        <div class="module-desc">Gestão de solicitações pendentes, validações e aprovações do portal.</div>
+      </a>
     </section>
   </div>
 
   <script>
-    const modulesContainer = document.getElementById("modulesContainer");
     const moduleCards = [...document.querySelectorAll(".module-card")];
     const searchInput = document.getElementById("searchInput");
     const sectorFilter = document.getElementById("sectorFilter");
@@ -914,8 +814,9 @@
       moduleCards.forEach(card => {
         const name = (card.dataset.name || "").toLowerCase();
         const cardSector = (card.dataset.sector || "").toLowerCase();
+        const desc = (card.querySelector(".module-desc")?.textContent || "").toLowerCase();
 
-        const matchesSearch = !search || name.includes(search);
+        const matchesSearch = !search || name.includes(search) || desc.includes(search);
         const matchesSector = !sector || cardSector === sector;
 
         if (matchesSearch && matchesSector) {
@@ -962,12 +863,9 @@
         document.getElementById("dropdownPerfil").textContent = perfil;
 
         document.getElementById("welcomeName").textContent = nome;
-
         document.getElementById("profileUserName").textContent = nome;
         document.getElementById("profileUserRole").textContent = perfil;
         document.getElementById("profileUserEmail").textContent = email;
-
-        document.getElementById("summaryPerfil").textContent = perfil;
 
         document.getElementById("topUserPhoto").src = foto;
         document.getElementById("dropdownUserPhoto").src = foto;

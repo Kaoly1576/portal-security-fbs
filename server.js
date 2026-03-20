@@ -2453,6 +2453,433 @@ app.get("/api/adm-onb-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== RONDAS DASHBOARD ==================
+
+app.get("/ronda-geral", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "rondas.html"));
+});
+
+app.get("/ronda-portas-emergencia", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "rondas.html"));
+});
+
+app.get("/ronda-estoque", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "rondas.html"));
+});
+
+const RONDAS_SPREADSHEET_ID = "1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU";
+
+let rondasCache = null;
+let rondasCacheTime = 0;
+const RONDAS_CACHE_TTL = 5 * 60 * 1000;
+
+function rondaNorm(v) {
+  return String(v || "").trim();
+}
+
+function rondaNormLower(v) {
+  return rondaNorm(v).toLowerCase();
+}
+
+function rondaParseDate(value) {
+  const str = rondaNorm(value);
+  if (!str) return null;
+
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return null;
+}
+
+function rondaFormatISO(date) {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function rondaMonthLabel(date) {
+  const meses = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+  ];
+  return meses[date.getMonth()];
+}
+
+function rondaFindHeader(headers, possibilities) {
+  for (const possibility of possibilities) {
+    const found = headers.find((h) => rondaNormLower(h) === rondaNormLower(possibility));
+    if (found) return found;
+  }
+
+  for (const possibility of possibilities) {
+    const found = headers.find((h) => rondaNormLower(h).includes(rondaNormLower(possibility)));
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function rondaGroupCount(rows, field) {
+  const map = {};
+  rows.forEach((row) => {
+    const key = rondaNorm(row[field]) || "Sem valor";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+function rondaToTopList(mapObj, limit = 10) {
+  return Object.entries(mapObj)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([nome, total]) => ({ nome, total }));
+}
+
+function rondaCountOccurrences(rows, headers) {
+  const ocorrenciaHeader = rondaFindHeader(headers, [
+    "OCORRÊNCIAS",
+    "Ocorrências",
+    "Descrição de ocorrência",
+    "Deseja relatar alguma ocorrência?",
+    "RELATO DA OCORRENCIA 1",
+    "RELATO DE OCORRÊNCIAS"
+  ]);
+
+  if (!ocorrenciaHeader) return 0;
+
+  return rows.filter((row) => {
+    const val = rondaNormLower(row[ocorrenciaHeader]);
+    if (!val) return false;
+    if (val === "sem ocorrência") return false;
+    if (val === "nao" || val === "não") return false;
+    if (val === "nan") return false;
+    return true;
+  }).length;
+}
+
+function rondaCountBrokenSeals(rows, headers) {
+  const lacreHeaders = headers.filter((h) => rondaNormLower(h).includes("lacre rompido"));
+  if (!lacreHeaders.length) return 0;
+
+  let total = 0;
+  rows.forEach((row) => {
+    lacreHeaders.forEach((header) => {
+      const val = rondaNormLower(row[header]);
+      if (["sim", "yes", "rompido"].includes(val)) total += 1;
+    });
+  });
+
+  return total;
+}
+
+function rondaApplyFilters(rows, meta, query) {
+  const dataInicio = rondaNorm(query.dataInicio);
+  const dataFim = rondaNorm(query.dataFim);
+  const busca = rondaNormLower(query.busca);
+
+  const ano = rondaNorm(query.ano);
+  const mes = rondaNorm(query.mes);
+  const dia = rondaNorm(query.dia);
+  const semana = rondaNorm(query.semana);
+
+  const unidade = rondaNorm(query.unidade);
+  const plantao = rondaNorm(query.plantao);
+
+  return rows.filter((row) => {
+    const dt = row._date;
+    if (!dt) return false;
+
+    const iso = rondaFormatISO(dt);
+    if (dataInicio && iso < dataInicio) return false;
+    if (dataFim && iso > dataFim) return false;
+
+    if (ano && String(dt.getFullYear()) !== ano) return false;
+    if (mes && String(dt.getMonth() + 1).padStart(2, "0") !== mes.padStart(2, "0")) return false;
+    if (dia && String(dt.getDate()).padStart(2, "0") !== dia.padStart(2, "0")) return false;
+
+    if (semana) {
+      const weekOfMonth = Math.ceil(dt.getDate() / 7);
+      if (String(weekOfMonth) !== String(semana)) return false;
+    }
+
+    if (unidade && meta.unidadeHeader && rondaNorm(row[meta.unidadeHeader]) !== unidade) return false;
+    if (plantao && meta.plantaoHeader && rondaNorm(row[meta.plantaoHeader]) !== plantao) return false;
+
+    if (busca) {
+      const text = meta.headers
+        .map((h) => rondaNormLower(row[h]))
+        .join(" ");
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+async function rondaLoadSheet(sheetTitle) {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: RONDAS_SPREADSHEET_ID,
+    range: `'${sheetTitle}'!A1:CZ200000`,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) {
+    return { headers: [], rows: [] };
+  }
+
+  const headers = values[0].map((h, idx) => rondaNorm(h) || `COL_${idx + 1}`);
+
+  const rows = values.slice(1).map((line) => {
+    const obj = {};
+    headers.forEach((header, i) => {
+      obj[header] = line[i] ?? "";
+    });
+    return obj;
+  });
+
+  return { headers, rows };
+}
+
+async function rondasLoadWithCache() {
+  const now = Date.now();
+
+  if (rondasCache && now - rondasCacheTime < RONDAS_CACHE_TTL) {
+    return rondasCache;
+  }
+
+  const [geral, portas, estoque] = await Promise.all([
+    rondaLoadSheet("Ronda geral"),
+    rondaLoadSheet("Ronda portas de emergência"),
+    rondaLoadSheet("Ronda estoque RK"),
+  ]);
+
+  function enrich(dataset, tipoKey, displayName) {
+    const headers = dataset.headers || [];
+    const rows = dataset.rows || [];
+
+    const dataHeader = rondaFindHeader(headers, ["Data"]);
+    const unidadeHeader = rondaFindHeader(headers, ["Unidade"]);
+    const plantaoHeader = rondaFindHeader(headers, ["PLANTÃO", "Plantão"]);
+    const nomeHeader = rondaFindHeader(headers, ["Nome"]);
+
+    const enrichedRows = rows
+      .map((row) => ({
+        ...row,
+        _date: dataHeader ? rondaParseDate(row[dataHeader]) : null,
+      }))
+      .filter((row) => row._date);
+
+    return {
+      tipoKey,
+      displayName,
+      headers,
+      rows: enrichedRows,
+      dataHeader,
+      unidadeHeader,
+      plantaoHeader,
+      nomeHeader,
+    };
+  }
+
+  rondasCache = {
+    geral: enrich(geral, "geral", "Ronda Geral"),
+    portas: enrich(portas, "portas", "Portas de Emergência"),
+    estoque: enrich(estoque, "estoque", "Ronda Estoque"),
+  };
+
+  rondasCacheTime = now;
+  return rondasCache;
+}
+
+function getRondaMeta(tipo, cache) {
+  if (tipo === "portas") return cache.portas;
+  if (tipo === "estoque") return cache.estoque;
+  return cache.geral;
+}
+
+app.get("/api/rondas-filtros", requireAuth, async (req, res) => {
+  try {
+    const tipo = rondaNormLower(req.query.tipo || "geral");
+    const cache = await rondasLoadWithCache();
+    const meta = getRondaMeta(tipo, cache);
+
+    const anos = [...new Set(meta.rows.map((r) => String(r._date.getFullYear())))]
+      .sort((a, b) => Number(a) - Number(b));
+
+    const meses = [...new Set(meta.rows.map((r) => String(r._date.getMonth() + 1).padStart(2, "0")))]
+      .sort((a, b) => Number(a) - Number(b));
+
+    const dias = [...new Set(meta.rows.map((r) => String(r._date.getDate()).padStart(2, "0")))]
+      .sort((a, b) => Number(a) - Number(b));
+
+    const semanas = ["1", "2", "3", "4", "5"];
+
+    const unidades = meta.unidadeHeader
+      ? [...new Set(meta.rows.map((r) => rondaNorm(r[meta.unidadeHeader])).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b, "pt-BR"))
+      : [];
+
+    const plantoes = meta.plantaoHeader
+      ? [...new Set(meta.rows.map((r) => rondaNorm(r[meta.plantaoHeader])).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b, "pt-BR"))
+      : [];
+
+    return res.json({
+      tipo: meta.tipoKey,
+      titulo: meta.displayName,
+      anos,
+      meses,
+      dias,
+      semanas,
+      unidades,
+      plantoes,
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/rondas-graficos", requireAuth, async (req, res) => {
+  try {
+    const tipo = rondaNormLower(req.query.tipo || "geral");
+    const cache = await rondasLoadWithCache();
+    const meta = getRondaMeta(tipo, cache);
+
+    const filtrados = rondaApplyFilters(meta.rows, meta, req.query);
+
+    const total = filtrados.length;
+
+    const totalUnidades = meta.unidadeHeader
+      ? new Set(filtrados.map((r) => rondaNorm(r[meta.unidadeHeader])).filter(Boolean)).size
+      : 0;
+
+    const totalPlantoes = meta.plantaoHeader
+      ? new Set(filtrados.map((r) => rondaNorm(r[meta.plantaoHeader])).filter(Boolean)).size
+      : 0;
+
+    const totalColaboradores = meta.nomeHeader
+      ? new Set(filtrados.map((r) => rondaNorm(r[meta.nomeHeader])).filter(Boolean)).size
+      : 0;
+
+    const totalOcorrencias = rondaCountOccurrences(filtrados, meta.headers);
+    const totalLacresRompidos = tipo === "portas" ? rondaCountBrokenSeals(filtrados, meta.headers) : 0;
+
+    const porFF = meta.unidadeHeader ? rondaToTopList(rondaGroupCount(filtrados, meta.unidadeHeader), 12) : [];
+    const porPlantao = meta.plantaoHeader ? rondaToTopList(rondaGroupCount(filtrados, meta.plantaoHeader), 10) : [];
+    const porColaborador = meta.nomeHeader ? rondaToTopList(rondaGroupCount(filtrados, meta.nomeHeader), 20) : [];
+
+    const byDay = {};
+    filtrados.forEach((row) => {
+      const day = String(row._date.getDate()).padStart(2, "0");
+      byDay[day] = (byDay[day] || 0) + 1;
+    });
+    const dayLabels = Object.keys(byDay).sort((a, b) => Number(a) - Number(b));
+
+    const byMonth = {};
+    filtrados.forEach((row) => {
+      const key = row._date.getMonth();
+      byMonth[key] = (byMonth[key] || 0) + 1;
+    });
+    const monthIndexes = Object.keys(byMonth).map(Number).sort((a, b) => a - b);
+    const monthLabels = monthIndexes.map((m) => {
+      const d = new Date(2025, m, 1);
+      return rondaMonthLabel(d);
+    });
+
+    const resumoDistribuicao = [
+      { nome: "Ocorrências", total: totalOcorrencias },
+      ...(tipo === "portas" ? [{ nome: "Lacres rompidos", total: totalLacresRompidos }] : []),
+      { nome: "Sem ocorrência", total: Math.max(total - totalOcorrencias, 0) }
+    ];
+
+    return res.json({
+      titulo: meta.displayName,
+      resumo: {
+        total,
+        totalUnidades,
+        totalPlantoes,
+        totalColaboradores,
+        totalOcorrencias,
+        totalLacresRompidos,
+      },
+      porFF,
+      porPlantao,
+      porColaborador,
+      porDia: {
+        labels: dayLabels,
+        values: dayLabels.map((d) => byDay[d]),
+      },
+      porMes: {
+        labels: monthLabels,
+        values: monthIndexes.map((m) => byMonth[m]),
+      },
+      distribuicao: resumoDistribuicao,
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/rondas-detalhes", requireAuth, async (req, res) => {
+  try {
+    const tipo = rondaNormLower(req.query.tipo || "geral");
+    const cache = await rondasLoadWithCache();
+    const meta = getRondaMeta(tipo, cache);
+
+    const filtrados = rondaApplyFilters(meta.rows, meta, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    const preferredHeaders = [
+      meta.dataHeader,
+      meta.unidadeHeader,
+      meta.plantaoHeader,
+      meta.nomeHeader,
+      rondaFindHeader(meta.headers, ["Tipo de ronda"]),
+      rondaFindHeader(meta.headers, ["OCORRÊNCIAS", "Ocorrências", "Descrição de ocorrência"]),
+      rondaFindHeader(meta.headers, ["RELATO DE OCORRÊNCIAS", "Relato ronda", "RELATO DA OCORRENCIA 1"]),
+    ].filter(Boolean);
+
+    const uniqueHeaders = [...new Set(preferredHeaders)];
+
+    const rows = filtrados.slice(start, end).map((row) => {
+      const obj = {};
+      uniqueHeaders.forEach((header) => {
+        obj[header] = row[header] || "";
+      });
+      return obj;
+    });
+
+    return res.json({
+      headers: uniqueHeaders,
+      total: filtrados.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtrados.length / limit),
+      rows,
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

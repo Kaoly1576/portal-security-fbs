@@ -2880,6 +2880,336 @@ app.get("/api/rondas-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== FIRST MILE ACCESS DASHBOARD ==================
+
+app.get("/first-mile-access", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "first-mile-access.html"));
+});
+
+const FM_ACCESS_SPREADSHEET_ID = "1kxePCOZeaVh48C7tP7Ua_iUpYg7EJttRvC7VAkEfQBo";
+
+let fmAccessCache = null;
+let fmAccessCacheTime = 0;
+const FM_ACCESS_CACHE_TTL = 5 * 60 * 1000;
+
+function fmNorm(v) {
+  return String(v || "").trim();
+}
+
+function fmNormLower(v) {
+  return fmNorm(v).toLowerCase();
+}
+
+function fmParseDate(value) {
+  const str = fmNorm(value);
+  if (!str) return null;
+
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  return null;
+}
+
+function fmFormatISO(date) {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function fmMonthLabel(date) {
+  const meses = [
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+  ];
+  return meses[date.getMonth()];
+}
+
+function fmFindHeader(headers, possibilities) {
+  for (const possibility of possibilities) {
+    const found = headers.find((h) => fmNormLower(h) === fmNormLower(possibility));
+    if (found) return found;
+  }
+
+  for (const possibility of possibilities) {
+    const found = headers.find((h) => fmNormLower(h).includes(fmNormLower(possibility)));
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function fmGroupCount(rows, field, uniqueBy = null) {
+  const map = {};
+
+  rows.forEach((row) => {
+    const key = fmNorm(row[field]) || "Sem valor";
+
+    if (!uniqueBy) {
+      map[key] = (map[key] || 0) + 1;
+      return;
+    }
+
+    if (!map[key]) map[key] = new Set();
+    const uniq = fmNorm(row[uniqueBy]);
+    if (uniq) map[key].add(uniq);
+  });
+
+  if (!uniqueBy) return map;
+
+  const normalized = {};
+  Object.keys(map).forEach((k) => {
+    normalized[k] = map[k].size;
+  });
+  return normalized;
+}
+
+function fmToTopList(mapObj, limit = 10) {
+  return Object.entries(mapObj)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([nome, total]) => ({ nome, total }));
+}
+
+function fmApplyFilters(rows, query) {
+  const dataInicio = fmNorm(query.dataInicio);
+  const dataFim = fmNorm(query.dataFim);
+  const busca = fmNormLower(query.busca);
+
+  const agency = fmNorm(query.agency);
+  const regional = fmNorm(query.regional);
+  const city = fmNorm(query.city);
+  const vehicle = fmNorm(query.vehicle);
+  const monitor = fmNorm(query.monitor);
+
+  return rows.filter((row) => {
+    if (!row._date) return false;
+
+    const iso = fmFormatISO(row._date);
+    if (dataInicio && iso < dataInicio) return false;
+    if (dataFim && iso > dataFim) return false;
+
+    if (agency && fmNorm(row["Agency"]) !== agency) return false;
+    if (regional && fmNorm(row["Regional"]) !== regional) return false;
+    if (city && fmNorm(row["City"]) !== city) return false;
+    if (vehicle && fmNorm(row["Vehicle"]) !== vehicle) return false;
+    if (monitor && fmNorm(row["NOME DO MONITOR"]) !== monitor) return false;
+
+    if (busca) {
+      const text = [
+        row["Agency"],
+        row["Regional"],
+        row["Route Name"],
+        row["Shop Name"],
+        row["City"],
+        row["Driver Name"],
+        row["NOME DO MONITOR"],
+        row["Status Final"],
+        row["Status Validação"],
+        row["Ocorrência Jira"]
+      ].map(fmNormLower).join(" ");
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+async function fmAccessLoadRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: FM_ACCESS_SPREADSHEET_ID,
+    range: "'Painel Operacional'!A1:AZ200000",
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) {
+    return { headers: [], rows: [] };
+  }
+
+  const headers = values[0].map((h, idx) => fmNorm(h) || `COL_${idx + 1}`);
+
+  const rows = values.slice(1).map((line) => {
+    const obj = {};
+    headers.forEach((header, i) => {
+      obj[header] = line[i] ?? "";
+    });
+    obj._date = fmParseDate(obj["Data Coleta"]);
+    return obj;
+  }).filter((row) => row._date && fmNorm(row["Route Name"]));
+
+  return { headers, rows };
+}
+
+async function fmAccessLoadWithCache() {
+  const now = Date.now();
+
+  if (fmAccessCache && now - fmAccessCacheTime < FM_ACCESS_CACHE_TTL) {
+    return fmAccessCache;
+  }
+
+  const data = await fmAccessLoadRaw();
+  fmAccessCache = data;
+  fmAccessCacheTime = now;
+
+  return data;
+}
+
+app.get("/api/fm-access-filtros", requireAuth, async (req, res) => {
+  try {
+    const { rows } = await fmAccessLoadWithCache();
+
+    const agencies = [...new Set(rows.map((r) => fmNorm(r["Agency"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const regionals = [...new Set(rows.map((r) => fmNorm(r["Regional"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const cities = [...new Set(rows.map((r) => fmNorm(r["City"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const vehicles = [...new Set(rows.map((r) => fmNorm(r["Vehicle"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const monitors = [...new Set(rows.map((r) => fmNorm(r["NOME DO MONITOR"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return res.json({
+      agencies,
+      regionals,
+      cities,
+      vehicles,
+      monitors,
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
+  try {
+    const { rows } = await fmAccessLoadWithCache();
+    const filtrados = fmApplyFilters(rows, req.query);
+
+    const totalRotas = new Set(filtrados.map((r) => fmNorm(r["Route Name"])).filter(Boolean)).size;
+    const totalSellers = new Set(filtrados.map((r) => fmNorm(r["Shop ID"])).filter(Boolean)).size;
+    const totalCities = new Set(filtrados.map((r) => fmNorm(r["City"])).filter(Boolean)).size;
+    const totalDrivers = new Set(filtrados.map((r) => fmNorm(r["Driver Name"])).filter(Boolean)).size;
+    const totalOcorrencias = filtrados.filter((r) => {
+      const v = fmNormLower(r["Ocorrência Jira"]);
+      return v && v !== "ok" && v !== "sem ocorrência";
+    }).length;
+
+    const porAgency = fmToTopList(fmGroupCount(filtrados, "Agency", "Route Name"), 10);
+    const porRegional = fmToTopList(fmGroupCount(filtrados, "Regional", "Route Name"), 10);
+    const porStatusFinal = fmToTopList(fmGroupCount(filtrados, "Status Final", "Route Name"), 10);
+    const porVehicle = fmToTopList(fmGroupCount(filtrados, "Vehicle", "Route Name"), 10);
+    const porMonitor = fmToTopList(fmGroupCount(filtrados, "NOME DO MONITOR", "Route Name"), 10);
+    const porCity = fmToTopList(fmGroupCount(filtrados, "City", "Route Name"), 12);
+
+    const distribuicao = [
+      {
+        nome: "Validado",
+        total: filtrados.filter((r) => fmNormLower(r["Validação Ocorrência"]) === "validado").length
+      },
+      {
+        nome: "Divergente",
+        total: filtrados.filter((r) => fmNormLower(r["Validação Ocorrência"]) === "divergente").length
+      }
+    ];
+
+    const byDay = {};
+    filtrados.forEach((row) => {
+      const day = String(row._date.getDate()).padStart(2, "0");
+      byDay[day] = (byDay[day] || 0) + 1;
+    });
+    const dayLabels = Object.keys(byDay).sort((a, b) => Number(a) - Number(b));
+
+    const byMonth = {};
+    filtrados.forEach((row) => {
+      const monthIdx = row._date.getMonth();
+      byMonth[monthIdx] = (byMonth[monthIdx] || 0) + 1;
+    });
+    const monthIndexes = Object.keys(byMonth).map(Number).sort((a, b) => a - b);
+
+    return res.json({
+      resumo: {
+        totalRotas,
+        totalSellers,
+        totalCities,
+        totalDrivers,
+        totalOcorrencias
+      },
+      porAgency,
+      porRegional,
+      porStatusFinal,
+      porVehicle,
+      porMonitor,
+      porCity,
+      distribuicao,
+      porDia: {
+        labels: dayLabels,
+        values: dayLabels.map((d) => byDay[d]),
+      },
+      porMes: {
+        labels: monthIndexes.map((m) => fmMonthLabel(new Date(2025, m, 1))),
+        values: monthIndexes.map((m) => byMonth[m]),
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
+  try {
+    const { rows } = await fmAccessLoadWithCache();
+    const filtrados = fmApplyFilters(rows, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    const headers = [
+      "Data Coleta",
+      "Agency",
+      "Regional",
+      "Route Name",
+      "City",
+      "Vehicle",
+      "Driver Name",
+      "NOME DO MONITOR",
+      "Status Validação",
+      "Ocorrência Jira",
+      "Status Final"
+    ];
+
+    const pageRows = filtrados.slice(start, end).map((row) => {
+      const obj = {};
+      headers.forEach((h) => {
+        obj[h] = row[h] || "";
+      });
+      return obj;
+    });
+
+    return res.json({
+      headers,
+      rows: pageRows,
+      total: filtrados.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtrados.length / limit),
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

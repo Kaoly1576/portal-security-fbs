@@ -34,9 +34,12 @@
       font-family:'Inter',sans-serif;
     }
 
+    html, body{
+      min-height:100%;
+    }
+
     body{
       color:var(--text);
-      min-height:100vh;
       background:
         radial-gradient(circle at 80% 16%, rgba(255,124,33,.20), transparent 18%),
         radial-gradient(circle at 18% 0%, rgba(65,103,255,.16), transparent 22%),
@@ -61,10 +64,16 @@
       color:inherit;
     }
 
+    button{
+      font-family:inherit;
+    }
+
     .page-shell{
       max-width:1450px;
       margin:0 auto;
       padding:18px;
+      position:relative;
+      z-index:1;
     }
 
     .topbar{
@@ -84,7 +93,7 @@
       display:flex;
       align-items:center;
       gap:12px;
-      min-width:260px;
+      min-width:240px;
     }
 
     .brand img{
@@ -92,6 +101,7 @@
       height:34px;
       object-fit:contain;
       border-radius:8px;
+      background:rgba(255,255,255,.03);
     }
 
     .brand h1{
@@ -155,6 +165,7 @@
       background:rgba(255,255,255,.03);
       color:#fff;
       font-size:16px;
+      cursor:pointer;
     }
 
     .profile-mini{
@@ -165,6 +176,7 @@
       border-radius:999px;
       border:1px solid var(--line);
       background:rgba(255,255,255,.04);
+      min-width:120px;
     }
 
     .profile-mini img{
@@ -173,6 +185,7 @@
       border-radius:50%;
       object-fit:cover;
       border:2px solid rgba(255,255,255,.14);
+      background:#111827;
     }
 
     .main-grid{
@@ -504,35 +517,6 @@
       flex:0 0 auto;
     }
 
-    .status{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:7px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
-    }
-
-    .status.pending{
-      background:rgba(245,158,11,.14);
-      border:1px solid rgba(245,158,11,.22);
-      color:#ffd186;
-    }
-
-    .status.approved{
-      background:rgba(34,197,94,.14);
-      border:1px solid rgba(34,197,94,.22);
-      color:#9df0ba;
-    }
-
-    .status.blocked{
-      background:rgba(239,68,68,.14);
-      border:1px solid rgba(239,68,68,.22);
-      color:#ffb9b9;
-    }
-
     .row-actions{
       display:flex;
       gap:8px;
@@ -574,6 +558,7 @@
       flex-direction:column;
       justify-content:flex-end;
       transition:.22s ease;
+      cursor:pointer;
     }
 
     .module-card:hover{
@@ -642,6 +627,7 @@
       border-radius:50%;
       object-fit:cover;
       border:2px solid rgba(255,255,255,.15);
+      background:#111827;
     }
 
     .profile-name{
@@ -862,6 +848,7 @@
 </head>
 <body>
   <div class="page-shell">
+
     <header class="topbar">
       <div class="brand">
         <img src="/images/logo.png" alt="Logo">
@@ -869,33 +856,34 @@
       </div>
 
       <nav class="nav">
-        <a href="#" class="active">Dashboard</a>
-        <a href="/controle-de-acesso">Controle de Acesso</a>
-        <a href="/auditoria">Auditoria</a>
-        <a href="/logs">Logs</a>
-        <a href="/incidentes">Incidentes</a>
+        <a href="/portal.html" class="active">Dashboard</a>
+        <a href="/access.html">Controle de Acesso</a>
+        <a href="/aprovacoes.html">Aprovações</a>
+        <a href="/dashboard.html">Dashboard Geral</a>
+        <a href="/first-mile-access.html">First Mile</a>
       </nav>
 
       <div class="top-actions">
         <button class="icon-btn" aria-label="Buscar">⌕</button>
 
         <div class="profile-mini">
-          <img id="topUserPhoto" src="/images/minha-foto.png" alt="Minha foto">
-          <span>Caíque</span>
+          <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
+          <span id="topUserName">Caíque</span>
         </div>
       </div>
     </header>
 
     <div class="main-grid">
       <section class="left-col">
+
         <section class="hero">
           <div class="hero-content">
             <h2>Bem-vindo ao Shopee Security</h2>
             <p>Protegendo sua experiência de compra online com segurança.</p>
 
             <div class="hero-actions">
-              <button class="btn btn-primary">Verificar Segurança</button>
-              <button class="btn btn-dark">Reportar incidente</button>
+              <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">Verificar Segurança</button>
+              <button class="btn btn-dark" onclick="window.location.href='/aprovacoes.html'">Reportar incidente</button>
             </div>
           </div>
 
@@ -976,20 +964,20 @@
             </div>
 
             <div class="quick-actions">
-              <button class="action-btn primary">
+              <button class="action-btn primary" onclick="window.location.href='/aprovacoes.html'">
                 <span>🔔 Aprovar Solicitações</span>
                 <span class="action-badge">12</span>
               </button>
 
-              <button class="action-btn">
+              <button class="action-btn" onclick="window.location.href='/dashboard.html'">
                 <span>⚠ Ver Incidentes</span>
                 <span class="action-badge">5+</span>
               </button>
 
-              <button class="action-btn">
+              <button class="action-btn" onclick="window.location.href='/cadastro.html'">
                 <span>＋ Adicionar Usuário</span>
                 <span>›</span>
-              </button>
+              </              </button>
             </div>
           </div>
         </section>
@@ -1008,7 +996,6 @@
                   <th>Ação</th>
                 </tr>
               </thead>
-
               <tbody>
                 <tr>
                   <td>
@@ -1022,8 +1009,8 @@
                   <td>Controle</td>
                   <td>
                     <div class="row-actions">
-                      <button class="tiny-btn approve">Aprovar</button>
-                      <button class="tiny-btn view">Ver</button>
+                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
+                      <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
                     </div>
                   </td>
                 </tr>
@@ -1040,8 +1027,8 @@
                   <td>Desempenho</td>
                   <td>
                     <div class="row-actions">
-                      <button class="tiny-btn approve">Aprovar</button>
-                      <button class="tiny-btn view">Ver</button>
+                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
+                      <button class="tiny-btn view" onclick="window.location.href='/dashboard.html'">Ver</button>
                     </div>
                   </td>
                 </tr>
@@ -1058,8 +1045,8 @@
                   <td>RH</td>
                   <td>
                     <div class="row-actions">
-                      <button class="tiny-btn approve">Aprovar</button>
-                      <button class="tiny-btn view">Ver</button>
+                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
+                      <button class="tiny-btn view" onclick="window.location.href='/dashboard.html'">Ver</button>
                     </div>
                   </td>
                 </tr>
@@ -1076,8 +1063,8 @@
                   <td>Finanças</td>
                   <td>
                     <div class="row-actions">
-                      <button class="tiny-btn approve">Aprovar</button>
-                      <button class="tiny-btn view">Ver</button>
+                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
+                      <button class="tiny-btn view" onclick="window.location.href='/dashboard.html'">Ver</button>
                     </div>
                   </td>
                 </tr>
@@ -1094,8 +1081,14 @@
                   <td>Operações</td>
                   <td>
                     <div class="row-actions">
-                      <button class="tiny-btn approve" style="background:linear-gradient(135deg,#ff934f,#d9480f);">Revisar</button>
-                      <button class="tiny-btn view">Ver</button>
+                      <button
+                        class="tiny-btn approve"
+                        style="background:linear-gradient(135deg,#ff934f,#d9480f);"
+                        onclick="window.location.href='/aprovacoes.html'"
+                      >
+                        Revisar
+                      </button>
+                      <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
                     </div>
                   </td>
                 </tr>
@@ -1105,40 +1098,40 @@
         </section>
 
         <section class="modules">
-          <a class="module-card orange" href="/controle-de-acesso">
+          <a class="module-card orange" href="/access.html">
             <div class="module-icon">🛡</div>
             <div class="module-title">Controle de Acesso</div>
-            <div class="module-sub">5+</div>
+            <div class="module-sub">Níveis e permissões</div>
           </a>
 
-          <a class="module-card blue" href="/auditoria">
-            <div class="module-icon">📄</div>
-            <div class="module-title">Auditoria</div>
-            <div class="module-sub">12 relatórios na fila</div>
+          <a class="module-card blue" href="/aprovacoes.html">
+            <div class="module-icon">✅</div>
+            <div class="module-title">Aprovações</div>
+            <div class="module-sub">Fila de decisões</div>
           </a>
 
-          <a class="module-card green" href="/logs">
-            <div class="module-icon">🗂</div>
-            <div class="module-title">Logs</div>
-            <div class="module-sub">7.749 registros hoje</div>
+          <a class="module-card green" href="/dashboard.html">
+            <div class="module-icon">📊</div>
+            <div class="module-title">Dashboard</div>
+            <div class="module-sub">Visão geral operacional</div>
           </a>
 
-          <a class="module-card blue" href="/times">
+          <a class="module-card blue" href="/agentes-fbs.html">
             <div class="module-icon">👥</div>
-            <div class="module-title">Times</div>
-            <div class="module-sub">Gerenciamento de equipes</div>
+            <div class="module-title">Agentes FBS</div>
+            <div class="module-sub">Operação e equipes</div>
           </a>
 
-          <a class="module-card orange" href="/usuarios">
+          <a class="module-card orange" href="/cadastro.html">
             <div class="module-icon">👤</div>
-            <div class="module-title">Usuários</div>
-            <div class="module-sub">Perfis e permissões</div>
+            <div class="module-title">Cadastro</div>
+            <div class="module-sub">Novos usuários</div>
           </a>
 
-          <a class="module-card green" href="/incidentes">
-            <div class="module-icon">🚨</div>
-            <div class="module-title">Incidentes</div>
-            <div class="module-sub">Resposta rápida</div>
+          <a class="module-card green" href="/first-mile-access.html">
+            <div class="module-icon">🚚</div>
+            <div class="module-title">First Mile</div>
+            <div class="module-sub">Acessos críticos</div>
           </a>
         </section>
       </section>
@@ -1146,9 +1139,9 @@
       <aside class="right-col">
         <section class="profile-card">
           <div class="profile-head">
-            <img id="sideUserPhoto" src="/images/minha-foto.png" alt="Minha foto">
+            <img id="sideUserPhoto" src="/images/logo.png" alt="Foto do usuário">
             <div>
-              <div class="profile-name">Caíque Nascimento</div>
+              <div class="profile-name" id="sideUserName">Caíque Nascimento</div>
               <div class="profile-role">Decisões 5+</div>
             </div>
           </div>
@@ -1166,12 +1159,12 @@
 
             <div class="info-block">
               <small>Status</small>
-              <strong>Aprovador</strong>
+              <strong>Online</strong>
             </div>
 
             <div class="info-block">
               <small>Ambiente</small>
-              <strong>Portal Security FBS</strong>
+              <strong>Produção</strong>
             </div>
           </div>
         </section>
@@ -1184,25 +1177,31 @@
               <div class="alert-icon">⚠</div>
               <div class="item-text">
                 <strong>Tentativa de Invasão</strong>
+                <span>Múltiplos acessos negados detectados</span>
               </div>
+              <div class="item-time">agora</div>
             </div>
 
             <div class="alert-item">
               <div class="alert-icon">⚠</div>
               <div class="item-text">
                 <strong>Phishing Detectado</strong>
+                <span>Evento reportado em caixa monitorada</span>
               </div>
+              <div class="item-time">12m</div>
             </div>
 
             <div class="alert-item">
               <div class="alert-icon">⚠</div>
               <div class="item-text">
                 <strong>Malware Bloqueado</strong>
+                <span>Arquivo suspeito neutralizado</span>
               </div>
+              <div class="item-time">37m</div>
             </div>
           </div>
 
-          <button class="see-all">Ver Todos</button>
+          <button class="see-all" onclick="window.location.href='/dashboard.html'">Ver Todos</button>
         </section>
 
         <section class="history-card">
@@ -1213,7 +1212,7 @@
               <div class="history-avatar">EO</div>
               <div class="item-text">
                 <strong>Eduardo Oliveira</strong>
-                <span>Controls</span>
+                <span>Controle</span>
               </div>
               <div class="item-time">14:31</div>
             </div>
@@ -1242,30 +1241,96 @@
   </div>
 
   <script>
-    const USER_PHOTO = "/images/minha-foto.png";
+    const fallbackPhoto = "/images/logo.png";
+    const fallbackName = "Caíque";
 
-    const DASH_LINKS = {
-      controleAcesso: "/controle-de-acesso",
-      auditoria: "/auditoria",
-      logs: "/logs",
-      times: "/times",
-      usuarios: "/usuarios",
-      incidentes: "/incidentes"
+    function getStoredUserPhoto() {
+      const possiblePhotoKeys = [
+        "userPhoto",
+        "user_photo",
+        "photoURL",
+        "googleUserPhoto",
+        "googlePhoto",
+        "picture"
+      ];
+
+      for (const key of possiblePhotoKeys) {
+        const value = localStorage.getItem(key);
+        if (value && value !== "null" && value !== "undefined") {
+          return value;
+        }
+      }
+
+      const rawUser = localStorage.getItem("user");
+      if (rawUser) {
+        try {
+          const parsed = JSON.parse(rawUser);
+          return parsed.photoURL || parsed.picture || parsed.imageUrl || "";
+        } catch (e) {}
+      }
+
+      return "";
+    }
+
+    function getStoredUserName() {
+      const possibleNameKeys = [
+        "userName",
+        "user_name",
+        "displayName",
+        "googleUserName",
+        "googleName",
+        "name"
+      ];
+
+      for (const key of possibleNameKeys) {
+        const value = localStorage.getItem(key);
+        if (value && value !== "null" && value !== "undefined") {
+          return value;
+        }
+      }
+
+      const rawUser = localStorage.getItem("user");
+      if (rawUser) {
+        try {
+          const parsed = JSON.parse(rawUser);
+          return parsed.name || parsed.displayName || "";
+        } catch (e) {}
+      }
+
+      return "";
+    }
+
+    const userPhoto = getStoredUserPhoto() || fallbackPhoto;
+    const userName = getStoredUserName() || fallbackName;
+
+    const topUserPhoto = document.getElementById("topUserPhoto");
+    const sideUserPhoto = document.getElementById("sideUserPhoto");
+    const topUserName = document.getElementById("topUserName");
+    const sideUserName = document.getElementById("sideUserName");
+
+    topUserPhoto.src = userPhoto;
+    sideUserPhoto.src = userPhoto;
+    topUserName.textContent = userName;
+    sideUserName.textContent = userName;
+
+    topUserPhoto.onerror = function () {
+      this.src = fallbackPhoto;
     };
 
-    document.getElementById("topUserPhoto").src = USER_PHOTO;
-    document.getElementById("sideUserPhoto").src = USER_PHOTO;
+    sideUserPhoto.onerror = function () {
+      this.src = fallbackPhoto;
+    };
 
     const ctx = document.getElementById("monitorChart");
 
     new Chart(ctx, {
       type: "line",
       data: {
-        labels: ["00h","03h","06h","09h","12h","15h","18h","21h","23h"],
+        labels: ["00h", "03h", "06h", "09h", "12h", "15h", "18h", "21h", "23h"],
         datasets: [
           {
             label: "Acessos",
-            data: [102,106,98,114,101,118,126,116,125],
+            data: [102, 106, 98, 114, 101, 118, 126, 116, 125],
             borderColor: "#ff7a1a",
             backgroundColor: "rgba(255,122,26,.12)",
             tension: 0.35,
@@ -1276,7 +1341,7 @@
           },
           {
             label: "Bloqueios",
-            data: [8,10,9,13,11,15,12,14,16],
+            data: [8, 10, 9, 13, 11, 15, 12, 14, 16],
             borderColor: "#ef4444",
             backgroundColor: "rgba(239,68,68,.10)",
             tension: 0.35,
@@ -1287,7 +1352,7 @@
           },
           {
             label: "Tentativas suspeitas",
-            data: [3,5,4,7,5,8,6,7,9],
+            data: [3, 5, 4, 7, 5, 8, 6, 7, 9],
             borderColor: "#5f7dff",
             backgroundColor: "rgba(95,125,255,.10)",
             tension: 0.35,

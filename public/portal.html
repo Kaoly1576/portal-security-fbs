@@ -3,30 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Security FBS Portal</title>
-
-<link rel="stylesheet" href="/style.css">
+<title>Security FBS</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
+* {
   margin: 0;
-  font-family: Arial;
-  background: radial-gradient(circle at top, #0f172a, #020617);
-  color: white;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.container {
-  padding: 20px;
+body {
+  font-family: "Segoe UI", Arial;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color: white;
 }
 
 /* NAVBAR */
 .navbar {
   display: flex;
   justify-content: space-between;
+  padding: 20px 40px;
   align-items: center;
-  padding: 15px 20px;
 }
 
 .logo {
@@ -36,19 +35,23 @@ body {
 }
 
 .logo img {
-  width: 40px;
+  width: 45px;
 }
 
 .menu {
   display: flex;
-  gap: 25px;
-  font-size: 14px;
-  opacity: 0.8;
+  gap: 30px;
 }
 
 .menu a {
   color: white;
   text-decoration: none;
+  opacity: 0.7;
+}
+
+.menu a:hover {
+  opacity: 1;
+  color: #ff7a1a;
 }
 
 /* HERO */
@@ -56,47 +59,43 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 30px;
+  padding: 40px;
 }
 
 .hero h1 {
-  font-size: 32px;
+  font-size: 36px;
 }
 
 .hero img {
-  width: 280px;
+  width: 320px;
 }
 
 /* CARDS */
 .cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin-top: 30px;
+  gap: 20px;
+  padding: 0 40px;
 }
 
 .card {
-  background: #0f172a;
-  padding: 15px;
+  background: linear-gradient(145deg, #0f172a, #020617);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 20px;
   border-radius: 12px;
 }
 
-.card h3 {
-  font-size: 14px;
-  opacity: 0.7;
-}
-
 .card span {
-  font-size: 28px;
+  font-size: 32px;
   color: #ff7a1a;
 }
 
-/* GRID MAIN */
+/* MAIN */
 .main {
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 20px;
-  margin-top: 30px;
+  padding: 40px;
 }
 
 /* MONITOR */
@@ -106,13 +105,14 @@ body {
   border-radius: 12px;
 }
 
-.right-panel {
+/* RIGHT PANEL */
+.right {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.panel {
+.box {
   background: #0f172a;
   padding: 15px;
   border-radius: 12px;
@@ -139,9 +139,9 @@ td, th {
 .btn {
   background: #ff7a1a;
   border: none;
-  padding: 5px 10px;
-  color: white;
+  padding: 6px 12px;
   border-radius: 6px;
+  color: white;
   cursor: pointer;
 }
 </style>
@@ -149,9 +149,7 @@ td, th {
 
 <body>
 
-<div class="container">
-
-<!-- NAVBAR -->
+<!-- NAV -->
 <div class="navbar">
   <div class="logo">
     <img src="/images/logo.png">
@@ -160,8 +158,8 @@ td, th {
 
   <div class="menu">
     <a href="/portal">Dashboard</a>
-    <a href="/access">Controle de Acesso</a>
-    <a href="/cco-fbs">CCO FBS</a>
+    <a href="/access">Access</a>
+    <a href="/cco-fbs">CCO</a>
     <a href="/aprovacoes">Aprovações</a>
   </div>
 </div>
@@ -170,7 +168,7 @@ td, th {
 <div class="hero">
   <div>
     <h1>Bem-vindo ao Security FBS</h1>
-    <p>Monitoramento de acessos e segurança em tempo real</p>
+    <p>Monitoramento em tempo real de acessos e segurança</p>
   </div>
 
   <img src="/images/logo.png">
@@ -178,14 +176,10 @@ td, th {
 
 <!-- CARDS -->
 <div class="cards">
+
   <div class="card">
     <h3>Aprovados Hoje</h3>
     <span id="aprovados">0</span>
-  </div>
-
-  <div class="card">
-    <h3>Pendentes</h3>
-    <span id="pendentes">0</span>
   </div>
 
   <div class="card">
@@ -194,79 +188,81 @@ td, th {
   </div>
 
   <div class="card">
-    <h3>Total Acessos</h3>
+    <h3>Pendentes</h3>
+    <span id="pendentes">0</span>
+  </div>
+
+  <div class="card">
+    <h3>Total</h3>
     <span id="total">0</span>
   </div>
+
 </div>
 
-<!-- MAIN GRID -->
+<!-- MAIN -->
 <div class="main">
 
-  <!-- MONITOR -->
+  <!-- LEFT -->
   <div>
+
     <div class="monitor">
       <h3>Monitoramento em Tempo Real</h3>
-      <canvas id="grafico"></canvas>
+      <canvas id="chart"></canvas>
     </div>
 
-    <!-- TABELA -->
     <div class="table">
-      <h3>Solicitações Recentes</h3>
+      <h3>Últimos acessos</h3>
       <table id="tabela"></table>
     </div>
+
   </div>
 
   <!-- RIGHT -->
-  <div class="right-panel">
+  <div class="right">
 
-    <div class="panel">
+    <div class="box">
       <h3>Usuário</h3>
-      <div id="usuario"></div>
+      <div id="user"></div>
     </div>
 
-    <div class="panel">
-      <h3>Ações Rápidas</h3>
+    <div class="box">
+      <h3>Ações</h3>
       <button class="btn" onclick="location.href='/aprovacoes'">Aprovar</button>
-      <button class="btn" onclick="location.href='/access'">Ver acessos</button>
+      <button class="btn" onclick="location.href='/access'">Access</button>
     </div>
 
-    <div class="panel">
-      <h3>Dashboards</h3>
-      <button class="btn" onclick="location.href='/access'">ACCESS</button>
-      <button class="btn" onclick="location.href='/cco-fbs'">CCO</button>
+    <div class="box">
+      <h3>Alertas</h3>
+      <p>⚠ Tentativa suspeita</p>
+      <p>⚠ Acesso fora do padrão</p>
     </div>
 
   </div>
-
-</div>
 
 </div>
 
 <script>
+
 let chart;
 
-/* =========================
-   CARREGAR USUÁRIO
-========================= */
-async function loadUser() {
+/* USER */
+async function loadUser(){
   const res = await fetch("/api/me");
   const user = await res.json();
 
-  document.getElementById("usuario").innerHTML = `
-    <b>${user.nome}</b><br>
-    ${user.perfil}
+  document.getElementById("user").innerHTML = `
+    ${user.nome}<br>${user.perfil}
   `;
 }
 
-/* =========================
-   CARREGAR ACCESS (BASE REAL)
-========================= */
-async function loadData() {
+/* DATA */
+async function loadData(){
+
   const res = await fetch("/api/access-dados");
   const data = await res.json();
 
-  const aprovados = data.filter(x => (x.Status || "").toLowerCase() === "aprovado").length;
-  const bloqueados = data.filter(x => (x.Status || "").toLowerCase() === "reprovado").length;
+  const aprovados = data.filter(x => (x.Status||"").toLowerCase()=="aprovado").length;
+  const bloqueados = data.filter(x => (x.Status||"").toLowerCase()=="reprovado").length;
   const total = data.length;
 
   document.getElementById("aprovados").textContent = aprovados;
@@ -278,57 +274,52 @@ async function loadData() {
   renderTable(data);
 }
 
-/* =========================
-   GRÁFICO TEMPO REAL
-========================= */
-function renderChart(data) {
+/* CHART */
+function renderChart(data){
 
   const map = {};
 
-  data.forEach(row => {
-    const d = row["Data"];
-    if (!d) return;
-
-    map[d] = (map[d] || 0) + 1;
+  data.forEach(r=>{
+    const d = r["Data"];
+    if(!d) return;
+    map[d]=(map[d]||0)+1;
   });
 
   const labels = Object.keys(map).slice(-10);
-  const values = labels.map(l => map[l]);
+  const values = labels.map(l=>map[l]);
 
-  if (chart) chart.destroy();
+  if(chart) chart.destroy();
 
-  chart = new Chart(document.getElementById("grafico"), {
-    type: "line",
-    data: {
+  chart = new Chart(document.getElementById("chart"),{
+    type:"line",
+    data:{
       labels,
-      datasets: [{
-        label: "Acessos",
-        data: values,
-        borderColor: "#ff7a1a",
-        fill: true
+      datasets:[{
+        label:"Acessos",
+        data:values,
+        borderColor:"#ff7a1a",
+        fill:true
       }]
     }
   });
 }
 
-/* =========================
-   TABELA
-========================= */
-function renderTable(data) {
+/* TABLE */
+function renderTable(data){
 
-  let html = "<tr><th>Nome</th><th>Empresa</th><th>Status</th></tr>";
+  let html="<tr><th>Nome</th><th>Empresa</th><th>Status</th></tr>";
 
-  data.slice(0,10).forEach(r => {
-    html += `
+  data.slice(0,10).forEach(r=>{
+    html+=`
       <tr>
-        <td>${r["Nome completo:"] || ""}</td>
-        <td>${r["Empresa"] || ""}</td>
-        <td>${r["Status"] || ""}</td>
+        <td>${r["Nome completo:"]||""}</td>
+        <td>${r["Empresa"]||""}</td>
+        <td>${r["Status"]||""}</td>
       </tr>
     `;
   });
 
-  document.getElementById("tabela").innerHTML = html;
+  document.getElementById("tabela").innerHTML=html;
 }
 
 /* INIT */

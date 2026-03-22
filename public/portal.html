@@ -3,328 +3,381 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Security FBS</title>
+
+<title>Security FBS - Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Inter', sans-serif;
 }
 
-body {
-  font-family: "Segoe UI", Arial;
-  background: radial-gradient(circle at top, #0f172a, #020617);
-  color: white;
+body{
+  background: radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 40%),
+              linear-gradient(180deg,#1f2937 0%, #020617 100%);
+  color:#fff;
 }
 
 /* NAVBAR */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  padding: 20px 40px;
-  align-items: center;
+
+.nav{
+  display:flex;
+  justify-content:space-between;
+  padding:20px 40px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.nav h1{
+  font-size:20px;
+  color:#ff6a00;
 }
 
-.logo img {
-  width: 45px;
+.nav .menu{
+  display:flex;
+  gap:25px;
 }
 
-.menu {
-  display: flex;
-  gap: 30px;
+.nav .menu a{
+  color:#ccc;
+  text-decoration:none;
 }
 
-.menu a {
-  color: white;
-  text-decoration: none;
-  opacity: 0.7;
-}
-
-.menu a:hover {
-  opacity: 1;
-  color: #ff7a1a;
+.nav .menu a:hover{
+  color:#fff;
 }
 
 /* HERO */
-.hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 40px;
+
+.hero{
+  display:flex;
+  justify-content:space-between;
+  padding:40px;
+  align-items:center;
 }
 
-.hero h1 {
-  font-size: 36px;
+.hero h2{
+  font-size:28px;
 }
 
-.hero img {
-  width: 320px;
+.hero p{
+  color:#aaa;
+  margin-top:10px;
+}
+
+.hero .actions{
+  margin-top:20px;
+}
+
+.btn{
+  padding:10px 18px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  margin-right:10px;
+}
+
+.btn-primary{
+  background:#ff6a00;
+  color:#fff;
+}
+
+.btn-secondary{
+  background:#111827;
+  color:#fff;
 }
 
 /* CARDS */
-.cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  padding: 0 40px;
+
+.cards{
+  display:grid;
+  grid-template-columns: repeat(4,1fr);
+  gap:20px;
+  padding:0 40px;
 }
 
-.card {
-  background: linear-gradient(145deg, #0f172a, #020617);
-  border: 1px solid rgba(255,255,255,0.05);
-  padding: 20px;
-  border-radius: 12px;
+.card{
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.05);
+  padding:20px;
+  border-radius:12px;
 }
 
-.card span {
-  font-size: 32px;
-  color: #ff7a1a;
+.card h3{
+  color:#aaa;
+  font-size:14px;
 }
 
-/* MAIN */
-.main {
-  display: grid;
-  grid-template-columns: 3fr 1fr;
-  gap: 20px;
-  padding: 40px;
+.card .value{
+  font-size:28px;
+  margin-top:10px;
 }
 
-/* MONITOR */
-.monitor {
-  background: #0f172a;
-  padding: 20px;
-  border-radius: 12px;
+/* GRID */
+
+.grid{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:20px;
+  padding:40px;
 }
 
-/* RIGHT PANEL */
-.right {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* CHART */
+
+.chart-box{
+  background:rgba(255,255,255,0.03);
+  padding:20px;
+  border-radius:12px;
 }
 
-.box {
-  background: #0f172a;
-  padding: 15px;
-  border-radius: 12px;
+/* ACTIONS */
+
+.actions-box{
+  background:rgba(255,255,255,0.03);
+  padding:20px;
+  border-radius:12px;
+}
+
+.actions-box button{
+  width:100%;
+  margin-top:10px;
 }
 
 /* TABLE */
-.table {
-  margin-top: 20px;
-  background: #0f172a;
-  padding: 15px;
-  border-radius: 12px;
+
+.table{
+  margin:40px;
+  background:rgba(255,255,255,0.03);
+  padding:20px;
+  border-radius:12px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+.table table{
+  width:100%;
+  border-collapse:collapse;
 }
 
-td, th {
-  padding: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+.table th, .table td{
+  padding:10px;
+  text-align:left;
+  border-bottom:1px solid rgba(255,255,255,0.05);
 }
 
-.btn {
-  background: #ff7a1a;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
+.badge{
+  padding:5px 10px;
+  border-radius:6px;
 }
+
+.approve{
+  background:#065f46;
+}
+
+.block{
+  background:#7f1d1d;
+}
+
+/* FOOT CARDS */
+
+.bottom{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:20px;
+  padding:40px;
+}
+
+.box{
+  background:rgba(255,255,255,0.03);
+  padding:20px;
+  border-radius:12px;
+  text-align:center;
+}
+
 </style>
 </head>
 
 <body>
 
 <!-- NAV -->
-<div class="navbar">
-  <div class="logo">
-    <img src="/images/logo.png">
-    <b>Shopee Security</b>
-  </div>
+
+<div class="nav">
+  <h1>🛡 Security FBS</h1>
 
   <div class="menu">
-    <a href="/portal">Dashboard</a>
-    <a href="/access">Access</a>
-    <a href="/cco-fbs">CCO</a>
-    <a href="/aprovacoes">Aprovações</a>
+    <a href="#">Dashboard</a>
+    <a href="#">Controle de Acesso</a>
+    <a href="#">Auditoria</a>
+    <a href="#">Logs</a>
+    <a href="#">Incidentes</a>
   </div>
 </div>
 
 <!-- HERO -->
+
 <div class="hero">
   <div>
-    <h1>Bem-vindo ao Security FBS</h1>
-    <p>Monitoramento em tempo real de acessos e segurança</p>
-  </div>
+    <h2>Bem-vindo ao Security FBS</h2>
+    <p>Monitoramento de acessos + eventos de segurança em tempo real</p>
 
-  <img src="/images/logo.png">
+    <div class="actions">
+      <button class="btn btn-primary">Verificar Segurança</button>
+      <button class="btn btn-secondary">Reportar Incidente</button>
+    </div>
+  </div>
 </div>
 
-<!-- CARDS -->
+<!-- CARDS KPI -->
+
 <div class="cards">
 
   <div class="card">
-    <h3>Aprovados Hoje</h3>
-    <span id="aprovados">0</span>
+    <h3>Acessos Hoje</h3>
+    <div class="value" id="acessos">0</div>
+  </div>
+
+  <div class="card">
+    <h3>Aprovados</h3>
+    <div class="value" id="aprovados">0</div>
   </div>
 
   <div class="card">
     <h3>Bloqueados</h3>
-    <span id="bloqueados">0</span>
+    <div class="value" id="bloqueados">0</div>
   </div>
 
   <div class="card">
-    <h3>Pendentes</h3>
-    <span id="pendentes">0</span>
-  </div>
-
-  <div class="card">
-    <h3>Total</h3>
-    <span id="total">0</span>
+    <h3>Usuários Online</h3>
+    <div class="value" id="online">0</div>
   </div>
 
 </div>
 
-<!-- MAIN -->
-<div class="main">
+<!-- GRID -->
 
-  <!-- LEFT -->
-  <div>
+<div class="grid">
 
-    <div class="monitor">
-      <h3>Monitoramento em Tempo Real</h3>
-      <canvas id="chart"></canvas>
-    </div>
-
-    <div class="table">
-      <h3>Últimos acessos</h3>
-      <table id="tabela"></table>
-    </div>
-
+  <div class="chart-box">
+    <h3>Monitoramento em Tempo Real</h3>
+    <canvas id="chart"></canvas>
   </div>
 
-  <!-- RIGHT -->
-  <div class="right">
+  <div class="actions-box">
+    <h3>Ações Rápidas</h3>
 
-    <div class="box">
-      <h3>Usuário</h3>
-      <div id="user"></div>
-    </div>
-
-    <div class="box">
-      <h3>Ações</h3>
-      <button class="btn" onclick="location.href='/aprovacoes'">Aprovar</button>
-      <button class="btn" onclick="location.href='/access'">Access</button>
-    </div>
-
-    <div class="box">
-      <h3>Alertas</h3>
-      <p>⚠ Tentativa suspeita</p>
-      <p>⚠ Acesso fora do padrão</p>
-    </div>
-
+    <button class="btn btn-primary">Aprovar Solicitações</button>
+    <button class="btn btn-secondary">Ver Incidentes</button>
+    <button class="btn btn-secondary">Adicionar Usuário</button>
   </div>
 
 </div>
+
+<!-- TABLE -->
+
+<div class="table">
+  <h3>Solicitações Pendentes</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Solicitação</th>
+        <th>Nível</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody id="tabela">
+    </tbody>
+
+  </table>
+</div>
+
+<!-- BOTTOM -->
+
+<div class="bottom">
+
+  <div class="box">Controle de Acesso</div>
+  <div class="box">Auditoria</div>
+  <div class="box">Logs</div>
+
+</div>
+
+<!-- SCRIPT -->
 
 <script>
 
-let chart;
+// 🔗 SUA SHEET
+const sheetID = "1kxePCOZeaVh48C7tP7Ua_iUpYg7EJttRvC7VAkEfQBo";
+const url = `https://opensheet.elk.sh/${sheetID}/Página1`;
 
-/* USER */
-async function loadUser(){
-  const res = await fetch("/api/me");
-  const user = await res.json();
+async function carregarDados(){
 
-  document.getElementById("user").innerHTML = `
-    ${user.nome}<br>${user.perfil}
-  `;
-}
-
-/* DATA */
-async function loadData(){
-
-  const res = await fetch("/api/access-dados");
+  const res = await fetch(url);
   const data = await res.json();
 
-  const aprovados = data.filter(x => (x.Status||"").toLowerCase()=="aprovado").length;
-  const bloqueados = data.filter(x => (x.Status||"").toLowerCase()=="reprovado").length;
-  const total = data.length;
+  let acessos = data.length;
+  let aprovados = data.filter(i => i.Status === "Aprovado").length;
+  let bloqueados = data.filter(i => i.Status === "Bloqueado").length;
+  let online = Math.floor(Math.random()*50)+50;
 
-  document.getElementById("aprovados").textContent = aprovados;
-  document.getElementById("bloqueados").textContent = bloqueados;
-  document.getElementById("total").textContent = total;
-  document.getElementById("pendentes").textContent = total - aprovados - bloqueados;
+  document.getElementById("acessos").innerText = acessos;
+  document.getElementById("aprovados").innerText = aprovados;
+  document.getElementById("bloqueados").innerText = bloqueados;
+  document.getElementById("online").innerText = online;
 
-  renderChart(data);
-  renderTable(data);
-}
+  // tabela
+  let tabela = document.getElementById("tabela");
+  tabela.innerHTML = "";
 
-/* CHART */
-function renderChart(data){
-
-  const map = {};
-
-  data.forEach(r=>{
-    const d = r["Data"];
-    if(!d) return;
-    map[d]=(map[d]||0)+1;
-  });
-
-  const labels = Object.keys(map).slice(-10);
-  const values = labels.map(l=>map[l]);
-
-  if(chart) chart.destroy();
-
-  chart = new Chart(document.getElementById("chart"),{
-    type:"line",
-    data:{
-      labels,
-      datasets:[{
-        label:"Acessos",
-        data:values,
-        borderColor:"#ff7a1a",
-        fill:true
-      }]
-    }
-  });
-}
-
-/* TABLE */
-function renderTable(data){
-
-  let html="<tr><th>Nome</th><th>Empresa</th><th>Status</th></tr>";
-
-  data.slice(0,10).forEach(r=>{
-    html+=`
+  data.slice(0,5).forEach(item=>{
+    tabela.innerHTML += `
       <tr>
-        <td>${r["Nome completo:"]||""}</td>
-        <td>${r["Empresa"]||""}</td>
-        <td>${r["Status"]||""}</td>
+        <td>${item.Nome}</td>
+        <td>${item.Solicitação}</td>
+        <td>${item.Nível}</td>
+        <td>
+          <span class="badge ${item.Status === "Aprovado" ? "approve":"block"}">
+            ${item.Status}
+          </span>
+        </td>
       </tr>
     `;
   });
 
-  document.getElementById("tabela").innerHTML=html;
 }
 
-/* INIT */
-loadUser();
-loadData();
+// CHART
+
+const ctx = document.getElementById('chart');
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['1h','2h','3h','4h','5h','6h'],
+    datasets: [
+      {
+        label: 'Acessos',
+        data: [12,19,8,15,22,30]
+      },
+      {
+        label: 'Bloqueios',
+        data: [2,5,3,6,4,8]
+      },
+      {
+        label: 'Tentativas Suspeitas',
+        data: [1,2,1,3,2,5]
+      }
+    ]
+  }
+});
+
+// INIT
+carregarDados();
 
 </script>
 

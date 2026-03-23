@@ -1047,7 +1047,8 @@
       </aside>
     </div>
   </div>
-  <script>
+  
+ <script>
   const fallbackPhoto = "/images/logo.png";
   const fallbackName = "Caíque";
 
@@ -1203,6 +1204,28 @@
       a.getFullYear() === b.getFullYear();
   }
 
+  function normalizeHeader(text) {
+    return String(text || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function getValueFlexible(row, keys) {
+    const entries = Object.entries(row);
+    for (const [header, value] of entries) {
+      const normalized = normalizeHeader(header);
+      for (const key of keys) {
+        if (normalized === normalizeHeader(key) || normalized.includes(normalizeHeader(key))) {
+          return value;
+        }
+      }
+    }
+    return "";
+  }
+
   function extractRowsFromTable(table) {
     const rows = Array.from(table.querySelectorAll("tr"));
     if (!rows.length) return [];
@@ -1230,16 +1253,24 @@
       .filter(row => Object.values(row).some(v => String(v).trim() !== ""));
   }
 
-  function extractAllRowsFromDocument(doc) {
-    return Array.from(doc.querySelectorAll("table")).flatMap(extractRowsFromTable);
-  }
+  function extractRowsGeneric(doc) {
+    const tables = Array.from(doc.querySelectorAll("table"));
+    let rows = tables.flatMap(extractRowsFromTable);
 
-  function getValue(row, key) {
-    return row[key] || "";
-  }
+    if (rows.length) return rows;
 
-  function findRenderedRows(doc) {
-    return extractAllRowsFromDocument(doc);
+    const tbodies = Array.from(doc.querySelectorAll("tbody"));
+    for (const tbody of tbodies) {
+      const trList = Array.from(tbody.querySelectorAll("tr"));
+      if (!trList.length) continue;
+
+      const table = tbody.closest("table");
+      if (table) {
+        rows = rows.concat(extractRowsFromTable(table));
+      }
+    }
+
+    return rows;
   }
 
   function createHiddenIframe(src) {
@@ -1255,21 +1286,16 @@
       iframe.style.pointerEvents = "none";
 
       const timeout = setTimeout(() => {
-        cleanup();
         reject(new Error("Timeout ao carregar " + src));
-      }, 25000);
-
-      function cleanup() {
-        clearTimeout(timeout);
-      }
+      }, 30000);
 
       iframe.onload = () => {
-        cleanup();
+        clearTimeout(timeout);
         resolve(iframe);
       };
 
       iframe.onerror = () => {
-        cleanup();
+        clearTimeout(timeout);
         reject(new Error("Erro ao carregar iframe " + src));
       };
 
@@ -1277,34 +1303,37 @@
     });
   }
 
-  async function waitForTableRows(iframe, minRows = 1, maxWait = 20000) {
+  async function waitForRenderedRows(iframe, pageName, maxWait = 25000) {
     const start = Date.now();
+    let lastCount = 0;
 
     while (Date.now() - start < maxWait) {
       try {
         const doc = iframe.contentDocument || iframe.contentWindow.document;
-        const rows = findRenderedRows(doc);
+        const rows = extractRowsGeneric(doc);
+        lastCount = rows.length;
 
-        if (rows.length >= minRows) {
+        if (rows.length > 0) {
+          console.log(pageName + " rows found:", rows.length, rows.slice(0, 3));
           return rows;
         }
       } catch (e) {}
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 700));
     }
 
+    console.log(pageName + " rows found after timeout:", lastCount);
     try {
       const doc = iframe.contentDocument || iframe.contentWindow.document;
-      return findRenderedRows(doc);
+      return extractRowsGeneric(doc);
     } catch (e) {
       return [];
     }
   }
 
-  async function loadRowsFromPage(path, minRows = 1) {
+  async function loadRowsFromPage(path, pageName) {
     const iframe = await createHiddenIframe(path);
-    const rows = await waitForTableRows(iframe, minRows, 20000);
-    return rows;
+    return await waitForRenderedRows(iframe, pageName, 25000);
   }
 
   function parseAccessRows(rows) {
@@ -1312,29 +1341,35 @@
     const pendingRows = [];
 
     rows.forEach(row => {
-      const status = String(getValue(row, "Status") || "").toLowerCase();
-      const operacao = safeText(getValue(row, "Operação"), "Sem operação");
-      const nome = safeText(getValue(row, "Nome completo:"), operacao);
-      const tipoLiberacao = safeText(getValue(row, "Tipo de Liberação"), "Liberação");
-      const dataLiberacao = parseDate(getValue(row, "Data de liberação") || getValue(row, "Data"));
+      const status = String(
+        getValueFlexible(row, ["Status", "Situação", "Situacao"])
+      ).toLowerCase();
+
+      const operacao = safeText(
+        getValueFlexible(row, ["Operação", "Operacao"]),
+        "Sem operação"
+      );
+
+      const tipoLiberacao = safeText(
+        getValueFlexible(row, ["Tipo de Liberação", "Tipo de Liberacao"]),
+        "Liberação"
+      );
+
+      const dataLiberacao = parseDate(
+        getValueFlexible(row, ["Data de liberação", "Data de Liberação", "Data"])
+      );
 
       const item = {
         operacao,
-        nome,
         tipoLiberacao,
         dataLiberacao
       };
 
       if (status.includes("aprov")) {
-        if (withinLast24Hours(dataLiberacao)) {
-          approved24.push(item);
-        }
+        if (withinLast24Hours(dataLiberacao)) approved24.push(item);
       }
 
-      if (
-        status.includes("aguard") ||
-        status.includes("pend")
-      ) {
+      if (status.includes("aguard") || status.includes("pend")) {
         pendingRows.push(item);
       }
     });
@@ -1396,14 +1431,11 @@
     let hcPresent = 0;
 
     rows.forEach(row => {
-      hcWarehouse += parseNumber(getValue(row, "qtd_pessoas"));
-      hcPresent += parseNumber(getValue(row, "total_presencas"));
+      hcWarehouse += parseNumber(getValueFlexible(row, ["qtd_pessoas"]));
+      hcPresent += parseNumber(getValueFlexible(row, ["total_presencas"]));
     });
 
-    return {
-      hcWarehouse,
-      hcPresent
-    };
+    return { hcWarehouse, hcPresent };
   }
 
   function parseDashboardRows(rows) {
@@ -1411,14 +1443,11 @@
     let itemsRecovered = 0;
 
     rows.forEach(row => {
-      avRecovered += parseNumber(getValue(row, "US$ ENCONTRADO"));
-      itemsRecovered += parseNumber(getValue(row, "QUANTIDADE ENCONTRADA"));
+      avRecovered += parseNumber(getValueFlexible(row, ["US$ ENCONTRADO", "US ENCONTRADO"]));
+      itemsRecovered += parseNumber(getValueFlexible(row, ["QUANTIDADE ENCONTRADA"]));
     });
 
-    return {
-      avRecovered,
-      itemsRecovered
-    };
+    return { avRecovered, itemsRecovered };
   }
 
   function parseFirstMileRows(rows) {
@@ -1426,12 +1455,12 @@
     const seenRoutes = new Set();
 
     rows.forEach(row => {
-      const dataColeta = parseDate(getValue(row, "Data Coleta"));
+      const dataColeta = parseDate(getValueFlexible(row, ["Data Coleta"]));
       if (!withinLast24Hours(dataColeta)) return;
 
-      const routeName = safeText(getValue(row, "Route Name"), "Sem rota");
-      const chave = safeText(getValue(row, "Chave"), "");
-      const statusFinal = String(getValue(row, "Status Final") || "").toLowerCase();
+      const routeName = safeText(getValueFlexible(row, ["Route Name"]), "Sem rota");
+      const chave = safeText(getValueFlexible(row, ["Chave"]), "");
+      const statusFinal = String(getValueFlexible(row, ["Status Final"])).toLowerCase();
 
       if (statusFinal.includes("cancel")) return;
 
@@ -1607,16 +1636,11 @@
   async function loadPortalData() {
     try {
       const [accessRows, hcRows, dashboardRows, firstMileRows] = await Promise.all([
-        loadRowsFromPage("/access.html", 1),
-        loadRowsFromPage("/hc.html", 1),
-        loadRowsFromPage("/dashboard.html", 1),
-        loadRowsFromPage("/first-mile-access.html", 1)
+        loadRowsFromPage("/access.html", "access.html"),
+        loadRowsFromPage("/hc.html", "hc.html"),
+        loadRowsFromPage("/dashboard.html", "dashboard.html"),
+        loadRowsFromPage("/first-mile-access.html", "first-mile-access.html")
       ]);
-
-      console.log("ACCESS RENDERED ROWS:", accessRows);
-      console.log("HC RENDERED ROWS:", hcRows);
-      console.log("DASHBOARD RENDERED ROWS:", dashboardRows);
-      console.log("FIRST MILE RENDERED ROWS:", firstMileRows);
 
       const accessData = parseAccessRows(accessRows);
       const hcData = parseHcRows(hcRows);
@@ -1667,7 +1691,7 @@
       document.getElementById("pendingTableBody").innerHTML = `
         <tr>
           <td colspan="5" class="empty-state">
-            Erro ao carregar os dashboards. Verifique se as páginas carregam a tabela normalmente e se estão no mesmo domínio.
+            Erro ao carregar os dashboards. Verifique console e estrutura das páginas access.html, hc.html e first-mile-access.html.
           </td>
         </tr>
       `;
@@ -1680,5 +1704,3 @@
 
   document.addEventListener("DOMContentLoaded", loadPortalData);
 </script>
-
- 

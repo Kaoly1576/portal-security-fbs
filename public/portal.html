@@ -745,103 +745,70 @@
   </div>
 
   <script>
-    const fallbackPhoto = "/images/logo.png";
-    const fallbackName = "Usuário";
+  const fallbackPhoto = "/images/logo.png";
+  const fallbackName = "Usuário";
 
-    function tryParseJSON(value) {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return null;
-      }
-    }
+  async function loadUserProfile() {
+    try {
+      const response = await fetch("/api/me", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
 
-    function getUserData() {
-      const candidates = [
-        tryParseJSON(localStorage.getItem("userGoogle")),
-        tryParseJSON(localStorage.getItem("googleUser")),
-        tryParseJSON(localStorage.getItem("user")),
-        tryParseJSON(sessionStorage.getItem("userGoogle")),
-        tryParseJSON(sessionStorage.getItem("googleUser")),
-        tryParseJSON(sessionStorage.getItem("user"))
-      ].filter(Boolean);
-
-      const rawPhotoKeys = [
-        localStorage.getItem("userPhoto"),
-        localStorage.getItem("photoURL"),
-        localStorage.getItem("googlePhoto"),
-        localStorage.getItem("picture"),
-        sessionStorage.getItem("userPhoto"),
-        sessionStorage.getItem("photoURL"),
-        sessionStorage.getItem("googlePhoto"),
-        sessionStorage.getItem("picture")
-      ].filter(Boolean);
-
-      const rawNameKeys = [
-        localStorage.getItem("userName"),
-        localStorage.getItem("displayName"),
-        localStorage.getItem("googleName"),
-        localStorage.getItem("name"),
-        sessionStorage.getItem("userName"),
-        sessionStorage.getItem("displayName"),
-        sessionStorage.getItem("googleName"),
-        sessionStorage.getItem("name")
-      ].filter(Boolean);
-
-      const rawEmailKeys = [
-        localStorage.getItem("userEmail"),
-        localStorage.getItem("email"),
-        sessionStorage.getItem("userEmail"),
-        sessionStorage.getItem("email")
-      ].filter(Boolean);
-
-      let user = {
-        name: fallbackName,
-        picture: fallbackPhoto,
-        email: "",
-        role: "Aprovador",
-        level: "5",
-        status: "Aprovado"
-      };
-
-      for (const c of candidates) {
-        user.name = c.name || c.displayName || user.name;
-        user.picture = c.picture || c.photoURL || c.imageUrl || c.avatar || user.picture;
-        user.email = c.email || user.email;
-        user.role = c.role || c.cargo || c.funcao || user.role;
-        user.level = c.level || c.nivel || user.level;
-        user.status = c.status || user.status;
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status} ao buscar /api/me`);
       }
 
-      if (rawPhotoKeys.length) user.picture = rawPhotoKeys[0];
-      if (rawNameKeys.length) user.name = rawNameKeys[0];
-      if (rawEmailKeys.length) user.email = rawEmailKeys[0];
+      const user = await response.json();
 
-      return user;
+      const nome = user.nome || fallbackName;
+      const foto = user.foto || fallbackPhoto;
+      const email = user.email || "Não informado";
+      const perfil = user.perfil || "Usuário";
+
+      const topUserPhoto = document.getElementById("topUserPhoto");
+      const sideUserPhoto = document.getElementById("sideUserPhoto");
+      const topUserName = document.getElementById("topUserName");
+      const sideUserName = document.getElementById("sideUserName");
+      const userEmail = document.getElementById("userEmail");
+      const userRole = document.getElementById("sideUserRole");
+
+      if (topUserPhoto) {
+        topUserPhoto.src = foto;
+        topUserPhoto.onerror = function () {
+          this.src = fallbackPhoto;
+        };
+      }
+
+      if (sideUserPhoto) {
+        sideUserPhoto.src = foto;
+        sideUserPhoto.onerror = function () {
+          this.src = fallbackPhoto;
+        };
+      }
+
+      if (topUserName) topUserName.textContent = nome;
+      if (sideUserName) sideUserName.textContent = nome;
+      if (userEmail) userEmail.textContent = email;
+      if (userRole) userRole.textContent = perfil;
+    } catch (error) {
+      console.error("Erro ao carregar perfil do usuário:", error);
+
+      const topUserPhoto = document.getElementById("topUserPhoto");
+      const sideUserPhoto = document.getElementById("sideUserPhoto");
+      const topUserName = document.getElementById("topUserName");
+      const sideUserName = document.getElementById("sideUserName");
+
+      if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
+      if (sideUserPhoto) sideUserPhoto.src = fallbackPhoto;
+      if (topUserName) topUserName.textContent = fallbackName;
+      if (sideUserName) sideUserName.textContent = fallbackName;
     }
+  }
 
-    const user = getUserData();
-
-    const topUserPhoto = document.getElementById("topUserPhoto");
-    const sideUserPhoto = document.getElementById("sideUserPhoto");
-    const topUserName = document.getElementById("topUserName");
-    const sideUserName = document.getElementById("sideUserName");
-    const userEmail = document.getElementById("userEmail");
-    const userRole = document.getElementById("sideUserRole");
-    const userLevel = document.getElementById("userLevel");
-    const userStatus = document.getElementById("userStatus");
-
-    topUserPhoto.src = user.picture || fallbackPhoto;
-    sideUserPhoto.src = user.picture || fallbackPhoto;
-    topUserName.textContent = user.name || fallbackName;
-    sideUserName.textContent = user.name || fallbackName;
-    userEmail.textContent = user.email || "Não informado";
-    userRole.textContent = user.role || "Aprovador";
-    userLevel.textContent = user.level || "5";
-    userStatus.textContent = user.status || "Aprovado";
-
-    topUserPhoto.onerror = function () { this.src = fallbackPhoto; };
-    sideUserPhoto.onerror = function () { this.src = fallbackPhoto; };
-  </script>
-</body>
-</html>
+  document.addEventListener("DOMContentLoaded", loadUserProfile);
+</script>

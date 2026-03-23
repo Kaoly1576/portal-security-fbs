@@ -1,307 +1,847 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portal Security FBS</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Security FBS</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<style>
-:root{
-  --bg:#050c18;
-  --card:rgba(15,25,45,.75);
-  --line:rgba(255,255,255,.08);
-  --text:#fff;
-  --muted:#9fb0d0;
-  --orange:#ff7a1a;
-}
+  <style>
+    :root{
+      --bg:#07101d;
+      --panel:rgba(10,17,31,.80);
+      --panel-2:rgba(17,26,46,.86);
+      --line:rgba(255,255,255,.07);
+      --text:#f5f7fb;
+      --muted:#9aa7c0;
+      --orange:#ff7a1a;
+      --orange-2:#ff9b52;
+      --blue:#4d78ff;
+      --green:#22c55e;
+      --red:#ef4444;
+      --shadow:0 12px 34px rgba(0,0,0,.34);
+    }
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:'Inter',sans-serif;
-}
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:'Inter',sans-serif;
+    }
 
-body{
-  background:
-    linear-gradient(180deg,rgba(5,12,24,.95),rgba(5,12,24,.98)),
-    url("/images/plano de fundo.png") center/cover fixed;
-  color:#fff;
-}
+    html, body{
+      min-height:100%;
+    }
 
-/* HEADER */
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:18px 30px;
-  border-bottom:1px solid var(--line);
-  background:rgba(0,0,0,.5);
-  backdrop-filter:blur(12px);
-}
+    body{
+      color:var(--text);
+      background:
+        radial-gradient(circle at 80% 16%, rgba(255,124,33,.16), transparent 18%),
+        radial-gradient(circle at 18% 0%, rgba(65,103,255,.12), transparent 22%),
+        linear-gradient(180deg, rgba(8,14,28,.93), rgba(5,10,20,.96)),
+        url("/images/plano de fundo.png") center/cover no-repeat fixed;
+      background-blend-mode:screen,screen,normal,normal;
+    }
 
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(to bottom, rgba(255,255,255,.02), transparent 120px),
+        radial-gradient(circle at center, rgba(255,255,255,.015), transparent 55%);
+      opacity:.85;
+    }
 
-.brand img{
-  width:34px;
-}
+    a{
+      text-decoration:none;
+      color:inherit;
+    }
 
-.nav{
-  display:flex;
-  gap:20px;
-}
+    button{
+      font-family:inherit;
+    }
 
-.nav a{
-  color:#cbd5f5;
-  text-decoration:none;
-  font-weight:500;
-}
+    .page-shell{
+      max-width:1450px;
+      margin:0 auto;
+      padding:18px;
+      position:relative;
+      z-index:1;
+    }
 
-.nav a.active{
-  color:#fff;
-  border-bottom:2px solid var(--orange);
-}
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      padding:14px 20px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:linear-gradient(180deg, rgba(13,20,36,.9), rgba(9,15,28,.82));
+      backdrop-filter:blur(14px);
+      box-shadow:var(--shadow);
+    }
 
-/* USER */
-.user{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  background:rgba(255,255,255,.05);
-  padding:6px 12px;
-  border-radius:999px;
-}
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:240px;
+    }
 
-.user img{
-  width:34px;
-  height:34px;
-  border-radius:50%;
-}
+    .brand img{
+      width:34px;
+      height:34px;
+      object-fit:contain;
+      border-radius:8px;
+      background:rgba(255,255,255,.03);
+    }
 
-/* HERO */
-.hero{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:40px;
-  gap:20px;
-}
+    .brand h1{
+      font-size:18px;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
 
-.hero-text{
-  max-width:500px;
-}
+    .nav{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:1;
+      gap:8px;
+      flex-wrap:wrap;
+    }
 
-.hero h1{
-  font-size:28px;
-  margin-bottom:10px;
-}
+    .nav a{
+      padding:10px 14px;
+      border-radius:12px;
+      color:#d9e3f8;
+      font-size:14px;
+      font-weight:500;
+      position:relative;
+      transition:.2s;
+    }
 
-.hero p{
-  color:var(--muted);
-}
+    .nav a:hover,
+    .nav a.active{
+      background:rgba(255,255,255,.04);
+      color:#fff;
+    }
 
-.hero img{
-  width:260px;
-}
+    .nav a.active::after{
+      content:"";
+      position:absolute;
+      left:14px;
+      right:14px;
+      bottom:3px;
+      height:2px;
+      border-radius:999px;
+      background:linear-gradient(90deg,var(--orange),#ffc593);
+      box-shadow:0 0 12px rgba(255,122,26,.55);
+    }
 
-/* GRID */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:20px;
-  padding:30px;
-}
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:220px;
+      justify-content:flex-end;
+    }
 
-/* CARD */
-.card{
-  background:var(--card);
-  border-radius:18px;
-  padding:22px;
-  border:1px solid var(--line);
-  transition:.2s;
-}
+    .icon-btn{
+      width:40px;
+      height:40px;
+      display:grid;
+      place-items:center;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:#fff;
+      font-size:16px;
+      cursor:pointer;
+    }
 
-.card:hover{
-  transform:translateY(-4px);
-}
+    .profile-mini{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:5px 12px 5px 6px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      min-width:120px;
+      max-width:240px;
+    }
 
-.card h3{
-  margin-bottom:16px;
-  font-size:18px;
-}
+    .profile-mini img{
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,.14);
+      background:#111827;
+      flex:0 0 auto;
+    }
 
-/* LINKS */
-.link{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px;
-  margin-bottom:10px;
-  border-radius:12px;
-  background:rgba(255,255,255,.04);
-  text-decoration:none;
-  color:#fff;
-  transition:.2s;
-}
+    .profile-mini span{
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      font-size:14px;
+      font-weight:600;
+    }
 
-.link:hover{
-  background:rgba(255,122,26,.2);
-}
+    .main-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.95fr) 355px;
+      gap:18px;
+      margin-top:18px;
+    }
 
-.link span{
-  color:var(--muted);
-  font-size:12px;
-}
+    .left-col,
+    .right-col{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      min-width:0;
+    }
 
-/* RESPONSIVO */
-@media(max-width:900px){
-  .grid{
-    grid-template-columns:1fr;
-  }
+    .hero{
+      position:relative;
+      min-height:250px;
+      border-radius:24px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:var(--shadow);
+      background:
+        linear-gradient(90deg, rgba(7,11,22,.96) 0%, rgba(7,11,22,.80) 42%, rgba(7,11,22,.24) 100%),
+        url("/images/plano de fundo.png") center/cover no-repeat;
+      display:flex;
+      align-items:center;
+      padding:36px;
+    }
 
-  .hero{
-    flex-direction:column;
-    text-align:center;
-  }
-}
-</style>
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 68% 35%, rgba(255,170,90,.22), transparent 23%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.16));
+      pointer-events:none;
+    }
+
+    .hero-content{
+      position:relative;
+      z-index:2;
+      max-width:560px;
+    }
+
+    .hero h2{
+      font-size:24px;
+      font-weight:600;
+      margin-bottom:14px;
+    }
+
+    .hero p{
+      font-size:15px;
+      line-height:1.6;
+      color:#d3ddf2;
+      margin-bottom:24px;
+    }
+
+    .hero-actions{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+      padding:13px 22px;
+      border-radius:12px;
+      font-size:15px;
+      font-weight:700;
+      transition:.2s;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .btn:hover{
+      transform:translateY(-1px);
+    }
+
+    .btn-primary{
+      color:#fff;
+      background:linear-gradient(135deg,#ff9546,#ff5d00);
+      box-shadow:0 10px 28px rgba(255,122,26,.25);
+    }
+
+    .btn-dark{
+      color:#eef3ff;
+      background:linear-gradient(180deg, rgba(43,56,84,.92), rgba(18,26,44,.95));
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .hero-eagle{
+      position:absolute;
+      right:10px;
+      bottom:0;
+      width:min(42%, 430px);
+      max-height:92%;
+      object-fit:contain;
+      z-index:1;
+      filter:drop-shadow(0 10px 30px rgba(0,0,0,.45));
+      pointer-events:none;
+    }
+
+    .section-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+    }
+
+    .category-card,
+    .profile-card,
+    .info-card{
+      background:linear-gradient(180deg, rgba(16,24,40,.92), rgba(10,16,29,.95));
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .category-card{
+      padding:18px;
+      min-height:220px;
+    }
+
+    .category-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:14px;
+    }
+
+    .category-links{
+      display:grid;
+      gap:12px;
+    }
+
+    .category-link{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:16px 16px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);
+      transition:.2s ease;
+    }
+
+    .category-link:hover{
+      transform:translateY(-2px);
+      background:rgba(255,122,26,.10);
+      border-color:rgba(255,122,26,.22);
+    }
+
+    .category-link strong{
+      display:block;
+      font-size:15px;
+      margin-bottom:4px;
+    }
+
+    .category-link span{
+      display:block;
+      color:#9eabc4;
+      font-size:12px;
+    }
+
+    .category-link .arrow{
+      color:#dce5f8;
+      font-weight:800;
+      font-size:16px;
+      flex:0 0 auto;
+    }
+
+    .profile-card{
+      padding:18px;
+    }
+
+    .profile-head{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding-bottom:16px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      margin-bottom:16px;
+    }
+
+    .profile-head img{
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,.15);
+      background:#111827;
+      flex:0 0 auto;
+    }
+
+    .profile-name{
+      font-size:20px;
+      font-weight:700;
+      line-height:1.2;
+    }
+
+    .profile-role{
+      margin-top:4px;
+      font-size:13px;
+      color:#ffbf8c;
+      font-weight:600;
+    }
+
+    .profile-grid{
+      display:grid;
+      gap:12px;
+    }
+
+    .profile-info{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:14px;
+      padding:12px 14px;
+    }
+
+    .profile-info small{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .profile-info strong{
+      display:block;
+      font-size:15px;
+      color:#eef4ff;
+      word-break:break-word;
+    }
+
+    .info-card{
+      padding:18px;
+      min-height:180px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,149,70,.12), transparent 30%),
+        linear-gradient(180deg, rgba(14,22,38,.95), rgba(9,15,28,.96));
+    }
+
+    .info-card img{
+      width:180px;
+      max-width:100%;
+      object-fit:contain;
+      margin-bottom:12px;
+      filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));
+    }
+
+    .info-card h3{
+      font-size:18px;
+      margin-bottom:8px;
+    }
+
+    .info-card p{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    @media (max-width: 1230px){
+      .main-grid{
+        grid-template-columns:1fr;
+      }
+
+      .right-col{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    @media (max-width: 980px){
+      .section-grid{
+        grid-template-columns:1fr;
+      }
+
+      .right-col{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        min-height:260px;
+      }
+
+      .hero-eagle{
+        width:42%;
+        opacity:.92;
+      }
+    }
+
+    @media (max-width: 760px){
+      .page-shell{
+        padding:12px;
+      }
+
+      .topbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .brand,
+      .top-actions{
+        justify-content:center;
+      }
+
+      .nav{
+        justify-content:flex-start;
+        flex-wrap:nowrap;
+        overflow:auto;
+      }
+
+      .hero{
+        min-height:auto;
+        padding:24px 20px;
+      }
+
+      .hero-content{
+        max-width:100%;
+        padding-right:0;
+      }
+
+      .hero h2{
+        font-size:18px;
+      }
+
+      .hero p{
+        font-size:14px;
+        max-width:100%;
+      }
+
+      .hero-eagle{
+        opacity:.18;
+        width:80%;
+        right:-18%;
+        bottom:-2%;
+      }
+    }
+  </style>
 </head>
-
 <body>
+  <div class="page-shell">
 
-<!-- HEADER -->
-<header class="topbar">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/images/logo.png" alt="Logo">
+        <h1>Shopee Security</h1>
+      </div>
 
-  <div class="brand">
-    <img src="/images/logo.png">
-    <strong>Shopee Security</strong>
+      <nav class="nav">
+        <a href="/portal.html" class="active">Dashboard</a>
+        <a href="/access.html">Controle de Acesso</a>
+        <a href="/aprovacoes.html">Aprovações</a>
+        <a href="/dashboard.html">Resultado</a>
+        <a href="/first-mile-access.html">First Mile</a>
+      </nav>
+
+      <div class="top-actions">
+        <button class="icon-btn" aria-label="Buscar">⌕</button>
+        <div class="profile-mini">
+          <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
+          <span id="topUserName">Usuário</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <section class="left-col">
+
+        <section class="hero">
+          <div class="hero-content">
+            <h2>Bem-vindo ao Portal Security</h2>
+            <p>
+              Central de gestão de acessos, HC, processos e auditorias.
+              Utilize os módulos abaixo para navegar entre os dashboards e áreas operacionais.
+            </p>
+
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="/access.html">Verificar Segurança</a>
+              <a class="btn btn-dark" href="/aprovacoes.html">Ver Aprovações</a>
+            </div>
+          </div>
+
+          <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
+        </section>
+
+        <section class="section-grid">
+          <div class="category-card">
+            <div class="category-title">🔐 Controle de Acesso</div>
+            <div class="category-links">
+              <a class="category-link" href="/access.html">
+                <div>
+                  <strong>Dashboard ACCESS</strong>
+                  <span>Acessos e liberações</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/aprovacoes.html">
+                <div>
+                  <strong>Aprovações</strong>
+                  <span>Gestão de solicitações</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/cadastro.html">
+                <div>
+                  <strong>Cadastro</strong>
+                  <span>Novos acessos</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+            </div>
+          </div>
+
+          <div class="category-card">
+            <div class="category-title">👥 HC</div>
+            <div class="category-links">
+              <a class="category-link" href="/hc.html">
+                <div>
+                  <strong>Dashboard HC</strong>
+                  <span>Headcount e presença</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/agentes-fbs.html">
+                <div>
+                  <strong>Times</strong>
+                  <span>Gestão de equipe</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+            </div>
+          </div>
+
+          <div class="category-card">
+            <div class="category-title">⚙️ Processos</div>
+            <div class="category-links">
+              <a class="category-link" href="/first-mile-access.html">
+                <div>
+                  <strong>First Mile</strong>
+                  <span>Rotas e coletas</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/rondas.html">
+                <div>
+                  <strong>Rondas</strong>
+                  <span>Monitoramento</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/chamada-agentes.html">
+                <div>
+                  <strong>Chamadas</strong>
+                  <span>Controle operacional</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+            </div>
+          </div>
+
+          <div class="category-card">
+            <div class="category-title">🧾 Auditorias</div>
+            <div class="category-links">
+              <a class="category-link" href="/dashboard.html">
+                <div>
+                  <strong>Resultado Operacional</strong>
+                  <span>AV recuperado</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/ccc-fbs.html">
+                <div>
+                  <strong>CCC</strong>
+                  <span>Controle de qualidade</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/desligados.html">
+                <div>
+                  <strong>Desligados</strong>
+                  <span>Controle de acessos removidos</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="right-col">
+        <section class="profile-card">
+          <div class="profile-head">
+            <img id="sideUserPhoto" src="/images/logo.png" alt="Minha foto">
+            <div>
+              <div class="profile-name" id="sideUserName">Usuário</div>
+              <div class="profile-role" id="sideUserRole">Aprovador</div>
+            </div>
+          </div>
+
+          <div class="profile-grid">
+            <div class="profile-info">
+              <small>Status</small>
+              <strong id="userStatus">Aprovado</strong>
+            </div>
+
+            <div class="profile-info">
+              <small>Nível</small>
+              <strong id="userLevel">5</strong>
+            </div>
+
+            <div class="profile-info">
+              <small>E-mail</small>
+              <strong id="userEmail">caíque.nascimento@shopee.com</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="info-card">
+          <img src="/images/Aguia.png" alt="Águia Security">
+          <h3>Portal Security FBS</h3>
+          <p>
+            Navegação central dos módulos operacionais e dashboards do ambiente.
+          </p>
+        </section>
+      </aside>
+    </div>
   </div>
 
-  <nav class="nav">
-    <a class="active">Dashboard</a>
-    <a href="/access.html">Controle de Acesso</a>
-    <a href="/aprovacoes.html">Aprovações</a>
-    <a href="/dashboard.html">Resultado</a>
-    <a href="/first-mile-access.html">First Mile</a>
-  </nav>
+  <script>
+    const fallbackPhoto = "/images/logo.png";
+    const fallbackName = "Usuário";
 
-  <div class="user">
-    <img id="userPhoto" src="/images/logo.png">
-    <span id="userName">Usuário</span>
-  </div>
+    function tryParseJSON(value) {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return null;
+      }
+    }
 
-</header>
+    function getUserData() {
+      const candidates = [
+        tryParseJSON(localStorage.getItem("userGoogle")),
+        tryParseJSON(localStorage.getItem("googleUser")),
+        tryParseJSON(localStorage.getItem("user")),
+        tryParseJSON(sessionStorage.getItem("userGoogle")),
+        tryParseJSON(sessionStorage.getItem("googleUser")),
+        tryParseJSON(sessionStorage.getItem("user"))
+      ].filter(Boolean);
 
-<!-- HERO -->
-<section class="hero">
+      const rawPhotoKeys = [
+        localStorage.getItem("userPhoto"),
+        localStorage.getItem("photoURL"),
+        localStorage.getItem("googlePhoto"),
+        localStorage.getItem("picture"),
+        sessionStorage.getItem("userPhoto"),
+        sessionStorage.getItem("photoURL"),
+        sessionStorage.getItem("googlePhoto"),
+        sessionStorage.getItem("picture")
+      ].filter(Boolean);
 
-  <div class="hero-text">
-    <h1>Bem-vindo ao Portal Security</h1>
-    <p>
-      Central de gestão de acessos, HC, auditorias e processos operacionais.
-      Utilize os módulos abaixo para navegar entre os dashboards.
-    </p>
-  </div>
+      const rawNameKeys = [
+        localStorage.getItem("userName"),
+        localStorage.getItem("displayName"),
+        localStorage.getItem("googleName"),
+        localStorage.getItem("name"),
+        sessionStorage.getItem("userName"),
+        sessionStorage.getItem("displayName"),
+        sessionStorage.getItem("googleName"),
+        sessionStorage.getItem("name")
+      ].filter(Boolean);
 
-  <img src="/images/Aguia.png">
+      const rawEmailKeys = [
+        localStorage.getItem("userEmail"),
+        localStorage.getItem("email"),
+        sessionStorage.getItem("userEmail"),
+        sessionStorage.getItem("email")
+      ].filter(Boolean);
 
-</section>
+      let user = {
+        name: fallbackName,
+        picture: fallbackPhoto,
+        email: "",
+        role: "Aprovador",
+        level: "5",
+        status: "Aprovado"
+      };
 
-<!-- CATEGORIAS -->
-<section class="grid">
+      for (const c of candidates) {
+        user.name = c.name || c.displayName || user.name;
+        user.picture = c.picture || c.photoURL || c.imageUrl || c.avatar || user.picture;
+        user.email = c.email || user.email;
+        user.role = c.role || c.cargo || c.funcao || user.role;
+        user.level = c.level || c.nivel || user.level;
+        user.status = c.status || user.status;
+      }
 
-  <!-- CONTROLE DE ACESSO -->
-  <div class="card">
-    <h3>🔐 Controle de Acesso</h3>
+      if (rawPhotoKeys.length) user.picture = rawPhotoKeys[0];
+      if (rawNameKeys.length) user.name = rawNameKeys[0];
+      if (rawEmailKeys.length) user.email = rawEmailKeys[0];
 
-    <a class="link" href="/access.html">
-      Dashboard ACCESS
-      <span>Acessos e liberações</span>
-    </a>
+      return user;
+    }
 
-    <a class="link" href="/aprovacoes.html">
-      Aprovações
-      <span>Gestão de solicitações</span>
-    </a>
+    const user = getUserData();
 
-    <a class="link" href="/cadastro.html">
-      Cadastro
-      <span>Novos acessos</span>
-    </a>
-  </div>
+    const topUserPhoto = document.getElementById("topUserPhoto");
+    const sideUserPhoto = document.getElementById("sideUserPhoto");
+    const topUserName = document.getElementById("topUserName");
+    const sideUserName = document.getElementById("sideUserName");
+    const userEmail = document.getElementById("userEmail");
+    const userRole = document.getElementById("sideUserRole");
+    const userLevel = document.getElementById("userLevel");
+    const userStatus = document.getElementById("userStatus");
 
-  <!-- HC -->
-  <div class="card">
-    <h3>👥 HC</h3>
+    topUserPhoto.src = user.picture || fallbackPhoto;
+    sideUserPhoto.src = user.picture || fallbackPhoto;
+    topUserName.textContent = user.name || fallbackName;
+    sideUserName.textContent = user.name || fallbackName;
+    userEmail.textContent = user.email || "Não informado";
+    userRole.textContent = user.role || "Aprovador";
+    userLevel.textContent = user.level || "5";
+    userStatus.textContent = user.status || "Aprovado";
 
-    <a class="link" href="/hc.html">
-      Dashboard HC
-      <span>Headcount e presença</span>
-    </a>
-
-    <a class="link" href="/agentes-fbs.html">
-      Times
-      <span>Gestão de equipe</span>
-    </a>
-  </div>
-
-  <!-- PROCESSOS -->
-  <div class="card">
-    <h3>⚙️ Processos</h3>
-
-    <a class="link" href="/first-mile-access.html">
-      First Mile
-      <span>Rotas e coletas</span>
-    </a>
-
-    <a class="link" href="/rondas.html">
-      Rondas
-      <span>Monitoramento</span>
-    </a>
-
-    <a class="link" href="/chamada-agentes.html">
-      Chamadas
-      <span>Controle operacional</span>
-    </a>
-  </div>
-
-  <!-- AUDITORIAS -->
-  <div class="card">
-    <h3>🧾 Auditorias</h3>
-
-    <a class="link" href="/dashboard.html">
-      Resultado Operacional
-      <span>AV recuperado</span>
-    </a>
-
-    <a class="link" href="/ccc-fbs.html">
-      CCC
-      <span>Controle de qualidade</span>
-    </a>
-
-    <a class="link" href="/desligados.html">
-      Desligados
-      <span>Controle de acessos removidos</span>
-    </a>
-  </div>
-
-</section>
-
-<script>
-/* GOOGLE USER */
-const user = JSON.parse(localStorage.getItem("userGoogle"));
-
-if(user){
-  document.getElementById("userName").innerText = user.name;
-  document.getElementById("userPhoto").src = user.picture;
-}
-</script>
-
+    topUserPhoto.onerror = function () { this.src = fallbackPhoto; };
+    sideUserPhoto.onerror = function () { this.src = fallbackPhoto; };
+  </script>
 </body>
 </html>

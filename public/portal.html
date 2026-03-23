@@ -1,1667 +1,655 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal Security FBS</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    :root{
-      --bg:#07101d;
-      --panel:rgba(10,17,31,.80);
-      --panel-2:rgba(17,26,46,.86);
-      --line:rgba(255,255,255,.07);
-      --text:#f5f7fb;
-      --muted:#9aa7c0;
-      --orange:#ff7a1a;
-      --orange-2:#ff9b52;
-      --blue:#4d78ff;
-      --green:#22c55e;
-      --red:#ef4444;
-      --gold:#f59e0b;
-      --shadow:0 12px 34px rgba(0,0,0,.34);
-      --radius:18px;
-    }
-
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:'Inter',sans-serif;
-    }
-
-    html, body{
-      min-height:100%;
-    }
-
-    body{
-      color:var(--text);
-      background:
-        radial-gradient(circle at 80% 16%, rgba(255,124,33,.16), transparent 18%),
-        radial-gradient(circle at 18% 0%, rgba(65,103,255,.12), transparent 22%),
-        linear-gradient(180deg, rgba(8,14,28,.93), rgba(5,10,20,.96)),
-        url("/images/plano de fundo.png") center/cover no-repeat fixed;
-      background-blend-mode:screen,screen,normal,normal;
-    }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(to bottom, rgba(255,255,255,.02), transparent 120px),
-        radial-gradient(circle at center, rgba(255,255,255,.015), transparent 55%);
-      opacity:.85;
-    }
-
-    a{
-      text-decoration:none;
-      color:inherit;
-    }
-
-    button{
-      font-family:inherit;
-    }
-
-    .page-shell{
-      max-width:1450px;
-      margin:0 auto;
-      padding:18px;
-      position:relative;
-      z-index:1;
-    }
-
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:14px 20px;
-      border:1px solid var(--line);
-      border-radius:20px;
-      background:linear-gradient(180deg, rgba(13,20,36,.9), rgba(9,15,28,.82));
-      backdrop-filter:blur(14px);
-      box-shadow:var(--shadow);
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:240px;
-    }
-
-    .brand img{
-      width:34px;
-      height:34px;
-      object-fit:contain;
-      border-radius:8px;
-      background:rgba(255,255,255,.03);
-    }
-
-    .brand h1{
-      font-size:18px;
-      font-weight:700;
-      letter-spacing:.2px;
-    }
-
-    .nav{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex:1;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-
-    .nav a{
-      padding:10px 14px;
-      border-radius:12px;
-      color:#d9e3f8;
-      font-size:14px;
-      font-weight:500;
-      position:relative;
-      transition:.2s;
-    }
-
-    .nav a:hover,
-    .nav a.active{
-      background:rgba(255,255,255,.04);
-      color:#fff;
-    }
-
-    .nav a.active::after{
-      content:"";
-      position:absolute;
-      left:14px;
-      right:14px;
-      bottom:3px;
-      height:2px;
-      border-radius:999px;
-      background:linear-gradient(90deg,var(--orange),#ffc593);
-      box-shadow:0 0 12px rgba(255,122,26,.55);
-    }
-
-    .top-actions{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:220px;
-      justify-content:flex-end;
-    }
-
-    .icon-btn{
-      width:40px;
-      height:40px;
-      display:grid;
-      place-items:center;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.03);
-      color:#fff;
-      font-size:16px;
-      cursor:pointer;
-    }
-
-    .profile-mini{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:5px 12px 5px 6px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      min-width:120px;
-    }
-
-    .profile-mini img{
-      width:34px;
-      height:34px;
-      border-radius:50%;
-      object-fit:cover;
-      border:2px solid rgba(255,255,255,.14);
-      background:#111827;
-    }
-
-    .main-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.95fr) 355px;
-      gap:18px;
-      margin-top:18px;
-    }
-
-    .left-col,
-    .right-col{
-      display:flex;
-      flex-direction:column;
-      gap:18px;
-      min-width:0;
-    }
-
-    .hero{
-      position:relative;
-      min-height:250px;
-      border-radius:24px;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.08);
-      box-shadow:var(--shadow);
-      background:
-        linear-gradient(90deg, rgba(7,11,22,.96) 0%, rgba(7,11,22,.80) 42%, rgba(7,11,22,.24) 100%),
-        url("/images/plano de fundo.png") center/cover no-repeat;
-      display:flex;
-      align-items:center;
-      padding:36px;
-    }
-
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 68% 35%, rgba(255,170,90,.22), transparent 23%),
-        linear-gradient(180deg, transparent, rgba(0,0,0,.16));
-      pointer-events:none;
-    }
-
-    .hero-content{
-      position:relative;
-      z-index:2;
-      max-width:560px;
-    }
-
-    .hero h2{
-      font-size:24px;
-      font-weight:600;
-      margin-bottom:14px;
-    }
-
-    .hero p{
-      font-size:15px;
-      line-height:1.6;
-      color:#d3ddf2;
-      margin-bottom:24px;
-    }
-
-    .hero-actions{
-      display:flex;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      border:none;
-      cursor:pointer;
-      padding:13px 22px;
-      border-radius:12px;
-      font-size:15px;
-      font-weight:700;
-      transition:.2s;
-    }
-
-    .btn:hover{
-      transform:translateY(-1px);
-    }
-
-    .btn-primary{
-      color:#fff;
-      background:linear-gradient(135deg,#ff9546,#ff5d00);
-      box-shadow:0 10px 28px rgba(255,122,26,.25);
-    }
-
-    .btn-dark{
-      color:#eef3ff;
-      background:linear-gradient(180deg, rgba(43,56,84,.92), rgba(18,26,44,.95));
-      border:1px solid rgba(255,255,255,.08);
-    }
-
-    .hero-eagle{
-      position:absolute;
-      right:10px;
-      bottom:0;
-      width:min(42%, 430px);
-      max-height:92%;
-      object-fit:contain;
-      z-index:1;
-      filter:drop-shadow(0 10px 30px rgba(0,0,0,.45));
-      pointer-events:none;
-    }
-
-    .metrics{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:14px;
-    }
-
-    .metric-card{
-      background:linear-gradient(180deg, rgba(17,25,43,.90), rgba(10,16,29,.92));
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:18px;
-      padding:18px;
-      box-shadow:var(--shadow);
-      min-height:118px;
-    }
-
-    .metric-title{
-      font-size:14px;
-      color:#e8eefb;
-      margin-bottom:12px;
-    }
-
-    .metric-value{
-      font-size:30px;
-      font-weight:800;
-      margin-bottom:8px;
-      line-height:1.1;
-    }
-
-    .metric-sub{
-      font-size:12px;
-      font-weight:600;
-      margin-bottom:12px;
-      color:var(--muted);
-    }
-
-    .metric-sub.green{ color:#a7e6ba; }
-    .metric-sub.red{ color:#ffb5b5; }
-    .metric-sub.orange{ color:#ffcb98; }
-    .metric-sub.blue{ color:#9db9ff; }
-
-    .metric-bar{
-      height:3px;
-      border-radius:999px;
-      background:rgba(255,255,255,.06);
-      overflow:hidden;
-    }
-
-    .metric-bar span{
-      display:block;
-      height:100%;
-      border-radius:999px;
-    }
-
-    .metric-card.orange .metric-bar span{ width:82%; background:linear-gradient(90deg,#ff994a,#ff5d00); }
-    .metric-card.red .metric-bar span{ width:56%; background:linear-gradient(90deg,#ff9d9d,#ef4444); }
-    .metric-card.green .metric-bar span{ width:74%; background:linear-gradient(90deg,#73f2a7,#1aae58); }
-    .metric-card.blue .metric-bar span{ width:70%; background:linear-gradient(90deg,#80a4ff,#3d6cff); }
-
-    .content-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.4fr) minmax(270px,.8fr);
-      gap:18px;
-    }
-
-    .panel{
-      background:linear-gradient(180deg, rgba(16,24,40,.90), rgba(10,16,29,.94));
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-
-    .panel-header{
-      padding:18px 18px 10px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-
-    .panel-title{
-      font-size:17px;
-      font-weight:700;
-    }
-
-    .filter-chip{
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
-      color:#e4ecfb;
-      font-size:13px;
-    }
-
-    .chart-wrap{
-      height:300px;
-      padding:8px 16px 12px;
-    }
-
-    .chart-stats{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:10px;
-      padding:0 16px 16px;
-    }
-
-    .mini-stat{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-    }
-
-    .mini-dot{
-      width:11px;
-      height:11px;
-      border-radius:50%;
-      flex:0 0 auto;
-    }
-
-    .mini-stat strong{
-      display:block;
-      font-size:18px;
-      margin-bottom:4px;
-    }
-
-    .mini-stat span{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .quick-actions{
-      padding:16px;
-      display:grid;
-      gap:12px;
-    }
-
-    .action-btn{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:16px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.08);
-      background:linear-gradient(180deg, rgba(39,50,79,.95), rgba(20,28,46,.95));
-      color:#fff;
-      font-size:15px;
-      font-weight:700;
-      cursor:pointer;
-    }
-
-    .action-btn.primary{
-      background:linear-gradient(135deg,#ff9546,#d24c00);
-      box-shadow:0 10px 24px rgba(255,122,26,.20);
-    }
-
-    .action-badge{
-      padding:5px 9px;
-      border-radius:999px;
-      background:rgba(255,255,255,.12);
-      font-size:12px;
-      font-weight:800;
-    }
-
-    .table-panel{
-      padding:16px;
-    }
-
-    .table-title{
-      font-size:18px;
-      font-weight:700;
-      margin-bottom:16px;
-    }
-
-    .table-wrap{
-      overflow:auto;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.02);
-    }
-
-    table{
-      width:100%;
-      min-width:780px;
-      border-collapse:collapse;
-    }
-
-    th,td{
-      padding:14px 16px;
-      text-align:left;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      font-size:14px;
-    }
-
-    th{
-      color:#d5e0f5;
-      font-weight:600;
-      white-space:nowrap;
-    }
-
-    td{
-      color:#eef3ff;
-    }
-
-    tr:hover td{
-      background:rgba(255,255,255,.02);
-    }
-
-    .user-cell{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-
-    .avatar{
-      width:32px;
-      height:32px;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      background:linear-gradient(135deg,#ff934f,#526cff);
-      color:#fff;
-      font-size:12px;
-      font-weight:700;
-      flex:0 0 auto;
-    }
-
-    .row-actions{
-      display:flex;
-      gap:8px;
-    }
-
-    .tiny-btn{
-      border:none;
-      cursor:pointer;
-      padding:8px 12px;
-      border-radius:10px;
-      color:#fff;
-      font-size:12px;
-      font-weight:700;
-    }
-
-    .tiny-btn.approve{
-      background:linear-gradient(135deg,#33d879,#14904a);
-    }
-
-    .tiny-btn.view{
-      background:linear-gradient(135deg,#4c72ff,#2a46c5);
-    }
-
-    .modules{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .module-card{
-      position:relative;
-      min-height:138px;
-      border-radius:20px;
-      padding:18px;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.08);
-      box-shadow:var(--shadow);
-      display:flex;
-      flex-direction:column;
-      justify-content:flex-end;
-      transition:.22s ease;
-      cursor:pointer;
-    }
-
-    .module-card:hover{
-      transform:translateY(-3px);
-      border-color:rgba(255,255,255,.16);
-    }
-
-    .module-card.orange{
-      background:
-        radial-gradient(circle at top right, rgba(255,193,129,.24), transparent 34%),
-        linear-gradient(180deg, rgba(108,53,18,.90), rgba(44,21,10,.95));
-    }
-
-    .module-card.blue{
-      background:
-        radial-gradient(circle at top right, rgba(123,163,255,.20), transparent 34%),
-        linear-gradient(180deg, rgba(35,52,91,.90), rgba(15,23,41,.95));
-    }
-
-    .module-card.green{
-      background:
-        radial-gradient(circle at top right, rgba(116,247,165,.15), transparent 34%),
-        linear-gradient(180deg, rgba(24,52,54,.90), rgba(11,25,30,.95));
-    }
-
-    .module-icon{
-      position:absolute;
-      top:16px;
-      left:18px;
-      font-size:34px;
-      opacity:.95;
-    }
-
-    .module-title{
-      font-size:18px;
-      font-weight:600;
-      margin-bottom:6px;
-    }
-
-    .module-sub{
-      font-size:13px;
-      color:#d3ddf2;
-    }
-
-    .eagle-card,
-    .av-card,
-    .history-card{
-      background:linear-gradient(180deg, rgba(16,24,40,.92), rgba(10,16,29,.95));
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-
-    .eagle-card{
-      display:grid;
-      place-items:center;
-      min-height:250px;
-      padding:20px;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(255,149,70,.12), transparent 30%),
-        linear-gradient(180deg, rgba(14,22,38,.95), rgba(9,15,28,.96));
-    }
-
-    .eagle-card img{
-      max-width:100%;
-      max-height:210px;
-      object-fit:contain;
-      filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));
-    }
-
-    .card-section-title{
-      padding:18px 18px 12px;
-      font-size:18px;
-      font-weight:700;
-    }
-
-    .av-grid{
-      padding:0 16px 16px;
-      display:grid;
-      gap:12px;
-    }
-
-    .av-item{
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:16px;
-      padding:16px;
-    }
-
-    .av-label{
-      color:#aab6cf;
-      font-size:13px;
-      margin-bottom:8px;
-    }
-
-    .av-value{
-      font-size:28px;
-      font-weight:800;
-      line-height:1.1;
-    }
-
-    .av-value.gold{
-      color:#ffd58a;
-    }
-
-    .av-value.blue{
-      color:#a9c1ff;
-    }
-
-    .history-list{
-      padding:0 12px 14px;
-      display:grid;
-      gap:10px;
-    }
-
-    .history-item{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:13px 12px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-    }
-
-    .history-avatar{
-      width:38px;
-      height:38px;
-      display:grid;
-      place-items:center;
-      flex:0 0 auto;
-      font-weight:800;
-      border-radius:50%;
-      background:linear-gradient(135deg,#ff934f,#556bff);
-      color:#fff;
-      font-size:12px;
-    }
-
-    .item-text{
-      flex:1;
-      min-width:0;
-    }
-
-    .item-text strong{
-      display:block;
-      font-size:14px;
-      margin-bottom:3px;
-    }
-
-    .item-text span{
-      display:block;
-      color:#9eabc4;
-      font-size:12px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .item-time{
-      font-size:12px;
-      color:#b6c2da;
-      white-space:nowrap;
-    }
-
-    .empty-state{
-      color:#9aa7c0;
-      font-size:13px;
-      padding:16px;
-    }
-
-    .status-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:12px;
-      font-weight:700;
-      color:#dce5f8;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:999px;
-      padding:6px 10px;
-    }
-
-    @media (max-width: 1230px){
-      .main-grid{
-        grid-template-columns:1fr;
-      }
-
-      .right-col{
-        display:grid;
-        grid-template-columns:repeat(3,1fr);
-      }
-    }
-
-    @media (max-width: 980px){
-      .metrics{
-        grid-template-columns:repeat(2,1fr);
-      }
-
-      .content-grid{
-        grid-template-columns:1fr;
-      }
-
-      .modules{
-        grid-template-columns:repeat(2,1fr);
-      }
-
-      .right-col{
-        grid-template-columns:1fr;
-      }
-
-      .hero{
-        min-height:260px;
-      }
-
-      .hero-eagle{
-        width:42%;
-        opacity:.92;
-      }
-    }
-
-    @media (max-width: 760px){
-      .page-shell{
-        padding:12px;
-      }
-
-      .topbar{
-        flex-direction:column;
-        align-items:stretch;
-      }
-
-      .brand,
-      .top-actions{
-        justify-content:center;
-      }
-
-      .nav{
-        justify-content:flex-start;
-        flex-wrap:nowrap;
-        overflow:auto;
-      }
-
-      .hero{
-        min-height:auto;
-        padding:24px 20px;
-      }
-
-      .hero-content{
-        max-width:100%;
-        padding-right:0;
-      }
-
-      .hero h2{
-        font-size:18px;
-      }
-
-      .hero p{
-        font-size:14px;
-        max-width:100%;
-      }
-
-      .hero-eagle{
-        opacity:.18;
-        width:80%;
-        right:-18%;
-        bottom:-2%;
-      }
-
-      .metrics{
-        grid-template-columns:1fr;
-      }
-
-      .modules{
-        grid-template-columns:1fr;
-      }
-
-      .chart-stats{
-        grid-template-columns:1fr;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="page-shell">
-
-    <header class="topbar">
-      <div class="brand">
-        <img src="/images/logo.png" alt="Logo">
-        <h1>Shopee Security</h1>
-      </div>
-
-      <nav class="nav">
-        <a href="/portal.html" class="active">Dashboard</a>
-        <a href="/access.html">Controle de Acesso</a>
-        <a href="/aprovacoes.html">Aprovações</a>
-        <a href="/dashboard.html">Dashboard Geral</a>
-        <a href="/first-mile-access.html">First Mile</a>
-      </nav>
-
-      <div class="top-actions">
-        <button class="icon-btn" aria-label="Buscar">⌕</button>
-        <div class="profile-mini">
-          <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
-          <span id="topUserName">Caíque</span>
-        </div>
-      </div>
-    </header>
-
-    <div class="main-grid">
-      <section class="left-col">
-
-        <section class="hero">
-          <div class="hero-content">
-            <h2>Bem-vindo ao Shopee Security</h2>
-            <p>Portal consolidado com acessos aprovados, HC, AV recuperado, itens e rotas das últimas 24 horas.</p>
-
-            <div class="hero-actions">
-              <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">Verificar Segurança</button>
-              <button class="btn btn-dark" onclick="window.location.href='/aprovacoes.html'">Ver Aprovações</button>
-            </div>
-          </div>
-
-          <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
-        </section>
-
-        <section class="metrics">
-          <div class="metric-card orange">
-            <div class="metric-title">Acessos Aprovados 24h</div>
-            <div class="metric-value" id="approved24Total">0</div>
-            <div class="metric-sub orange" id="approved24Units">Carregando unidades...</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-
-          <div class="metric-card blue">
-            <div class="metric-title">Unidades com Aprovação</div>
-            <div class="metric-value" id="approvedUnitsCount">0</div>
-            <div class="metric-sub blue" id="approvedUnitsTop">Sem dados</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-
-          <div class="metric-card green">
-            <div class="metric-title">HC Warehouse</div>
-            <div class="metric-value" id="hcWarehouse">0</div>
-            <div class="metric-sub green" id="hcWarehouseSub">Base: hc.html</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-
-          <div class="metric-card red">
-            <div class="metric-title">HC Presente</div>
-            <div class="metric-value" id="hcPresent">0</div>
-            <div class="metric-sub red" id="hcPresentSub">Base: hc.html</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-        </section>
-
-        <section class="content-grid">
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">Monitoramento em Tempo Real</div>
-              <div class="status-pill">Últimas 24h</div>
-            </div>
-
-            <div class="chart-wrap">
-              <canvas id="monitorChart"></canvas>
-            </div>
-
-            <div class="chart-stats">
-              <div class="mini-stat">
-                <div class="mini-dot" style="background:#ff7a1a;"></div>
-                <div>
-                  <strong id="miniApproved">0</strong>
-                  <span>Aprovados 24h</span>
-                </div>
-              </div>
-
-              <div class="mini-stat">
-                <div class="mini-dot" style="background:#22c55e;"></div>
-                <div>
-                  <strong id="miniRoutes">0</strong>
-                  <span>Rotas do dia</span>
-                </div>
-              </div>
-
-              <div class="mini-stat">
-                <div class="mini-dot" style="background:#4d78ff;"></div>
-                <div>
-                  <strong id="miniUnits">0</strong>
-                  <span>Unidades com aprovação</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">Ações Rápidas</div>
-            </div>
-
-            <div class="quick-actions">
-              <button class="action-btn primary" onclick="window.location.href='/aprovacoes.html'">
-                <span>🔔 Aprovar Solicitações</span>
-                <span class="action-badge" id="pendingBadge">0</span>
-              </button>
-
-              <button class="action-btn" onclick="window.location.href='/first-mile-access.html'">
-                <span>⚠ Ver Rotas do Dia</span>
-                <span class="action-badge" id="routesBadge">0</span>
-              </button>
-
-              <button class="action-btn" onclick="window.location.href='/access.html'">
-                <span>＋ Ver Acessos por Unidade</span>
-                <span>›</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel table-panel">
-          <div class="table-title">Solicitações Pendentes</div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Unidade</th>
-                  <th>Solicitações Aguardando Aprovação</th>
-                  <th>Última Solicitação</th>
-                  <th>Status</th>
-                  <th>Ação</th>
-                </tr>
-              </thead>
-              <tbody id="pendingTableBody">
-                <tr>
-                  <td colspan="5" class="empty-state">Carregando solicitações pendentes...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="modules">
-          <a class="module-card orange" href="/access.html">
-            <div class="module-icon">🛡</div>
-            <div class="module-title">Controle de Acesso</div>
-            <div class="module-sub">Detalhe por unidade</div>
-          </a>
-
-          <a class="module-card blue" href="/hc.html">
-            <div class="module-icon">👥</div>
-            <div class="module-title">HC</div>
-            <div class="module-sub">Warehouse e presença</div>
-          </a>
-
-          <a class="module-card green" href="/dashboard.html">
-            <div class="module-icon">💵</div>
-            <div class="module-title">Resultado Operacional</div>
-            <div class="module-sub">AV recuperado e itens</div>
-          </a>
-        </section>
-      </section>
-
-      <aside class="right-col">
-        <section class="eagle-card">
-          <img src="/images/Aguia.png" alt="Águia Security">
-        </section>
-
-        <section class="av-card">
-          <div class="card-section-title">Resultado Operacional</div>
-          <div class="av-grid">
-            <div class="av-item">
-              <div class="av-label">AV Recuperado (USD)</div>
-              <div class="av-value gold" id="avRecovered">$0.00</div>
-            </div>
-
-            <div class="av-item">
-              <div class="av-label">Quantidade de Itens</div>
-              <div class="av-value blue" id="itemsRecovered">0</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="history-card">
-          <div class="card-section-title">Histórico de Acessos</div>
-          <div class="history-list" id="historyList">
-            <div class="empty-state">Carregando acessos aprovados...</div>
-          </div>
-        </section>
-      </aside>
-    </div>
-  </div>
-
-  <script>
-    const fallbackPhoto = "/images/logo.png";
-    const fallbackName = "Caíque";
-
-    function getStoredUserPhoto() {
-      const possiblePhotoKeys = ["userPhoto", "user_photo", "photoURL", "googleUserPhoto", "googlePhoto", "picture"];
-      for (const key of possiblePhotoKeys) {
-        const value = localStorage.getItem(key);
-        if (value && value !== "null" && value !== "undefined") return value;
-      }
-
-      const rawUser = localStorage.getItem("user");
-      if (rawUser) {
-        try {
-          const parsed = JSON.parse(rawUser);
-          return parsed.photoURL || parsed.picture || parsed.imageUrl || "";
-        } catch (e) {}
-      }
-      return "";
-    }
-
-    function getStoredUserName() {
-      const possibleNameKeys = ["userName", "user_name", "displayName", "googleUserName", "googleName", "name"];
-      for (const key of possibleNameKeys) {
-        const value = localStorage.getItem(key);
-        if (value && value !== "null" && value !== "undefined") return value;
-      }
-
-      const rawUser = localStorage.getItem("user");
-      if (rawUser) {
-        try {
-          const parsed = JSON.parse(rawUser);
-          return parsed.name || parsed.displayName || "";
-        } catch (e) {}
-      }
-      return "";
-    }
-
-    const userPhoto = getStoredUserPhoto() || fallbackPhoto;
-    const userName = getStoredUserName() || fallbackName;
-
-    const topUserPhoto = document.getElementById("topUserPhoto");
-    const topUserName = document.getElementById("topUserName");
+<script>
+  const fallbackPhoto = "/images/logo.png";
+  const fallbackName = "Caíque";
+
+  function getStoredUserPhoto() {
+    const possiblePhotoKeys = ["userPhoto", "user_photo", "photoURL", "googleUserPhoto", "googlePhoto", "picture"];
+    for (const key of possiblePhotoKeys) {
+      const value = localStorage.getItem(key);
+      if (value && value !== "null" && value !== "undefined") return value;
+    }
+
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser);
+        return parsed.photoURL || parsed.picture || parsed.imageUrl || "";
+      } catch (e) {}
+    }
+    return "";
+  }
+
+  function getStoredUserName() {
+    const possibleNameKeys = ["userName", "user_name", "displayName", "googleUserName", "googleName", "name"];
+    for (const key of possibleNameKeys) {
+      const value = localStorage.getItem(key);
+      if (value && value !== "null" && value !== "undefined") return value;
+    }
+
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser);
+        return parsed.name || parsed.displayName || "";
+      } catch (e) {}
+    }
+    return "";
+  }
+
+  const userPhoto = getStoredUserPhoto() || fallbackPhoto;
+  const userName = getStoredUserName() || fallbackName;
+
+  const topUserPhoto = document.getElementById("topUserPhoto");
+  const topUserName = document.getElementById("topUserName");
+
+  if (topUserPhoto) {
     topUserPhoto.src = userPhoto;
+    topUserPhoto.onerror = function () {
+      this.src = fallbackPhoto;
+    };
+  }
+
+  if (topUserName) {
     topUserName.textContent = userName;
-    topUserPhoto.onerror = function(){ this.src = fallbackPhoto; };
+  }
 
-    function normalizeKey(value) {
-      return String(value || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim();
-    }
+  function normalizeKey(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-    function initials(text) {
-      const parts = String(text || "UN").trim().split(/\s+/).slice(0, 2);
-      return parts.map(p => p[0] || "").join("").toUpperCase() || "UN";
-    }
+  function safeText(value, fallback = "-") {
+    const text = String(value || "").trim();
+    return text || fallback;
+  }
 
-    function parseNumber(value) {
-      if (value == null) return 0;
-      const raw = String(value).replace(/\s/g, "");
-      if (!raw) return 0;
+  function initials(text) {
+    const parts = String(text || "UN").trim().split(/\s+/).slice(0, 2);
+    return parts.map(p => p[0] || "").join("").toUpperCase() || "UN";
+  }
 
-      if (raw.includes(",") && raw.includes(".")) {
-        if (raw.lastIndexOf(",") > raw.lastIndexOf(".")) {
-          return Number(raw.replace(/\./g, "").replace(",", ".")) || 0;
-        }
-        return Number(raw.replace(/,/g, "")) || 0;
+  function parseNumber(value) {
+    if (value == null) return 0;
+    const str = String(value).trim();
+    if (!str) return 0;
+
+    const cleaned = str
+      .replace(/\$/g, "")
+      .replace(/USD/gi, "")
+      .replace(/\s/g, "");
+
+    if (cleaned.includes(".") && cleaned.includes(",")) {
+      if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
+        return Number(cleaned.replace(/\./g, "").replace(",", ".")) || 0;
       }
-
-      if (raw.includes(",") && !raw.includes(".")) {
-        return Number(raw.replace(",", ".")) || 0;
-      }
-
-      return Number(raw.replace(/[^\d.-]/g, "")) || 0;
+      return Number(cleaned.replace(/,/g, "")) || 0;
     }
 
-    function currencyUSD(value) {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2
-      }).format(Number(value || 0));
+    if (cleaned.includes(",") && !cleaned.includes(".")) {
+      return Number(cleaned.replace(",", ".")) || 0;
     }
 
-    function safeText(value, fallback = "-") {
-      const text = String(value || "").trim();
-      return text || fallback;
+    return Number(cleaned.replace(/[^\d.-]/g, "")) || 0;
+  }
+
+  function parseDate(value) {
+    if (!value) return null;
+    const text = String(value).trim();
+    if (!text) return null;
+
+    const direct = new Date(text);
+    if (!isNaN(direct)) return direct;
+
+    const match = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T](\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
+    if (match) {
+      let year = Number(match[3]);
+      if (year < 100) year += 2000;
+
+      const date = new Date(
+        year,
+        Number(match[2]) - 1,
+        Number(match[1]),
+        Number(match[4] || 0),
+        Number(match[5] || 0),
+        Number(match[6] || 0)
+      );
+
+      if (!isNaN(date)) return date;
     }
 
-    function parseDate(value) {
-      if (!value) return null;
-      if (value instanceof Date) return isNaN(value) ? null : value;
+    return null;
+  }
 
-      const text = String(value).trim();
-      if (!text) return null;
+  function formatDateTime(date) {
+    if (!(date instanceof Date) || isNaN(date)) return "-";
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
 
-      const direct = new Date(text);
-      if (!isNaN(direct)) return direct;
+  function withinLast24Hours(date) {
+    if (!(date instanceof Date) || isNaN(date)) return false;
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    return diff >= 0 && diff <= 24 * 60 * 60 * 1000;
+  }
 
-      const m = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T](\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
-      if (m) {
-        let year = Number(m[3]);
-        if (year < 100) year += 2000;
-        const dt = new Date(
-          year,
-          Number(m[2]) - 1,
-          Number(m[1]),
-          Number(m[4] || 0),
-          Number(m[5] || 0),
-          Number(m[6] || 0)
-        );
-        if (!isNaN(dt)) return dt;
-      }
+  async function fetchDocument(path) {
+    const response = await fetch(path, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("Erro ao carregar " + path);
+    }
+    const html = await response.text();
+    return new DOMParser().parseFromString(html, "text/html");
+  }
 
-      return null;
+  function extractTables(doc) {
+    return Array.from(doc.querySelectorAll("table"));
+  }
+
+  function extractRowsFromTable(table) {
+    const rows = Array.from(table.querySelectorAll("tr"));
+    if (!rows.length) return [];
+
+    let headerRow = rows.find(row => row.querySelectorAll("th").length > 0);
+    if (!headerRow) {
+      headerRow = rows[0];
     }
 
-    function formatDateTime(date) {
-      if (!(date instanceof Date) || isNaN(date)) return "-";
-      return date.toLocaleString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
+    const headers = Array.from(headerRow.querySelectorAll("th, td"))
+      .map(cell => cell.textContent.trim());
 
-    function withinLast24Hours(date) {
-      if (!(date instanceof Date) || isNaN(date)) return false;
-      const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      return diff >= 0 && diff <= 24 * 60 * 60 * 1000;
-    }
+    if (!headers.length) return [];
 
-    function getAllTables(doc) {
-      return Array.from(doc.querySelectorAll("table"));
-    }
+    const bodyRows = rows.slice(rows.indexOf(headerRow) + 1);
 
-    function extractRowsFromTable(table) {
-      const rows = Array.from(table.querySelectorAll("tr"));
-      if (!rows.length) return [];
-
-      const headerCells = Array.from(rows[0].querySelectorAll("th, td"));
-      const headers = headerCells.map(cell => cell.textContent.trim());
-
-      if (!headers.length) return [];
-
-      return rows.slice(1).map(row => {
+    return bodyRows
+      .map(row => {
         const cells = Array.from(row.querySelectorAll("td"));
+        if (!cells.length) return null;
+
         const obj = {};
         headers.forEach((header, index) => {
           obj[header] = cells[index] ? cells[index].textContent.trim() : "";
         });
         return obj;
-      }).filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-    }
+      })
+      .filter(Boolean)
+      .filter(row => Object.values(row).some(v => String(v).trim() !== ""));
+  }
 
-    function extractAllTableRows(doc) {
-      const tables = getAllTables(doc);
-      return tables.flatMap(extractRowsFromTable);
-    }
+  function extractAllRows(doc) {
+    const tables = extractTables(doc);
+    return tables.flatMap(extractRowsFromTable);
+  }
 
-    function findField(row, candidates) {
-      const entries = Object.entries(row);
-      for (const [key, value] of entries) {
-        const nk = normalizeKey(key);
-        if (candidates.some(candidate => nk.includes(candidate))) {
-          return value;
-        }
+  function findValue(row, candidates) {
+    const entries = Object.entries(row);
+    for (const [key, value] of entries) {
+      const nk = normalizeKey(key);
+      for (const candidate of candidates) {
+        if (nk.includes(candidate)) return value;
       }
-      return "";
     }
+    return "";
+  }
 
-    function fetchDocument(path) {
-      return fetch(path, { cache: "no-store" })
-        .then(res => {
-          if (!res.ok) throw new Error("Erro ao carregar " + path);
-          return res.text();
-        })
-        .then(html => new DOMParser().parseFromString(html, "text/html"));
-    }
+  function getAccessData(rows) {
+    const approved = [];
+    const pending = [];
 
-    function sumByTextMetrics(doc, labels) {
-      const text = normalizeKey(doc.body.innerText);
-      for (const label of labels) {
-        const normalized = normalizeKey(label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const regex = new RegExp(normalized + "[^\\d$]{0,25}([\\d.,]+)", "i");
-        const match = text.match(regex);
-        if (match) return parseNumber(match[1]);
+    rows.forEach(row => {
+      const status = normalizeKey(findValue(row, [
+        "status", "situacao", "situação", "resultado", "aprovacao", "aprovação"
+      ]));
+
+      const unidade = safeText(findValue(row, [
+        "unidade", "site", "warehouse", "hub", "station", "base"
+      ]), "Sem unidade");
+
+      const nome = safeText(findValue(row, [
+        "nome", "colaborador", "usuario", "usuário", "solicitante"
+      ]), unidade);
+
+      const solicitacao = safeText(findValue(row, [
+        "solicitacao", "solicitação", "tipo", "acesso", "request"
+      ]), "Acesso");
+
+      const dataAcessoRaw = findValue(row, [
+        "data de acesso", "data acesso", "data", "hora", "timestamp", "created"
+      ]);
+
+      const dataAcesso = parseDate(dataAcessoRaw);
+
+      const item = {
+        unidade,
+        nome,
+        solicitacao,
+        dataAcesso,
+        dataAcessoRaw
+      };
+
+      if (status.includes("aprov")) {
+        approved.push(item);
       }
-      return 0;
-    }
 
-    function parseAccessData(rows) {
-      const approvedRows = [];
-      const pendingRows = [];
+      if (
+        status.includes("aguard") ||
+        status.includes("pend") ||
+        status.includes("waiting")
+      ) {
+        pending.push(item);
+      }
+    });
 
-      rows.forEach(row => {
-        const status = normalizeKey(findField(row, ["status", "situacao", "situa", "aprovacao", "resultado"]));
-        const unit = safeText(findField(row, ["unidade", "site", "warehouse", "hub", "base", "station", "operacao", "operacao unidade"]), "Sem unidade");
-        const requestType = safeText(findField(row, ["solicitacao", "tipo", "request", "acesso"]), "Acesso");
-        const requester = safeText(findField(row, ["nome", "usuario", "colaborador", "solicitante", "owner"]), unit);
-        const dateValue = findField(row, ["data de acesso", "data acesso", "data", "date", "created", "hora", "timestamp"]);
-        const accessDate = parseDate(dateValue);
+    const approved24 = approved.filter(item => withinLast24Hours(item.dataAcesso));
 
-        const item = {
-          unit,
-          requester,
-          requestType,
-          accessDate,
-          rawDate: safeText(dateValue),
-          status
+    const approvedByUnit = {};
+    approved24.forEach(item => {
+      approvedByUnit[item.unidade] = (approvedByUnit[item.unidade] || 0) + 1;
+    });
+
+    const approvedUnitsSorted = Object.entries(approvedByUnit).sort((a, b) => b[1] - a[1]);
+
+    const pendingByUnitMap = {};
+    pending.forEach(item => {
+      if (!pendingByUnitMap[item.unidade]) {
+        pendingByUnitMap[item.unidade] = {
+          unidade: item.unidade,
+          total: 0,
+          ultimaSolicitacao: null
         };
-
-        if (status.includes("aprov")) {
-          approvedRows.push(item);
-        }
-
-        if (
-          status.includes("aguard") ||
-          status.includes("pend") ||
-          status.includes("waiting")
-        ) {
-          pendingRows.push(item);
-        }
-      });
-
-      const approved24 = approvedRows.filter(item => withinLast24Hours(item.accessDate));
-      const approvedByUnit = {};
-      approved24.forEach(item => {
-        approvedByUnit[item.unit] = (approvedByUnit[item.unit] || 0) + 1;
-      });
-
-      const approvedByHour = Array.from({ length: 24 }, (_, i) => {
-        const date = new Date();
-        date.setMinutes(0, 0, 0);
-        date.setHours(date.getHours() - (23 - i));
-        return { label: String(date.getHours()).padStart(2, "0") + "h", count: 0, date };
-      });
-
-      approved24.forEach(item => {
-        const d = item.accessDate;
-        if (!d) return;
-        const index = approvedByHour.findIndex(bucket =>
-          bucket.date.getHours() === d.getHours() &&
-          bucket.date.getDate() === d.getDate() &&
-          bucket.date.getMonth() === d.getMonth() &&
-          bucket.date.getFullYear() === d.getFullYear()
-        );
-        if (index >= 0) approvedByHour[index].count += 1;
-      });
-
-      const pendingByUnitMap = {};
-      pendingRows.forEach(item => {
-        if (!pendingByUnitMap[item.unit]) {
-          pendingByUnitMap[item.unit] = {
-            unit: item.unit,
-            count: 0,
-            latestDate: null,
-            status: "Aguardando aprovação"
-          };
-        }
-        pendingByUnitMap[item.unit].count += 1;
-        if (item.accessDate && (!pendingByUnitMap[item.unit].latestDate || item.accessDate > pendingByUnitMap[item.unit].latestDate)) {
-          pendingByUnitMap[item.unit].latestDate = item.accessDate;
-        }
-      });
-
-      const pendingByUnit = Object.values(pendingByUnitMap)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
-
-      const historyApproved = approvedRows
-        .filter(item => item.accessDate)
-        .sort((a, b) => b.accessDate - a.accessDate)
-        .slice(0, 8);
-
-      return {
-        approved24,
-        approvedByUnit,
-        approvedByHour,
-        pendingByUnit,
-        historyApproved
-      };
-    }
-
-    function parseHcData(rows, doc) {
-      let warehouse = 0;
-      let present = 0;
-
-      rows.forEach(row => {
-        const warehouseDirect = findField(row, ["hc warehouse", "warehouse hc", "warehouse"]);
-        const presentDirect = findField(row, ["presente", "presente", "present", "hc presente"]);
-
-        if (warehouseDirect) warehouse += parseNumber(warehouseDirect);
-        if (presentDirect) present += parseNumber(presentDirect);
-
-        const area = normalizeKey(findField(row, ["area", "tipo", "unidade", "grupo", "categoria"]));
-        const qty = parseNumber(findField(row, ["hc", "quantidade", "qtd", "headcount", "total"]));
-
-        if (area.includes("warehouse") && qty) warehouse += qty;
-        if ((area.includes("presente") || area.includes("present")) && qty) present += qty;
-      });
-
-      if (!warehouse) warehouse = sumByTextMetrics(doc, ["hc warehouse", "warehouse"]);
-      if (!present) present = sumByTextMetrics(doc, ["hc presente", "presente", "presentes"]);
-
-      return {
-        warehouse: Math.round(warehouse),
-        present: Math.round(present)
-      };
-    }
-
-    function parseDashboardData(rows, doc) {
-      let avRecovered = 0;
-      let items = 0;
-
-      rows.forEach(row => {
-        avRecovered += parseNumber(findField(row, [
-          "av recuperado",
-          "valor recuperado",
-          "recovered av",
-          "usd",
-          "dolar",
-          "$"
-        ]));
-
-        items += parseNumber(findField(row, [
-          "quantidade de itens",
-          "itens",
-          "items",
-          "qty itens",
-          "qtd itens"
-        ]));
-      });
-
-      if (!avRecovered) avRecovered = sumByTextMetrics(doc, ["av recuperado", "valor recuperado", "usd", "dolar"]);
-      if (!items) items = sumByTextMetrics(doc, ["quantidade de itens", "itens recuperados", "itens"]);
-
-      return {
-        avRecovered,
-        items: Math.round(items)
-      };
-    }
-
-    function parseFirstMileData(rows) {
-      const routesByHour = Array.from({ length: 24 }, (_, i) => {
-        const date = new Date();
-        date.setMinutes(0, 0, 0);
-        date.setHours(date.getHours() - (23 - i));
-        return { label: String(date.getHours()).padStart(2, "0") + "h", count: 0, date };
-      });
-
-      rows.forEach(row => {
-        const routeDateValue = findField(row, ["data", "date", "hora", "timestamp", "created"]);
-        const routeDate = parseDate(routeDateValue);
-        if (!withinLast24Hours(routeDate)) return;
-
-        const qtyField = findField(row, ["rotas", "rota", "routes", "qtd", "quantidade", "total"]);
-        const qty = Math.max(1, Math.round(parseNumber(qtyField) || 1));
-
-        const index = routesByHour.findIndex(bucket =>
-          bucket.date.getHours() === routeDate.getHours() &&
-          bucket.date.getDate() === routeDate.getDate() &&
-          bucket.date.getMonth() === routeDate.getMonth() &&
-          bucket.date.getFullYear() === routeDate.getFullYear()
-        );
-        if (index >= 0) routesByHour[index].count += qty;
-      });
-
-      return routesByHour;
-    }
-
-    function renderPendingTable(rows) {
-      const tbody = document.getElementById("pendingTableBody");
-      if (!rows.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="5" class="empty-state">Nenhuma solicitação aguardando aprovação encontrada no access.html.</td>
-          </tr>
-        `;
-        return;
       }
 
-      tbody.innerHTML = rows.map(row => `
+      pendingByUnitMap[item.unidade].total += 1;
+
+      if (
+        item.dataAcesso &&
+        (!pendingByUnitMap[item.unidade].ultimaSolicitacao ||
+          item.dataAcesso > pendingByUnitMap[item.unidade].ultimaSolicitacao)
+      ) {
+        pendingByUnitMap[item.unidade].ultimaSolicitacao = item.dataAcesso;
+      }
+    });
+
+    const pendingByUnit = Object.values(pendingByUnitMap)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    const historyApproved = approved24
+      .sort((a, b) => (b.dataAcesso || 0) - (a.dataAcesso || 0))
+      .slice(0, 8);
+
+    const buckets = Array.from({ length: 24 }, (_, i) => {
+      const d = new Date();
+      d.setMinutes(0, 0, 0);
+      d.setHours(d.getHours() - (23 - i));
+      return {
+        label: String(d.getHours()).padStart(2, "0") + "h",
+        date: new Date(d),
+        total: 0
+      };
+    });
+
+    approved24.forEach(item => {
+      if (!item.dataAcesso) return;
+
+      const found = buckets.find(bucket =>
+        bucket.date.getHours() === item.dataAcesso.getHours() &&
+        bucket.date.getDate() === item.dataAcesso.getDate() &&
+        bucket.date.getMonth() === item.dataAcesso.getMonth() &&
+        bucket.date.getFullYear() === item.dataAcesso.getFullYear()
+      );
+
+      if (found) found.total += 1;
+    });
+
+    return {
+      approved24,
+      approvedUnitsSorted,
+      pendingByUnit,
+      historyApproved,
+      buckets
+    };
+  }
+
+  function getHcData(rows) {
+    let warehouse = 0;
+    let presente = 0;
+
+    rows.forEach(row => {
+      const unidade = normalizeKey(findValue(row, [
+        "unidade", "tipo", "area", "área", "categoria", "grupo"
+      ]));
+
+      const qtd = parseNumber(findValue(row, [
+        "hc", "quantidade", "qtd", "total", "headcount"
+      ]));
+
+      const warehouseDirect = parseNumber(findValue(row, [
+        "hc warehouse", "warehouse"
+      ]));
+
+      const presenteDirect = parseNumber(findValue(row, [
+        "hc presente", "presente", "present"
+      ]));
+
+      if (warehouseDirect) warehouse += warehouseDirect;
+      if (presenteDirect) presente += presenteDirect;
+
+      if (unidade.includes("warehouse") && qtd) warehouse += qtd;
+      if ((unidade.includes("presente") || unidade.includes("present")) && qtd) presente += qtd;
+    });
+
+    return {
+      warehouse: Math.round(warehouse),
+      presente: Math.round(presente)
+    };
+  }
+
+  function getDashboardData(rows) {
+    let av = 0;
+    let itens = 0;
+
+    rows.forEach(row => {
+      av += parseNumber(findValue(row, [
+        "av recuperado", "valor recuperado", "recovered av", "usd", "dolar", "dólar"
+      ]));
+
+      itens += parseNumber(findValue(row, [
+        "quantidade de itens", "qtd itens", "itens", "items"
+      ]));
+    });
+
+    return {
+      av,
+      itens: Math.round(itens)
+    };
+  }
+
+  function getFirstMileData(rows) {
+    const buckets = Array.from({ length: 24 }, (_, i) => {
+      const d = new Date();
+      d.setMinutes(0, 0, 0);
+      d.setHours(d.getHours() - (23 - i));
+      return {
+        label: String(d.getHours()).padStart(2, "0") + "h",
+        date: new Date(d),
+        total: 0
+      };
+    });
+
+    rows.forEach(row => {
+      const routeDate = parseDate(findValue(row, [
+        "data", "hora", "timestamp", "created"
+      ]));
+
+      if (!withinLast24Hours(routeDate)) return;
+
+      const qtdRotas = Math.max(1, parseNumber(findValue(row, [
+        "rotas", "rota", "routes", "qtd", "quantidade", "total"
+      ])) || 1);
+
+      const found = buckets.find(bucket =>
+        bucket.date.getHours() === routeDate.getHours() &&
+        bucket.date.getDate() === routeDate.getDate() &&
+        bucket.date.getMonth() === routeDate.getMonth() &&
+        bucket.date.getFullYear() === routeDate.getFullYear()
+      );
+
+      if (found) found.total += qtdRotas;
+    });
+
+    return buckets;
+  }
+
+  function renderPendingTable(rows) {
+    const tbody = document.getElementById("pendingTableBody");
+
+    if (!rows.length) {
+      tbody.innerHTML = `
         <tr>
-          <td>
-            <div class="user-cell">
-              <div class="avatar">${initials(row.unit)}</div>
-              <span>${safeText(row.unit)}</span>
-            </div>
-          </td>
-          <td>${row.count}</td>
-          <td>${row.latestDate ? formatDateTime(row.latestDate) : "-"}</td>
-          <td>Aguardando aprovação</td>
-          <td>
-            <div class="row-actions">
-              <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
-              <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
-            </div>
+          <td colspan="5" class="empty-state">
+            Nenhuma solicitação aguardando aprovação encontrada no access.html.
           </td>
         </tr>
-      `).join("");
+      `;
+      return;
     }
 
-    function renderHistory(rows) {
-      const historyList = document.getElementById("historyList");
-      if (!rows.length) {
-        historyList.innerHTML = `<div class="empty-state">Nenhum acesso aprovado encontrado no access.html.</div>`;
-        return;
-      }
-
-      historyList.innerHTML = rows.map(item => `
-        <div class="history-item">
-          <div class="history-avatar">${initials(item.unit)}</div>
-          <div class="item-text">
-            <strong>${safeText(item.unit)}</strong>
-            <span>${safeText(item.requestType)} · aprovado</span>
+    tbody.innerHTML = rows.map(row => `
+      <tr>
+        <td>
+          <div class="user-cell">
+            <div class="avatar">${initials(row.unidade)}</div>
+            <span>${safeText(row.unidade)}</span>
           </div>
-          <div class="item-time">${item.accessDate ? item.accessDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "-"}</div>
+        </td>
+        <td>${row.total}</td>
+        <td>${row.ultimaSolicitacao ? formatDateTime(row.ultimaSolicitacao) : "-"}</td>
+        <td>Aguardando aprovação</td>
+        <td>
+          <div class="row-actions">
+            <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
+            <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function renderHistory(rows) {
+    const historyList = document.getElementById("historyList");
+
+    if (!rows.length) {
+      historyList.innerHTML = `
+        <div class="empty-state">
+          Nenhum acesso aprovado encontrado no access.html.
         </div>
-      `).join("");
+      `;
+      return;
     }
 
-    let monitorChart;
+    historyList.innerHTML = rows.map(item => `
+      <div class="history-item">
+        <div class="history-avatar">${initials(item.unidade)}</div>
+        <div class="item-text">
+          <strong>${safeText(item.unidade)}</strong>
+          <span>${safeText(item.solicitacao)} · aprovado</span>
+        </div>
+        <div class="item-time">
+          ${item.dataAcesso ? item.dataAcesso.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "-"}
+        </div>
+      </div>
+    `).join("");
+  }
 
-    function buildChart(labels, accessSeries, routeSeries) {
-      const ctx = document.getElementById("monitorChart").getContext("2d");
+  let monitorChart;
 
-      if (monitorChart) {
-        monitorChart.destroy();
-      }
+  function renderChart(accessBuckets, routeBuckets) {
+    const ctx = document.getElementById("monitorChart").getContext("2d");
 
-      monitorChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Acessos aprovados",
-              data: accessSeries,
-              borderColor: "#ff7a1a",
-              backgroundColor: "rgba(255,122,26,.12)",
-              tension: 0.35,
-              fill: false,
-              borderWidth: 3,
-              pointRadius: 2.5,
-              pointBackgroundColor: "#ff7a1a"
-            },
-            {
-              label: "Rotas do dia",
-              data: routeSeries,
-              borderColor: "#22c55e",
-              backgroundColor: "rgba(34,197,94,.10)",
-              tension: 0.35,
-              fill: false,
-              borderWidth: 2,
-              pointRadius: 2.2,
-              pointBackgroundColor: "#22c55e"
-            }
-          ]
+    if (monitorChart) monitorChart.destroy();
+
+    monitorChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: accessBuckets.map(item => item.label),
+        datasets: [
+          {
+            label: "Acessos aprovados",
+            data: accessBuckets.map(item => item.total),
+            borderColor: "#ff7a1a",
+            backgroundColor: "rgba(255,122,26,.12)",
+            tension: 0.35,
+            fill: false,
+            borderWidth: 3,
+            pointRadius: 2.5,
+            pointBackgroundColor: "#ff7a1a"
+          },
+          {
+            label: "Rotas do dia",
+            data: routeBuckets.map(item => item.total),
+            borderColor: "#22c55e",
+            backgroundColor: "rgba(34,197,94,.10)",
+            tension: 0.35,
+            fill: false,
+            borderWidth: 2,
+            pointRadius: 2.2,
+            pointBackgroundColor: "#22c55e"
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: "index",
-            intersect: false
-          },
-          plugins: {
-            legend: {
-              labels: {
-                color: "#dce5f8",
-                usePointStyle: true,
-                boxWidth: 10,
-                boxHeight: 10,
-                padding: 18,
-                font: {
-                  family: "Inter",
-                  size: 12,
-                  weight: "600"
-                }
+        plugins: {
+          legend: {
+            labels: {
+              color: "#dce5f8",
+              usePointStyle: true,
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 18,
+              font: {
+                family: "Inter",
+                size: 12,
+                weight: "600"
               }
-            },
-            tooltip: {
-              backgroundColor: "rgba(10,16,29,.96)",
-              borderColor: "rgba(255,255,255,.08)",
-              borderWidth: 1,
-              titleColor: "#fff",
-              bodyColor: "#dce6fb",
-              padding: 12
             }
           },
-          scales: {
-            x: {
-              grid: {
-                color: "rgba(255,255,255,.05)",
-                drawBorder: false
-              },
-              ticks: {
-                color: "#9fb0cf",
-                font: {
-                  family: "Inter",
-                  size: 11
-                }
-              }
+          tooltip: {
+            backgroundColor: "rgba(10,16,29,.96)",
+            borderColor: "rgba(255,255,255,.08)",
+            borderWidth: 1,
+            titleColor: "#fff",
+            bodyColor: "#dce6fb",
+            padding: 12
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              color: "rgba(255,255,255,.05)",
+              drawBorder: false
             },
-            y: {
-              grid: {
-                color: "rgba(255,255,255,.05)",
-                drawBorder: false
-              },
-              ticks: {
-                color: "#9fb0cf",
-                font: {
-                  family: "Inter",
-                  size: 11
-                }
+            ticks: {
+              color: "#9fb0cf",
+              font: {
+                family: "Inter",
+                size: 11
+              }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: "rgba(255,255,255,.05)",
+              drawBorder: false
+            },
+            ticks: {
+              color: "#9fb0cf",
+              precision: 0,
+              font: {
+                family: "Inter",
+                size: 11
               }
             }
           }
         }
-      });
-    }
+      }
+    });
+  }
 
-    async function loadPortalData() {
-      try {
-        const [accessDoc, hcDoc, dashboardDoc, firstMileDoc] = await Promise.all([
-          fetchDocument("/access.html"),
-          fetchDocument("/hc.html"),
-          fetchDocument("/dashboard.html"),
-          fetchDocument("/first-mile-access.html")
-        ]);
+  async function loadPortalData() {
+    try {
+      const [accessDoc, hcDoc, dashboardDoc, firstMileDoc] = await Promise.all([
+        fetchDocument("/access.html"),
+        fetchDocument("/hc.html"),
+        fetchDocument("/dashboard.html"),
+        fetchDocument("/first-mile-access.html")
+      ]);
 
-        const accessRows = extractAllTableRows(accessDoc);
-        const hcRows = extractAllTableRows(hcDoc);
-        const dashboardRows = extractAllTableRows(dashboardDoc);
-        const firstMileRows = extractAllTableRows(firstMileDoc);
+      const accessRows = extractAllRows(accessDoc);
+      const hcRows = extractAllRows(hcDoc);
+      const dashboardRows = extractAllRows(dashboardDoc);
+      const firstMileRows = extractAllRows(firstMileDoc);
 
-        const accessData = parseAccessData(accessRows);
-        const hcData = parseHcData(hcRows, hcDoc);
-        const dashboardData = parseDashboardData(dashboardRows, dashboardDoc);
-        const routeBuckets = parseFirstMileData(firstMileRows);
+      console.log("ACCESS ROWS:", accessRows);
+      console.log("HC ROWS:", hcRows);
+      console.log("DASHBOARD ROWS:", dashboardRows);
+      console.log("FIRST MILE ROWS:", firstMileRows);
 
-        const approvedUnits = Object.entries(accessData.approvedByUnit)
-          .sort((a, b) => b[1] - a[1]);
+      const accessData = getAccessData(accessRows);
+      const hcData = getHcData(hcRows);
+      const dashboardData = getDashboardData(dashboardRows);
+      const firstMileData = getFirstMileData(firstMileRows);
 
-        const topUnitsText = approvedUnits.length
-          ? approvedUnits.slice(0, 2).map(([unit, count]) => `${unit}: ${count}`).join(" · ")
+      document.getElementById("approved24Total").textContent = accessData.approved24.length;
+      document.getElementById("approved24Units").textContent =
+        accessData.approvedUnitsSorted.length
+          ? accessData.approvedUnitsSorted.slice(0, 2).map(([u, t]) => `${u}: ${t}`).join(" · ")
           : "Sem aprovações nas últimas 24h";
 
-        document.getElementById("approved24Total").textContent = accessData.approved24.length;
-        document.getElementById("approved24Units").textContent = topUnitsText;
-        document.getElementById("approvedUnitsCount").textContent = approvedUnits.length;
-        document.getElementById("approvedUnitsTop").textContent = approvedUnits.length
-          ? approvedUnits.slice(0, 3).map(([unit]) => unit).join(" · ")
+      document.getElementById("approvedUnitsCount").textContent = accessData.approvedUnitsSorted.length;
+      document.getElementById("approvedUnitsTop").textContent =
+        accessData.approvedUnitsSorted.length
+          ? accessData.approvedUnitsSorted.slice(0, 3).map(([u]) => u).join(" · ")
           : "Sem unidades";
-        document.getElementById("hcWarehouse").textContent = hcData.warehouse;
-        document.getElementById("hcPresent").textContent = hcData.present;
-        document.getElementById("hcWarehouseSub").textContent = "Total warehouse em hc.html";
-        document.getElementById("hcPresentSub").textContent = "Total presente em hc.html";
 
-        document.getElementById("avRecovered").textContent = currencyUSD(dashboardData.avRecovered);
-        document.getElementById("itemsRecovered").textContent = dashboardData.items;
+      document.getElementById("hcWarehouse").textContent = hcData.warehouse;
+      document.getElementById("hcPresent").textContent = hcData.presente;
 
-        document.getElementById("miniApproved").textContent = accessData.approved24.length;
-        document.getElementById("miniRoutes").textContent = routeBuckets.reduce((sum, item) => sum + item.count, 0);
-        document.getElementById("miniUnits").textContent = approvedUnits.length;
+      document.getElementById("avRecovered").textContent =
+        new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD"
+        }).format(dashboardData.av);
 
-        document.getElementById("pendingBadge").textContent = accessData.pendingByUnit.reduce((sum, row) => sum + row.count, 0);
-        document.getElementById("routesBadge").textContent = routeBuckets.reduce((sum, item) => sum + item.count, 0);
+      document.getElementById("itemsRecovered").textContent = dashboardData.itens;
 
-        renderPendingTable(accessData.pendingByUnit);
-        renderHistory(accessData.historyApproved);
+      document.getElementById("miniApproved").textContent = accessData.approved24.length;
+      document.getElementById("miniRoutes").textContent =
+        firstMileData.reduce((sum, item) => sum + item.total, 0);
+      document.getElementById("miniUnits").textContent =
+        accessData.approvedUnitsSorted.length;
 
-        buildChart(
-          accessData.approvedByHour.map(item => item.label),
-          accessData.approvedByHour.map(item => item.count),
-          routeBuckets.map(item => item.count)
-        );
-      } catch (error) {
-        console.error(error);
-        document.getElementById("pendingTableBody").innerHTML = `
-          <tr>
-            <td colspan="5" class="empty-state">
-              Não foi possível carregar os dados de access.html, hc.html, dashboard.html ou first-mile-access.html.
-            </td>
-          </tr>
-        `;
-        document.getElementById("historyList").innerHTML = `
-          <div class="empty-state">Erro ao carregar o histórico de acessos.</div>
-        `;
-        buildChart(
-          ["00h","03h","06h","09h","12h","15h","18h","21h","23h"],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0]
-        );
-      }
+      document.getElementById("pendingBadge").textContent =
+        accessData.pendingByUnit.reduce((sum, row) => sum + row.total, 0);
+
+      document.getElementById("routesBadge").textContent =
+        firstMileData.reduce((sum, item) => sum + item.total, 0);
+
+      renderPendingTable(accessData.pendingByUnit);
+      renderHistory(accessData.historyApproved);
+      renderChart(accessData.buckets, firstMileData);
+    } catch (error) {
+      console.error("Erro ao carregar dados do portal:", error);
+
+      document.getElementById("pendingTableBody").innerHTML = `
+        <tr>
+          <td colspan="5" class="empty-state">
+            Erro ao carregar as tabelas de access.html, hc.html, dashboard.html e first-mile-access.html.
+          </td>
+        </tr>
+      `;
+
+      document.getElementById("historyList").innerHTML = `
+        <div class="empty-state">Erro ao carregar o histórico.</div>
+      `;
     }
+  }
 
-    loadPortalData();
-  </script>
-</body>
-</html>
+  document.addEventListener("DOMContentLoaded", loadPortalData);
+</script>

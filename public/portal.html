@@ -1,1706 +1,307 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal Security FBS</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    :root{
-      --bg:#07101d;
-      --panel:rgba(10,17,31,.80);
-      --panel-2:rgba(17,26,46,.86);
-      --line:rgba(255,255,255,.07);
-      --text:#f5f7fb;
-      --muted:#9aa7c0;
-      --orange:#ff7a1a;
-      --orange-2:#ff9b52;
-      --blue:#4d78ff;
-      --green:#22c55e;
-      --red:#ef4444;
-      --gold:#f59e0b;
-      --shadow:0 12px 34px rgba(0,0,0,.34);
-      --radius:18px;
-    }
-
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:'Inter',sans-serif;
-    }
-
-    html, body{
-      min-height:100%;
-    }
-
-    body{
-      color:var(--text);
-      background:
-        radial-gradient(circle at 80% 16%, rgba(255,124,33,.16), transparent 18%),
-        radial-gradient(circle at 18% 0%, rgba(65,103,255,.12), transparent 22%),
-        linear-gradient(180deg, rgba(8,14,28,.93), rgba(5,10,20,.96)),
-        url("/images/plano de fundo.png") center/cover no-repeat fixed;
-      background-blend-mode:screen,screen,normal,normal;
-    }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(to bottom, rgba(255,255,255,.02), transparent 120px),
-        radial-gradient(circle at center, rgba(255,255,255,.015), transparent 55%);
-      opacity:.85;
-    }
-
-    a{
-      text-decoration:none;
-      color:inherit;
-    }
-
-    button{
-      font-family:inherit;
-    }
-
-    .page-shell{
-      max-width:1450px;
-      margin:0 auto;
-      padding:18px;
-      position:relative;
-      z-index:1;
-    }
-
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:14px 20px;
-      border:1px solid var(--line);
-      border-radius:20px;
-      background:linear-gradient(180deg, rgba(13,20,36,.9), rgba(9,15,28,.82));
-      backdrop-filter:blur(14px);
-      box-shadow:var(--shadow);
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:240px;
-    }
-
-    .brand img{
-      width:34px;
-      height:34px;
-      object-fit:contain;
-      border-radius:8px;
-      background:rgba(255,255,255,.03);
-    }
-
-    .brand h1{
-      font-size:18px;
-      font-weight:700;
-      letter-spacing:.2px;
-    }
-
-    .nav{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex:1;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-
-    .nav a{
-      padding:10px 14px;
-      border-radius:12px;
-      color:#d9e3f8;
-      font-size:14px;
-      font-weight:500;
-      position:relative;
-      transition:.2s;
-    }
-
-    .nav a:hover,
-    .nav a.active{
-      background:rgba(255,255,255,.04);
-      color:#fff;
-    }
-
-    .nav a.active::after{
-      content:"";
-      position:absolute;
-      left:14px;
-      right:14px;
-      bottom:3px;
-      height:2px;
-      border-radius:999px;
-      background:linear-gradient(90deg,var(--orange),#ffc593);
-      box-shadow:0 0 12px rgba(255,122,26,.55);
-    }
-
-    .top-actions{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:220px;
-      justify-content:flex-end;
-    }
-
-    .icon-btn{
-      width:40px;
-      height:40px;
-      display:grid;
-      place-items:center;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.03);
-      color:#fff;
-      font-size:16px;
-      cursor:pointer;
-    }
-
-    .profile-mini{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:5px 12px 5px 6px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      min-width:120px;
-    }
-
-    .profile-mini img{
-      width:34px;
-      height:34px;
-      border-radius:50%;
-      object-fit:cover;
-      border:2px solid rgba(255,255,255,.14);
-      background:#111827;
-    }
-
-    .main-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.95fr) 355px;
-      gap:18px;
-      margin-top:18px;
-    }
-
-    .left-col,
-    .right-col{
-      display:flex;
-      flex-direction:column;
-      gap:18px;
-      min-width:0;
-    }
-
-    .hero{
-      position:relative;
-      min-height:250px;
-      border-radius:24px;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.08);
-      box-shadow:var(--shadow);
-      background:
-        linear-gradient(90deg, rgba(7,11,22,.96) 0%, rgba(7,11,22,.80) 42%, rgba(7,11,22,.24) 100%),
-        url("/images/plano de fundo.png") center/cover no-repeat;
-      display:flex;
-      align-items:center;
-      padding:36px;
-    }
-
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 68% 35%, rgba(255,170,90,.22), transparent 23%),
-        linear-gradient(180deg, transparent, rgba(0,0,0,.16));
-      pointer-events:none;
-    }
-
-    .hero-content{
-      position:relative;
-      z-index:2;
-      max-width:560px;
-    }
-
-    .hero h2{
-      font-size:24px;
-      font-weight:600;
-      margin-bottom:14px;
-    }
-
-    .hero p{
-      font-size:15px;
-      line-height:1.6;
-      color:#d3ddf2;
-      margin-bottom:24px;
-    }
-
-    .hero-actions{
-      display:flex;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      border:none;
-      cursor:pointer;
-      padding:13px 22px;
-      border-radius:12px;
-      font-size:15px;
-      font-weight:700;
-      transition:.2s;
-    }
-
-    .btn:hover{
-      transform:translateY(-1px);
-    }
-
-    .btn-primary{
-      color:#fff;
-      background:linear-gradient(135deg,#ff9546,#ff5d00);
-      box-shadow:0 10px 28px rgba(255,122,26,.25);
-    }
-
-    .btn-dark{
-      color:#eef3ff;
-      background:linear-gradient(180deg, rgba(43,56,84,.92), rgba(18,26,44,.95));
-      border:1px solid rgba(255,255,255,.08);
-    }
-
-    .hero-eagle{
-      position:absolute;
-      right:10px;
-      bottom:0;
-      width:min(42%, 430px);
-      max-height:92%;
-      object-fit:contain;
-      z-index:1;
-      filter:drop-shadow(0 10px 30px rgba(0,0,0,.45));
-      pointer-events:none;
-    }
-
-    .metrics{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:14px;
-    }
-
-    .metric-card{
-      background:linear-gradient(180deg, rgba(17,25,43,.90), rgba(10,16,29,.92));
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:18px;
-      padding:18px;
-      box-shadow:var(--shadow);
-      min-height:118px;
-    }
-
-    .metric-title{
-      font-size:14px;
-      color:#e8eefb;
-      margin-bottom:12px;
-    }
-
-    .metric-value{
-      font-size:30px;
-      font-weight:800;
-      margin-bottom:8px;
-      line-height:1.1;
-    }
-
-    .metric-sub{
-      font-size:12px;
-      font-weight:600;
-      margin-bottom:12px;
-      color:var(--muted);
-    }
-
-    .metric-sub.green{ color:#a7e6ba; }
-    .metric-sub.red{ color:#ffb5b5; }
-    .metric-sub.orange{ color:#ffcb98; }
-    .metric-sub.blue{ color:#9db9ff; }
-
-    .metric-bar{
-      height:3px;
-      border-radius:999px;
-      background:rgba(255,255,255,.06);
-      overflow:hidden;
-    }
-
-    .metric-bar span{
-      display:block;
-      height:100%;
-      border-radius:999px;
-    }
-
-    .metric-card.orange .metric-bar span{ width:82%; background:linear-gradient(90deg,#ff994a,#ff5d00); }
-    .metric-card.red .metric-bar span{ width:56%; background:linear-gradient(90deg,#ff9d9d,#ef4444); }
-    .metric-card.green .metric-bar span{ width:74%; background:linear-gradient(90deg,#73f2a7,#1aae58); }
-    .metric-card.blue .metric-bar span{ width:70%; background:linear-gradient(90deg,#80a4ff,#3d6cff); }
-
-    .content-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.4fr) minmax(270px,.8fr);
-      gap:18px;
-    }
-
-    .panel{
-      background:linear-gradient(180deg, rgba(16,24,40,.90), rgba(10,16,29,.94));
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-
-    .panel-header{
-      padding:18px 18px 10px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-
-    .panel-title{
-      font-size:17px;
-      font-weight:700;
-    }
-
-    .status-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:12px;
-      font-weight:700;
-      color:#dce5f8;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:999px;
-      padding:6px 10px;
-    }
-
-    .chart-wrap{
-      height:300px;
-      padding:8px 16px 12px;
-    }
-
-    .chart-stats{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:10px;
-      padding:0 16px 16px;
-    }
-
-    .mini-stat{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-    }
-
-    .mini-dot{
-      width:11px;
-      height:11px;
-      border-radius:50%;
-      flex:0 0 auto;
-    }
-
-    .mini-stat strong{
-      display:block;
-      font-size:18px;
-      margin-bottom:4px;
-    }
-
-    .mini-stat span{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .quick-actions{
-      padding:16px;
-      display:grid;
-      gap:12px;
-    }
-
-    .action-btn{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:16px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.08);
-      background:linear-gradient(180deg, rgba(39,50,79,.95), rgba(20,28,46,.95));
-      color:#fff;
-      font-size:15px;
-      font-weight:700;
-      cursor:pointer;
-    }
-
-    .action-btn.primary{
-      background:linear-gradient(135deg,#ff9546,#d24c00);
-      box-shadow:0 10px 24px rgba(255,122,26,.20);
-    }
-
-    .action-badge{
-      padding:5px 9px;
-      border-radius:999px;
-      background:rgba(255,255,255,.12);
-      font-size:12px;
-      font-weight:800;
-    }
-
-    .table-panel{
-      padding:16px;
-    }
-
-    .table-title{
-      font-size:18px;
-      font-weight:700;
-      margin-bottom:16px;
-    }
-
-    .table-wrap{
-      overflow:auto;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.02);
-    }
-
-    table{
-      width:100%;
-      min-width:780px;
-      border-collapse:collapse;
-    }
-
-    th,td{
-      padding:14px 16px;
-      text-align:left;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      font-size:14px;
-    }
-
-    th{
-      color:#d5e0f5;
-      font-weight:600;
-      white-space:nowrap;
-    }
-
-    td{
-      color:#eef3ff;
-    }
-
-    tr:hover td{
-      background:rgba(255,255,255,.02);
-    }
-
-    .user-cell{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-
-    .avatar{
-      width:32px;
-      height:32px;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      background:linear-gradient(135deg,#ff934f,#526cff);
-      color:#fff;
-      font-size:12px;
-      font-weight:700;
-      flex:0 0 auto;
-    }
-
-    .row-actions{
-      display:flex;
-      gap:8px;
-    }
-
-    .tiny-btn{
-      border:none;
-      cursor:pointer;
-      padding:8px 12px;
-      border-radius:10px;
-      color:#fff;
-      font-size:12px;
-      font-weight:700;
-    }
-
-    .tiny-btn.approve{
-      background:linear-gradient(135deg,#33d879,#14904a);
-    }
-
-    .tiny-btn.view{
-      background:linear-gradient(135deg,#4c72ff,#2a46c5);
-    }
-
-    .modules{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .module-card{
-      position:relative;
-      min-height:138px;
-      border-radius:20px;
-      padding:18px;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.08);
-      box-shadow:var(--shadow);
-      display:flex;
-      flex-direction:column;
-      justify-content:flex-end;
-      transition:.22s ease;
-      cursor:pointer;
-    }
-
-    .module-card:hover{
-      transform:translateY(-3px);
-      border-color:rgba(255,255,255,.16);
-    }
-
-    .module-card.orange{
-      background:
-        radial-gradient(circle at top right, rgba(255,193,129,.24), transparent 34%),
-        linear-gradient(180deg, rgba(108,53,18,.90), rgba(44,21,10,.95));
-    }
-
-    .module-card.blue{
-      background:
-        radial-gradient(circle at top right, rgba(123,163,255,.20), transparent 34%),
-        linear-gradient(180deg, rgba(35,52,91,.90), rgba(15,23,41,.95));
-    }
-
-    .module-card.green{
-      background:
-        radial-gradient(circle at top right, rgba(116,247,165,.15), transparent 34%),
-        linear-gradient(180deg, rgba(24,52,54,.90), rgba(11,25,30,.95));
-    }
-
-    .module-icon{
-      position:absolute;
-      top:16px;
-      left:18px;
-      font-size:34px;
-      opacity:.95;
-    }
-
-    .module-title{
-      font-size:18px;
-      font-weight:600;
-      margin-bottom:6px;
-    }
-
-    .module-sub{
-      font-size:13px;
-      color:#d3ddf2;
-    }
-
-    .eagle-card,
-    .av-card,
-    .history-card{
-      background:linear-gradient(180deg, rgba(16,24,40,.92), rgba(10,16,29,.95));
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-
-    .eagle-card{
-      display:grid;
-      place-items:center;
-      min-height:250px;
-      padding:20px;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(255,149,70,.12), transparent 30%),
-        linear-gradient(180deg, rgba(14,22,38,.95), rgba(9,15,28,.96));
-    }
-
-    .eagle-card img{
-      max-width:100%;
-      max-height:210px;
-      object-fit:contain;
-      filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));
-    }
-
-    .card-section-title{
-      padding:18px 18px 12px;
-      font-size:18px;
-      font-weight:700;
-    }
-
-    .av-grid{
-      padding:0 16px 16px;
-      display:grid;
-      gap:12px;
-    }
-
-    .av-item{
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:16px;
-      padding:16px;
-    }
-
-    .av-label{
-      color:#aab6cf;
-      font-size:13px;
-      margin-bottom:8px;
-    }
-
-    .av-value{
-      font-size:28px;
-      font-weight:800;
-      line-height:1.1;
-    }
-
-    .av-value.gold{
-      color:#ffd58a;
-    }
-
-    .av-value.blue{
-      color:#a9c1ff;
-    }
-
-    .history-list{
-      padding:0 12px 14px;
-      display:grid;
-      gap:10px;
-    }
-
-    .history-item{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:13px 12px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-    }
-
-    .history-avatar{
-      width:38px;
-      height:38px;
-      display:grid;
-      place-items:center;
-      flex:0 0 auto;
-      font-weight:800;
-      border-radius:50%;
-      background:linear-gradient(135deg,#ff934f,#556bff);
-      color:#fff;
-      font-size:12px;
-    }
-
-    .item-text{
-      flex:1;
-      min-width:0;
-    }
-
-    .item-text strong{
-      display:block;
-      font-size:14px;
-      margin-bottom:3px;
-    }
-
-    .item-text span{
-      display:block;
-      color:#9eabc4;
-      font-size:12px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .item-time{
-      font-size:12px;
-      color:#b6c2da;
-      white-space:nowrap;
-    }
-
-    .empty-state{
-      color:#9aa7c0;
-      font-size:13px;
-      padding:16px;
-    }
-
-    @media (max-width: 1230px){
-      .main-grid{
-        grid-template-columns:1fr;
-      }
-
-      .right-col{
-        display:grid;
-        grid-template-columns:repeat(3,1fr);
-      }
-    }
-
-    @media (max-width: 980px){
-      .metrics{
-        grid-template-columns:repeat(2,1fr);
-      }
-
-      .content-grid{
-        grid-template-columns:1fr;
-      }
-
-      .modules{
-        grid-template-columns:repeat(2,1fr);
-      }
-
-      .right-col{
-        grid-template-columns:1fr;
-      }
-
-      .hero{
-        min-height:260px;
-      }
-
-      .hero-eagle{
-        width:42%;
-        opacity:.92;
-      }
-    }
-
-    @media (max-width: 760px){
-      .page-shell{
-        padding:12px;
-      }
-
-      .topbar{
-        flex-direction:column;
-        align-items:stretch;
-      }
-
-      .brand,
-      .top-actions{
-        justify-content:center;
-      }
-
-      .nav{
-        justify-content:flex-start;
-        flex-wrap:nowrap;
-        overflow:auto;
-      }
-
-      .hero{
-        min-height:auto;
-        padding:24px 20px;
-      }
-
-      .hero-content{
-        max-width:100%;
-        padding-right:0;
-      }
-
-      .hero h2{
-        font-size:18px;
-      }
-
-      .hero p{
-        font-size:14px;
-        max-width:100%;
-      }
-
-      .hero-eagle{
-        opacity:.18;
-        width:80%;
-        right:-18%;
-        bottom:-2%;
-      }
-
-      .metrics{
-        grid-template-columns:1fr;
-      }
-
-      .modules{
-        grid-template-columns:1fr;
-      }
-
-      .chart-stats{
-        grid-template-columns:1fr;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Security FBS</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#050c18;
+  --card:rgba(15,25,45,.75);
+  --line:rgba(255,255,255,.08);
+  --text:#fff;
+  --muted:#9fb0d0;
+  --orange:#ff7a1a;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Inter',sans-serif;
+}
+
+body{
+  background:
+    linear-gradient(180deg,rgba(5,12,24,.95),rgba(5,12,24,.98)),
+    url("/images/plano de fundo.png") center/cover fixed;
+  color:#fff;
+}
+
+/* HEADER */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 30px;
+  border-bottom:1px solid var(--line);
+  background:rgba(0,0,0,.5);
+  backdrop-filter:blur(12px);
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.brand img{
+  width:34px;
+}
+
+.nav{
+  display:flex;
+  gap:20px;
+}
+
+.nav a{
+  color:#cbd5f5;
+  text-decoration:none;
+  font-weight:500;
+}
+
+.nav a.active{
+  color:#fff;
+  border-bottom:2px solid var(--orange);
+}
+
+/* USER */
+.user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:rgba(255,255,255,.05);
+  padding:6px 12px;
+  border-radius:999px;
+}
+
+.user img{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+}
+
+/* HERO */
+.hero{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:40px;
+  gap:20px;
+}
+
+.hero-text{
+  max-width:500px;
+}
+
+.hero h1{
+  font-size:28px;
+  margin-bottom:10px;
+}
+
+.hero p{
+  color:var(--muted);
+}
+
+.hero img{
+  width:260px;
+}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:20px;
+  padding:30px;
+}
+
+/* CARD */
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:22px;
+  border:1px solid var(--line);
+  transition:.2s;
+}
+
+.card:hover{
+  transform:translateY(-4px);
+}
+
+.card h3{
+  margin-bottom:16px;
+  font-size:18px;
+}
+
+/* LINKS */
+.link{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px;
+  margin-bottom:10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.04);
+  text-decoration:none;
+  color:#fff;
+  transition:.2s;
+}
+
+.link:hover{
+  background:rgba(255,122,26,.2);
+}
+
+.link span{
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* RESPONSIVO */
+@media(max-width:900px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .hero{
+    flex-direction:column;
+    text-align:center;
+  }
+}
+</style>
 </head>
+
 <body>
-  <div class="page-shell">
 
-    <header class="topbar">
-      <div class="brand">
-        <img src="/images/logo.png" alt="Logo">
-        <h1>Shopee Security</h1>
-      </div>
+<!-- HEADER -->
+<header class="topbar">
 
-      <nav class="nav">
-        <a href="/portal.html" class="active">Dashboard</a>
-        <a href="/access.html">Controle de Acesso</a>
-        <a href="/aprovacoes.html">Aprovações</a>
-        <a href="/dashboard.html">Dashboard Geral</a>
-        <a href="/first-mile-access.html">First Mile</a>
-      </nav>
-
-      <div class="top-actions">
-        <button class="icon-btn" aria-label="Buscar">⌕</button>
-        <div class="profile-mini">
-          <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
-          <span id="topUserName">Caíque</span>
-        </div>
-      </div>
-    </header>
-
-    <div class="main-grid">
-      <section class="left-col">
-
-        <section class="hero">
-          <div class="hero-content">
-            <h2>Bem-vindo ao Shopee Security</h2>
-            <p>Portal consolidado com acessos aprovados, HC, AV recuperado, itens e rotas das últimas 24 horas.</p>
-
-            <div class="hero-actions">
-              <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">Verificar Segurança</button>
-              <button class="btn btn-dark" onclick="window.location.href='/aprovacoes.html'">Ver Aprovações</button>
-            </div>
-          </div>
-
-          <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
-        </section>
-
-        <section class="metrics">
-          <div class="metric-card orange">
-            <div class="metric-title">Acessos Aprovados 24h</div>
-            <div class="metric-value" id="approved24Total">0</div>
-            <div class="metric-sub orange" id="approved24Units">Carregando...</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-
-          <div class="metric-card blue">
-            <div class="metric-title">Unidades com Aprovação</div>
-            <div class="metric-value" id="approvedUnitsCount">0</div>
-            <div class="metric-sub blue" id="approvedUnitsTop">Carregando...</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-
-          <div class="metric-card green">
-            <div class="metric-title">HC Warehouse</div>
-            <div class="metric-value" id="hcWarehouse">0</div>
-            <div class="metric-sub green">Soma de qtd_pessoas</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-
-          <div class="metric-card red">
-            <div class="metric-title">HC Presente</div>
-            <div class="metric-value" id="hcPresent">0</div>
-            <div class="metric-sub red">Soma de total_presencas</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-        </section>
-
-        <section class="content-grid">
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">Monitoramento em Tempo Real</div>
-              <div class="status-pill">Últimas 24h</div>
-            </div>
-
-            <div class="chart-wrap">
-              <canvas id="monitorChart"></canvas>
-            </div>
-
-            <div class="chart-stats">
-              <div class="mini-stat">
-                <div class="mini-dot" style="background:#ff7a1a;"></div>
-                <div>
-                  <strong id="miniApproved">0</strong>
-                  <span>Aprovados 24h</span>
-                </div>
-              </div>
-
-              <div class="mini-stat">
-                <div class="mini-dot" style="background:#22c55e;"></div>
-                <div>
-                  <strong id="miniRoutes">0</strong>
-                  <span>Rotas do dia</span>
-                </div>
-              </div>
-
-              <div class="mini-stat">
-                <div class="mini-dot" style="background:#4d78ff;"></div>
-                <div>
-                  <strong id="miniUnits">0</strong>
-                  <span>Unidades com aprovação</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">Ações Rápidas</div>
-            </div>
-
-            <div class="quick-actions">
-              <button class="action-btn primary" onclick="window.location.href='/aprovacoes.html'">
-                <span>🔔 Aprovar Solicitações</span>
-                <span class="action-badge" id="pendingBadge">0</span>
-              </button>
-
-              <button class="action-btn" onclick="window.location.href='/first-mile-access.html'">
-                <span>⚠ Ver Rotas do Dia</span>
-                <span class="action-badge" id="routesBadge">0</span>
-              </button>
-
-              <button class="action-btn" onclick="window.location.href='/access.html'">
-                <span>＋ Ver Acessos por Operação</span>
-                <span>›</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel table-panel">
-          <div class="table-title">Solicitações Pendentes</div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Operação</th>
-                  <th>Solicitações Aguardando Aprovação</th>
-                  <th>Última Solicitação</th>
-                  <th>Status</th>
-                  <th>Ação</th>
-                </tr>
-              </thead>
-              <tbody id="pendingTableBody">
-                <tr>
-                  <td colspan="5" class="empty-state">Carregando solicitações pendentes...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="modules">
-          <a class="module-card orange" href="/access.html">
-            <div class="module-icon">🛡</div>
-            <div class="module-title">Controle de Acesso</div>
-            <div class="module-sub">Detalhe por operação</div>
-          </a>
-
-          <a class="module-card blue" href="/hc.html">
-            <div class="module-icon">👥</div>
-            <div class="module-title">HC</div>
-            <div class="module-sub">Warehouse e presença</div>
-          </a>
-
-          <a class="module-card green" href="/dashboard.html">
-            <div class="module-icon">💵</div>
-            <div class="module-title">Resultado Operacional</div>
-            <div class="module-sub">AV recuperado e itens</div>
-          </a>
-        </section>
-      </section>
-
-      <aside class="right-col">
-        <section class="eagle-card">
-          <img src="/images/Aguia.png" alt="Águia Security">
-        </section>
-
-        <section class="av-card">
-          <div class="card-section-title">Resultado Operacional</div>
-          <div class="av-grid">
-            <div class="av-item">
-              <div class="av-label">AV Recuperado (USD)</div>
-              <div class="av-value gold" id="avRecovered">$0.00</div>
-            </div>
-
-            <div class="av-item">
-              <div class="av-label">Quantidade de Itens</div>
-              <div class="av-value blue" id="itemsRecovered">0</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="history-card">
-          <div class="card-section-title">Histórico de Acessos</div>
-          <div class="history-list" id="historyList">
-            <div class="empty-state">Carregando acessos aprovados...</div>
-          </div>
-        </section>
-      </aside>
-    </div>
+  <div class="brand">
+    <img src="/images/logo.png">
+    <strong>Shopee Security</strong>
   </div>
-  
- <script>
-  const fallbackPhoto = "/images/logo.png";
-  const fallbackName = "Caíque";
 
-  function getStoredUserPhoto() {
-    const possiblePhotoKeys = ["userPhoto", "user_photo", "photoURL", "googleUserPhoto", "googlePhoto", "picture"];
-    for (const key of possiblePhotoKeys) {
-      const value = localStorage.getItem(key);
-      if (value && value !== "null" && value !== "undefined") return value;
-    }
-
-    const rawUser = localStorage.getItem("user");
-    if (rawUser) {
-      try {
-        const parsed = JSON.parse(rawUser);
-        return parsed.photoURL || parsed.picture || parsed.imageUrl || "";
-      } catch (e) {}
-    }
-    return "";
-  }
-
-  function getStoredUserName() {
-    const possibleNameKeys = ["userName", "user_name", "displayName", "googleUserName", "googleName", "name"];
-    for (const key of possibleNameKeys) {
-      const value = localStorage.getItem(key);
-      if (value && value !== "null" && value !== "undefined") return value;
-    }
-
-    const rawUser = localStorage.getItem("user");
-    if (rawUser) {
-      try {
-        const parsed = JSON.parse(rawUser);
-        return parsed.name || parsed.displayName || "";
-      } catch (e) {}
-    }
-    return "";
-  }
-
-  const userPhoto = getStoredUserPhoto() || fallbackPhoto;
-  const userName = getStoredUserName() || fallbackName;
-
-  const topUserPhoto = document.getElementById("topUserPhoto");
-  const topUserName = document.getElementById("topUserName");
-
-  if (topUserPhoto) {
-    topUserPhoto.src = userPhoto;
-    topUserPhoto.onerror = function () {
-      this.src = fallbackPhoto;
-    };
-  }
-
-  if (topUserName) {
-    topUserName.textContent = userName;
-  }
-
-  function safeText(value, fallback = "-") {
-    const text = String(value || "").trim();
-    return text || fallback;
-  }
-
-  function initials(text) {
-    const parts = String(text || "OP").trim().split(/\s+/).slice(0, 2);
-    return parts.map(p => p[0] || "").join("").toUpperCase() || "OP";
-  }
-
-  function parseNumber(value) {
-    if (value == null) return 0;
-    const str = String(value).trim();
-    if (!str) return 0;
-
-    const cleaned = str
-      .replace(/\$/g, "")
-      .replace(/USD/gi, "")
-      .replace(/\s/g, "");
-
-    if (cleaned.includes(".") && cleaned.includes(",")) {
-      if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
-        return Number(cleaned.replace(/\./g, "").replace(",", ".")) || 0;
-      }
-      return Number(cleaned.replace(/,/g, "")) || 0;
-    }
-
-    if (cleaned.includes(",") && !cleaned.includes(".")) {
-      return Number(cleaned.replace(",", ".")) || 0;
-    }
-
-    return Number(cleaned.replace(/[^\d.-]/g, "")) || 0;
-  }
-
-  function parseDate(value) {
-    if (!value) return null;
-    const text = String(value).trim();
-    if (!text) return null;
-
-    const direct = new Date(text);
-    if (!isNaN(direct)) return direct;
-
-    const match = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T](\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
-    if (match) {
-      let year = Number(match[3]);
-      if (year < 100) year += 2000;
-
-      const date = new Date(
-        year,
-        Number(match[2]) - 1,
-        Number(match[1]),
-        Number(match[4] || 0),
-        Number(match[5] || 0),
-        Number(match[6] || 0)
-      );
-
-      if (!isNaN(date)) return date;
-    }
-
-    return null;
-  }
-
-  function formatDateTime(date) {
-    if (!(date instanceof Date) || isNaN(date)) return "-";
-    return date.toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  }
-
-  function withinLast24Hours(date) {
-    if (!(date instanceof Date) || isNaN(date)) return false;
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    return diff >= 0 && diff <= 24 * 60 * 60 * 1000;
-  }
-
-  function buildHourlyBuckets() {
-    return Array.from({ length: 24 }, (_, i) => {
-      const d = new Date();
-      d.setMinutes(0, 0, 0);
-      d.setHours(d.getHours() - (23 - i));
-      return {
-        label: String(d.getHours()).padStart(2, "0") + "h",
-        date: new Date(d),
-        total: 0
-      };
-    });
-  }
-
-  function sameHour(a, b) {
-    return a &&
-      b &&
-      a.getHours() === b.getHours() &&
-      a.getDate() === b.getDate() &&
-      a.getMonth() === b.getMonth() &&
-      a.getFullYear() === b.getFullYear();
-  }
-
-  function normalizeHeader(text) {
-    return String(text || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function getValueFlexible(row, keys) {
-    const entries = Object.entries(row);
-    for (const [header, value] of entries) {
-      const normalized = normalizeHeader(header);
-      for (const key of keys) {
-        if (normalized === normalizeHeader(key) || normalized.includes(normalizeHeader(key))) {
-          return value;
-        }
-      }
-    }
-    return "";
-  }
-
-  function extractRowsFromTable(table) {
-    const rows = Array.from(table.querySelectorAll("tr"));
-    if (!rows.length) return [];
-
-    let headerRow = rows.find(row => row.querySelectorAll("th").length > 0);
-    if (!headerRow) headerRow = rows[0];
-
-    const headers = Array.from(headerRow.querySelectorAll("th, td")).map(cell => cell.textContent.trim());
-    if (!headers.length) return [];
-
-    const bodyRows = rows.slice(rows.indexOf(headerRow) + 1);
-
-    return bodyRows
-      .map(row => {
-        const cells = Array.from(row.querySelectorAll("td"));
-        if (!cells.length) return null;
-
-        const obj = {};
-        headers.forEach((header, index) => {
-          obj[header] = cells[index] ? cells[index].textContent.trim() : "";
-        });
-        return obj;
-      })
-      .filter(Boolean)
-      .filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-  }
-
-  function extractRowsGeneric(doc) {
-    const tables = Array.from(doc.querySelectorAll("table"));
-    let rows = tables.flatMap(extractRowsFromTable);
-
-    if (rows.length) return rows;
-
-    const tbodies = Array.from(doc.querySelectorAll("tbody"));
-    for (const tbody of tbodies) {
-      const trList = Array.from(tbody.querySelectorAll("tr"));
-      if (!trList.length) continue;
-
-      const table = tbody.closest("table");
-      if (table) {
-        rows = rows.concat(extractRowsFromTable(table));
-      }
-    }
-
-    return rows;
-  }
-
-  function createHiddenIframe(src) {
-    return new Promise((resolve, reject) => {
-      const iframe = document.createElement("iframe");
-      iframe.src = src;
-      iframe.style.position = "absolute";
-      iframe.style.left = "-9999px";
-      iframe.style.top = "-9999px";
-      iframe.style.width = "1px";
-      iframe.style.height = "1px";
-      iframe.style.opacity = "0";
-      iframe.style.pointerEvents = "none";
-
-      const timeout = setTimeout(() => {
-        reject(new Error("Timeout ao carregar " + src));
-      }, 30000);
-
-      iframe.onload = () => {
-        clearTimeout(timeout);
-        resolve(iframe);
-      };
-
-      iframe.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error("Erro ao carregar iframe " + src));
-      };
-
-      document.body.appendChild(iframe);
-    });
-  }
-
-  async function waitForRenderedRows(iframe, pageName, maxWait = 25000) {
-    const start = Date.now();
-    let lastCount = 0;
-
-    while (Date.now() - start < maxWait) {
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow.document;
-        const rows = extractRowsGeneric(doc);
-        lastCount = rows.length;
-
-        if (rows.length > 0) {
-          console.log(pageName + " rows found:", rows.length, rows.slice(0, 3));
-          return rows;
-        }
-      } catch (e) {}
-
-      await new Promise(resolve => setTimeout(resolve, 700));
-    }
-
-    console.log(pageName + " rows found after timeout:", lastCount);
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      return extractRowsGeneric(doc);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  async function loadRowsFromPage(path, pageName) {
-    const iframe = await createHiddenIframe(path);
-    return await waitForRenderedRows(iframe, pageName, 25000);
-  }
-
-  function parseAccessRows(rows) {
-    const approved24 = [];
-    const pendingRows = [];
-
-    rows.forEach(row => {
-      const status = String(
-        getValueFlexible(row, ["Status", "Situação", "Situacao"])
-      ).toLowerCase();
-
-      const operacao = safeText(
-        getValueFlexible(row, ["Operação", "Operacao"]),
-        "Sem operação"
-      );
-
-      const tipoLiberacao = safeText(
-        getValueFlexible(row, ["Tipo de Liberação", "Tipo de Liberacao"]),
-        "Liberação"
-      );
-
-      const dataLiberacao = parseDate(
-        getValueFlexible(row, ["Data de liberação", "Data de Liberação", "Data"])
-      );
-
-      const item = {
-        operacao,
-        tipoLiberacao,
-        dataLiberacao
-      };
-
-      if (status.includes("aprov")) {
-        if (withinLast24Hours(dataLiberacao)) approved24.push(item);
-      }
-
-      if (status.includes("aguard") || status.includes("pend")) {
-        pendingRows.push(item);
-      }
-    });
-
-    const approvedByOperation = {};
-    approved24.forEach(item => {
-      approvedByOperation[item.operacao] = (approvedByOperation[item.operacao] || 0) + 1;
-    });
-
-    const approvedOperationsSorted = Object.entries(approvedByOperation).sort((a, b) => b[1] - a[1]);
-
-    const pendingByOperationMap = {};
-    pendingRows.forEach(item => {
-      if (!pendingByOperationMap[item.operacao]) {
-        pendingByOperationMap[item.operacao] = {
-          operacao: item.operacao,
-          total: 0,
-          ultimaSolicitacao: null
-        };
-      }
-
-      pendingByOperationMap[item.operacao].total += 1;
-
-      if (
-        item.dataLiberacao &&
-        (!pendingByOperationMap[item.operacao].ultimaSolicitacao ||
-          item.dataLiberacao > pendingByOperationMap[item.operacao].ultimaSolicitacao)
-      ) {
-        pendingByOperationMap[item.operacao].ultimaSolicitacao = item.dataLiberacao;
-      }
-    });
-
-    const pendingByOperation = Object.values(pendingByOperationMap)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
-
-    const historyApproved = approved24
-      .sort((a, b) => (b.dataLiberacao || 0) - (a.dataLiberacao || 0))
-      .slice(0, 8);
-
-    const buckets = buildHourlyBuckets();
-    approved24.forEach(item => {
-      if (!item.dataLiberacao) return;
-      const bucket = buckets.find(b => sameHour(b.date, item.dataLiberacao));
-      if (bucket) bucket.total += 1;
-    });
-
-    return {
-      approved24,
-      approvedOperationsSorted,
-      pendingByOperation,
-      historyApproved,
-      buckets
-    };
-  }
-
-  function parseHcRows(rows) {
-    let hcWarehouse = 0;
-    let hcPresent = 0;
-
-    rows.forEach(row => {
-      hcWarehouse += parseNumber(getValueFlexible(row, ["qtd_pessoas"]));
-      hcPresent += parseNumber(getValueFlexible(row, ["total_presencas"]));
-    });
-
-    return { hcWarehouse, hcPresent };
-  }
-
-  function parseDashboardRows(rows) {
-    let avRecovered = 0;
-    let itemsRecovered = 0;
-
-    rows.forEach(row => {
-      avRecovered += parseNumber(getValueFlexible(row, ["US$ ENCONTRADO", "US ENCONTRADO"]));
-      itemsRecovered += parseNumber(getValueFlexible(row, ["QUANTIDADE ENCONTRADA"]));
-    });
-
-    return { avRecovered, itemsRecovered };
-  }
-
-  function parseFirstMileRows(rows) {
-    const buckets = buildHourlyBuckets();
-    const seenRoutes = new Set();
-
-    rows.forEach(row => {
-      const dataColeta = parseDate(getValueFlexible(row, ["Data Coleta"]));
-      if (!withinLast24Hours(dataColeta)) return;
-
-      const routeName = safeText(getValueFlexible(row, ["Route Name"]), "Sem rota");
-      const chave = safeText(getValueFlexible(row, ["Chave"]), "");
-      const statusFinal = String(getValueFlexible(row, ["Status Final"])).toLowerCase();
-
-      if (statusFinal.includes("cancel")) return;
-
-      const uniqueKey = `${routeName}__${chave}__${dataColeta ? dataColeta.toISOString() : ""}`;
-      if (seenRoutes.has(uniqueKey)) return;
-      seenRoutes.add(uniqueKey);
-
-      const bucket = buckets.find(b => sameHour(b.date, dataColeta));
-      if (bucket) bucket.total += 1;
-    });
-
-    return buckets;
-  }
-
-  function renderPendingTable(rows) {
-    const tbody = document.getElementById("pendingTableBody");
-
-    if (!rows.length) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" class="empty-state">
-            Nenhuma solicitação aguardando aprovação encontrada no access.html.
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    tbody.innerHTML = rows.map(row => `
-      <tr>
-        <td>
-          <div class="user-cell">
-            <div class="avatar">${initials(row.operacao)}</div>
-            <span>${safeText(row.operacao)}</span>
-          </div>
-        </td>
-        <td>${row.total}</td>
-        <td>${row.ultimaSolicitacao ? formatDateTime(row.ultimaSolicitacao) : "-"}</td>
-        <td>Aguardando aprovação</td>
-        <td>
-          <div class="row-actions">
-            <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
-            <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
-          </div>
-        </td>
-      </tr>
-    `).join("");
-  }
-
-  function renderHistory(rows) {
-    const historyList = document.getElementById("historyList");
-
-    if (!rows.length) {
-      historyList.innerHTML = `<div class="empty-state">Nenhum acesso aprovado encontrado nas últimas 24h.</div>`;
-      return;
-    }
-
-    historyList.innerHTML = rows.map(item => `
-      <div class="history-item">
-        <div class="history-avatar">${initials(item.operacao)}</div>
-        <div class="item-text">
-          <strong>${safeText(item.operacao)}</strong>
-          <span>${safeText(item.tipoLiberacao)} · aprovado</span>
-        </div>
-        <div class="item-time">
-          ${item.dataLiberacao ? item.dataLiberacao.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "-"}
-        </div>
-      </div>
-    `).join("");
-  }
-
-  let monitorChart;
-
-  function renderChart(accessBuckets, routeBuckets) {
-    const ctx = document.getElementById("monitorChart").getContext("2d");
-
-    if (monitorChart) monitorChart.destroy();
-
-    monitorChart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: accessBuckets.map(item => item.label),
-        datasets: [
-          {
-            label: "Acessos aprovados",
-            data: accessBuckets.map(item => item.total),
-            borderColor: "#ff7a1a",
-            backgroundColor: "rgba(255,122,26,.12)",
-            tension: 0.35,
-            fill: false,
-            borderWidth: 3,
-            pointRadius: 2.5,
-            pointBackgroundColor: "#ff7a1a"
-          },
-          {
-            label: "Rotas do dia",
-            data: routeBuckets.map(item => item.total),
-            borderColor: "#22c55e",
-            backgroundColor: "rgba(34,197,94,.10)",
-            tension: 0.35,
-            fill: false,
-            borderWidth: 2,
-            pointRadius: 2.2,
-            pointBackgroundColor: "#22c55e"
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            labels: {
-              color: "#dce5f8",
-              usePointStyle: true,
-              boxWidth: 10,
-              boxHeight: 10,
-              padding: 18,
-              font: {
-                family: "Inter",
-                size: 12,
-                weight: "600"
-              }
-            }
-          },
-          tooltip: {
-            backgroundColor: "rgba(10,16,29,.96)",
-            borderColor: "rgba(255,255,255,.08)",
-            borderWidth: 1,
-            titleColor: "#fff",
-            bodyColor: "#dce6fb",
-            padding: 12
-          }
-        },
-        scales: {
-          x: {
-            grid: {
-              color: "rgba(255,255,255,.05)",
-              drawBorder: false
-            },
-            ticks: {
-              color: "#9fb0cf",
-              font: {
-                family: "Inter",
-                size: 11
-              }
-            }
-          },
-          y: {
-            beginAtZero: true,
-            grid: {
-              color: "rgba(255,255,255,.05)",
-              drawBorder: false
-            },
-            ticks: {
-              color: "#9fb0cf",
-              precision: 0,
-              font: {
-                family: "Inter",
-                size: 11
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  async function loadPortalData() {
-    try {
-      const [accessRows, hcRows, dashboardRows, firstMileRows] = await Promise.all([
-        loadRowsFromPage("/access.html", "access.html"),
-        loadRowsFromPage("/hc.html", "hc.html"),
-        loadRowsFromPage("/dashboard.html", "dashboard.html"),
-        loadRowsFromPage("/first-mile-access.html", "first-mile-access.html")
-      ]);
-
-      const accessData = parseAccessRows(accessRows);
-      const hcData = parseHcRows(hcRows);
-      const dashboardData = parseDashboardRows(dashboardRows);
-      const firstMileData = parseFirstMileRows(firstMileRows);
-
-      document.getElementById("approved24Total").textContent = accessData.approved24.length;
-      document.getElementById("approved24Units").textContent =
-        accessData.approvedOperationsSorted.length
-          ? accessData.approvedOperationsSorted.slice(0, 2).map(([op, total]) => `${op}: ${total}`).join(" · ")
-          : "Sem aprovações nas últimas 24h";
-
-      document.getElementById("approvedUnitsCount").textContent = accessData.approvedOperationsSorted.length;
-      document.getElementById("approvedUnitsTop").textContent =
-        accessData.approvedOperationsSorted.length
-          ? accessData.approvedOperationsSorted.slice(0, 3).map(([op]) => op).join(" · ")
-          : "Sem operações";
-
-      document.getElementById("hcWarehouse").textContent = hcData.hcWarehouse;
-      document.getElementById("hcPresent").textContent = hcData.hcPresent;
-
-      document.getElementById("avRecovered").textContent =
-        new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD"
-        }).format(dashboardData.avRecovered);
-
-      document.getElementById("itemsRecovered").textContent = dashboardData.itemsRecovered;
-
-      document.getElementById("miniApproved").textContent = accessData.approved24.length;
-      document.getElementById("miniRoutes").textContent =
-        firstMileData.reduce((sum, item) => sum + item.total, 0);
-      document.getElementById("miniUnits").textContent =
-        accessData.approvedOperationsSorted.length;
-
-      document.getElementById("pendingBadge").textContent =
-        accessData.pendingByOperation.reduce((sum, row) => sum + row.total, 0);
-
-      document.getElementById("routesBadge").textContent =
-        firstMileData.reduce((sum, item) => sum + item.total, 0);
-
-      renderPendingTable(accessData.pendingByOperation);
-      renderHistory(accessData.historyApproved);
-      renderChart(accessData.buckets, firstMileData);
-    } catch (error) {
-      console.error("Erro ao carregar dados do portal:", error);
-
-      document.getElementById("pendingTableBody").innerHTML = `
-        <tr>
-          <td colspan="5" class="empty-state">
-            Erro ao carregar os dashboards. Verifique console e estrutura das páginas access.html, hc.html e first-mile-access.html.
-          </td>
-        </tr>
-      `;
-
-      document.getElementById("historyList").innerHTML = `
-        <div class="empty-state">Erro ao carregar o histórico.</div>
-      `;
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", loadPortalData);
+  <nav class="nav">
+    <a class="active">Dashboard</a>
+    <a href="/access.html">Controle de Acesso</a>
+    <a href="/aprovacoes.html">Aprovações</a>
+    <a href="/dashboard.html">Resultado</a>
+    <a href="/first-mile-access.html">First Mile</a>
+  </nav>
+
+  <div class="user">
+    <img id="userPhoto" src="/images/logo.png">
+    <span id="userName">Usuário</span>
+  </div>
+
+</header>
+
+<!-- HERO -->
+<section class="hero">
+
+  <div class="hero-text">
+    <h1>Bem-vindo ao Portal Security</h1>
+    <p>
+      Central de gestão de acessos, HC, auditorias e processos operacionais.
+      Utilize os módulos abaixo para navegar entre os dashboards.
+    </p>
+  </div>
+
+  <img src="/images/Aguia.png">
+
+</section>
+
+<!-- CATEGORIAS -->
+<section class="grid">
+
+  <!-- CONTROLE DE ACESSO -->
+  <div class="card">
+    <h3>🔐 Controle de Acesso</h3>
+
+    <a class="link" href="/access.html">
+      Dashboard ACCESS
+      <span>Acessos e liberações</span>
+    </a>
+
+    <a class="link" href="/aprovacoes.html">
+      Aprovações
+      <span>Gestão de solicitações</span>
+    </a>
+
+    <a class="link" href="/cadastro.html">
+      Cadastro
+      <span>Novos acessos</span>
+    </a>
+  </div>
+
+  <!-- HC -->
+  <div class="card">
+    <h3>👥 HC</h3>
+
+    <a class="link" href="/hc.html">
+      Dashboard HC
+      <span>Headcount e presença</span>
+    </a>
+
+    <a class="link" href="/agentes-fbs.html">
+      Times
+      <span>Gestão de equipe</span>
+    </a>
+  </div>
+
+  <!-- PROCESSOS -->
+  <div class="card">
+    <h3>⚙️ Processos</h3>
+
+    <a class="link" href="/first-mile-access.html">
+      First Mile
+      <span>Rotas e coletas</span>
+    </a>
+
+    <a class="link" href="/rondas.html">
+      Rondas
+      <span>Monitoramento</span>
+    </a>
+
+    <a class="link" href="/chamada-agentes.html">
+      Chamadas
+      <span>Controle operacional</span>
+    </a>
+  </div>
+
+  <!-- AUDITORIAS -->
+  <div class="card">
+    <h3>🧾 Auditorias</h3>
+
+    <a class="link" href="/dashboard.html">
+      Resultado Operacional
+      <span>AV recuperado</span>
+    </a>
+
+    <a class="link" href="/ccc-fbs.html">
+      CCC
+      <span>Controle de qualidade</span>
+    </a>
+
+    <a class="link" href="/desligados.html">
+      Desligados
+      <span>Controle de acessos removidos</span>
+    </a>
+  </div>
+
+</section>
+
+<script>
+/* GOOGLE USER */
+const user = JSON.parse(localStorage.getItem("userGoogle"));
+
+if(user){
+  document.getElementById("userName").innerText = user.name;
+  document.getElementById("userPhoto").src = user.picture;
+}
 </script>
+
+</body>
+</html>

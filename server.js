@@ -596,77 +596,68 @@ app.get("/api/hc-dados", requireAuth, async (req, res) => {
 
 // ================== HC AGENTES FBS ==================
 
+// ================== HC AGENTES FBS ==================
+
+const HC_AGENTES_FBS_SPREADSHEET_ID = "1XtP5ylCpA42aLE1EklytzHH2hUzik5JdY8meAg84Et4";
+const HC_AGENTES_FBS_RANGE = "'CONTROLE DE FALTAS FBS'!A1:R200000";
+
+let hcAgentesCache = null;
+let hcAgentesCacheTime = 0;
+const HC_AGENTES_CACHE_TTL = 5 * 60 * 1000;
+
+function hcNorm(value) {
+  return String(value || "").trim();
+}
+
+async function carregarHcAgentesFbsRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: HC_AGENTES_FBS_SPREADSHEET_ID,
+    range: HC_AGENTES_FBS_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const headers = values[0].map((h, i) => hcNorm(h) || `COL_${i + 1}`);
+
+  return values.slice(1).map((line) => {
+    const row = {};
+    headers.forEach((header, i) => {
+      row[header] = line[i] ?? "";
+    });
+    return row;
+  }).filter((row) =>
+    hcNorm(row["DATA"]) ||
+    hcNorm(row["UNIDADE"]) ||
+    hcNorm(row["COLABORADOR"]) ||
+    hcNorm(row["OCORRÊNCIA"])
+  );
+}
+
+async function carregarHcAgentesFbsComCache() {
+  const now = Date.now();
+
+  if (hcAgentesCache && now - hcAgentesCacheTime < HC_AGENTES_CACHE_TTL) {
+    return hcAgentesCache;
+  }
+
+  hcAgentesCache = await carregarHcAgentesFbsRaw();
+  hcAgentesCacheTime = now;
+
+  console.log("HC AGENTES FBS cache atualizado:", hcAgentesCache.length);
+
+  return hcAgentesCache;
+}
+
 app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
   try {
-    const sheets = await conectarSheets();
-
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: "1OLFfhaPKAL92co8vaHqpy_OiOU9oFEEqOrpgqo3nMJ0",
-      range: "'ABS AGENTES FBS'!A1:AZ",
-    });
-
-    const rows = response.data.values || [];
-
-    if (!rows.length) {
-      return res.json([]);
-    }
-
-    const isDate = (value) => /^\d{2}\/\d{2}\/\d{4}$/.test(String(value || "").trim());
-
-    const DATE_ROW_INDEX = rows.findIndex((row) => {
-      const totalDatas = row.filter((cell) => isDate(cell)).length;
-      return totalDatas >= 5;
-    });
-
-    if (DATE_ROW_INDEX === -1) {
-      console.log("Não encontrei a linha de datas na planilha.");
-      return res.json([]);
-    }
-
-    const dateRow = rows[DATE_ROW_INDEX] || [];
-
-    const FIXED_COLS = dateRow.findIndex((cell) => isDate(cell));
-
-    if (FIXED_COLS === -1) {
-      console.log("Não encontrei a primeira coluna de datas.");
-      return res.json([]);
-    }
-
-    const DATA_START_ROW = DATE_ROW_INDEX + 3;
-
-    const lateralDates = dateRow
-      .slice(FIXED_COLS)
-      .map((d) => String(d || "").trim());
-
-    const lista = rows
-      .slice(DATA_START_ROW)
-      .filter((r) => (r[0] || r[1] || r[6]))
-      .map((r) => {
-        const dias = lateralDates.map((data, idx) => ({
-          data,
-          valor: String(r[FIXED_COLS + idx] || "").trim().toUpperCase(),
-        }));
-
-        return {
-          genero: String(r[0] || "").trim(),
-          colaborador: String(r[1] || "").trim(),
-          hora: String(r[2] || "").trim(),
-          escala: String(r[3] || "").trim(),
-          dia_inicio: String(r[4] || "").trim(),
-          re: String(r[5] || "").trim(),
-          unidade: String(r[6] || "").trim(),
-          lider: String(r[7] || "").trim(),
-          admissao: String(r[8] || "").trim(),
-          desligamento: String(r[9] || "").trim(),
-          cargo: String(r[10] || "").trim(),
-          dias,
-        };
-      });
-
-    return res.json(lista);
+    const dados = await carregarHcAgentesFbsComCache();
+    return res.json(dados);
   } catch (err) {
-    console.log("Erro HC AGENTES FBS:", err);
-    return res.json([]);
+    console.log("Erro HC AGENTES FBS nova base:", err);
+    return res.status(500).json({ error: "Erro ao carregar HC AGENTES FBS." });
   }
 });
 

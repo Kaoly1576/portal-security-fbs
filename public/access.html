@@ -21,7 +21,7 @@
       </div>
 
       <div class="top-actions">
-        <a href="/portal" class="btn-secondary">Voltar ao Portal</a>
+        <a href="/portal.html" class="btn-secondary">Voltar ao Portal</a>
       </div>
     </header>
 
@@ -110,39 +110,39 @@
         </div>
 
         <div class="field btn-field">
-          <button class="btn-primary" id="btnLimpar">Limpar filtros</button>
+          <button class="btn-primary" id="btnLimpar" type="button">Limpar filtros</button>
         </div>
       </div>
     </section>
 
     <section class="cards-grid">
       <div class="info-card">
-        <div class="info-label">Total de acessos</div>
+        <div class="info-label">TOTAL DE ACESSOS</div>
         <div class="info-value orange" id="totalAcessos">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">Aprovados</div>
+        <div class="info-label">APROVADOS</div>
         <div class="info-value green" id="totalAprovados">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">Reprovados</div>
+        <div class="info-label">REPROVADOS</div>
         <div class="info-value red" id="totalReprovados">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">Com veículo</div>
+        <div class="info-label">COM VEÍCULO</div>
         <div class="info-value blue" id="totalComVeiculo">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">Sem veículo</div>
+        <div class="info-label">SEM VEÍCULO</div>
         <div class="info-value purple" id="totalSemVeiculo">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">% aprovados</div>
+        <div class="info-label">% APROVADOS</div>
         <div class="info-value orange" id="percentualAprovados">0%</div>
       </div>
     </section>
@@ -226,8 +226,8 @@
       <div class="panel-title">Detalhamento dos acessos</div>
       <div class="table-wrap big-table" id="tableWrap"></div>
       <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
-        <button class="btn-secondary" id="btnPrev">Anterior</button>
-        <button class="btn-secondary" id="btnNext">Próxima</button>
+        <button class="btn-secondary" id="btnPrev" type="button">Anterior</button>
+        <button class="btn-secondary" id="btnNext" type="button">Próxima</button>
       </div>
     </section>
   </div>
@@ -241,10 +241,7 @@
 
     let currentPage = 1;
     let totalPages = 1;
-
-    function normalize(value) {
-      return String(value || "").trim();
-    }
+    let searchDebounce = null;
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -256,11 +253,25 @@
     }
 
     function formatNumber(value) {
-      return new Intl.NumberFormat("pt-BR").format(value || 0);
+      return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
     }
 
     function formatPercent(value) {
       return `${Number(value || 0).toFixed(2)}%`;
+    }
+
+    function setUltimaAtualizacao(value) {
+      document.getElementById("ultimaAtualizacao").textContent = value || "--:--";
+    }
+
+    function setResumoVazio() {
+      document.getElementById("totalAcessos").textContent = "0";
+      document.getElementById("totalAprovados").textContent = "0";
+      document.getElementById("totalReprovados").textContent = "0";
+      document.getElementById("totalComVeiculo").textContent = "0";
+      document.getElementById("totalSemVeiculo").textContent = "0";
+      document.getElementById("percentualAprovados").textContent = "0%";
+      setUltimaAtualizacao("--:--");
     }
 
     function getFilters() {
@@ -279,10 +290,29 @@
       });
     }
 
+    async function fetchJson(url) {
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`Erro ${response.status} em ${url} ${text ? "- " + text : ""}`);
+      }
+
+      return response.json();
+    }
+
     function fillSelect(id, values, firstLabel) {
       const select = document.getElementById(id);
+      const safeValues = Array.isArray(values) ? values.filter(Boolean) : [];
       select.innerHTML = `<option value="">${firstLabel}</option>`;
-      values.forEach(v => {
+      safeValues.forEach(v => {
         select.innerHTML += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
       });
     }
@@ -293,6 +323,7 @@
       if (chartTipo) chartTipo.destroy();
       if (chartOperacao) chartOperacao.destroy();
       if (chartDia) chartDia.destroy();
+
       chartStatus = null;
       chartEstado = null;
       chartTipo = null;
@@ -327,208 +358,210 @@
     }
 
     async function loadFiltros() {
-      const res = await fetch("/api/access-filtros", { credentials: "same-origin" });
-      const data = await res.json();
+      try {
+        const data = await fetchJson("/api/access-filtros");
 
-      fillSelect("filtroEstado", data.estados || [], "Todos");
-      fillSelect("filtroCidade", data.cidades || [], "Todas");
-      fillSelect("filtroOperacao", data.operacoes || [], "Todas");
-      fillSelect("filtroTipoLiberacao", data.tiposLiberacao || [], "Todos");
-      fillSelect("filtroVeiculo", data.veiculos || [], "Todos");
-      fillSelect("filtroStatus", data.status || [], "Todos");
+        fillSelect("filtroEstado", data.estados || [], "Todos");
+        fillSelect("filtroCidade", data.cidades || [], "Todas");
+        fillSelect("filtroOperacao", data.operacoes || [], "Todas");
+        fillSelect("filtroTipoLiberacao", data.tiposLiberacao || [], "Todos");
+        fillSelect("filtroVeiculo", data.veiculos || [], "Todos");
+        fillSelect("filtroStatus", data.status || [], "Todos");
+      } catch (error) {
+        console.error("Erro ao carregar filtros:", error);
+      }
     }
 
     async function loadResumo() {
-      const qs = getFilters().toString();
-      const res = await fetch(`/api/access-resumo?${qs}`, { credentials: "same-origin" });
-      const data = await res.json();
+      try {
+        const qs = getFilters().toString();
+        const data = await fetchJson(`/api/access-resumo?${qs}`);
 
-      document.getElementById("totalAcessos").textContent = formatNumber(data.total);
-      document.getElementById("totalAprovados").textContent = formatNumber(data.aprovados);
-      document.getElementById("totalReprovados").textContent = formatNumber(data.reprovados);
-      document.getElementById("totalComVeiculo").textContent = formatNumber(data.comVeiculo);
-      document.getElementById("totalSemVeiculo").textContent = formatNumber(data.semVeiculo);
-      document.getElementById("percentualAprovados").textContent = formatPercent(data.percentualAprovados);
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+        document.getElementById("totalAcessos").textContent = formatNumber(data.total);
+        document.getElementById("totalAprovados").textContent = formatNumber(data.aprovados);
+        document.getElementById("totalReprovados").textContent = formatNumber(data.reprovados);
+        document.getElementById("totalComVeiculo").textContent = formatNumber(data.comVeiculo);
+        document.getElementById("totalSemVeiculo").textContent = formatNumber(data.semVeiculo);
+        document.getElementById("percentualAprovados").textContent = formatPercent(data.percentualAprovados);
+        setUltimaAtualizacao(data.ultimaAtualizacao);
+      } catch (error) {
+        console.error("Erro ao carregar resumo:", error);
+        setResumoVazio();
+      }
     }
 
     async function loadGraficos() {
-      const qs = getFilters().toString();
-      const res = await fetch(`/api/access-graficos?${qs}`, { credentials: "same-origin" });
-      const data = await res.json();
+      try {
+        const qs = getFilters().toString();
+        const data = await fetchJson(`/api/access-graficos?${qs}`);
 
-      destroyCharts();
+        destroyCharts();
 
-      chartStatus = new Chart(document.getElementById("chartStatus"), {
-        type: "doughnut",
-        data: {
-          labels: Object.keys(data.status || {}),
-          datasets: [{
-            data: Object.values(data.status || {}),
-            backgroundColor: ["#ff7a1a", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6", "#64748b"],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: "#fff" } }
+        chartStatus = new Chart(document.getElementById("chartStatus"), {
+          type: "doughnut",
+          data: {
+            labels: Object.keys(data.status || {}),
+            datasets: [{
+              data: Object.values(data.status || {}),
+              backgroundColor: ["#ff7a1a", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6", "#64748b"],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: "#fff" } }
+            }
           }
-        }
-      });
+        });
 
-      chartEstado = new Chart(document.getElementById("chartEstado"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(data.estado || {}),
-          datasets: [{
-            label: "Acessos",
-            data: Object.values(data.estado || {}),
-            backgroundColor: "#ff7a1a",
-            borderRadius: 8
-          }]
-        },
-        options: makeChartOptions()
-      });
+        chartEstado = new Chart(document.getElementById("chartEstado"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(data.estado || {}),
+            datasets: [{
+              label: "Acessos",
+              data: Object.values(data.estado || {}),
+              backgroundColor: "#ff7a1a",
+              borderRadius: 8
+            }]
+          },
+          options: makeChartOptions()
+        });
 
-      chartTipo = new Chart(document.getElementById("chartTipo"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(data.tipoLiberacao || {}),
-          datasets: [{
-            label: "Acessos",
-            data: Object.values(data.tipoLiberacao || {}),
-            backgroundColor: "#f97316",
-            borderRadius: 8
-          }]
-        },
-        options: makeChartOptions(true)
-      });
+        chartTipo = new Chart(document.getElementById("chartTipo"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(data.tipoLiberacao || {}),
+            datasets: [{
+              label: "Acessos",
+              data: Object.values(data.tipoLiberacao || {}),
+              backgroundColor: "#f97316",
+              borderRadius: 8
+            }]
+          },
+          options: makeChartOptions(true)
+        });
 
-      chartOperacao = new Chart(document.getElementById("chartOperacao"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(data.operacao || {}),
-          datasets: [{
-            label: "Acessos",
-            data: Object.values(data.operacao || {}),
-            backgroundColor: "#fb923c",
-            borderRadius: 8
-          }]
-        },
-        options: makeChartOptions(true)
-      });
+        chartOperacao = new Chart(document.getElementById("chartOperacao"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(data.operacao || {}),
+            datasets: [{
+              label: "Acessos",
+              data: Object.values(data.operacao || {}),
+              backgroundColor: "#fb923c",
+              borderRadius: 8
+            }]
+          },
+          options: makeChartOptions(true)
+        });
 
-      chartDia = new Chart(document.getElementById("chartDia"), {
-        type: "line",
-        data: {
-          labels: data.porDia?.labels || [],
-          datasets: [{
-            label: "Solicitações",
-            data: data.porDia?.values || [],
-            borderColor: "#ff7a1a",
-            backgroundColor: "rgba(255,122,26,0.15)",
-            fill: true,
-            tension: 0.35,
-            pointRadius: 3
-          }]
-        },
-        options: makeChartOptions()
-      });
+        chartDia = new Chart(document.getElementById("chartDia"), {
+          type: "line",
+          data: {
+            labels: data.porDia?.labels || [],
+            datasets: [{
+              label: "Solicitações",
+              data: data.porDia?.values || [],
+              borderColor: "#ff7a1a",
+              backgroundColor: "rgba(255,122,26,0.15)",
+              fill: true,
+              tension: 0.35,
+              pointRadius: 3
+            }]
+          },
+          options: makeChartOptions()
+        });
 
-      const tabelaCidade = document.getElementById("tabelaCidade");
-      tabelaCidade.innerHTML = (data.tabelaCidade || []).map(item => `
-        <tr>
-          <td>${escapeHtml(item.cidade)}</td>
-          <td>${formatNumber(item.total)}</td>
-          <td class="green-text">${formatNumber(item.aprovados)}</td>
-          <td class="red-text">${formatNumber(item.reprovados)}</td>
-        </tr>
-      `).join("");
+        const tabelaCidade = document.getElementById("tabelaCidade");
+        tabelaCidade.innerHTML = (data.tabelaCidade || []).map(item => `
+          <tr>
+            <td>${escapeHtml(item.cidade)}</td>
+            <td>${formatNumber(item.total)}</td>
+            <td class="green-text">${formatNumber(item.aprovados)}</td>
+            <td class="red-text">${formatNumber(item.reprovados)}</td>
+          </tr>
+        `).join("");
 
-      const tabelaOperacao = document.getElementById("tabelaOperacao");
-      tabelaOperacao.innerHTML = (data.tabelaOperacao || []).map(item => `
-        <tr>
-          <td>${escapeHtml(item.operacao)}</td>
-          <td>${formatNumber(item.total)}</td>
-          <td class="green-text">${formatNumber(item.aprovados)}</td>
-          <td class="blue-text">${formatNumber(item.comVeiculo)}</td>
-        </tr>
-      `).join("");
+        const tabelaOperacao = document.getElementById("tabelaOperacao");
+        tabelaOperacao.innerHTML = (data.tabelaOperacao || []).map(item => `
+          <tr>
+            <td>${escapeHtml(item.operacao)}</td>
+            <td>${formatNumber(item.total)}</td>
+            <td class="green-text">${formatNumber(item.aprovados)}</td>
+            <td class="blue-text">${formatNumber(item.comVeiculo)}</td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        console.error("Erro ao carregar gráficos:", error);
+        destroyCharts();
+        document.getElementById("tabelaCidade").innerHTML = "";
+        document.getElementById("tabelaOperacao").innerHTML = "";
+      }
     }
 
     async function loadDetalhes(page = 1) {
-      currentPage = page;
-      const qs = getFilters();
-      qs.set("page", currentPage);
-      qs.set("limit", 50);
+      try {
+        currentPage = page;
+        const qs = getFilters();
+        qs.set("page", currentPage);
+        qs.set("limit", 50);
 
-      const res = await fetch(`/api/access-detalhes?${qs.toString()}`, {
-        credentials: "same-origin"
-      });
+        const data = await fetchJson(`/api/access-detalhes?${qs.toString()}`);
+        totalPages = Number(data.totalPages || 1);
 
-      const data = await res.json();
-      totalPages = data.totalPages || 1;
+        const headers = [
+          "ID",
+          "Data",
+          "Data de liberação",
+          "Estado",
+          "Cidade",
+          "Operação",
+          "Tipo de Liberação",
+          "Nome completo:",
+          "Empresa",
+          "Vai acessar com veículo?",
+          "Placa",
+          "Status"
+        ];
 
-      const headers = [
-        "ID",
-        "Data",
-        "Data de liberação",
-        "Estado",
-        "Cidade",
-        "Operação",
-        "Tipo de Liberação",
-        "Nome completo:",
-        "Empresa",
-        "Vai acessar com veículo?",
-        "Placa",
-        "Status"
-      ];
-
-      let html = "<table><thead><tr>";
-      headers.forEach(h => {
-        html += `<th>${escapeHtml(h)}</th>`;
-      });
-      html += "</tr></thead><tbody>";
-
-      (data.rows || []).forEach(row => {
-        html += "<tr>";
+        let html = "<table><thead><tr>";
         headers.forEach(h => {
-          html += `<td>${escapeHtml(row[h] || "")}</td>`;
+          html += `<th>${escapeHtml(h)}</th>`;
         });
-        html += "</tr>";
-      });
+        html += "</tr></thead><tbody>";
 
-      html += "</tbody></table>";
-      document.getElementById("tableWrap").innerHTML = html;
+        (data.rows || []).forEach(row => {
+          html += "<tr>";
+          headers.forEach(h => {
+            html += `<td>${escapeHtml(row[h] || "")}</td>`;
+          });
+          html += "</tr>";
+        });
+
+        html += "</tbody></table>";
+        document.getElementById("tableWrap").innerHTML = html;
+      } catch (error) {
+        console.error("Erro ao carregar detalhes:", error);
+        document.getElementById("tableWrap").innerHTML = `
+          <div style="padding:16px; color:#fca5a5;">
+            Não foi possível carregar o detalhamento dos acessos.
+          </div>
+        `;
+      }
     }
 
     async function loadAll(page = 1) {
-      await loadResumo();
-      await loadGraficos();
-      await loadDetalhes(page);
+      await Promise.all([
+        loadResumo(),
+        loadGraficos(),
+        loadDetalhes(page)
+      ]);
     }
 
-    [
-      "filtroDataInicio",
-      "filtroDataFim",
-      "filtroLiberacaoInicio",
-      "filtroLiberacaoFim",
-      "filtroEstado",
-      "filtroCidade",
-      "filtroOperacao",
-      "filtroTipoLiberacao",
-      "filtroVeiculo",
-      "filtroStatus",
-      "filtroBusca"
-    ].forEach(id => {
-      const el = document.getElementById(id);
-      el.addEventListener("change", () => loadAll(1));
-      el.addEventListener("input", () => loadAll(1));
-    });
-
-    document.getElementById("btnLimpar").addEventListener("click", () => {
+    function clearFilters() {
       [
         "filtroDataInicio",
         "filtroDataFim",
@@ -546,24 +579,53 @@
       });
 
       loadAll(1);
-    });
+    }
 
-    document.getElementById("btnPrev").addEventListener("click", () => {
-      if (currentPage > 1) {
-        loadDetalhes(currentPage - 1);
-      }
-    });
+    function bindEvents() {
+      const changeIds = [
+        "filtroDataInicio",
+        "filtroDataFim",
+        "filtroLiberacaoInicio",
+        "filtroLiberacaoFim",
+        "filtroEstado",
+        "filtroCidade",
+        "filtroOperacao",
+        "filtroTipoLiberacao",
+        "filtroVeiculo",
+        "filtroStatus"
+      ];
 
-    document.getElementById("btnNext").addEventListener("click", () => {
-      if (currentPage < totalPages) {
-        loadDetalhes(currentPage + 1);
-      }
-    });
+      changeIds.forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener("change", () => loadAll(1));
+      });
 
-    (async function init() {
+      const filtroBusca = document.getElementById("filtroBusca");
+      filtroBusca.addEventListener("input", () => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => loadAll(1), 350);
+      });
+
+      document.getElementById("btnLimpar").addEventListener("click", clearFilters);
+
+      document.getElementById("btnPrev").addEventListener("click", () => {
+        if (currentPage > 1) {
+          loadDetalhes(currentPage - 1);
+        }
+      });
+
+      document.getElementById("btnNext").addEventListener("click", () => {
+        if (currentPage < totalPages) {
+          loadDetalhes(currentPage + 1);
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      bindEvents();
       await loadFiltros();
       await loadAll(1);
-    })();
+    });
   </script>
 </body>
 </html>

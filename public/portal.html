@@ -13,8 +13,8 @@
   <style>
     :root{
       --bg:#07101d;
-      --panel:rgba(10,17,31,.78);
-      --panel-2:rgba(17,26,46,.82);
+      --panel:rgba(10,17,31,.80);
+      --panel-2:rgba(17,26,46,.86);
       --line:rgba(255,255,255,.07);
       --text:#f5f7fb;
       --muted:#9aa7c0;
@@ -23,6 +23,7 @@
       --blue:#4d78ff;
       --green:#22c55e;
       --red:#ef4444;
+      --gold:#f59e0b;
       --shadow:0 12px 34px rgba(0,0,0,.34);
       --radius:18px;
     }
@@ -41,10 +42,10 @@
     body{
       color:var(--text);
       background:
-        radial-gradient(circle at 80% 16%, rgba(255,124,33,.20), transparent 18%),
-        radial-gradient(circle at 18% 0%, rgba(65,103,255,.16), transparent 22%),
-        linear-gradient(180deg, rgba(11,17,30,.96), rgba(7,11,22,.98)),
-        url("/images/plano de fundo.png.jpg") center/cover no-repeat fixed;
+        radial-gradient(circle at 80% 16%, rgba(255,124,33,.16), transparent 18%),
+        radial-gradient(circle at 18% 0%, rgba(65,103,255,.12), transparent 22%),
+        linear-gradient(180deg, rgba(8,14,28,.93), rgba(5,10,20,.96)),
+        url("/images/plano de fundo.png") center/cover no-repeat fixed;
       background-blend-mode:screen,screen,normal,normal;
     }
 
@@ -172,7 +173,7 @@
       display:flex;
       align-items:center;
       gap:10px;
-      padding:5px 10px 5px 6px;
+      padding:5px 12px 5px 6px;
       border-radius:999px;
       border:1px solid var(--line);
       background:rgba(255,255,255,.04);
@@ -205,14 +206,14 @@
 
     .hero{
       position:relative;
-      min-height:330px;
+      min-height:250px;
       border-radius:24px;
       overflow:hidden;
       border:1px solid rgba(255,255,255,.08);
       box-shadow:var(--shadow);
       background:
-        linear-gradient(90deg, rgba(7,11,22,.95) 0%, rgba(7,11,22,.80) 42%, rgba(7,11,22,.20) 100%),
-        url("/images/plano de fundo.png.jpg") center/cover no-repeat;
+        linear-gradient(90deg, rgba(7,11,22,.96) 0%, rgba(7,11,22,.80) 42%, rgba(7,11,22,.24) 100%),
+        url("/images/plano de fundo.png") center/cover no-repeat;
       display:flex;
       align-items:center;
       padding:36px;
@@ -223,8 +224,8 @@
       position:absolute;
       inset:0;
       background:
-        radial-gradient(circle at 68% 35%, rgba(255,170,90,.26), transparent 23%),
-        linear-gradient(180deg, transparent, rgba(0,0,0,.14));
+        radial-gradient(circle at 68% 35%, rgba(255,170,90,.22), transparent 23%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.16));
       pointer-events:none;
     }
 
@@ -236,7 +237,7 @@
 
     .hero h2{
       font-size:24px;
-      font-weight:500;
+      font-weight:600;
       margin-bottom:14px;
     }
 
@@ -281,10 +282,10 @@
 
     .hero-eagle{
       position:absolute;
-      right:18px;
+      right:10px;
       bottom:0;
-      width:min(44%, 470px);
-      max-height:95%;
+      width:min(42%, 430px);
+      max-height:92%;
       object-fit:contain;
       z-index:1;
       filter:drop-shadow(0 10px 30px rgba(0,0,0,.45));
@@ -303,29 +304,33 @@
       border-radius:18px;
       padding:18px;
       box-shadow:var(--shadow);
+      min-height:118px;
     }
 
     .metric-title{
       font-size:14px;
       color:#e8eefb;
-      margin-bottom:14px;
+      margin-bottom:12px;
     }
 
     .metric-value{
-      font-size:28px;
+      font-size:30px;
       font-weight:800;
       margin-bottom:8px;
+      line-height:1.1;
     }
 
     .metric-sub{
       font-size:12px;
       font-weight:600;
       margin-bottom:12px;
+      color:var(--muted);
     }
 
     .metric-sub.green{ color:#a7e6ba; }
     .metric-sub.red{ color:#ffb5b5; }
     .metric-sub.orange{ color:#ffcb98; }
+    .metric-sub.blue{ color:#9db9ff; }
 
     .metric-bar{
       height:3px;
@@ -343,6 +348,7 @@
     .metric-card.orange .metric-bar span{ width:82%; background:linear-gradient(90deg,#ff994a,#ff5d00); }
     .metric-card.red .metric-bar span{ width:56%; background:linear-gradient(90deg,#ff9d9d,#ef4444); }
     .metric-card.green .metric-bar span{ width:74%; background:linear-gradient(90deg,#73f2a7,#1aae58); }
+    .metric-card.blue .metric-bar span{ width:70%; background:linear-gradient(90deg,#80a4ff,#3d6cff); }
 
     .content-grid{
       display:grid;
@@ -368,7 +374,7 @@
 
     .panel-title{
       font-size:17px;
-      font-weight:600;
+      font-weight:700;
     }
 
     .filter-chip{
@@ -460,7 +466,7 @@
 
     .table-title{
       font-size:18px;
-      font-weight:600;
+      font-weight:700;
       margin-bottom:16px;
     }
 
@@ -603,8 +609,8 @@
       color:#d3ddf2;
     }
 
-    .profile-card,
-    .alerts-card,
+    .eagle-card,
+    .av-card,
     .history-card{
       background:linear-gradient(180deg, rgba(16,24,40,.92), rgba(10,16,29,.95));
       border:1px solid rgba(255,255,255,.07);
@@ -613,68 +619,68 @@
       overflow:hidden;
     }
 
-    .profile-head{
-      display:flex;
-      align-items:center;
-      gap:14px;
-      padding:18px;
-      border-bottom:1px solid rgba(255,255,255,.07);
-    }
-
-    .profile-head img{
-      width:54px;
-      height:54px;
-      border-radius:50%;
-      object-fit:cover;
-      border:2px solid rgba(255,255,255,.15);
-      background:#111827;
-    }
-
-    .profile-name{
-      font-size:20px;
-      font-weight:700;
-    }
-
-    .profile-role{
-      margin-top:4px;
-      font-size:13px;
-      color:#ffbf8c;
-      font-weight:600;
-    }
-
-    .profile-body{
-      padding:18px;
+    .eagle-card{
       display:grid;
-      gap:16px;
+      place-items:center;
+      min-height:250px;
+      padding:20px;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,149,70,.12), transparent 30%),
+        linear-gradient(180deg, rgba(14,22,38,.95), rgba(9,15,28,.96));
     }
 
-    .info-block small{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:5px;
-    }
-
-    .info-block strong{
-      font-size:15px;
-      font-weight:600;
-      color:#eef4ff;
+    .eagle-card img{
+      max-width:100%;
+      max-height:210px;
+      object-fit:contain;
+      filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));
     }
 
     .card-section-title{
       padding:18px 18px 12px;
       font-size:18px;
-      font-weight:600;
+      font-weight:700;
     }
 
-    .alert-list,
+    .av-grid{
+      padding:0 16px 16px;
+      display:grid;
+      gap:12px;
+    }
+
+    .av-item{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:16px;
+      padding:16px;
+    }
+
+    .av-label{
+      color:#aab6cf;
+      font-size:13px;
+      margin-bottom:8px;
+    }
+
+    .av-value{
+      font-size:28px;
+      font-weight:800;
+      line-height:1.1;
+    }
+
+    .av-value.gold{
+      color:#ffd58a;
+    }
+
+    .av-value.blue{
+      color:#a9c1ff;
+    }
+
     .history-list{
       padding:0 12px 14px;
       display:grid;
       gap:10px;
     }
 
-    .alert-item,
     .history-item{
       display:flex;
       align-items:center;
@@ -685,7 +691,6 @@
       background:rgba(255,255,255,.03);
     }
 
-    .alert-icon,
     .history-avatar{
       width:38px;
       height:38px;
@@ -693,15 +698,6 @@
       place-items:center;
       flex:0 0 auto;
       font-weight:800;
-    }
-
-    .alert-icon{
-      border-radius:12px;
-      background:rgba(255,122,26,.14);
-      color:#ffb078;
-    }
-
-    .history-avatar{
       border-radius:50%;
       background:linear-gradient(135deg,#ff934f,#556bff);
       color:#fff;
@@ -734,17 +730,23 @@
       white-space:nowrap;
     }
 
-    .see-all{
-      width:calc(100% - 24px);
-      margin:0 12px 14px;
-      padding:12px 14px;
-      border:none;
-      cursor:pointer;
-      border-radius:14px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
-      color:#edf3ff;
+    .empty-state{
+      color:#9aa7c0;
+      font-size:13px;
+      padding:16px;
+    }
+
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
       font-weight:700;
+      color:#dce5f8;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;
+      padding:6px 10px;
     }
 
     @media (max-width: 1230px){
@@ -776,7 +778,7 @@
       }
 
       .hero{
-        min-height:320px;
+        min-height:260px;
       }
 
       .hero-eagle{
@@ -865,7 +867,6 @@
 
       <div class="top-actions">
         <button class="icon-btn" aria-label="Buscar">⌕</button>
-
         <div class="profile-mini">
           <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
           <span id="topUserName">Caíque</span>
@@ -879,43 +880,43 @@
         <section class="hero">
           <div class="hero-content">
             <h2>Bem-vindo ao Shopee Security</h2>
-            <p>Protegendo sua experiência de compra online com segurança.</p>
+            <p>Portal consolidado com acessos aprovados, HC, AV recuperado, itens e rotas das últimas 24 horas.</p>
 
             <div class="hero-actions">
               <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">Verificar Segurança</button>
-              <button class="btn btn-dark" onclick="window.location.href='/aprovacoes.html'">Reportar incidente</button>
+              <button class="btn btn-dark" onclick="window.location.href='/aprovacoes.html'">Ver Aprovações</button>
             </div>
           </div>
 
-          <img class="hero-eagle" src="/images/Aguiia.PNG" alt="Águia Security">
+          <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
         </section>
 
         <section class="metrics">
           <div class="metric-card orange">
-            <div class="metric-title">Aprovados Hoje</div>
-            <div class="metric-value">114</div>
-            <div class="metric-sub green">▲ +39%</div>
+            <div class="metric-title">Acessos Aprovados 24h</div>
+            <div class="metric-value" id="approved24Total">0</div>
+            <div class="metric-sub orange" id="approved24Units">Carregando unidades...</div>
             <div class="metric-bar"><span></span></div>
           </div>
 
-          <div class="metric-card red">
-            <div class="metric-title">Pendentes</div>
-            <div class="metric-value">14</div>
-            <div class="metric-sub red">▲ +35%</div>
-            <div class="metric-bar"><span></span></div>
-          </div>
-
-          <div class="metric-card orange">
-            <div class="metric-title">Bloqueados</div>
-            <div class="metric-value">6</div>
-            <div class="metric-sub orange">▲ +29%</div>
+          <div class="metric-card blue">
+            <div class="metric-title">Unidades com Aprovação</div>
+            <div class="metric-value" id="approvedUnitsCount">0</div>
+            <div class="metric-sub blue" id="approvedUnitsTop">Sem dados</div>
             <div class="metric-bar"><span></span></div>
           </div>
 
           <div class="metric-card green">
-            <div class="metric-title">Últimas Notícias</div>
-            <div class="metric-value">81</div>
-            <div class="metric-sub green">▲ 2,5%</div>
+            <div class="metric-title">HC Warehouse</div>
+            <div class="metric-value" id="hcWarehouse">0</div>
+            <div class="metric-sub green" id="hcWarehouseSub">Base: hc.html</div>
+            <div class="metric-bar"><span></span></div>
+          </div>
+
+          <div class="metric-card red">
+            <div class="metric-title">HC Presente</div>
+            <div class="metric-value" id="hcPresent">0</div>
+            <div class="metric-sub red" id="hcPresentSub">Base: hc.html</div>
             <div class="metric-bar"><span></span></div>
           </div>
         </section>
@@ -924,7 +925,7 @@
           <div class="panel">
             <div class="panel-header">
               <div class="panel-title">Monitoramento em Tempo Real</div>
-              <button class="filter-chip">Últimas 24h ▾</button>
+              <div class="status-pill">Últimas 24h</div>
             </div>
 
             <div class="chart-wrap">
@@ -935,24 +936,24 @@
               <div class="mini-stat">
                 <div class="mini-dot" style="background:#ff7a1a;"></div>
                 <div>
-                  <strong>125</strong>
-                  <span>Acessos</span>
+                  <strong id="miniApproved">0</strong>
+                  <span>Aprovados 24h</span>
                 </div>
               </div>
 
               <div class="mini-stat">
                 <div class="mini-dot" style="background:#22c55e;"></div>
                 <div>
-                  <strong>94</strong>
-                  <span>Aprovados</span>
+                  <strong id="miniRoutes">0</strong>
+                  <span>Rotas do dia</span>
                 </div>
               </div>
 
               <div class="mini-stat">
-                <div class="mini-dot" style="background:#ef4444;"></div>
+                <div class="mini-dot" style="background:#4d78ff;"></div>
                 <div>
-                  <strong>1028</strong>
-                  <span>Online</span>
+                  <strong id="miniUnits">0</strong>
+                  <span>Unidades com aprovação</span>
                 </div>
               </div>
             </div>
@@ -966,18 +967,18 @@
             <div class="quick-actions">
               <button class="action-btn primary" onclick="window.location.href='/aprovacoes.html'">
                 <span>🔔 Aprovar Solicitações</span>
-                <span class="action-badge">12</span>
+                <span class="action-badge" id="pendingBadge">0</span>
               </button>
 
-              <button class="action-btn" onclick="window.location.href='/dashboard.html'">
-                <span>⚠ Ver Incidentes</span>
-                <span class="action-badge">5+</span>
+              <button class="action-btn" onclick="window.location.href='/first-mile-access.html'">
+                <span>⚠ Ver Rotas do Dia</span>
+                <span class="action-badge" id="routesBadge">0</span>
               </button>
 
-              <button class="action-btn" onclick="window.location.href='/cadastro.html'">
-                <span>＋ Adicionar Usuário</span>
+              <button class="action-btn" onclick="window.location.href='/access.html'">
+                <span>＋ Ver Acessos por Unidade</span>
                 <span>›</span>
-              </              </button>
+              </button>
             </div>
           </div>
         </section>
@@ -989,108 +990,16 @@
             <table>
               <thead>
                 <tr>
-                  <th>Nome</th>
-                  <th>Solicitação</th>
-                  <th>Nível</th>
-                  <th>Setor</th>
+                  <th>Unidade</th>
+                  <th>Solicitações Aguardando Aprovação</th>
+                  <th>Última Solicitação</th>
+                  <th>Status</th>
                   <th>Ação</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="pendingTableBody">
                 <tr>
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar">EO</div>
-                      <span>Eduardo Oliveira</span>
-                    </div>
-                  </td>
-                  <td>Controle</td>
-                  <td>Nível 3</td>
-                  <td>Controle</td>
-                  <td>
-                    <div class="row-actions">
-                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
-                      <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar">MC</div>
-                      <span>Marina Costa</span>
-                    </div>
-                  </td>
-                  <td>Desempenho</td>
-                  <td>Nível 5</td>
-                  <td>Desempenho</td>
-                  <td>
-                    <div class="row-actions">
-                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
-                      <button class="tiny-btn view" onclick="window.location.href='/dashboard.html'">Ver</button>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar">RP</div>
-                      <span>Ricardo Pereira</span>
-                    </div>
-                  </td>
-                  <td>RH</td>
-                  <td>Nível 4</td>
-                  <td>RH</td>
-                  <td>
-                    <div class="row-actions">
-                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
-                      <button class="tiny-btn view" onclick="window.location.href='/dashboard.html'">Ver</button>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar">AS</div>
-                      <span>Ana Souza</span>
-                    </div>
-                  </td>
-                  <td>Finanças</td>
-                  <td>Nível 5</td>
-                  <td>Finanças</td>
-                  <td>
-                    <div class="row-actions">
-                      <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
-                      <button class="tiny-btn view" onclick="window.location.href='/dashboard.html'">Ver</button>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td>
-                    <div class="user-cell">
-                      <div class="avatar">LA</div>
-                      <span>Lucas Almeida</span>
-                    </div>
-                  </td>
-                  <td>Aprovar Segurança</td>
-                  <td>Nível 3</td>
-                  <td>Operações</td>
-                  <td>
-                    <div class="row-actions">
-                      <button
-                        class="tiny-btn approve"
-                        style="background:linear-gradient(135deg,#ff934f,#d9480f);"
-                        onclick="window.location.href='/aprovacoes.html'"
-                      >
-                        Revisar
-                      </button>
-                      <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
-                    </div>
-                  </td>
+                  <td colspan="5" class="empty-state">Carregando solicitações pendentes...</td>
                 </tr>
               </tbody>
             </table>
@@ -1101,139 +1010,47 @@
           <a class="module-card orange" href="/access.html">
             <div class="module-icon">🛡</div>
             <div class="module-title">Controle de Acesso</div>
-            <div class="module-sub">Níveis e permissões</div>
+            <div class="module-sub">Detalhe por unidade</div>
           </a>
 
-          <a class="module-card blue" href="/aprovacoes.html">
-            <div class="module-icon">✅</div>
-            <div class="module-title">Aprovações</div>
-            <div class="module-sub">Fila de decisões</div>
+          <a class="module-card blue" href="/hc.html">
+            <div class="module-icon">👥</div>
+            <div class="module-title">HC</div>
+            <div class="module-sub">Warehouse e presença</div>
           </a>
 
           <a class="module-card green" href="/dashboard.html">
-            <div class="module-icon">📊</div>
-            <div class="module-title">Dashboard</div>
-            <div class="module-sub">Visão geral operacional</div>
-          </a>
-
-          <a class="module-card blue" href="/agentes-fbs.html">
-            <div class="module-icon">👥</div>
-            <div class="module-title">Agentes FBS</div>
-            <div class="module-sub">Operação e equipes</div>
-          </a>
-
-          <a class="module-card orange" href="/cadastro.html">
-            <div class="module-icon">👤</div>
-            <div class="module-title">Cadastro</div>
-            <div class="module-sub">Novos usuários</div>
-          </a>
-
-          <a class="module-card green" href="/first-mile-access.html">
-            <div class="module-icon">🚚</div>
-            <div class="module-title">First Mile</div>
-            <div class="module-sub">Acessos críticos</div>
+            <div class="module-icon">💵</div>
+            <div class="module-title">Resultado Operacional</div>
+            <div class="module-sub">AV recuperado e itens</div>
           </a>
         </section>
       </section>
 
       <aside class="right-col">
-        <section class="profile-card">
-          <div class="profile-head">
-            <img id="sideUserPhoto" src="/images/logo.png" alt="Foto do usuário">
-            <div>
-              <div class="profile-name" id="sideUserName">Caíque Nascimento</div>
-              <div class="profile-role">Decisões 5+</div>
-            </div>
-          </div>
-
-          <div class="profile-body">
-            <div class="info-block">
-              <small>Função</small>
-              <strong>Aprovador</strong>
-            </div>
-
-            <div class="info-block">
-              <small>Portal</small>
-              <strong>Portal Security FBS</strong>
-            </div>
-
-            <div class="info-block">
-              <small>Status</small>
-              <strong>Online</strong>
-            </div>
-
-            <div class="info-block">
-              <small>Ambiente</small>
-              <strong>Produção</strong>
-            </div>
-          </div>
+        <section class="eagle-card">
+          <img src="/images/Aguia.png" alt="Águia Security">
         </section>
 
-        <section class="alerts-card">
-          <div class="card-section-title">Alertas</div>
-
-          <div class="alert-list">
-            <div class="alert-item">
-              <div class="alert-icon">⚠</div>
-              <div class="item-text">
-                <strong>Tentativa de Invasão</strong>
-                <span>Múltiplos acessos negados detectados</span>
-              </div>
-              <div class="item-time">agora</div>
+        <section class="av-card">
+          <div class="card-section-title">Resultado Operacional</div>
+          <div class="av-grid">
+            <div class="av-item">
+              <div class="av-label">AV Recuperado (USD)</div>
+              <div class="av-value gold" id="avRecovered">$0.00</div>
             </div>
 
-            <div class="alert-item">
-              <div class="alert-icon">⚠</div>
-              <div class="item-text">
-                <strong>Phishing Detectado</strong>
-                <span>Evento reportado em caixa monitorada</span>
-              </div>
-              <div class="item-time">12m</div>
-            </div>
-
-            <div class="alert-item">
-              <div class="alert-icon">⚠</div>
-              <div class="item-text">
-                <strong>Malware Bloqueado</strong>
-                <span>Arquivo suspeito neutralizado</span>
-              </div>
-              <div class="item-time">37m</div>
+            <div class="av-item">
+              <div class="av-label">Quantidade de Itens</div>
+              <div class="av-value blue" id="itemsRecovered">0</div>
             </div>
           </div>
-
-          <button class="see-all" onclick="window.location.href='/dashboard.html'">Ver Todos</button>
         </section>
 
         <section class="history-card">
           <div class="card-section-title">Histórico de Acessos</div>
-
-          <div class="history-list">
-            <div class="history-item">
-              <div class="history-avatar">EO</div>
-              <div class="item-text">
-                <strong>Eduardo Oliveira</strong>
-                <span>Controle</span>
-              </div>
-              <div class="item-time">14:31</div>
-            </div>
-
-            <div class="history-item">
-              <div class="history-avatar">MC</div>
-              <div class="item-text">
-                <strong>Marina Costa</strong>
-                <span>Desempenho</span>
-              </div>
-              <div class="item-time">16:32</div>
-            </div>
-
-            <div class="history-item">
-              <div class="history-avatar">RP</div>
-              <div class="item-text">
-                <strong>Ricardo Pereira</strong>
-                <span>RH</span>
-              </div>
-              <div class="item-time">15:56</div>
-            </div>
+          <div class="history-list" id="historyList">
+            <div class="empty-state">Carregando acessos aprovados...</div>
           </div>
         </section>
       </aside>
@@ -1245,20 +1062,10 @@
     const fallbackName = "Caíque";
 
     function getStoredUserPhoto() {
-      const possiblePhotoKeys = [
-        "userPhoto",
-        "user_photo",
-        "photoURL",
-        "googleUserPhoto",
-        "googlePhoto",
-        "picture"
-      ];
-
+      const possiblePhotoKeys = ["userPhoto", "user_photo", "photoURL", "googleUserPhoto", "googlePhoto", "picture"];
       for (const key of possiblePhotoKeys) {
         const value = localStorage.getItem(key);
-        if (value && value !== "null" && value !== "undefined") {
-          return value;
-        }
+        if (value && value !== "null" && value !== "undefined") return value;
       }
 
       const rawUser = localStorage.getItem("user");
@@ -1268,25 +1075,14 @@
           return parsed.photoURL || parsed.picture || parsed.imageUrl || "";
         } catch (e) {}
       }
-
       return "";
     }
 
     function getStoredUserName() {
-      const possibleNameKeys = [
-        "userName",
-        "user_name",
-        "displayName",
-        "googleUserName",
-        "googleName",
-        "name"
-      ];
-
+      const possibleNameKeys = ["userName", "user_name", "displayName", "googleUserName", "googleName", "name"];
       for (const key of possibleNameKeys) {
         const value = localStorage.getItem(key);
-        if (value && value !== "null" && value !== "undefined") {
-          return value;
-        }
+        if (value && value !== "null" && value !== "undefined") return value;
       }
 
       const rawUser = localStorage.getItem("user");
@@ -1296,7 +1092,6 @@
           return parsed.name || parsed.displayName || "";
         } catch (e) {}
       }
-
       return "";
     }
 
@@ -1304,126 +1099,569 @@
     const userName = getStoredUserName() || fallbackName;
 
     const topUserPhoto = document.getElementById("topUserPhoto");
-    const sideUserPhoto = document.getElementById("sideUserPhoto");
     const topUserName = document.getElementById("topUserName");
-    const sideUserName = document.getElementById("sideUserName");
-
     topUserPhoto.src = userPhoto;
-    sideUserPhoto.src = userPhoto;
     topUserName.textContent = userName;
-    sideUserName.textContent = userName;
+    topUserPhoto.onerror = function(){ this.src = fallbackPhoto; };
 
-    topUserPhoto.onerror = function () {
-      this.src = fallbackPhoto;
-    };
+    function normalizeKey(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    }
 
-    sideUserPhoto.onerror = function () {
-      this.src = fallbackPhoto;
-    };
+    function initials(text) {
+      const parts = String(text || "UN").trim().split(/\s+/).slice(0, 2);
+      return parts.map(p => p[0] || "").join("").toUpperCase() || "UN";
+    }
 
-    const ctx = document.getElementById("monitorChart");
+    function parseNumber(value) {
+      if (value == null) return 0;
+      const raw = String(value).replace(/\s/g, "");
+      if (!raw) return 0;
 
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: ["00h", "03h", "06h", "09h", "12h", "15h", "18h", "21h", "23h"],
-        datasets: [
-          {
-            label: "Acessos",
-            data: [102, 106, 98, 114, 101, 118, 126, 116, 125],
-            borderColor: "#ff7a1a",
-            backgroundColor: "rgba(255,122,26,.12)",
-            tension: 0.35,
-            fill: false,
-            borderWidth: 3,
-            pointRadius: 2.5,
-            pointBackgroundColor: "#ff7a1a"
-          },
-          {
-            label: "Bloqueios",
-            data: [8, 10, 9, 13, 11, 15, 12, 14, 16],
-            borderColor: "#ef4444",
-            backgroundColor: "rgba(239,68,68,.10)",
-            tension: 0.35,
-            fill: false,
-            borderWidth: 2,
-            pointRadius: 2.2,
-            pointBackgroundColor: "#ef4444"
-          },
-          {
-            label: "Tentativas suspeitas",
-            data: [3, 5, 4, 7, 5, 8, 6, 7, 9],
-            borderColor: "#5f7dff",
-            backgroundColor: "rgba(95,125,255,.10)",
-            tension: 0.35,
-            fill: false,
-            borderWidth: 2,
-            pointRadius: 2.2,
-            pointBackgroundColor: "#5f7dff"
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-          mode: "index",
-          intersect: false
+      if (raw.includes(",") && raw.includes(".")) {
+        if (raw.lastIndexOf(",") > raw.lastIndexOf(".")) {
+          return Number(raw.replace(/\./g, "").replace(",", ".")) || 0;
+        }
+        return Number(raw.replace(/,/g, "")) || 0;
+      }
+
+      if (raw.includes(",") && !raw.includes(".")) {
+        return Number(raw.replace(",", ".")) || 0;
+      }
+
+      return Number(raw.replace(/[^\d.-]/g, "")) || 0;
+    }
+
+    function currencyUSD(value) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2
+      }).format(Number(value || 0));
+    }
+
+    function safeText(value, fallback = "-") {
+      const text = String(value || "").trim();
+      return text || fallback;
+    }
+
+    function parseDate(value) {
+      if (!value) return null;
+      if (value instanceof Date) return isNaN(value) ? null : value;
+
+      const text = String(value).trim();
+      if (!text) return null;
+
+      const direct = new Date(text);
+      if (!isNaN(direct)) return direct;
+
+      const m = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T](\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
+      if (m) {
+        let year = Number(m[3]);
+        if (year < 100) year += 2000;
+        const dt = new Date(
+          year,
+          Number(m[2]) - 1,
+          Number(m[1]),
+          Number(m[4] || 0),
+          Number(m[5] || 0),
+          Number(m[6] || 0)
+        );
+        if (!isNaN(dt)) return dt;
+      }
+
+      return null;
+    }
+
+    function formatDateTime(date) {
+      if (!(date instanceof Date) || isNaN(date)) return "-";
+      return date.toLocaleString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function withinLast24Hours(date) {
+      if (!(date instanceof Date) || isNaN(date)) return false;
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      return diff >= 0 && diff <= 24 * 60 * 60 * 1000;
+    }
+
+    function getAllTables(doc) {
+      return Array.from(doc.querySelectorAll("table"));
+    }
+
+    function extractRowsFromTable(table) {
+      const rows = Array.from(table.querySelectorAll("tr"));
+      if (!rows.length) return [];
+
+      const headerCells = Array.from(rows[0].querySelectorAll("th, td"));
+      const headers = headerCells.map(cell => cell.textContent.trim());
+
+      if (!headers.length) return [];
+
+      return rows.slice(1).map(row => {
+        const cells = Array.from(row.querySelectorAll("td"));
+        const obj = {};
+        headers.forEach((header, index) => {
+          obj[header] = cells[index] ? cells[index].textContent.trim() : "";
+        });
+        return obj;
+      }).filter(row => Object.values(row).some(v => String(v).trim() !== ""));
+    }
+
+    function extractAllTableRows(doc) {
+      const tables = getAllTables(doc);
+      return tables.flatMap(extractRowsFromTable);
+    }
+
+    function findField(row, candidates) {
+      const entries = Object.entries(row);
+      for (const [key, value] of entries) {
+        const nk = normalizeKey(key);
+        if (candidates.some(candidate => nk.includes(candidate))) {
+          return value;
+        }
+      }
+      return "";
+    }
+
+    function fetchDocument(path) {
+      return fetch(path, { cache: "no-store" })
+        .then(res => {
+          if (!res.ok) throw new Error("Erro ao carregar " + path);
+          return res.text();
+        })
+        .then(html => new DOMParser().parseFromString(html, "text/html"));
+    }
+
+    function sumByTextMetrics(doc, labels) {
+      const text = normalizeKey(doc.body.innerText);
+      for (const label of labels) {
+        const normalized = normalizeKey(label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(normalized + "[^\\d$]{0,25}([\\d.,]+)", "i");
+        const match = text.match(regex);
+        if (match) return parseNumber(match[1]);
+      }
+      return 0;
+    }
+
+    function parseAccessData(rows) {
+      const approvedRows = [];
+      const pendingRows = [];
+
+      rows.forEach(row => {
+        const status = normalizeKey(findField(row, ["status", "situacao", "situa", "aprovacao", "resultado"]));
+        const unit = safeText(findField(row, ["unidade", "site", "warehouse", "hub", "base", "station", "operacao", "operacao unidade"]), "Sem unidade");
+        const requestType = safeText(findField(row, ["solicitacao", "tipo", "request", "acesso"]), "Acesso");
+        const requester = safeText(findField(row, ["nome", "usuario", "colaborador", "solicitante", "owner"]), unit);
+        const dateValue = findField(row, ["data de acesso", "data acesso", "data", "date", "created", "hora", "timestamp"]);
+        const accessDate = parseDate(dateValue);
+
+        const item = {
+          unit,
+          requester,
+          requestType,
+          accessDate,
+          rawDate: safeText(dateValue),
+          status
+        };
+
+        if (status.includes("aprov")) {
+          approvedRows.push(item);
+        }
+
+        if (
+          status.includes("aguard") ||
+          status.includes("pend") ||
+          status.includes("waiting")
+        ) {
+          pendingRows.push(item);
+        }
+      });
+
+      const approved24 = approvedRows.filter(item => withinLast24Hours(item.accessDate));
+      const approvedByUnit = {};
+      approved24.forEach(item => {
+        approvedByUnit[item.unit] = (approvedByUnit[item.unit] || 0) + 1;
+      });
+
+      const approvedByHour = Array.from({ length: 24 }, (_, i) => {
+        const date = new Date();
+        date.setMinutes(0, 0, 0);
+        date.setHours(date.getHours() - (23 - i));
+        return { label: String(date.getHours()).padStart(2, "0") + "h", count: 0, date };
+      });
+
+      approved24.forEach(item => {
+        const d = item.accessDate;
+        if (!d) return;
+        const index = approvedByHour.findIndex(bucket =>
+          bucket.date.getHours() === d.getHours() &&
+          bucket.date.getDate() === d.getDate() &&
+          bucket.date.getMonth() === d.getMonth() &&
+          bucket.date.getFullYear() === d.getFullYear()
+        );
+        if (index >= 0) approvedByHour[index].count += 1;
+      });
+
+      const pendingByUnitMap = {};
+      pendingRows.forEach(item => {
+        if (!pendingByUnitMap[item.unit]) {
+          pendingByUnitMap[item.unit] = {
+            unit: item.unit,
+            count: 0,
+            latestDate: null,
+            status: "Aguardando aprovação"
+          };
+        }
+        pendingByUnitMap[item.unit].count += 1;
+        if (item.accessDate && (!pendingByUnitMap[item.unit].latestDate || item.accessDate > pendingByUnitMap[item.unit].latestDate)) {
+          pendingByUnitMap[item.unit].latestDate = item.accessDate;
+        }
+      });
+
+      const pendingByUnit = Object.values(pendingByUnitMap)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      const historyApproved = approvedRows
+        .filter(item => item.accessDate)
+        .sort((a, b) => b.accessDate - a.accessDate)
+        .slice(0, 8);
+
+      return {
+        approved24,
+        approvedByUnit,
+        approvedByHour,
+        pendingByUnit,
+        historyApproved
+      };
+    }
+
+    function parseHcData(rows, doc) {
+      let warehouse = 0;
+      let present = 0;
+
+      rows.forEach(row => {
+        const warehouseDirect = findField(row, ["hc warehouse", "warehouse hc", "warehouse"]);
+        const presentDirect = findField(row, ["presente", "presente", "present", "hc presente"]);
+
+        if (warehouseDirect) warehouse += parseNumber(warehouseDirect);
+        if (presentDirect) present += parseNumber(presentDirect);
+
+        const area = normalizeKey(findField(row, ["area", "tipo", "unidade", "grupo", "categoria"]));
+        const qty = parseNumber(findField(row, ["hc", "quantidade", "qtd", "headcount", "total"]));
+
+        if (area.includes("warehouse") && qty) warehouse += qty;
+        if ((area.includes("presente") || area.includes("present")) && qty) present += qty;
+      });
+
+      if (!warehouse) warehouse = sumByTextMetrics(doc, ["hc warehouse", "warehouse"]);
+      if (!present) present = sumByTextMetrics(doc, ["hc presente", "presente", "presentes"]);
+
+      return {
+        warehouse: Math.round(warehouse),
+        present: Math.round(present)
+      };
+    }
+
+    function parseDashboardData(rows, doc) {
+      let avRecovered = 0;
+      let items = 0;
+
+      rows.forEach(row => {
+        avRecovered += parseNumber(findField(row, [
+          "av recuperado",
+          "valor recuperado",
+          "recovered av",
+          "usd",
+          "dolar",
+          "$"
+        ]));
+
+        items += parseNumber(findField(row, [
+          "quantidade de itens",
+          "itens",
+          "items",
+          "qty itens",
+          "qtd itens"
+        ]));
+      });
+
+      if (!avRecovered) avRecovered = sumByTextMetrics(doc, ["av recuperado", "valor recuperado", "usd", "dolar"]);
+      if (!items) items = sumByTextMetrics(doc, ["quantidade de itens", "itens recuperados", "itens"]);
+
+      return {
+        avRecovered,
+        items: Math.round(items)
+      };
+    }
+
+    function parseFirstMileData(rows) {
+      const routesByHour = Array.from({ length: 24 }, (_, i) => {
+        const date = new Date();
+        date.setMinutes(0, 0, 0);
+        date.setHours(date.getHours() - (23 - i));
+        return { label: String(date.getHours()).padStart(2, "0") + "h", count: 0, date };
+      });
+
+      rows.forEach(row => {
+        const routeDateValue = findField(row, ["data", "date", "hora", "timestamp", "created"]);
+        const routeDate = parseDate(routeDateValue);
+        if (!withinLast24Hours(routeDate)) return;
+
+        const qtyField = findField(row, ["rotas", "rota", "routes", "qtd", "quantidade", "total"]);
+        const qty = Math.max(1, Math.round(parseNumber(qtyField) || 1));
+
+        const index = routesByHour.findIndex(bucket =>
+          bucket.date.getHours() === routeDate.getHours() &&
+          bucket.date.getDate() === routeDate.getDate() &&
+          bucket.date.getMonth() === routeDate.getMonth() &&
+          bucket.date.getFullYear() === routeDate.getFullYear()
+        );
+        if (index >= 0) routesByHour[index].count += qty;
+      });
+
+      return routesByHour;
+    }
+
+    function renderPendingTable(rows) {
+      const tbody = document.getElementById("pendingTableBody");
+      if (!rows.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="empty-state">Nenhuma solicitação aguardando aprovação encontrada no access.html.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(row => `
+        <tr>
+          <td>
+            <div class="user-cell">
+              <div class="avatar">${initials(row.unit)}</div>
+              <span>${safeText(row.unit)}</span>
+            </div>
+          </td>
+          <td>${row.count}</td>
+          <td>${row.latestDate ? formatDateTime(row.latestDate) : "-"}</td>
+          <td>Aguardando aprovação</td>
+          <td>
+            <div class="row-actions">
+              <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
+              <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderHistory(rows) {
+      const historyList = document.getElementById("historyList");
+      if (!rows.length) {
+        historyList.innerHTML = `<div class="empty-state">Nenhum acesso aprovado encontrado no access.html.</div>`;
+        return;
+      }
+
+      historyList.innerHTML = rows.map(item => `
+        <div class="history-item">
+          <div class="history-avatar">${initials(item.unit)}</div>
+          <div class="item-text">
+            <strong>${safeText(item.unit)}</strong>
+            <span>${safeText(item.requestType)} · aprovado</span>
+          </div>
+          <div class="item-time">${item.accessDate ? item.accessDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "-"}</div>
+        </div>
+      `).join("");
+    }
+
+    let monitorChart;
+
+    function buildChart(labels, accessSeries, routeSeries) {
+      const ctx = document.getElementById("monitorChart").getContext("2d");
+
+      if (monitorChart) {
+        monitorChart.destroy();
+      }
+
+      monitorChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Acessos aprovados",
+              data: accessSeries,
+              borderColor: "#ff7a1a",
+              backgroundColor: "rgba(255,122,26,.12)",
+              tension: 0.35,
+              fill: false,
+              borderWidth: 3,
+              pointRadius: 2.5,
+              pointBackgroundColor: "#ff7a1a"
+            },
+            {
+              label: "Rotas do dia",
+              data: routeSeries,
+              borderColor: "#22c55e",
+              backgroundColor: "rgba(34,197,94,.10)",
+              tension: 0.35,
+              fill: false,
+              borderWidth: 2,
+              pointRadius: 2.2,
+              pointBackgroundColor: "#22c55e"
+            }
+          ]
         },
-        plugins: {
-          legend: {
-            labels: {
-              color: "#dce5f8",
-              usePointStyle: true,
-              boxWidth: 10,
-              boxHeight: 10,
-              padding: 18,
-              font: {
-                family: "Inter",
-                size: 12,
-                weight: "600"
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: "index",
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: "#dce5f8",
+                usePointStyle: true,
+                boxWidth: 10,
+                boxHeight: 10,
+                padding: 18,
+                font: {
+                  family: "Inter",
+                  size: 12,
+                  weight: "600"
+                }
               }
+            },
+            tooltip: {
+              backgroundColor: "rgba(10,16,29,.96)",
+              borderColor: "rgba(255,255,255,.08)",
+              borderWidth: 1,
+              titleColor: "#fff",
+              bodyColor: "#dce6fb",
+              padding: 12
             }
           },
-          tooltip: {
-            backgroundColor: "rgba(10,16,29,.96)",
-            borderColor: "rgba(255,255,255,.08)",
-            borderWidth: 1,
-            titleColor: "#fff",
-            bodyColor: "#dce6fb",
-            padding: 12
-          }
-        },
-        scales: {
-          x: {
-            grid: {
-              color: "rgba(255,255,255,.05)",
-              drawBorder: false
-            },
-            ticks: {
-              color: "#9fb0cf",
-              font: {
-                family: "Inter",
-                size: 11
+          scales: {
+            x: {
+              grid: {
+                color: "rgba(255,255,255,.05)",
+                drawBorder: false
+              },
+              ticks: {
+                color: "#9fb0cf",
+                font: {
+                  family: "Inter",
+                  size: 11
+                }
               }
-            }
-          },
-          y: {
-            grid: {
-              color: "rgba(255,255,255,.05)",
-              drawBorder: false
             },
-            ticks: {
-              color: "#9fb0cf",
-              font: {
-                family: "Inter",
-                size: 11
+            y: {
+              grid: {
+                color: "rgba(255,255,255,.05)",
+                drawBorder: false
+              },
+              ticks: {
+                color: "#9fb0cf",
+                font: {
+                  family: "Inter",
+                  size: 11
+                }
               }
             }
           }
         }
+      });
+    }
+
+    async function loadPortalData() {
+      try {
+        const [accessDoc, hcDoc, dashboardDoc, firstMileDoc] = await Promise.all([
+          fetchDocument("/access.html"),
+          fetchDocument("/hc.html"),
+          fetchDocument("/dashboard.html"),
+          fetchDocument("/first-mile-access.html")
+        ]);
+
+        const accessRows = extractAllTableRows(accessDoc);
+        const hcRows = extractAllTableRows(hcDoc);
+        const dashboardRows = extractAllTableRows(dashboardDoc);
+        const firstMileRows = extractAllTableRows(firstMileDoc);
+
+        const accessData = parseAccessData(accessRows);
+        const hcData = parseHcData(hcRows, hcDoc);
+        const dashboardData = parseDashboardData(dashboardRows, dashboardDoc);
+        const routeBuckets = parseFirstMileData(firstMileRows);
+
+        const approvedUnits = Object.entries(accessData.approvedByUnit)
+          .sort((a, b) => b[1] - a[1]);
+
+        const topUnitsText = approvedUnits.length
+          ? approvedUnits.slice(0, 2).map(([unit, count]) => `${unit}: ${count}`).join(" · ")
+          : "Sem aprovações nas últimas 24h";
+
+        document.getElementById("approved24Total").textContent = accessData.approved24.length;
+        document.getElementById("approved24Units").textContent = topUnitsText;
+        document.getElementById("approvedUnitsCount").textContent = approvedUnits.length;
+        document.getElementById("approvedUnitsTop").textContent = approvedUnits.length
+          ? approvedUnits.slice(0, 3).map(([unit]) => unit).join(" · ")
+          : "Sem unidades";
+        document.getElementById("hcWarehouse").textContent = hcData.warehouse;
+        document.getElementById("hcPresent").textContent = hcData.present;
+        document.getElementById("hcWarehouseSub").textContent = "Total warehouse em hc.html";
+        document.getElementById("hcPresentSub").textContent = "Total presente em hc.html";
+
+        document.getElementById("avRecovered").textContent = currencyUSD(dashboardData.avRecovered);
+        document.getElementById("itemsRecovered").textContent = dashboardData.items;
+
+        document.getElementById("miniApproved").textContent = accessData.approved24.length;
+        document.getElementById("miniRoutes").textContent = routeBuckets.reduce((sum, item) => sum + item.count, 0);
+        document.getElementById("miniUnits").textContent = approvedUnits.length;
+
+        document.getElementById("pendingBadge").textContent = accessData.pendingByUnit.reduce((sum, row) => sum + row.count, 0);
+        document.getElementById("routesBadge").textContent = routeBuckets.reduce((sum, item) => sum + item.count, 0);
+
+        renderPendingTable(accessData.pendingByUnit);
+        renderHistory(accessData.historyApproved);
+
+        buildChart(
+          accessData.approvedByHour.map(item => item.label),
+          accessData.approvedByHour.map(item => item.count),
+          routeBuckets.map(item => item.count)
+        );
+      } catch (error) {
+        console.error(error);
+        document.getElementById("pendingTableBody").innerHTML = `
+          <tr>
+            <td colspan="5" class="empty-state">
+              Não foi possível carregar os dados de access.html, hc.html, dashboard.html ou first-mile-access.html.
+            </td>
+          </tr>
+        `;
+        document.getElementById("historyList").innerHTML = `
+          <div class="empty-state">Erro ao carregar o histórico de acessos.</div>
+        `;
+        buildChart(
+          ["00h","03h","06h","09h","12h","15h","18h","21h","23h"],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0]
+        );
       }
-    });
+    }
+
+    loadPortalData();
   </script>
 </body>
 </html>

@@ -78,58 +78,71 @@ db.run(
 
 // ================== PASSPORT GOOGLE ==================
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL:
-        process.env.GOOGLE_CALLBACK_URL ||
-        "http://localhost:3000/auth/google/callback",
-    },
-    (accessToken, refreshToken, profile, done) => {
-      try {
-        const email = profile?.emails?.[0]?.value || "";
-        const nome = profile?.displayName || "Usuário";
-        const foto = profile?.photos?.[0]?.value || "";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_CALLBACK_URL =
+  process.env.GOOGLE_CALLBACK_URL ||
+  "http://localhost:3000/auth/google/callback";
 
-        if (!email.endsWith("@shopee.com")) {
-          return done(null, false);
-        }
+const googleOAuthEnabled =
+  Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);
 
-        db.get("SELECT * FROM usuarios WHERE email = ?", [email], (err, user) => {
-          if (err) return done(err);
+if (googleOAuthEnabled) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: GOOGLE_CALLBACK_URL,
+      },
+      (accessToken, refreshToken, profile, done) => {
+        try {
+          const email = profile?.emails?.[0]?.value || "";
+          const nome = profile?.displayName || "Usuário";
+          const foto = profile?.photos?.[0]?.value || "";
 
-          if (user) {
-            return done(null, { ...user, foto });
+          if (!email.endsWith("@shopee.com")) {
+            return done(null, false);
           }
 
-          db.run(
-            `
-            INSERT INTO usuarios (nome, email, senha, perfil, status)
-            VALUES (?, ?, ?, ?, ?)
-            `,
-            [nome, email, "", "usuario", "pendente"],
-            function (insErr) {
-              if (insErr) return done(insErr);
+          db.get("SELECT * FROM usuarios WHERE email = ?", [email], (err, user) => {
+            if (err) return done(err);
 
-              db.get(
-                "SELECT * FROM usuarios WHERE id = ?",
-                [this.lastID],
-                (selErr, newUser) => {
-                  if (selErr) return done(selErr);
-                  return done(null, { ...newUser, foto });
-                }
-              );
+            if (user) {
+              return done(null, { ...user, foto });
             }
-          );
-        });
-      } catch (e) {
-        return done(e);
+
+            db.run(
+              `
+              INSERT INTO usuarios (nome, email, senha, perfil, status)
+              VALUES (?, ?, ?, ?, ?)
+              `,
+              [nome, email, "", "usuario", "pendente"],
+              function (insErr) {
+                if (insErr) return done(insErr);
+
+                db.get(
+                  "SELECT * FROM usuarios WHERE id = ?",
+                  [this.lastID],
+                  (selErr, newUser) => {
+                    if (selErr) return done(selErr);
+                    return done(null, { ...newUser, foto });
+                  }
+                );
+              }
+            );
+          });
+        } catch (e) {
+          return done(e);
+        }
       }
-    }
-  )
-);
+    )
+  );
+
+  console.log("Google OAuth habilitado.");
+} else {
+  console.warn("Google OAuth desabilitado: GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET ausente.");
+}
 
 // ================== HELPERS ==================
 

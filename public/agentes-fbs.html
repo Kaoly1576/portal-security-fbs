@@ -7,51 +7,217 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
-    body{background:#171717;color:#fff}
+
+    :root{
+      --bg:#1b1b1b;
+      --bg-2:#111111;
+      --card:#2e2e2e;
+      --card-2:#1d1d1d;
+      --input:#232323;
+      --th:#2f2f2f;
+      --line:rgba(255,255,255,.08);
+      --text:#ffffff;
+      --muted:#c4c4c4;
+      --orange:#ff7a1a;
+      --blue:#3ea6ff;
+      --green:#4caf50;
+      --red:#ff4d4f;
+      --purple:#c084fc;
+      --yellow:#facc15;
+    }
+
+    body{
+      background:
+        linear-gradient(180deg, rgba(27,27,27,0.96) 0%, rgba(17,17,17,0.98) 100%),
+        url("/images/plano de fundo.png") center/cover fixed no-repeat;
+      color:#fff
+    }
+
     .page{padding:20px;max-width:1400px;margin:0 auto}
     .top-actions{margin-bottom:14px}
-    .back-btn{display:inline-block;background:#444;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:14px}
-    .status-bar{background:#4caf50;color:#fff;border-radius:12px;padding:14px 16px;font-weight:700;margin-bottom:16px}
-    .hero{background:linear-gradient(90deg,#222,#1c1c1c);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+
+    .back-btn{
+      display:inline-block;
+      background:linear-gradient(135deg,#353535 0%, #252525 100%);
+      color:#fff;
+      text-decoration:none;
+      padding:10px 16px;
+      border-radius:8px;
+      font-weight:700;
+      font-size:14px;
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    .status-bar{
+      background:#4caf50;
+      color:#fff;
+      border-radius:12px;
+      padding:14px 16px;
+      font-weight:700;
+      margin-bottom:16px
+    }
+
+    .hero{
+      background:linear-gradient(135deg,var(--card) 0%, var(--card-2) 100%);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:16px;
+      padding:22px;
+      margin-bottom:20px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px
+    }
+
     .hero h1{font-size:22px;margin-bottom:6px}
-    .hero p{color:#bdbdbd;font-size:14px;margin-bottom:12px}
-    .hero-right{text-align:right;font-size:13px;color:#d1d5db;min-width:160px}
-    .filters{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:12px;margin-top:8px;align-items:end}
+    .hero p{color:var(--muted);font-size:14px;margin-bottom:12px}
+
+    .hero-right{
+      text-align:right;
+      font-size:13px;
+      color:#d1d5db;
+      min-width:160px
+    }
+
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(170px,1fr));
+      gap:12px;
+      margin-top:8px;
+      align-items:end
+    }
+
     .field{display:flex;flex-direction:column;gap:6px}
     .field label{font-size:12px;color:#cbd5e1}
-    .field input,.field select{height:42px;border:none;border-radius:8px;padding:0 12px;background:#3a3a3a;color:#fff;font-size:14px;outline:none}
-    .btn{height:42px;border:none;border-radius:8px;padding:0 16px;background:#29b6f6;color:#fff;font-weight:700;cursor:pointer}
-    .cards{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:14px;margin-bottom:16px}
-    .cards-small{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:14px;margin-bottom:20px}
-    .card{background:#2d2d2d;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:18px;min-height:130px}
-    .card-small{background:#2d2d2d;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;min-height:96px}
-    .card-title{font-size:12px;color:#cbd5e1;margin-bottom:14px;text-transform:uppercase;letter-spacing:.8px}
-    .card-value{font-size:24px;font-weight:800;margin-bottom:12px;word-break:break-word}
+
+    .field input,.field select{
+      height:42px;
+      border:1px solid #3a3a3a;
+      border-radius:8px;
+      padding:0 12px;
+      background:var(--input);
+      color:#fff;
+      font-size:14px;
+      outline:none
+    }
+
+    .btn{
+      height:42px;
+      border:none;
+      border-radius:8px;
+      padding:0 16px;
+      background:linear-gradient(90deg,#ff7a1a,#ff4d4f);
+      color:#fff;
+      font-weight:700;
+      cursor:pointer
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(220px,1fr));
+      gap:14px;
+      margin-bottom:16px
+    }
+
+    .cards-small{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(160px,1fr));
+      gap:14px;
+      margin-bottom:20px
+    }
+
+    .card{
+      background:linear-gradient(135deg,var(--card) 0%, var(--card-2) 100%);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      padding:18px;
+      min-height:130px
+    }
+
+    .card-small{
+      background:linear-gradient(135deg,var(--card) 0%, var(--card-2) 100%);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      padding:14px;
+      min-height:96px
+    }
+
+    .card-title{
+      font-size:12px;
+      color:#cbd5e1;
+      margin-bottom:14px;
+      text-transform:uppercase;
+      letter-spacing:.8px
+    }
+
+    .card-value{
+      font-size:24px;
+      font-weight:800;
+      margin-bottom:12px;
+      word-break:break-word
+    }
+
     .card-footer{font-size:12px;color:#cbd5e1}
-    .blue{color:#3ea6ff}
-    .green{color:#4caf50}
-    .red{color:#ff4d4f}
-    .orange{color:#ff9800}
-    .purple{color:#c084fc}
-    .yellow{color:#facc15}
-    .chart-card,.table-card{background:#2d2d2d;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;margin-bottom:20px}
+    .blue{color:var(--blue)}
+    .green{color:var(--green)}
+    .red{color:var(--red)}
+    .orange{color:var(--orange)}
+    .purple{color:var(--purple)}
+    .yellow{color:var(--yellow)}
+
+    .chart-card,.table-card{
+      background:linear-gradient(135deg,var(--card) 0%, var(--card-2) 100%);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      padding:16px;
+      margin-bottom:20px
+    }
+
     .chart-title,.table-title{font-size:14px;font-weight:700;margin-bottom:12px}
     .chart-box{position:relative;height:320px}
-    .table-wrap{overflow:auto;border-radius:10px}
-    table{width:100%;border-collapse:collapse;min-width:1200px}
-    th,td{text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
-    th{color:#cbd5e1;font-size:12px;background:#252525;position:sticky;top:0}
+
+    .table-wrap{
+      overflow:auto;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.06);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1200px;
+      background:#232323
+    }
+
+    th,td{
+      text-align:left;
+      padding:10px 8px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-size:13px
+    }
+
+    th{
+      color:#d0d0d0;
+      font-size:12px;
+      background:var(--th);
+      position:sticky;
+      top:0
+    }
+
     .muted{color:#a1a1aa}
+
     @media (max-width:1200px){
       .filters{grid-template-columns:repeat(3,minmax(170px,1fr))}
       .cards{grid-template-columns:repeat(2,minmax(220px,1fr))}
       .cards-small{grid-template-columns:repeat(3,minmax(160px,1fr))}
     }
+
     @media (max-width:900px){
       .hero{flex-direction:column}
       .hero-right{text-align:left}
       .filters{grid-template-columns:repeat(2,minmax(170px,1fr))}
     }
+
     @media (max-width:700px){
       .filters,.cards,.cards-small{grid-template-columns:1fr}
     }
@@ -67,14 +233,14 @@
 
     <section class="hero">
       <div>
-        <h1>📊 Dashboard Integrado - HC Agentes FBS</h1>
-        <p>Dados consolidados por data lateral da planilha ABS AGENTES FBS.</p>
+        <h1>📊 Dashboard Integrado - Controle de Faltas FBS</h1>
+        <p>Dados consolidados da aba CONTROLE DE FALTAS FBS, com datas em linhas e análise por unidade, plantão, turno e ocorrência.</p>
 
         <div class="filters">
           <div class="field">
             <label>Data</label>
             <select id="filtroData">
-              <option value="">Selecione a data</option>
+              <option value="">Todas as Datas</option>
             </select>
           </div>
 
@@ -86,16 +252,16 @@
           </div>
 
           <div class="field">
-            <label>Líder</label>
-            <select id="filtroLider">
-              <option value="">Todos os Líderes</option>
+            <label>Plantão</label>
+            <select id="filtroPlantao">
+              <option value="">Todos os Plantões</option>
             </select>
           </div>
 
           <div class="field">
-            <label>Escala</label>
-            <select id="filtroEscala">
-              <option value="">Todas as Escalas</option>
+            <label>Turno</label>
+            <select id="filtroTurno">
+              <option value="">Todos os Turnos</option>
             </select>
           </div>
 
@@ -114,27 +280,27 @@
 
     <section class="cards">
       <div class="card">
-        <div class="card-title">Headcount Total</div>
+        <div class="card-title">Total de Ocorrências</div>
         <div class="card-value blue" id="hcTotal">0</div>
         <div class="card-footer">base filtrada</div>
       </div>
 
       <div class="card">
-        <div class="card-title">Total de Presenças</div>
+        <div class="card-title">Colaboradores Impactados</div>
         <div class="card-value green" id="presencaTotal">0</div>
-        <div class="card-footer">status P na data</div>
+        <div class="card-footer">colaboradores únicos</div>
       </div>
 
       <div class="card">
-        <div class="card-title">Taxa de Absenteísmo</div>
+        <div class="card-title">% ABS Médio</div>
         <div class="card-value red" id="absRate">0.00%</div>
-        <div class="card-footer">F + AT + FC / (P + F + AT + FC)</div>
+        <div class="card-footer">média da coluna %ABS</div>
       </div>
 
       <div class="card">
         <div class="card-title">Data Selecionada</div>
         <div class="card-value orange" id="dataSelecionadaLabel">-</div>
-        <div class="card-footer">coluna lateral da planilha</div>
+        <div class="card-footer">data em linha</div>
       </div>
     </section>
 
@@ -145,28 +311,28 @@
       </div>
 
       <div class="card-small">
-        <div class="card-title">DSR</div>
-        <div class="card-value blue" id="dsrTotal">0</div>
-      </div>
-
-      <div class="card-small">
-        <div class="card-title">Férias</div>
-        <div class="card-value yellow" id="feTotal">0</div>
-      </div>
-
-      <div class="card-small">
-        <div class="card-title">Atestado</div>
+        <div class="card-title">Atestados</div>
         <div class="card-value purple" id="atTotal">0</div>
       </div>
 
       <div class="card-small">
-        <div class="card-title">Falta Coberta</div>
+        <div class="card-title">Sem cobertura</div>
         <div class="card-value orange" id="fcTotal">0</div>
+      </div>
+
+      <div class="card-small">
+        <div class="card-title">Plantões</div>
+        <div class="card-value blue" id="dsrTotal">0</div>
+      </div>
+
+      <div class="card-small">
+        <div class="card-title">Turnos</div>
+        <div class="card-value yellow" id="feTotal">0</div>
       </div>
     </section>
 
     <section class="chart-card">
-      <div class="chart-title">📁 HC por Unidade</div>
+      <div class="chart-title">📁 Ocorrências por Unidade</div>
       <div class="chart-box">
         <canvas id="chartUnidade"></canvas>
       </div>
@@ -179,16 +345,14 @@
           <thead>
             <tr>
               <th>UNIDADE</th>
-              <th>HC</th>
-              <th>P</th>
-              <th>F</th>
-              <th>DSR</th>
-              <th>FE</th>
-              <th>AT</th>
-              <th>FC</th>
-              <th>% ABS</th>
-              <th>LÍDER</th>
-              <th>ESCALA</th>
+              <th>OCORRÊNCIAS</th>
+              <th>COLABORADORES</th>
+              <th>FALTAS</th>
+              <th>ATESTADOS</th>
+              <th>SEM COBERTURA</th>
+              <th>%ABS MÉDIO</th>
+              <th>PLANTÕES</th>
+              <th>TURNOS</th>
             </tr>
           </thead>
           <tbody id="tabelaResumo"></tbody>
@@ -205,12 +369,22 @@
       return String(v || "").trim();
     }
 
+    function normalizeLower(v) {
+      return normalize(v).toLowerCase();
+    }
+
     function formatNumber(v) {
       return new Intl.NumberFormat("pt-BR").format(v || 0);
     }
 
     function formatPercent(v) {
       return `${(v || 0).toFixed(2)}%`;
+    }
+
+    function parsePercent(v) {
+      const s = normalize(v).replace("%", "").replace(",", ".");
+      const n = Number(s);
+      return Number.isFinite(n) ? n : 0;
     }
 
     function updateClock() {
@@ -220,112 +394,90 @@
     }
 
     function fillFilters(data) {
-      const datas = [...new Set(
-        data.flatMap(item => (item.dias || []).map(d => normalize(d.data))).filter(Boolean)
-      )];
-
-      const unidades = [...new Set(data.map(item => normalize(item.unidade)).filter(Boolean))].sort();
-      const lideres = [...new Set(data.map(item => normalize(item.lider)).filter(Boolean))].sort();
-      const escalas = [...new Set(data.map(item => normalize(item.escala)).filter(Boolean))].sort();
+      const datas = [...new Set(data.map(item => normalize(item["DATA"])).filter(Boolean))];
+      const unidades = [...new Set(data.map(item => normalize(item["UNIDADE"])).filter(Boolean))].sort();
+      const plantoes = [...new Set(data.map(item => normalize(item["PLANTÃO"])).filter(Boolean))].sort();
+      const turnos = [...new Set(data.map(item => normalize(item["TURNO"])).filter(Boolean))].sort();
 
       const dataSel = document.getElementById("filtroData");
       const unidadeSel = document.getElementById("filtroUnidade");
-      const liderSel = document.getElementById("filtroLider");
-      const escalaSel = document.getElementById("filtroEscala");
+      const plantaoSel = document.getElementById("filtroPlantao");
+      const turnoSel = document.getElementById("filtroTurno");
 
-      dataSel.innerHTML = `<option value="">Selecione a data</option>`;
+      dataSel.innerHTML = `<option value="">Todas as Datas</option>`;
       unidadeSel.innerHTML = `<option value="">Todas as Unidades</option>`;
-      liderSel.innerHTML = `<option value="">Todos os Líderes</option>`;
-      escalaSel.innerHTML = `<option value="">Todas as Escalas</option>`;
+      plantaoSel.innerHTML = `<option value="">Todos os Plantões</option>`;
+      turnoSel.innerHTML = `<option value="">Todos os Turnos</option>`;
 
       datas.forEach(v => dataSel.innerHTML += `<option value="${v}">${v}</option>`);
       unidades.forEach(v => unidadeSel.innerHTML += `<option value="${v}">${v}</option>`);
-      lideres.forEach(v => liderSel.innerHTML += `<option value="${v}">${v}</option>`);
-      escalas.forEach(v => escalaSel.innerHTML += `<option value="${v}">${v}</option>`);
-
-      if (datas.length && !dataSel.value) {
-        dataSel.value = datas[0];
-      }
-    }
-
-    function getValorNoDia(item, dataSelecionada) {
-      if (!item.dias || !dataSelecionada) return "";
-      const achado = item.dias.find(d => normalize(d.data) === normalize(dataSelecionada));
-      return normalize(achado?.valor).toUpperCase();
+      plantoes.forEach(v => plantaoSel.innerHTML += `<option value="${v}">${v}</option>`);
+      turnos.forEach(v => turnoSel.innerHTML += `<option value="${v}">${v}</option>`);
     }
 
     function getFilteredData() {
       const dataSelecionada = normalize(document.getElementById("filtroData").value);
       const unidade = normalize(document.getElementById("filtroUnidade").value);
-      const lider = normalize(document.getElementById("filtroLider").value);
-      const escala = normalize(document.getElementById("filtroEscala").value);
+      const plantao = normalize(document.getElementById("filtroPlantao").value);
+      const turno = normalize(document.getElementById("filtroTurno").value);
 
-      return rawData
-        .filter(item => {
-          const okUnidade = !unidade || normalize(item.unidade) === unidade;
-          const okLider = !lider || normalize(item.lider) === lider;
-          const okEscala = !escala || normalize(item.escala) === escala;
-          return okUnidade && okLider && okEscala;
-        })
-        .map(item => ({
-          ...item,
-          statusDia: getValorNoDia(item, dataSelecionada)
-        }));
-    }
-
-    function contarStatus(data) {
-      const totais = {
-        hc: data.length,
-        p: 0,
-        f: 0,
-        dsr: 0,
-        fe: 0,
-        at: 0,
-        fc: 0
-      };
-
-      data.forEach(item => {
-        const st = normalize(item.statusDia).toUpperCase();
-
-        if (st === "P") totais.p++;
-        else if (st === "F") totais.f++;
-        else if (st === "DSR") totais.dsr++;
-        else if (st === "FE") totais.fe++;
-        else if (st === "AT") totais.at++;
-        else if (st === "FC") totais.fc++;
+      return rawData.filter(item => {
+        const okData = !dataSelecionada || normalize(item["DATA"]) === dataSelecionada;
+        const okUnidade = !unidade || normalize(item["UNIDADE"]) === unidade;
+        const okPlantao = !plantao || normalize(item["PLANTÃO"]) === plantao;
+        const okTurno = !turno || normalize(item["TURNO"]) === turno;
+        return okData && okUnidade && okPlantao && okTurno;
       });
-
-      return totais;
     }
 
-    function calcularAbs(totais) {
-      const numerador = totais.f + totais.at + totais.fc;
-      const denominador = totais.p + totais.f + totais.at + totais.fc;
-      return denominador ? (numerador / denominador) * 100 : 0;
+    function isFalta(oc) {
+      return normalizeLower(oc).includes("falta");
+    }
+
+    function isAtestado(oc) {
+      return normalizeLower(oc).includes("atestado");
+    }
+
+    function isSemCobertura(obs) {
+      return normalizeLower(obs).includes("sem cobertura");
     }
 
     function renderCards(data) {
-      const totais = contarStatus(data);
-      const abs = calcularAbs(totais);
+      const totalOcorrencias = data.length;
+      const colaboradores = new Set(data.map(item => normalize(item["COLABORADOR"])).filter(Boolean)).size;
+      const faltas = data.filter(item => isFalta(item["OCORRÊNCIA"])).length;
+      const atestados = data.filter(item => isAtestado(item["OCORRÊNCIA"])).length;
+      const semCobertura = data.filter(item => isSemCobertura(item["OBSERVAÇÕES"])).length;
+      const plantoes = new Set(data.map(item => normalize(item["PLANTÃO"])).filter(Boolean)).size;
+      const turnos = new Set(data.map(item => normalize(item["TURNO"])).filter(Boolean)).size;
+
+      const percValidos = data
+        .map(item => parsePercent(item["%ABS"]))
+        .filter(v => v > 0);
+
+      const absMedio = percValidos.length
+        ? percValidos.reduce((a, b) => a + b, 0) / percValidos.length
+        : 0;
+
       const dataSelecionada = normalize(document.getElementById("filtroData").value);
 
-      document.getElementById("hcTotal").textContent = formatNumber(totais.hc);
-      document.getElementById("presencaTotal").textContent = formatNumber(totais.p);
-      document.getElementById("absRate").textContent = formatPercent(abs);
-      document.getElementById("dataSelecionadaLabel").textContent = dataSelecionada || "-";
+      document.getElementById("hcTotal").textContent = formatNumber(totalOcorrencias);
+      document.getElementById("presencaTotal").textContent = formatNumber(colaboradores);
+      document.getElementById("absRate").textContent = formatPercent(absMedio);
+      document.getElementById("dataSelecionadaLabel").textContent = dataSelecionada || "Todas";
 
-      document.getElementById("faltasTotal").textContent = formatNumber(totais.f);
-      document.getElementById("dsrTotal").textContent = formatNumber(totais.dsr);
-      document.getElementById("feTotal").textContent = formatNumber(totais.fe);
-      document.getElementById("atTotal").textContent = formatNumber(totais.at);
-      document.getElementById("fcTotal").textContent = formatNumber(totais.fc);
+      document.getElementById("faltasTotal").textContent = formatNumber(faltas);
+      document.getElementById("atTotal").textContent = formatNumber(atestados);
+      document.getElementById("fcTotal").textContent = formatNumber(semCobertura);
+      document.getElementById("dsrTotal").textContent = formatNumber(plantoes);
+      document.getElementById("feTotal").textContent = formatNumber(turnos);
     }
 
     function renderChart(data) {
       const grouped = {};
 
       data.forEach(item => {
-        const unidade = normalize(item.unidade) || "SEM UNIDADE";
+        const unidade = normalize(item["UNIDADE"]) || "SEM UNIDADE";
         if (!grouped[unidade]) grouped[unidade] = 0;
         grouped[unidade]++;
       });
@@ -340,7 +492,7 @@
         data: {
           labels,
           datasets: [{
-            label: "HC",
+            label: "Ocorrências",
             data: values,
             backgroundColor: "#ff6a00",
             borderRadius: 8
@@ -376,54 +528,52 @@
       const grouped = {};
 
       data.forEach(item => {
-        const unidade = normalize(item.unidade) || "SEM UNIDADE";
+        const unidade = normalize(item["UNIDADE"]) || "SEM UNIDADE";
 
         if (!grouped[unidade]) {
           grouped[unidade] = {
-            hc: 0,
-            p: 0,
-            f: 0,
-            dsr: 0,
-            fe: 0,
-            at: 0,
-            fc: 0,
-            lideres: new Set(),
-            escalas: new Set()
+            total: 0,
+            faltas: 0,
+            atestados: 0,
+            semCobertura: 0,
+            abs: [],
+            colaboradores: new Set(),
+            plantoes: new Set(),
+            turnos: new Set()
           };
         }
 
         const g = grouped[unidade];
-        g.hc++;
+        g.total++;
 
-        const st = normalize(item.statusDia).toUpperCase();
+        if (isFalta(item["OCORRÊNCIA"])) g.faltas++;
+        if (isAtestado(item["OCORRÊNCIA"])) g.atestados++;
+        if (isSemCobertura(item["OBSERVAÇÕES"])) g.semCobertura++;
 
-        if (st === "P") g.p++;
-        else if (st === "F") g.f++;
-        else if (st === "DSR") g.dsr++;
-        else if (st === "FE") g.fe++;
-        else if (st === "AT") g.at++;
-        else if (st === "FC") g.fc++;
+        const absVal = parsePercent(item["%ABS"]);
+        if (absVal > 0) g.abs.push(absVal);
 
-        if (normalize(item.lider)) g.lideres.add(normalize(item.lider));
-        if (normalize(item.escala)) g.escalas.add(normalize(item.escala));
+        if (normalize(item["COLABORADOR"])) g.colaboradores.add(normalize(item["COLABORADOR"]));
+        if (normalize(item["PLANTÃO"])) g.plantoes.add(normalize(item["PLANTÃO"]));
+        if (normalize(item["TURNO"])) g.turnos.add(normalize(item["TURNO"]));
       });
 
       Object.entries(grouped).forEach(([unidade, g]) => {
-        const abs = calcularAbs(g);
+        const absMedio = g.abs.length
+          ? g.abs.reduce((a, b) => a + b, 0) / g.abs.length
+          : 0;
 
         tbody.innerHTML += `
           <tr>
             <td>${unidade}</td>
-            <td>${formatNumber(g.hc)}</td>
-            <td style="color:#4caf50">${formatNumber(g.p)}</td>
-            <td style="color:#ff4d4f">${formatNumber(g.f)}</td>
-            <td style="color:#3ea6ff">${formatNumber(g.dsr)}</td>
-            <td style="color:#facc15">${formatNumber(g.fe)}</td>
-            <td style="color:#c084fc">${formatNumber(g.at)}</td>
-            <td style="color:#ff9800">${formatNumber(g.fc)}</td>
-            <td>${formatPercent(abs)}</td>
-            <td>${[...g.lideres].join(", ") || "-"}</td>
-            <td>${[...g.escalas].join(", ") || "-"}</td>
+            <td>${formatNumber(g.total)}</td>
+            <td>${formatNumber(g.colaboradores.size)}</td>
+            <td style="color:#ff4d4f">${formatNumber(g.faltas)}</td>
+            <td style="color:#c084fc">${formatNumber(g.atestados)}</td>
+            <td style="color:#ff9800">${formatNumber(g.semCobertura)}</td>
+            <td>${formatPercent(absMedio)}</td>
+            <td>${[...g.plantoes].join(", ") || "-"}</td>
+            <td>${[...g.turnos].join(", ") || "-"}</td>
           </tr>
         `;
       });
@@ -439,7 +589,7 @@
 
     async function loadData() {
       try {
-        const res = await fetch("/api/hc-agentes-fbs");
+        const res = await fetch("/api/hc-agentes-fbs", { credentials: "same-origin" });
         rawData = await res.json();
         fillFilters(rawData);
         renderAll();
@@ -451,8 +601,8 @@
     document.getElementById("btnAtualizar").addEventListener("click", renderAll);
     document.getElementById("filtroData").addEventListener("change", renderAll);
     document.getElementById("filtroUnidade").addEventListener("change", renderAll);
-    document.getElementById("filtroLider").addEventListener("change", renderAll);
-    document.getElementById("filtroEscala").addEventListener("change", renderAll);
+    document.getElementById("filtroPlantao").addEventListener("change", renderAll);
+    document.getElementById("filtroTurno").addEventListener("change", renderAll);
 
     loadData();
   </script>

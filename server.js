@@ -324,39 +324,46 @@ app.get("/login", (req, res) => {
 
 // ================== LOGIN GOOGLE ==================
 
-app.get(
-  "/auth/google",
-  passport.authenticate("google", {
+app.get("/auth/google", (req, res, next) => {
+  if (!googleOAuthEnabled) {
+    return res
+      .status(503)
+      .send("Login Google não configurado no servidor.");
+  }
+
+  return passport.authenticate("google", {
     scope: ["openid", "profile", "email"],
     session: false,
-  })
-);
+  })(req, res, next);
+});
 
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", {
+app.get("/auth/google/callback", (req, res, next) => {
+  if (!googleOAuthEnabled) {
+    return res.redirect("/login");
+  }
+
+  return passport.authenticate("google", {
     failureRedirect: "/login",
     session: false,
-  }),
-  (req, res) => {
-    if (!req.user) return res.redirect("/login");
+  })(req, res, next);
+}, (req, res) => {
+  if (!req.user) return res.redirect("/login");
 
-    if (req.user.status !== "aprovado") {
-      req.session.destroy(() => {
-        return res.send("Seu acesso ainda está pendente de aprovação pelo Security.");
-      });
-      return;
-    }
-
-    req.session.userId = req.user.id;
-    req.session.nome = req.user.nome;
-    req.session.email = req.user.email;
-    req.session.perfil = req.user.perfil;
-    req.session.foto = req.user.foto || "";
-
-    return res.redirect("/portal");
+  if (req.user.status !== "aprovado") {
+    req.session.destroy(() => {
+      return res.send("Seu acesso ainda está pendente de aprovação pelo Security.");
+    });
+    return;
   }
-);
+
+  req.session.userId = req.user.id;
+  req.session.nome = req.user.nome;
+  req.session.email = req.user.email;
+  req.session.perfil = req.user.perfil;
+  req.session.foto = req.user.foto || "";
+
+  return res.redirect("/portal");
+});
 
 // ================== CADASTRO ==================
 

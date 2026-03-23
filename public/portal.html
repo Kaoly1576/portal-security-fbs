@@ -1047,593 +1047,638 @@
       </aside>
     </div>
   </div>
-
   <script>
-    const fallbackPhoto = "/images/logo.png";
-    const fallbackName = "Caíque";
+  const fallbackPhoto = "/images/logo.png";
+  const fallbackName = "Caíque";
 
-    function getStoredUserPhoto() {
-      const possiblePhotoKeys = ["userPhoto", "user_photo", "photoURL", "googleUserPhoto", "googlePhoto", "picture"];
-      for (const key of possiblePhotoKeys) {
-        const value = localStorage.getItem(key);
-        if (value && value !== "null" && value !== "undefined") return value;
-      }
-
-      const rawUser = localStorage.getItem("user");
-      if (rawUser) {
-        try {
-          const parsed = JSON.parse(rawUser);
-          return parsed.photoURL || parsed.picture || parsed.imageUrl || "";
-        } catch (e) {}
-      }
-      return "";
+  function getStoredUserPhoto() {
+    const possiblePhotoKeys = ["userPhoto", "user_photo", "photoURL", "googleUserPhoto", "googlePhoto", "picture"];
+    for (const key of possiblePhotoKeys) {
+      const value = localStorage.getItem(key);
+      if (value && value !== "null" && value !== "undefined") return value;
     }
 
-    function getStoredUserName() {
-      const possibleNameKeys = ["userName", "user_name", "displayName", "googleUserName", "googleName", "name"];
-      for (const key of possibleNameKeys) {
-        const value = localStorage.getItem(key);
-        if (value && value !== "null" && value !== "undefined") return value;
-      }
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser);
+        return parsed.photoURL || parsed.picture || parsed.imageUrl || "";
+      } catch (e) {}
+    }
+    return "";
+  }
 
-      const rawUser = localStorage.getItem("user");
-      if (rawUser) {
-        try {
-          const parsed = JSON.parse(rawUser);
-          return parsed.name || parsed.displayName || "";
-        } catch (e) {}
-      }
-      return "";
+  function getStoredUserName() {
+    const possibleNameKeys = ["userName", "user_name", "displayName", "googleUserName", "googleName", "name"];
+    for (const key of possibleNameKeys) {
+      const value = localStorage.getItem(key);
+      if (value && value !== "null" && value !== "undefined") return value;
     }
 
-    const userPhoto = getStoredUserPhoto() || fallbackPhoto;
-    const userName = getStoredUserName() || fallbackName;
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser);
+        return parsed.name || parsed.displayName || "";
+      } catch (e) {}
+    }
+    return "";
+  }
 
-    const topUserPhoto = document.getElementById("topUserPhoto");
-    const topUserName = document.getElementById("topUserName");
+  const userPhoto = getStoredUserPhoto() || fallbackPhoto;
+  const userName = getStoredUserName() || fallbackName;
 
+  const topUserPhoto = document.getElementById("topUserPhoto");
+  const topUserName = document.getElementById("topUserName");
+
+  if (topUserPhoto) {
     topUserPhoto.src = userPhoto;
     topUserPhoto.onerror = function () {
       this.src = fallbackPhoto;
     };
+  }
+
+  if (topUserName) {
     topUserName.textContent = userName;
+  }
 
-    function normalizeKey(value) {
-      return String(value || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim();
+  function safeText(value, fallback = "-") {
+    const text = String(value || "").trim();
+    return text || fallback;
+  }
+
+  function initials(text) {
+    const parts = String(text || "OP").trim().split(/\s+/).slice(0, 2);
+    return parts.map(p => p[0] || "").join("").toUpperCase() || "OP";
+  }
+
+  function parseNumber(value) {
+    if (value == null) return 0;
+    const str = String(value).trim();
+    if (!str) return 0;
+
+    const cleaned = str
+      .replace(/\$/g, "")
+      .replace(/USD/gi, "")
+      .replace(/\s/g, "");
+
+    if (cleaned.includes(".") && cleaned.includes(",")) {
+      if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
+        return Number(cleaned.replace(/\./g, "").replace(",", ".")) || 0;
+      }
+      return Number(cleaned.replace(/,/g, "")) || 0;
     }
 
-    function safeText(value, fallback = "-") {
-      const text = String(value || "").trim();
-      return text || fallback;
+    if (cleaned.includes(",") && !cleaned.includes(".")) {
+      return Number(cleaned.replace(",", ".")) || 0;
     }
 
-    function initials(text) {
-      const parts = String(text || "OP").trim().split(/\s+/).slice(0, 2);
-      return parts.map(p => p[0] || "").join("").toUpperCase() || "OP";
+    return Number(cleaned.replace(/[^\d.-]/g, "")) || 0;
+  }
+
+  function parseDate(value) {
+    if (!value) return null;
+    const text = String(value).trim();
+    if (!text) return null;
+
+    const direct = new Date(text);
+    if (!isNaN(direct)) return direct;
+
+    const match = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T](\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
+    if (match) {
+      let year = Number(match[3]);
+      if (year < 100) year += 2000;
+
+      const date = new Date(
+        year,
+        Number(match[2]) - 1,
+        Number(match[1]),
+        Number(match[4] || 0),
+        Number(match[5] || 0),
+        Number(match[6] || 0)
+      );
+
+      if (!isNaN(date)) return date;
     }
 
-    function parseNumber(value) {
-      if (value == null) return 0;
-      const str = String(value).trim();
-      if (!str) return 0;
+    return null;
+  }
 
-      const cleaned = str
-        .replace(/\$/g, "")
-        .replace(/USD/gi, "")
-        .replace(/\s/g, "");
+  function formatDateTime(date) {
+    if (!(date instanceof Date) || isNaN(date)) return "-";
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
 
-      if (cleaned.includes(".") && cleaned.includes(",")) {
-        if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
-          return Number(cleaned.replace(/\./g, "").replace(",", ".")) || 0;
+  function withinLast24Hours(date) {
+    if (!(date instanceof Date) || isNaN(date)) return false;
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    return diff >= 0 && diff <= 24 * 60 * 60 * 1000;
+  }
+
+  function buildHourlyBuckets() {
+    return Array.from({ length: 24 }, (_, i) => {
+      const d = new Date();
+      d.setMinutes(0, 0, 0);
+      d.setHours(d.getHours() - (23 - i));
+      return {
+        label: String(d.getHours()).padStart(2, "0") + "h",
+        date: new Date(d),
+        total: 0
+      };
+    });
+  }
+
+  function sameHour(a, b) {
+    return a &&
+      b &&
+      a.getHours() === b.getHours() &&
+      a.getDate() === b.getDate() &&
+      a.getMonth() === b.getMonth() &&
+      a.getFullYear() === b.getFullYear();
+  }
+
+  function extractRowsFromTable(table) {
+    const rows = Array.from(table.querySelectorAll("tr"));
+    if (!rows.length) return [];
+
+    let headerRow = rows.find(row => row.querySelectorAll("th").length > 0);
+    if (!headerRow) headerRow = rows[0];
+
+    const headers = Array.from(headerRow.querySelectorAll("th, td")).map(cell => cell.textContent.trim());
+    if (!headers.length) return [];
+
+    const bodyRows = rows.slice(rows.indexOf(headerRow) + 1);
+
+    return bodyRows
+      .map(row => {
+        const cells = Array.from(row.querySelectorAll("td"));
+        if (!cells.length) return null;
+
+        const obj = {};
+        headers.forEach((header, index) => {
+          obj[header] = cells[index] ? cells[index].textContent.trim() : "";
+        });
+        return obj;
+      })
+      .filter(Boolean)
+      .filter(row => Object.values(row).some(v => String(v).trim() !== ""));
+  }
+
+  function extractAllRowsFromDocument(doc) {
+    return Array.from(doc.querySelectorAll("table")).flatMap(extractRowsFromTable);
+  }
+
+  function getValue(row, key) {
+    return row[key] || "";
+  }
+
+  function findRenderedRows(doc) {
+    return extractAllRowsFromDocument(doc);
+  }
+
+  function createHiddenIframe(src) {
+    return new Promise((resolve, reject) => {
+      const iframe = document.createElement("iframe");
+      iframe.src = src;
+      iframe.style.position = "absolute";
+      iframe.style.left = "-9999px";
+      iframe.style.top = "-9999px";
+      iframe.style.width = "1px";
+      iframe.style.height = "1px";
+      iframe.style.opacity = "0";
+      iframe.style.pointerEvents = "none";
+
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("Timeout ao carregar " + src));
+      }, 25000);
+
+      function cleanup() {
+        clearTimeout(timeout);
+      }
+
+      iframe.onload = () => {
+        cleanup();
+        resolve(iframe);
+      };
+
+      iframe.onerror = () => {
+        cleanup();
+        reject(new Error("Erro ao carregar iframe " + src));
+      };
+
+      document.body.appendChild(iframe);
+    });
+  }
+
+  async function waitForTableRows(iframe, minRows = 1, maxWait = 20000) {
+    const start = Date.now();
+
+    while (Date.now() - start < maxWait) {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        const rows = findRenderedRows(doc);
+
+        if (rows.length >= minRows) {
+          return rows;
         }
-        return Number(cleaned.replace(/,/g, "")) || 0;
+      } catch (e) {}
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      return findRenderedRows(doc);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function loadRowsFromPage(path, minRows = 1) {
+    const iframe = await createHiddenIframe(path);
+    const rows = await waitForTableRows(iframe, minRows, 20000);
+    return rows;
+  }
+
+  function parseAccessRows(rows) {
+    const approved24 = [];
+    const pendingRows = [];
+
+    rows.forEach(row => {
+      const status = String(getValue(row, "Status") || "").toLowerCase();
+      const operacao = safeText(getValue(row, "Operação"), "Sem operação");
+      const nome = safeText(getValue(row, "Nome completo:"), operacao);
+      const tipoLiberacao = safeText(getValue(row, "Tipo de Liberação"), "Liberação");
+      const dataLiberacao = parseDate(getValue(row, "Data de liberação") || getValue(row, "Data"));
+
+      const item = {
+        operacao,
+        nome,
+        tipoLiberacao,
+        dataLiberacao
+      };
+
+      if (status.includes("aprov")) {
+        if (withinLast24Hours(dataLiberacao)) {
+          approved24.push(item);
+        }
       }
 
-      if (cleaned.includes(",") && !cleaned.includes(".")) {
-        return Number(cleaned.replace(",", ".")) || 0;
+      if (
+        status.includes("aguard") ||
+        status.includes("pend")
+      ) {
+        pendingRows.push(item);
       }
+    });
 
-      return Number(cleaned.replace(/[^\d.-]/g, "")) || 0;
-    }
+    const approvedByOperation = {};
+    approved24.forEach(item => {
+      approvedByOperation[item.operacao] = (approvedByOperation[item.operacao] || 0) + 1;
+    });
 
-    function parseDate(value) {
-      if (!value) return null;
-      const text = String(value).trim();
-      if (!text) return null;
+    const approvedOperationsSorted = Object.entries(approvedByOperation).sort((a, b) => b[1] - a[1]);
 
-      const direct = new Date(text);
-      if (!isNaN(direct)) return direct;
-
-      const match = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T](\d{1,2})[:h](\d{2})(?::(\d{2}))?)?/);
-      if (match) {
-        let year = Number(match[3]);
-        if (year < 100) year += 2000;
-
-        const date = new Date(
-          year,
-          Number(match[2]) - 1,
-          Number(match[1]),
-          Number(match[4] || 0),
-          Number(match[5] || 0),
-          Number(match[6] || 0)
-        );
-
-        if (!isNaN(date)) return date;
-      }
-
-      return null;
-    }
-
-    function formatDateTime(date) {
-      if (!(date instanceof Date) || isNaN(date)) return "-";
-      return date.toLocaleString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
-
-    function withinLast24Hours(date) {
-      if (!(date instanceof Date) || isNaN(date)) return false;
-      const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      return diff >= 0 && diff <= 24 * 60 * 60 * 1000;
-    }
-
-    async function fetchDocument(path) {
-      const response = await fetch(path, { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error("Erro ao carregar " + path);
-      }
-      const html = await response.text();
-      return new DOMParser().parseFromString(html, "text/html");
-    }
-
-    function extractRowsFromTable(table) {
-      const rows = Array.from(table.querySelectorAll("tr"));
-      if (!rows.length) return [];
-
-      let headerRow = rows.find(row => row.querySelectorAll("th").length > 0);
-      if (!headerRow) headerRow = rows[0];
-
-      const headers = Array.from(headerRow.querySelectorAll("th, td")).map(cell => cell.textContent.trim());
-      if (!headers.length) return [];
-
-      const bodyRows = rows.slice(rows.indexOf(headerRow) + 1);
-
-      return bodyRows
-        .map(row => {
-          const cells = Array.from(row.querySelectorAll("td"));
-          if (!cells.length) return null;
-
-          const obj = {};
-          headers.forEach((header, index) => {
-            obj[header] = cells[index] ? cells[index].textContent.trim() : "";
-          });
-          return obj;
-        })
-        .filter(Boolean)
-        .filter(row => Object.values(row).some(v => String(v).trim() !== ""));
-    }
-
-    function extractAllRows(doc) {
-      return Array.from(doc.querySelectorAll("table")).flatMap(extractRowsFromTable);
-    }
-
-    function getValue(row, exactHeader) {
-      return row[exactHeader] || "";
-    }
-
-    function buildHourlyBuckets() {
-      return Array.from({ length: 24 }, (_, i) => {
-        const d = new Date();
-        d.setMinutes(0, 0, 0);
-        d.setHours(d.getHours() - (23 - i));
-        return {
-          label: String(d.getHours()).padStart(2, "0") + "h",
-          date: new Date(d),
-          total: 0
+    const pendingByOperationMap = {};
+    pendingRows.forEach(item => {
+      if (!pendingByOperationMap[item.operacao]) {
+        pendingByOperationMap[item.operacao] = {
+          operacao: item.operacao,
+          total: 0,
+          ultimaSolicitacao: null
         };
-      });
-    }
-
-    function sameHour(a, b) {
-      return a &&
-        b &&
-        a.getHours() === b.getHours() &&
-        a.getDate() === b.getDate() &&
-        a.getMonth() === b.getMonth() &&
-        a.getFullYear() === b.getFullYear();
-    }
-
-    function parseAccessRows(rows) {
-      const approved24 = [];
-      const pendingRows = [];
-
-      rows.forEach(row => {
-        const status = normalizeKey(getValue(row, "Status"));
-        const operacao = safeText(getValue(row, "Operação"), "Sem operação");
-        const nome = safeText(getValue(row, "Nome completo:"), operacao);
-        const tipoLiberacao = safeText(getValue(row, "Tipo de Liberação"), "Liberação");
-        const dataLiberacao = parseDate(getValue(row, "Data de liberação") || getValue(row, "Data"));
-
-        const item = {
-          operacao,
-          nome,
-          tipoLiberacao,
-          dataLiberacao
-        };
-
-        if (status.includes("aprov")) {
-          if (withinLast24Hours(dataLiberacao)) {
-            approved24.push(item);
-          }
-        }
-
-        if (
-          status.includes("aguard") ||
-          status.includes("pend") ||
-          status.includes("waiting")
-        ) {
-          pendingRows.push(item);
-        }
-      });
-
-      const approvedByOperation = {};
-      approved24.forEach(item => {
-        approvedByOperation[item.operacao] = (approvedByOperation[item.operacao] || 0) + 1;
-      });
-
-      const approvedOperationsSorted = Object.entries(approvedByOperation).sort((a, b) => b[1] - a[1]);
-
-      const pendingByOperationMap = {};
-      pendingRows.forEach(item => {
-        if (!pendingByOperationMap[item.operacao]) {
-          pendingByOperationMap[item.operacao] = {
-            operacao: item.operacao,
-            total: 0,
-            ultimaSolicitacao: null
-          };
-        }
-
-        pendingByOperationMap[item.operacao].total += 1;
-
-        if (
-          item.dataLiberacao &&
-          (!pendingByOperationMap[item.operacao].ultimaSolicitacao ||
-            item.dataLiberacao > pendingByOperationMap[item.operacao].ultimaSolicitacao)
-        ) {
-          pendingByOperationMap[item.operacao].ultimaSolicitacao = item.dataLiberacao;
-        }
-      });
-
-      const pendingByOperation = Object.values(pendingByOperationMap)
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 10);
-
-      const historyApproved = approved24
-        .sort((a, b) => (b.dataLiberacao || 0) - (a.dataLiberacao || 0))
-        .slice(0, 8);
-
-      const buckets = buildHourlyBuckets();
-      approved24.forEach(item => {
-        if (!item.dataLiberacao) return;
-        const bucket = buckets.find(b => sameHour(b.date, item.dataLiberacao));
-        if (bucket) bucket.total += 1;
-      });
-
-      return {
-        approved24,
-        approvedOperationsSorted,
-        pendingByOperation,
-        historyApproved,
-        buckets
-      };
-    }
-
-    function parseHcRows(rows) {
-      let hcWarehouse = 0;
-      let hcPresent = 0;
-
-      rows.forEach(row => {
-        const qtdPessoas = parseNumber(getValue(row, "qtd_pessoas"));
-        const totalPresencas = parseNumber(getValue(row, "total_presencas"));
-
-        hcWarehouse += qtdPessoas;
-        hcPresent += totalPresencas;
-      });
-
-      return {
-        hcWarehouse,
-        hcPresent
-      };
-    }
-
-    function parseDashboardRows(rows) {
-      let avRecovered = 0;
-      let itemsRecovered = 0;
-
-      rows.forEach(row => {
-        avRecovered += parseNumber(getValue(row, "US$ ENCONTRADO"));
-        itemsRecovered += parseNumber(getValue(row, "QUANTIDADE ENCONTRADA"));
-      });
-
-      return {
-        avRecovered,
-        itemsRecovered
-      };
-    }
-
-    function parseFirstMileRows(rows) {
-      const buckets = buildHourlyBuckets();
-      const seenRoutes = new Set();
-
-      rows.forEach(row => {
-        const dataColeta = parseDate(getValue(row, "Data Coleta"));
-        if (!withinLast24Hours(dataColeta)) return;
-
-        const routeName = safeText(getValue(row, "Route Name"), "Sem rota");
-        const chave = safeText(getValue(row, "Chave"), "");
-        const statusFinal = normalizeKey(getValue(row, "Status Final"));
-        const statusRota = normalizeKey(getValue(row, "Status Rota"));
-
-        if (statusFinal.includes("cancel")) return;
-
-        const uniqueKey = `${routeName}__${chave}__${dataColeta ? dataColeta.toISOString() : ""}`;
-        if (seenRoutes.has(uniqueKey)) return;
-        seenRoutes.add(uniqueKey);
-
-        const bucket = buckets.find(b => sameHour(b.date, dataColeta));
-        if (bucket) bucket.total += 1;
-      });
-
-      return buckets;
-    }
-
-    function renderPendingTable(rows) {
-      const tbody = document.getElementById("pendingTableBody");
-
-      if (!rows.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="5" class="empty-state">
-              Nenhuma solicitação aguardando aprovação encontrada no access.html.
-            </td>
-          </tr>
-        `;
-        return;
       }
 
-      tbody.innerHTML = rows.map(row => `
+      pendingByOperationMap[item.operacao].total += 1;
+
+      if (
+        item.dataLiberacao &&
+        (!pendingByOperationMap[item.operacao].ultimaSolicitacao ||
+          item.dataLiberacao > pendingByOperationMap[item.operacao].ultimaSolicitacao)
+      ) {
+        pendingByOperationMap[item.operacao].ultimaSolicitacao = item.dataLiberacao;
+      }
+    });
+
+    const pendingByOperation = Object.values(pendingByOperationMap)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    const historyApproved = approved24
+      .sort((a, b) => (b.dataLiberacao || 0) - (a.dataLiberacao || 0))
+      .slice(0, 8);
+
+    const buckets = buildHourlyBuckets();
+    approved24.forEach(item => {
+      if (!item.dataLiberacao) return;
+      const bucket = buckets.find(b => sameHour(b.date, item.dataLiberacao));
+      if (bucket) bucket.total += 1;
+    });
+
+    return {
+      approved24,
+      approvedOperationsSorted,
+      pendingByOperation,
+      historyApproved,
+      buckets
+    };
+  }
+
+  function parseHcRows(rows) {
+    let hcWarehouse = 0;
+    let hcPresent = 0;
+
+    rows.forEach(row => {
+      hcWarehouse += parseNumber(getValue(row, "qtd_pessoas"));
+      hcPresent += parseNumber(getValue(row, "total_presencas"));
+    });
+
+    return {
+      hcWarehouse,
+      hcPresent
+    };
+  }
+
+  function parseDashboardRows(rows) {
+    let avRecovered = 0;
+    let itemsRecovered = 0;
+
+    rows.forEach(row => {
+      avRecovered += parseNumber(getValue(row, "US$ ENCONTRADO"));
+      itemsRecovered += parseNumber(getValue(row, "QUANTIDADE ENCONTRADA"));
+    });
+
+    return {
+      avRecovered,
+      itemsRecovered
+    };
+  }
+
+  function parseFirstMileRows(rows) {
+    const buckets = buildHourlyBuckets();
+    const seenRoutes = new Set();
+
+    rows.forEach(row => {
+      const dataColeta = parseDate(getValue(row, "Data Coleta"));
+      if (!withinLast24Hours(dataColeta)) return;
+
+      const routeName = safeText(getValue(row, "Route Name"), "Sem rota");
+      const chave = safeText(getValue(row, "Chave"), "");
+      const statusFinal = String(getValue(row, "Status Final") || "").toLowerCase();
+
+      if (statusFinal.includes("cancel")) return;
+
+      const uniqueKey = `${routeName}__${chave}__${dataColeta ? dataColeta.toISOString() : ""}`;
+      if (seenRoutes.has(uniqueKey)) return;
+      seenRoutes.add(uniqueKey);
+
+      const bucket = buckets.find(b => sameHour(b.date, dataColeta));
+      if (bucket) bucket.total += 1;
+    });
+
+    return buckets;
+  }
+
+  function renderPendingTable(rows) {
+    const tbody = document.getElementById("pendingTableBody");
+
+    if (!rows.length) {
+      tbody.innerHTML = `
         <tr>
-          <td>
-            <div class="user-cell">
-              <div class="avatar">${initials(row.operacao)}</div>
-              <span>${safeText(row.operacao)}</span>
-            </div>
-          </td>
-          <td>${row.total}</td>
-          <td>${row.ultimaSolicitacao ? formatDateTime(row.ultimaSolicitacao) : "-"}</td>
-          <td>Aguardando aprovação</td>
-          <td>
-            <div class="row-actions">
-              <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
-              <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
-            </div>
+          <td colspan="5" class="empty-state">
+            Nenhuma solicitação aguardando aprovação encontrada no access.html.
           </td>
         </tr>
-      `).join("");
+      `;
+      return;
     }
 
-    function renderHistory(rows) {
-      const historyList = document.getElementById("historyList");
-
-      if (!rows.length) {
-        historyList.innerHTML = `<div class="empty-state">Nenhum acesso aprovado encontrado nas últimas 24h.</div>`;
-        return;
-      }
-
-      historyList.innerHTML = rows.map(item => `
-        <div class="history-item">
-          <div class="history-avatar">${initials(item.operacao)}</div>
-          <div class="item-text">
-            <strong>${safeText(item.operacao)}</strong>
-            <span>${safeText(item.tipoLiberacao)} · aprovado</span>
+    tbody.innerHTML = rows.map(row => `
+      <tr>
+        <td>
+          <div class="user-cell">
+            <div class="avatar">${initials(row.operacao)}</div>
+            <span>${safeText(row.operacao)}</span>
           </div>
-          <div class="item-time">
-            ${item.dataLiberacao ? item.dataLiberacao.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "-"}
+        </td>
+        <td>${row.total}</td>
+        <td>${row.ultimaSolicitacao ? formatDateTime(row.ultimaSolicitacao) : "-"}</td>
+        <td>Aguardando aprovação</td>
+        <td>
+          <div class="row-actions">
+            <button class="tiny-btn approve" onclick="window.location.href='/aprovacoes.html'">Aprovar</button>
+            <button class="tiny-btn view" onclick="window.location.href='/access.html'">Ver</button>
           </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function renderHistory(rows) {
+    const historyList = document.getElementById("historyList");
+
+    if (!rows.length) {
+      historyList.innerHTML = `<div class="empty-state">Nenhum acesso aprovado encontrado nas últimas 24h.</div>`;
+      return;
+    }
+
+    historyList.innerHTML = rows.map(item => `
+      <div class="history-item">
+        <div class="history-avatar">${initials(item.operacao)}</div>
+        <div class="item-text">
+          <strong>${safeText(item.operacao)}</strong>
+          <span>${safeText(item.tipoLiberacao)} · aprovado</span>
         </div>
-      `).join("");
-    }
+        <div class="item-time">
+          ${item.dataLiberacao ? item.dataLiberacao.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "-"}
+        </div>
+      </div>
+    `).join("");
+  }
 
-    let monitorChart;
+  let monitorChart;
 
-    function renderChart(accessBuckets, routeBuckets) {
-      const ctx = document.getElementById("monitorChart").getContext("2d");
+  function renderChart(accessBuckets, routeBuckets) {
+    const ctx = document.getElementById("monitorChart").getContext("2d");
 
-      if (monitorChart) monitorChart.destroy();
+    if (monitorChart) monitorChart.destroy();
 
-      monitorChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: accessBuckets.map(item => item.label),
-          datasets: [
-            {
-              label: "Acessos aprovados",
-              data: accessBuckets.map(item => item.total),
-              borderColor: "#ff7a1a",
-              backgroundColor: "rgba(255,122,26,.12)",
-              tension: 0.35,
-              fill: false,
-              borderWidth: 3,
-              pointRadius: 2.5,
-              pointBackgroundColor: "#ff7a1a"
-            },
-            {
-              label: "Rotas do dia",
-              data: routeBuckets.map(item => item.total),
-              borderColor: "#22c55e",
-              backgroundColor: "rgba(34,197,94,.10)",
-              tension: 0.35,
-              fill: false,
-              borderWidth: 2,
-              pointRadius: 2.2,
-              pointBackgroundColor: "#22c55e"
-            }
-          ]
+    monitorChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: accessBuckets.map(item => item.label),
+        datasets: [
+          {
+            label: "Acessos aprovados",
+            data: accessBuckets.map(item => item.total),
+            borderColor: "#ff7a1a",
+            backgroundColor: "rgba(255,122,26,.12)",
+            tension: 0.35,
+            fill: false,
+            borderWidth: 3,
+            pointRadius: 2.5,
+            pointBackgroundColor: "#ff7a1a"
+          },
+          {
+            label: "Rotas do dia",
+            data: routeBuckets.map(item => item.total),
+            borderColor: "#22c55e",
+            backgroundColor: "rgba(34,197,94,.10)",
+            tension: 0.35,
+            fill: false,
+            borderWidth: 2,
+            pointRadius: 2.2,
+            pointBackgroundColor: "#22c55e"
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: "index",
-            intersect: false
-          },
-          plugins: {
-            legend: {
-              labels: {
-                color: "#dce5f8",
-                usePointStyle: true,
-                boxWidth: 10,
-                boxHeight: 10,
-                padding: 18,
-                font: {
-                  family: "Inter",
-                  size: 12,
-                  weight: "600"
-                }
+        plugins: {
+          legend: {
+            labels: {
+              color: "#dce5f8",
+              usePointStyle: true,
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 18,
+              font: {
+                family: "Inter",
+                size: 12,
+                weight: "600"
               }
-            },
-            tooltip: {
-              backgroundColor: "rgba(10,16,29,.96)",
-              borderColor: "rgba(255,255,255,.08)",
-              borderWidth: 1,
-              titleColor: "#fff",
-              bodyColor: "#dce6fb",
-              padding: 12
             }
           },
-          scales: {
-            x: {
-              grid: {
-                color: "rgba(255,255,255,.05)",
-                drawBorder: false
-              },
-              ticks: {
-                color: "#9fb0cf",
-                font: {
-                  family: "Inter",
-                  size: 11
-                }
-              }
+          tooltip: {
+            backgroundColor: "rgba(10,16,29,.96)",
+            borderColor: "rgba(255,255,255,.08)",
+            borderWidth: 1,
+            titleColor: "#fff",
+            bodyColor: "#dce6fb",
+            padding: 12
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              color: "rgba(255,255,255,.05)",
+              drawBorder: false
             },
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: "rgba(255,255,255,.05)",
-                drawBorder: false
-              },
-              ticks: {
-                color: "#9fb0cf",
-                precision: 0,
-                font: {
-                  family: "Inter",
-                  size: 11
-                }
+            ticks: {
+              color: "#9fb0cf",
+              font: {
+                family: "Inter",
+                size: 11
+              }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: "rgba(255,255,255,.05)",
+              drawBorder: false
+            },
+            ticks: {
+              color: "#9fb0cf",
+              precision: 0,
+              font: {
+                family: "Inter",
+                size: 11
               }
             }
           }
         }
-      });
-    }
-
-    async function loadPortalData() {
-      try {
-        const [accessDoc, hcDoc, dashboardDoc, firstMileDoc] = await Promise.all([
-          fetchDocument("/access.html"),
-          fetchDocument("/hc.html"),
-          fetchDocument("/dashboard.html"),
-          fetchDocument("/first-mile-access.html")
-        ]);
-
-        const accessRows = extractAllRows(accessDoc);
-        const hcRows = extractAllRows(hcDoc);
-        const dashboardRows = extractAllRows(dashboardDoc);
-        const firstMileRows = extractAllRows(firstMileDoc);
-
-        console.log("ACCESS ROWS:", accessRows);
-        console.log("HC ROWS:", hcRows);
-        console.log("DASHBOARD ROWS:", dashboardRows);
-        console.log("FIRST MILE ROWS:", firstMileRows);
-
-        const accessData = parseAccessRows(accessRows);
-        const hcData = parseHcRows(hcRows);
-        const dashboardData = parseDashboardRows(dashboardRows);
-        const firstMileData = parseFirstMileRows(firstMileRows);
-
-        document.getElementById("approved24Total").textContent = accessData.approved24.length;
-        document.getElementById("approved24Units").textContent =
-          accessData.approvedOperationsSorted.length
-            ? accessData.approvedOperationsSorted.slice(0, 2).map(([op, total]) => `${op}: ${total}`).join(" · ")
-            : "Sem aprovações nas últimas 24h";
-
-        document.getElementById("approvedUnitsCount").textContent = accessData.approvedOperationsSorted.length;
-        document.getElementById("approvedUnitsTop").textContent =
-          accessData.approvedOperationsSorted.length
-            ? accessData.approvedOperationsSorted.slice(0, 3).map(([op]) => op).join(" · ")
-            : "Sem operações";
-
-        document.getElementById("hcWarehouse").textContent = hcData.hcWarehouse;
-        document.getElementById("hcPresent").textContent = hcData.hcPresent;
-
-        document.getElementById("avRecovered").textContent =
-          new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD"
-          }).format(dashboardData.avRecovered);
-
-        document.getElementById("itemsRecovered").textContent = dashboardData.itemsRecovered;
-
-        document.getElementById("miniApproved").textContent = accessData.approved24.length;
-        document.getElementById("miniRoutes").textContent =
-          firstMileData.reduce((sum, item) => sum + item.total, 0);
-        document.getElementById("miniUnits").textContent =
-          accessData.approvedOperationsSorted.length;
-
-        document.getElementById("pendingBadge").textContent =
-          accessData.pendingByOperation.reduce((sum, row) => sum + row.total, 0);
-
-        document.getElementById("routesBadge").textContent =
-          firstMileData.reduce((sum, item) => sum + item.total, 0);
-
-        renderPendingTable(accessData.pendingByOperation);
-        renderHistory(accessData.historyApproved);
-        renderChart(accessData.buckets, firstMileData);
-      } catch (error) {
-        console.error("Erro ao carregar dados do portal:", error);
-
-        document.getElementById("pendingTableBody").innerHTML = `
-          <tr>
-            <td colspan="5" class="empty-state">
-              Erro ao carregar dados de access.html, hc.html, dashboard.html ou first-mile-access.html.
-            </td>
-          </tr>
-        `;
-
-        document.getElementById("historyList").innerHTML = `
-          <div class="empty-state">Erro ao carregar o histórico.</div>
-        `;
       }
-    }
+    });
+  }
 
-    document.addEventListener("DOMContentLoaded", loadPortalData);
-  </script>
-</body>
-</html>
+  async function loadPortalData() {
+    try {
+      const [accessRows, hcRows, dashboardRows, firstMileRows] = await Promise.all([
+        loadRowsFromPage("/access.html", 1),
+        loadRowsFromPage("/hc.html", 1),
+        loadRowsFromPage("/dashboard.html", 1),
+        loadRowsFromPage("/first-mile-access.html", 1)
+      ]);
+
+      console.log("ACCESS RENDERED ROWS:", accessRows);
+      console.log("HC RENDERED ROWS:", hcRows);
+      console.log("DASHBOARD RENDERED ROWS:", dashboardRows);
+      console.log("FIRST MILE RENDERED ROWS:", firstMileRows);
+
+      const accessData = parseAccessRows(accessRows);
+      const hcData = parseHcRows(hcRows);
+      const dashboardData = parseDashboardRows(dashboardRows);
+      const firstMileData = parseFirstMileRows(firstMileRows);
+
+      document.getElementById("approved24Total").textContent = accessData.approved24.length;
+      document.getElementById("approved24Units").textContent =
+        accessData.approvedOperationsSorted.length
+          ? accessData.approvedOperationsSorted.slice(0, 2).map(([op, total]) => `${op}: ${total}`).join(" · ")
+          : "Sem aprovações nas últimas 24h";
+
+      document.getElementById("approvedUnitsCount").textContent = accessData.approvedOperationsSorted.length;
+      document.getElementById("approvedUnitsTop").textContent =
+        accessData.approvedOperationsSorted.length
+          ? accessData.approvedOperationsSorted.slice(0, 3).map(([op]) => op).join(" · ")
+          : "Sem operações";
+
+      document.getElementById("hcWarehouse").textContent = hcData.hcWarehouse;
+      document.getElementById("hcPresent").textContent = hcData.hcPresent;
+
+      document.getElementById("avRecovered").textContent =
+        new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD"
+        }).format(dashboardData.avRecovered);
+
+      document.getElementById("itemsRecovered").textContent = dashboardData.itemsRecovered;
+
+      document.getElementById("miniApproved").textContent = accessData.approved24.length;
+      document.getElementById("miniRoutes").textContent =
+        firstMileData.reduce((sum, item) => sum + item.total, 0);
+      document.getElementById("miniUnits").textContent =
+        accessData.approvedOperationsSorted.length;
+
+      document.getElementById("pendingBadge").textContent =
+        accessData.pendingByOperation.reduce((sum, row) => sum + row.total, 0);
+
+      document.getElementById("routesBadge").textContent =
+        firstMileData.reduce((sum, item) => sum + item.total, 0);
+
+      renderPendingTable(accessData.pendingByOperation);
+      renderHistory(accessData.historyApproved);
+      renderChart(accessData.buckets, firstMileData);
+    } catch (error) {
+      console.error("Erro ao carregar dados do portal:", error);
+
+      document.getElementById("pendingTableBody").innerHTML = `
+        <tr>
+          <td colspan="5" class="empty-state">
+            Erro ao carregar os dashboards. Verifique se as páginas carregam a tabela normalmente e se estão no mesmo domínio.
+          </td>
+        </tr>
+      `;
+
+      document.getElementById("historyList").innerHTML = `
+        <div class="empty-state">Erro ao carregar o histórico.</div>
+      `;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", loadPortalData);
+</script>
+
+ 

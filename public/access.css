@@ -90,7 +90,7 @@ body {
 .filters-card,
 .info-card,
 .panel-card {
-  background: linear-gradient(135deg, #17253b 0%, #101d31 100%);
+  background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 22px;
   box-shadow: 0 10px 24px rgba(0,0,0,0.16);

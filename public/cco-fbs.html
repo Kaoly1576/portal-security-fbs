@@ -590,322 +590,60 @@
   </div>
 
   <script>
-    let currentPage = 1;
-    let totalPages = 1;
-    let chartSolicitanteInstance = null;
-    let chartDiaInstance = null;
-    let filterMap = {};
+  function getMultiValues(id) {
+    return [...document.getElementById(id).selectedOptions].map(opt => opt.value).filter(Boolean);
+  }
 
-    function esc(v) {
-      return String(v ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
+  function setMultiOptions(id, values) {
+    const el = document.getElementById(id);
+    el.innerHTML = (values || [])
+      .map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${v}</option>`)
+      .join("");
+  }
 
-    function fmt(n) {
-      return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
-    }
+  function buildQuery(page = 1) {
+    const qs = new URLSearchParams();
 
-    function normalizeText(v) {
-      return String(v || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toLowerCase();
-    }
+    qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
+    qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
+    qs.set("busca", document.getElementById("filtroBusca").value || "");
 
-    function fillSelect(id, values, firstLabel) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.innerHTML = `<option value="">${firstLabel}</option>` +
-        (values || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
-    }
+    qs.set("ano", getMultiValues("filtroAno").join("|"));
+    qs.set("mes", getMultiValues("filtroMes").join("|"));
+    qs.set("unidade", getMultiValues("filtroUnidade").join("|"));
+    qs.set("setor", getMultiValues("filtroSetor").join("|"));
+    qs.set("tipo", getMultiValues("filtroTipo").join("|"));
 
-    function findFilterValues(filtros, terms) {
-      const found = (filtros || []).find(f => {
-        const key = normalizeText(f.key);
-        const label = normalizeText(f.label);
-        return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
-      });
-      return found?.values || [];
-    }
+    qs.set("page", page);
+    qs.set("limit", 50);
 
-    function getFiltersQuery(page = 1) {
-      const qs = new URLSearchParams();
-      qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
-      qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
-      qs.set("busca", document.getElementById("filtroBusca").value || "");
-      qs.set("page", page);
-      qs.set("limit", 50);
+    return qs.toString();
+  }
 
-      if (filterMap.ano) qs.set(`f_${filterMap.ano}`, document.getElementById("f_ano").value || "");
-      if (filterMap.mes) qs.set(`f_${filterMap.mes}`, document.getElementById("f_mes").value || "");
-      if (filterMap.unidade) qs.set(`f_${filterMap.unidade}`, document.getElementById("f_unidade").value || "");
-      if (filterMap.setor) qs.set(`f_${filterMap.setor}`, document.getElementById("f_setor").value || "");
-      if (filterMap.tipo) qs.set(`f_${filterMap.tipo}`, document.getElementById("f_tipo").value || "");
+  async function carregarFiltros() {
+    const res = await fetch("/api/cco-fbs-filtros", { credentials: "same-origin" });
+    const data = await res.json();
 
-      return qs.toString();
-    }
+    setMultiOptions("filtroAno", data.anos || []);
+    setMultiOptions("filtroMes", data.meses || []);
+    setMultiOptions("filtroUnidade", data.unidades || []);
+    setMultiOptions("filtroSetor", data.setores || []);
+    setMultiOptions("filtroTipo", data.tipos || []);
+  }
 
-    function renderCompactCard(elId, rows, topN = 5) {
-      const container = document.getElementById(elId);
-      if (!container) return;
+  document.getElementById("btnAplicar").addEventListener("click", () => {
+    carregarTudo(1);
+  });
 
-      const safeRows = (rows || []).slice(0, topN);
+  document.getElementById("btnLimpar").addEventListener("click", () => {
+    document.getElementById("filtroDataInicio").value = "";
+    document.getElementById("filtroDataFim").value = "";
+    document.getElementById("filtroBusca").value = "";
 
-      if (!safeRows.length) {
-        container.innerHTML = `<div class="empty-state">Sem dados</div>`;
-        return;
-      }
-
-      const max = Math.max(...safeRows.map(r => Number(r.total || 0)), 1);
-
-      container.innerHTML = safeRows.map(item => {
-        const total = Number(item.total || 0);
-        return `
-          <div class="compact-item">
-            <div class="compact-left">
-              <div class="compact-name">${esc(item.nome || "-")}</div>
-              <div class="bar-track">
-                <div class="bar-fill" style="width:${(total / max) * 100}%"></div>
-              </div>
-            </div>
-            <div class="compact-value">${fmt(total)}</div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function destroyCharts() {
-      if (chartSolicitanteInstance) chartSolicitanteInstance.destroy();
-      if (chartDiaInstance) chartDiaInstance.destroy();
-    }
-
-    function getTopName(rows) {
-      return rows && rows.length ? rows[0].nome : "-";
-    }
-
-    function getDayOnlyLabels(labels) {
-      return (labels || []).map(label => {
-        const str = String(label || "").trim();
-        if (/^\d{2}$/.test(str)) return str;
-        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(8, 10);
-        const match = str.match(/(\d{1,2})(?!.*\d)/);
-        return match ? match[1].padStart(2, "0") : str;
-      });
-    }
-
-    async function loadFilters() {
-      const res = await fetch("/api/cco-fbs-filtros", { credentials: "same-origin" });
-      const data = await res.json();
-
-      document.getElementById("heroDescription").textContent =
-        `Aba utilizada: ${data.sheetTitle || "N/A"} | Layout anterior com cards compactos e foco nos principais indicadores.`;
-
-      const filtros = data.filtros || [];
-
-      const anoFilter = filtros.find(f => normalizeText(f.label).includes("ano") || normalizeText(f.key).includes("ano"));
-      const mesFilter = filtros.find(f => normalizeText(f.label).includes("mes") || normalizeText(f.label).includes("mês") || normalizeText(f.key).includes("mes"));
-      const unidadeFilter = filtros.find(f => normalizeText(f.label).includes("unidade") || normalizeText(f.key).includes("unidade"));
-      const setorFilter = filtros.find(f => normalizeText(f.label).includes("setor") || normalizeText(f.key).includes("setor"));
-      const tipoFilter = filtros.find(f => normalizeText(f.label).includes("tipo") || normalizeText(f.key).includes("tipo"));
-
-      filterMap = {
-        ano: anoFilter?.key || null,
-        mes: mesFilter?.key || null,
-        unidade: unidadeFilter?.key || null,
-        setor: setorFilter?.key || null,
-        tipo: tipoFilter?.key || null
-      };
-
-      fillSelect("f_ano", anoFilter?.values || [], "Todos");
-      fillSelect("f_mes", mesFilter?.values || [], "Todos");
-      fillSelect("f_unidade", unidadeFilter?.values || [], "Todas");
-      fillSelect("f_setor", setorFilter?.values || [], "Todos");
-      fillSelect("f_tipo", tipoFilter?.values || [], "Todos");
-    }
-
-    async function loadResumo() {
-      const res = await fetch(`/api/cco-fbs-resumo?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      document.getElementById("kpiTotal").textContent = fmt(data.total || 0);
-      document.getElementById("kpiUnidades").textContent = fmt(data.totalUnidades || 0);
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
-    }
-
-    async function loadGraficos() {
-      const res = await fetch(`/api/cco-fbs-graficos?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      destroyCharts();
-
-      const tableTipo = data.tableTipo || [];
-      const tableOcorrencia = data.tableOcorrencia || [];
-      const tableUnidade = data.tableUnidade || [];
-      const tableSetor = data.tableSetor || [];
-      const tableStatus = data.tableStatus || [];
-      const chartSolicitante = data.chartSolicitante || { labels: [], values: [] };
-
-      renderCompactCard("cardTipo", tableTipo, 5);
-      renderCompactCard("cardOcorrencia", tableOcorrencia, 5);
-      renderCompactCard("cardUnidade", tableUnidade, 5);
-      renderCompactCard("cardStatus", tableStatus, 5);
-      renderCompactCard("cardSetor", tableSetor, 5);
-
-      const resumoRows = [
-        { nome: "Tipos distintos", total: tableTipo.length || 0 },
-        { nome: "Ocorrências distintas", total: tableOcorrencia.length || 0 },
-        { nome: "Unidades distintas", total: tableUnidade.length || 0 },
-        { nome: "Setores distintos", total: tableSetor.length || 0 },
-        { nome: "Status distintos", total: tableStatus.length || 0 }
-      ];
-      renderCompactCard("cardResumo", resumoRows, 5);
-
-      document.getElementById("kpiTipos").textContent = fmt(tableTipo.length || 0);
-      document.getElementById("kpiOcorrencias").textContent = fmt(tableOcorrencia.length || 0);
-      document.getElementById("kpiStatusCount").textContent = fmt(tableStatus.length || 0);
-      document.getElementById("kpiTopSolicitante").textContent = chartSolicitante.labels?.[0] || "-";
-
-      chartSolicitanteInstance = new Chart(document.getElementById("chartSolicitante"), {
-        type: "bar",
-        data: {
-          labels: chartSolicitante.labels || [],
-          datasets: [{
-            label: "Qtd",
-            data: chartSolicitante.values || [],
-            backgroundColor: "#ff7a1a",
-            borderRadius: 6
-          }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
-            },
-            y: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-
-      chartDiaInstance = new Chart(document.getElementById("chartDia"), {
-        type: "line",
-        data: {
-          labels: getDayOnlyLabels(data.porDia?.labels || []),
-          datasets: [{
-            label: "Solicitações",
-            data: data.porDia?.values || [],
-            borderColor: "#58a6ff",
-            backgroundColor: "rgba(88,166,255,0.15)",
-            fill: false,
-            tension: 0.35,
-            pointRadius: 3,
-            pointBackgroundColor: "#58a6ff"
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { display: false }
-            },
-            y: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
-            }
-          }
-        }
-      });
-    }
-
-    async function loadDetalhes() {
-      const res = await fetch(`/api/cco-fbs-detalhes?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      totalPages = data.totalPages || 1;
-      document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
-
-      let html = `<table class="detail-table"><thead><tr>`;
-      (data.headers || []).forEach((header) => {
-        html += `<th>${esc(header)}</th>`;
-      });
-      html += `</tr></thead><tbody>`;
-
-      (data.rows || []).forEach((row) => {
-        html += `<tr>`;
-        (data.headers || []).forEach((header) => {
-          html += `<td>${esc(row[header] || "")}</td>`;
-        });
-        html += `</tr>`;
-      });
-
-      if (!(data.rows || []).length) {
-        html += `<tr><td colspan="${(data.headers || []).length || 1}" style="text-align:center; color:#c7d2e0;">Sem dados para os filtros aplicados.</td></tr>`;
-      }
-
-      html += `</tbody></table>`;
-      document.getElementById("detailWrap").innerHTML = html;
-    }
-
-    async function loadAll(page = 1) {
-      currentPage = page;
-      await loadResumo();
-      await loadGraficos();
-      await loadDetalhes();
-    }
-
-    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
-
-    document.getElementById("btnLimpar").addEventListener("click", () => {
-      document.getElementById("filtroDataInicio").value = "";
-      document.getElementById("filtroDataFim").value = "";
-      document.getElementById("filtroBusca").value = "";
-      document.getElementById("f_ano").value = "";
-      document.getElementById("f_mes").value = "";
-      document.getElementById("f_unidade").value = "";
-      document.getElementById("f_setor").value = "";
-      document.getElementById("f_tipo").value = "";
-      loadAll(1);
+    ["filtroAno", "filtroMes", "filtroUnidade", "filtroSetor", "filtroTipo"].forEach((id) => {
+      [...document.getElementById(id).options].forEach(opt => opt.selected = false);
     });
 
-    document.getElementById("btnPrev").addEventListener("click", () => {
-      if (currentPage > 1) loadAll(currentPage - 1);
-    });
-
-    document.getElementById("btnNext").addEventListener("click", () => {
-      if (currentPage < totalPages) loadAll(currentPage + 1);
-    });
-
-    (async function init() {
-      await loadFilters();
-      await loadAll(1);
-    })();
-  </script>
-</body>
-</html>
+    carregarTudo(1);
+  });
+</script>

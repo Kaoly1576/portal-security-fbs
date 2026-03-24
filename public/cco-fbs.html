@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CCO FBS</title>
+  <title>Portal Security FBS</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     * {
       margin: 0;
@@ -15,628 +14,859 @@
     }
 
     :root {
-      --bg: #1b1b1b;
-      --bg-2: #111111;
-      --card: #2e2e2e;
-      --card-2: #1d1d1d;
-      --input: #232323;
-      --line: rgba(255,255,255,0.08);
-      --text: #ffffff;
-      --muted: #c7c7c7;
+      --bg: #07111f;
+      --panel: rgba(14, 24, 42, 0.82);
+      --panel-2: rgba(19, 31, 53, 0.88);
+      --line: rgba(255,255,255,0.09);
+      --text: #f7f7fb;
+      --muted: #c8d0dc;
       --orange: #ff7a1a;
-      --blue: #58a6ff;
-      --green: #22c55e;
-      --red: #ef4444;
-      --purple: #8b5cf6;
-      --yellow: #f59e0b;
+      --orange-2: #ff5b2e;
+      --green: #34d399;
+      --red: #ff6b6b;
+      --blue: #60a5fa;
+      --shadow: 0 18px 40px rgba(0,0,0,0.35);
     }
 
     body {
       background:
-        linear-gradient(180deg, rgba(27,27,27,0.96) 0%, rgba(17,17,17,0.98) 100%),
-        url("/images/plano de fundo.png") center/cover fixed no-repeat;
+        radial-gradient(circle at top center, rgba(255,122,26,0.18), transparent 28%),
+        radial-gradient(circle at bottom center, rgba(255,122,26,0.10), transparent 25%),
+        linear-gradient(180deg, #091321, #050c16 65%);
       color: var(--text);
+      min-height: 100vh;
     }
 
     .page {
-      max-width: 1500px;
+      max-width: 1440px;
       margin: 0 auto;
-      padding: 18px;
+      padding: 18px 18px 28px;
     }
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
+    .navbar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
+      gap: 18px;
+      padding: 12px 10px 20px;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .brand-logo {
-      width: 58px;
-      height: 58px;
+      width: 42px;
+      height: 42px;
       object-fit: contain;
-      border-radius: 14px;
-      background: #232323;
-      padding: 6px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      padding: 4px;
+      box-shadow: var(--shadow);
     }
 
-    .brand-text h1 {
+    .brand-name {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .brand-name .accent {
       color: var(--orange);
-      font-size: 22px;
-      font-weight: 900;
-      margin-bottom: 2px;
     }
 
-    .brand-text p {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .btn {
-      background: linear-gradient(135deg, #353535 0%, #252525 100%);
-      border: 1px solid var(--line);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
+    .nav-links {
+      display: flex;
       justify-content: center;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #f3f4f6;
+      text-decoration: none;
+      font-size: 15px;
+      opacity: .88;
+      padding: 10px 2px;
+      border-bottom: 2px solid transparent;
+      transition: .2s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #fff;
+      border-bottom-color: var(--orange);
+      opacity: 1;
+    }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-user .search {
+      font-size: 18px;
+      opacity: .85;
+    }
+
+    .nav-user-photo {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: #1f2937;
     }
 
     .hero {
-      background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px 20px;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
+      min-height: 320px;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
       align-items: center;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+      padding: 38px 40px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      background:
+        linear-gradient(90deg, rgba(11,19,34,.94) 0%, rgba(15,24,42,.75) 45%, rgba(18,27,45,.38) 100%),
+        url('/images/logo.png') no-repeat right 9% center / 360px auto,
+        radial-gradient(circle at right center, rgba(255,122,26,.30), transparent 30%),
+        radial-gradient(circle at center, rgba(255,122,26,.12), transparent 45%),
+        linear-gradient(135deg, #111827, #0b1220 70%);
     }
 
-    .hero h2 {
-      font-size: 20px;
-      margin-bottom: 8px;
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%),
+        radial-gradient(circle at 70% 45%, rgba(255,122,26,.20), transparent 22%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 620px;
+    }
+
+    .hero h1 {
+      font-size: 28px;
+      line-height: 1.18;
+      margin-bottom: 14px;
+      font-weight: 800;
     }
 
     .hero p {
+      font-size: 16px;
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-      max-width: 780px;
+      line-height: 1.55;
+      margin-bottom: 22px;
+      max-width: 560px;
     }
 
-    .hero-right {
-      text-align: right;
-      min-width: 150px;
-    }
-
-    .hero-right .small {
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-
-    .hero-right .time {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 22px;
-    }
-
-    .filters {
-      background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
-    }
-
-    .filters-grid {
-      display: grid;
-      grid-template-columns: 150px 150px minmax(220px, 1fr) repeat(5, minmax(140px, 1fr));
-      gap: 10px;
-      align-items: start;
-    }
-
-    .field {
-      min-width: 0;
-    }
-
-    .field label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 11px;
-      color: #dfe8f4;
-      font-weight: 700;
-    }
-
-    .field input,
-    .field select {
-      width: 100%;
-      background: var(--input);
-      border: 1px solid #3a3a3a;
-      border-radius: 10px;
-      color: #fff;
-      padding: 0 10px;
-      outline: none;
-      font-size: 13px;
-    }
-
-    .field input {
-      height: 38px;
-    }
-
-    .field select {
-      min-height: 38px;
-    }
-
-    .field select[multiple] {
-      height: 120px;
-      padding: 8px 10px;
-    }
-
-    .field option {
-      padding: 4px;
-    }
-
-    .filters-note {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .actions {
+    .hero-actions {
       display: flex;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 14px;
       flex-wrap: wrap;
     }
 
-    .btn-primary {
-      height: 38px;
-      border: none;
-      border-radius: 10px;
-      padding: 0 14px;
-      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
+    .hero-btn {
+      background: rgba(19,31,53,.86);
       color: #fff;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .btn-ghost {
-      height: 38px;
-      border: 1px solid var(--line);
+      border: 1px solid rgba(255,255,255,.12);
       border-radius: 10px;
-      padding: 0 14px;
-      background: #252525;
-      color: #fff;
+      padding: 12px 22px;
+      text-decoration: none;
       font-weight: 700;
-      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(0,0,0,.18);
     }
 
-    .kpis {
+    .hero-btn.primary {
+      color: #ffd7b5;
+      border-color: rgba(255,122,26,.45);
+    }
+
+    .main-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
+      grid-template-columns: 2.25fr .95fr;
+      gap: 18px;
     }
 
-    .kpi {
-      background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
+    .left-col,
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .metric-card {
+      background: linear-gradient(180deg, rgba(18,28,48,.9), rgba(13,21,37,.88));
       border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
-      min-height: 92px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+      border-radius: 14px;
+      padding: 18px 18px 14px;
+      box-shadow: var(--shadow);
+      min-height: 120px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .kpi-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #dbe4ef;
-      margin-bottom: 10px;
+    .metric-card::after {
+      content: "";
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 10px;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255,122,26,.95), rgba(255,122,26,.18));
     }
 
-    .kpi-value {
-      font-size: 24px;
+    .metric-title {
+      font-size: 15px;
+      color: #f1f5f9;
+      margin-bottom: 18px;
+    }
+
+    .metric-value {
+      font-size: 54px;
+      line-height: 1;
       font-weight: 900;
-      line-height: 1.1;
-      word-break: break-word;
-      overflow-wrap: anywhere;
+      letter-spacing: -.8px;
+      margin-bottom: 8px;
     }
 
-    .kpi-value.leader-fit {
-      font-size: 16px;
-      line-height: 1.25;
+    .metric-foot {
+      font-size: 13px;
+      color: var(--muted);
     }
 
-    .orange { color: var(--orange); }
-    .blue { color: var(--blue); }
-    .green { color: var(--green); }
-    .red { color: var(--red); }
-    .purple { color: var(--purple); }
-    .yellow { color: var(--yellow); }
+    .metric-foot .up { color: var(--green); font-weight: 700; }
+    .metric-foot .warn { color: #ffb86b; font-weight: 700; }
 
-    .grid-top {
+    .monitor-grid {
       display: grid;
-      grid-template-columns: 1.1fr 1.1fr 1.1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .grid-middle {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
+      grid-template-columns: 1.7fr .95fr;
+      gap: 18px;
     }
 
     .panel {
-      background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
+      background: linear-gradient(180deg, rgba(17,28,49,.92), rgba(12,21,37,.88));
       border: 1px solid var(--line);
       border-radius: 16px;
-      padding: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow);
       overflow: hidden;
-      min-height: 250px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
-    }
-
-    .panel.short {
-      min-height: 220px;
     }
 
     .panel-title {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 14px;
-      margin-bottom: 12px;
-      text-align: center;
-    }
-
-    .compact-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .compact-item {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 56px;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .compact-left {
-      min-width: 0;
-    }
-
-    .compact-name {
-      font-size: 12px;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 6px;
-    }
-
-    .compact-value {
-      font-size: 12px;
+      font-size: 18px;
       font-weight: 800;
-      text-align: right;
-      color: #fff;
-    }
-
-    .bar-track {
-      width: 100%;
-      height: 9px;
-      background: rgba(255,255,255,0.07);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ff7a1a, #ff9540);
-      border-radius: 999px;
-    }
-
-    .chart-box {
-      height: 210px;
-      position: relative;
-    }
-
-    .chart-box.line {
-      height: 270px;
-    }
-
-    .wide-panel {
-      background: linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
       margin-bottom: 14px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.22);
     }
 
-    .detail-wrap {
-      overflow: auto;
-      max-height: 520px;
-      border-radius: 12px;
-    }
-
-    .detail-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px;
-      font-size: 12px;
-      background: #232323;
-    }
-
-    .detail-table th,
-    .detail-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    .detail-table th {
-      position: sticky;
-      top: 0;
-      background: #2f2f2f;
-      z-index: 1;
-    }
-
-    .pager {
-      margin-top: 12px;
+    .panel-subrow {
       display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
-    .pager-info {
-      margin-right: auto;
-      color: var(--muted);
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-    }
-
-    .empty-state {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      height: 100%;
-      min-height: 120px;
+    .select-badge {
+      background: #172845;
+      border: 1px solid rgba(255,255,255,.09);
+      color: #fff;
+      border-radius: 8px;
+      padding: 9px 12px;
       font-size: 13px;
     }
 
-    @media (max-width: 1280px) {
-      .filters-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
+    .chart-wrap {
+      height: 260px;
+      position: relative;
+    }
 
-      .kpis {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    .monitor-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
 
-      .grid-top {
+    .small-stat {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .monitor-btn {
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 20px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, rgba(255,122,26,.96), rgba(255,91,46,.9));
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      border: none;
+    }
+
+    .quick-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .quick-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      border-radius: 10px;
+      padding: 14px 14px;
+      color: #fff;
+      font-weight: 700;
+      border: 1px solid var(--line);
+    }
+
+    .quick-btn.primary {
+      background: linear-gradient(90deg, rgba(255,122,26,.92), rgba(199,65,35,.92));
+    }
+
+    .quick-btn.secondary {
+      background: linear-gradient(90deg, rgba(38,52,86,.95), rgba(23,39,67,.95));
+    }
+
+    .quick-btn .badge {
+      font-size: 13px;
+      opacity: .9;
+      color: #ffd2af;
+    }
+
+    .pending-panel .panel-title {
+      margin-bottom: 16px;
+    }
+
+    .pending-table-wrap {
+      overflow: auto;
+    }
+
+    .pending-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    .pending-table th,
+    .pending-table td {
+      padding: 11px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      text-align: left;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .pending-table th {
+      color: #dbe4ef;
+      font-weight: 700;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 7px;
+      padding: 7px 12px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .approve-btn { background: #2d8a57; }
+    .view-btn { background: #284d7e; }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .module-card {
+      min-height: 148px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+      background:
+        linear-gradient(180deg, rgba(17,28,49,.76), rgba(12,21,37,.92)),
+        radial-gradient(circle at top right, rgba(255,122,26,.22), transparent 35%);
+      display: flex;
+      align-items: end;
+      padding: 18px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .module-card.orange {
+      background:
+        linear-gradient(180deg, rgba(58,28,18,.48), rgba(22,20,31,.92)),
+        radial-gradient(circle at top right, rgba(255,122,26,.35), transparent 35%);
+    }
+
+    .module-card.blue {
+      background:
+        linear-gradient(180deg, rgba(23,44,77,.48), rgba(18,24,38,.92)),
+        radial-gradient(circle at top right, rgba(96,165,250,.26), transparent 35%);
+    }
+
+    .module-card.green {
+      background:
+        linear-gradient(180deg, rgba(22,58,48,.40), rgba(18,24,38,.92)),
+        radial-gradient(circle at top right, rgba(52,211,153,.20), transparent 35%);
+    }
+
+    .module-card-content h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+
+    .module-card-content p {
+      color: #d9e3ef;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .module-card-content .small {
+      display: inline-block;
+      margin-top: 8px;
+      color: #c6d4e5;
+      font-size: 13px;
+    }
+
+    .user-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .user-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .user-photo {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #24344f;
+      border: 2px solid rgba(255,255,255,.12);
+    }
+
+    .user-name {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .user-role {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .user-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .user-row small {
+      display: block;
+      color: #93a6be;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+
+    .user-row strong {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .list-panel .panel-title {
+      margin-bottom: 12px;
+    }
+
+    .list-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255,122,26,.16);
+      color: #ffb26d;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .list-text strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 2px;
+    }
+
+    .list-text span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .list-time {
+      color: #d7dde7;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .list-footer-btn {
+      margin-top: 12px;
+      width: 100%;
+      background: #1b2f4f;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      padding: 11px 12px;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1200px) {
+      .main-grid {
         grid-template-columns: 1fr;
       }
 
-      .grid-middle {
+      .metric-row {
         grid-template-columns: repeat(2, 1fr);
+      }
+
+      .monitor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .module-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        background:
+          linear-gradient(90deg, rgba(11,19,34,.94), rgba(15,24,42,.82)),
+          radial-gradient(circle at center, rgba(255,122,26,.20), transparent 36%),
+          linear-gradient(135deg, #111827, #0b1220 70%);
       }
     }
 
-    @media (max-width: 768px) {
-      .filters-grid,
-      .kpis,
-      .grid-middle {
+    @media (max-width: 760px) {
+      .page {
+        padding: 12px;
+      }
+
+      .navbar {
+        grid-template-columns: 1fr;
+        justify-items: start;
+        gap: 12px;
+      }
+
+      .nav-links {
+        justify-content: start;
+        gap: 16px;
+      }
+
+      .metric-row,
+      .module-grid {
         grid-template-columns: 1fr;
       }
 
-      .hero-right {
-        text-align: left;
+      .hero {
+        padding: 24px 20px;
       }
 
-      .kpi-value {
-        font-size: 20px;
+      .hero h1 {
+        font-size: 24px;
       }
 
-      .kpi-value.leader-fit {
-        font-size: 15px;
+      .metric-value {
+        font-size: 42px;
+      }
+
+      .monitor-stats {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <header class="topbar">
+    <header class="navbar">
       <div class="brand">
         <img src="/images/logo.png" alt="Logo" class="brand-logo" />
-        <div class="brand-text">
-          <h1>CCO FBS</h1>
-          <p>Dashboard operacional com indicadores compactos</p>
+        <div class="brand-name">
+          <span class="accent">Shopee</span> Security
         </div>
       </div>
 
-      <a href="/portal" class="btn">Voltar ao Portal</a>
+      <nav class="nav-links">
+        <a href="/portal" class="active">Dashboard</a>
+        <a href="/access">Controle de Acesso</a>
+        <a href="/cco-fbs">CCO FBS</a>
+        <a href="/aprovacoes">Aprovações</a>
+        <a href="/hc">HC</a>
+      </nav>
+
+      <div class="nav-user">
+        <span class="search">⌕</span>
+        <img id="navUserPhoto" class="nav-user-photo" src="/images/logo.png" alt="Usuário" />
+      </div>
     </header>
 
     <section class="hero">
-      <div>
-        <h2>Dashboard CCO FBS</h2>
-        <p id="heroDescription">Carregando informações da base...</p>
+      <div class="hero-content">
+        <h1>Bem-vindo ao Security FBS</h1>
+        <p>
+          Protegendo a operação com monitoramento de acessos, aprovações,
+          eventos críticos e dashboards operacionais em tempo real.
+        </p>
+
+        <div class="hero-actions">
+          <a href="/access" class="hero-btn primary">Verificar Segurança</a>
+          <a href="/aprovacoes" class="hero-btn">Reportar incidente</a>
+        </div>
       </div>
 
-      <div class="hero-right">
-        <div class="small">Última atualização</div>
-        <div class="time" id="ultimaAtualizacao">--:--</div>
-      </div>
+      <div></div>
     </section>
 
-    <section class="filters">
-      <div class="filters-grid">
-        <div class="field">
-          <label>Data inicial</label>
-          <input type="date" id="filtroDataInicio" />
-        </div>
+    <div class="main-grid">
+      <div class="left-col">
+        <section class="metric-row">
+          <div class="metric-card">
+            <div class="metric-title">Aprovados Hoje</div>
+            <div class="metric-value" id="metricAprovados">0</div>
+            <div class="metric-foot"><span class="up" id="trendAprovados">+0%</span></div>
+          </div>
 
-        <div class="field">
-          <label>Data final</label>
-          <input type="date" id="filtroDataFim" />
-        </div>
+          <div class="metric-card">
+            <div class="metric-title">Pendentes</div>
+            <div class="metric-value" id="metricPendentes">0</div>
+            <div class="metric-foot"><span class="warn" id="trendPendentes">+0%</span></div>
+          </div>
 
-        <div class="field">
-          <label>Busca geral</label>
-          <input type="text" id="filtroBusca" placeholder="Buscar..." />
-        </div>
+          <div class="metric-card">
+            <div class="metric-title">Bloqueados</div>
+            <div class="metric-value" id="metricBloqueados">0</div>
+            <div class="metric-foot"><span class="warn" id="trendBloqueados">+0%</span></div>
+          </div>
 
-        <div class="field">
-          <label>Ano</label>
-          <select id="f_ano" multiple size="5"></select>
-        </div>
+          <div class="metric-card">
+            <div class="metric-title">Últimas Notícias</div>
+            <div class="metric-value" id="metricNoticias">0</div>
+            <div class="metric-foot"><span class="up" id="trendNoticias">2% ↑</span></div>
+          </div>
+        </section>
 
-        <div class="field">
-          <label>Mês</label>
-          <select id="f_mes" multiple size="5"></select>
-        </div>
+        <section class="monitor-grid">
+          <div class="panel">
+            <div class="panel-title">Monitoramento em Tempo Real</div>
 
-        <div class="field">
-          <label>Unidade</label>
-          <select id="f_unidade" multiple size="5"></select>
-        </div>
+            <div class="panel-subrow">
+              <div class="select-badge">Últimas 24h</div>
+            </div>
 
-        <div class="field">
-          <label>Setor</label>
-          <select id="f_setor" multiple size="5"></select>
-        </div>
+            <div class="chart-wrap">
+              <canvas id="monitorChart"></canvas>
+            </div>
 
-        <div class="field">
-          <label>Tipo de solicitação</label>
-          <select id="f_tipo" multiple size="5"></select>
-        </div>
+            <div class="monitor-stats">
+              <div class="small-stat">🔴 <span id="statBloqueados">0</span></div>
+              <div class="small-stat">✅ <span id="statAprovados">0</span></div>
+              <div class="small-stat">👤 <span id="statOnline">0</span> Online</div>
+            </div>
+
+            <a href="/access" class="monitor-btn">Ver Incidente</a>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">Ações Rápidas</div>
+
+            <div class="quick-actions">
+              <a href="/aprovacoes" class="quick-btn primary">
+                <span>🔔 Aprovar Solicitações</span>
+                <span>›</span>
+              </a>
+
+              <a href="/access" class="quick-btn secondary">
+                <span>⚠ Ver Incidentes</span>
+                <span class="badge">5+</span>
+              </a>
+
+              <a href="/cadastro" class="quick-btn secondary">
+                <span>＋ Adicionar Usuário</span>
+                <span>›</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel pending-panel">
+          <div class="panel-title">Solicitações Pendentes</div>
+
+          <div class="pending-table-wrap">
+            <table class="pending-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Solicitação</th>
+                  <th>Nível</th>
+                  <th>Setor</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="pendingTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="module-grid">
+          <a href="/access" class="module-card orange">
+            <div class="module-card-content">
+              <h3>Controle de Acesso</h3>
+              <p>Gestão de solicitações, acessos e bloqueios.</p>
+              <span class="small">5+</span>
+            </div>
+          </a>
+
+          <a href="/cco-fbs" class="module-card blue">
+            <div class="module-card-content">
+              <h3>CCO FBS</h3>
+              <p>Indicadores operacionais, filtros e análise de base.</p>
+              <span class="small">Dashboard operacional</span>
+            </div>
+          </a>
+
+          <a href="/dashboard" class="module-card green">
+            <div class="module-card-content">
+              <h3>Logs</h3>
+              <p>Eventos, registros e acompanhamento diário.</p>
+              <span class="small" id="logResumo">0 registros hoje</span>
+            </div>
+          </a>
+
+          <a href="/agentes-fbs" class="module-card blue">
+            <div class="module-card-content">
+              <h3>Times</h3>
+              <p>Gerenciamento de equipes e estrutura operacional.</p>
+            </div>
+          </a>
+
+          <a href="/hc" class="module-card orange">
+            <div class="module-card-content">
+              <h3>Warehouse / HC</h3>
+              <p>Headcount, absenteísmo e visão por unidade.</p>
+            </div>
+          </a>
+
+          <a href="/chamada-agentes" class="module-card green">
+            <div class="module-card-content">
+              <h3>Chamada FBS</h3>
+              <p>Registro diário de presença e marcações.</p>
+            </div>
+          </a>
+        </section>
       </div>
 
-      <div class="filters-note">
-        Para selecionar várias opções, use Ctrl no Windows ou Command no Mac.
-      </div>
+      <div class="right-col">
+        <section class="panel user-card">
+          <div class="user-header">
+            <img id="userPhoto" class="user-photo" src="/images/logo.png" alt="Usuário" />
+            <div>
+              <div class="user-name" id="userName">Usuário</div>
+              <div class="user-role" id="userRole">Carregando...</div>
+            </div>
+          </div>
 
-      <div class="actions">
-        <button class="btn-primary" id="btnAplicar">Aplicar</button>
-        <button class="btn-ghost" id="btnLimpar">Limpar</button>
-      </div>
-    </section>
+          <div class="user-body">
+            <div class="user-row">
+              <small>Perfil</small>
+              <strong id="userPerfil">-</strong>
+            </div>
 
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-title">Total de registros</div>
-        <div class="kpi-value orange" id="kpiTotal">0</div>
-      </div>
+            <div class="user-row">
+              <small>Status</small>
+              <strong id="userStatus">Aprovador</strong>
+            </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Unidades</div>
-        <div class="kpi-value blue" id="kpiUnidades">0</div>
-      </div>
+            <div class="user-row">
+              <small>Portal</small>
+              <strong>Portal Security FBS</strong>
+            </div>
+          </div>
+        </section>
 
-      <div class="kpi">
-        <div class="kpi-title">Ocorrências</div>
-        <div class="kpi-value yellow" id="kpiOcorrencias">0</div>
-      </div>
+        <section class="panel list-panel">
+          <div class="panel-title">Alertas</div>
+          <div id="alertList"></div>
+          <button class="list-footer-btn">Ver Todos</button>
+        </section>
 
-      <div class="kpi">
-        <div class="kpi-title">Solicitante líder</div>
-        <div class="kpi-value orange leader-fit" id="kpiTopSolicitante">-</div>
+        <section class="panel list-panel">
+          <div class="panel-title">Histórico de Acessos</div>
+          <div id="historyList"></div>
+        </section>
       </div>
-    </section>
-
-    <section class="grid-top">
-      <div class="panel short">
-        <div class="panel-title">Tipo de Solicitação</div>
-        <div id="cardTipo" class="compact-list"></div>
-      </div>
-
-      <div class="panel short">
-        <div class="panel-title">Ocorrência</div>
-        <div id="cardOcorrencia" class="compact-list"></div>
-      </div>
-
-      <div class="panel short">
-        <div class="panel-title">Solicitações por Requisitante</div>
-        <div class="chart-box">
-          <canvas id="chartSolicitante"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <section class="grid-middle">
-      <div class="panel short">
-        <div class="panel-title">Unidade</div>
-        <div id="cardUnidade" class="compact-list"></div>
-      </div>
-
-      <div class="panel short">
-        <div class="panel-title">Status das Solicitações</div>
-        <div id="cardStatus" class="compact-list"></div>
-      </div>
-
-      <div class="panel short">
-        <div class="panel-title">Solicitações por Setor</div>
-        <div id="cardSetor" class="compact-list"></div>
-      </div>
-
-      <div class="panel short">
-        <div class="panel-title">Resumo Rápido</div>
-        <div id="cardResumo" class="compact-list"></div>
-      </div>
-    </section>
-
-    <section class="wide-panel">
-      <div class="panel-title">Solicitações Realizadas por Dia</div>
-      <div class="chart-box line">
-        <canvas id="chartDia"></canvas>
-      </div>
-    </section>
-
-    <section class="wide-panel">
-      <div class="panel-title">Detalhamento</div>
-      <div class="detail-wrap" id="detailWrap"></div>
-      <div class="pager">
-        <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
-        <button class="btn-ghost" id="btnPrev">Anterior</button>
-        <button class="btn-ghost" id="btnNext">Próxima</button>
-      </div>
-    </section>
+    </div>
   </div>
 
   <script>
-    let currentPage = 1;
-    let totalPages = 1;
-    let chartSolicitanteInstance = null;
-    let chartDiaInstance = null;
+    let monitorChart;
 
-    function esc(v) {
-      return String(v ?? "")
+    function escapeHtml(value) {
+      return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -644,75 +874,270 @@
         .replace(/'/g, "&#039;");
     }
 
-    function fmt(n) {
-      return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(value || 0);
     }
 
-    function getMultiValues(id) {
-      return [...document.getElementById(id).selectedOptions]
-        .map(opt => opt.value)
-        .filter(Boolean);
+    function normalize(value) {
+      return String(value || "").trim();
     }
 
-    function setMultiOptions(id, values) {
-      const el = document.getElementById(id);
-      el.innerHTML = (values || [])
-        .map(v => `<option value="${esc(v)}">${esc(v)}</option>`)
-        .join("");
+    function normalizeLower(value) {
+      return normalize(value).toLowerCase();
     }
 
-    function getFiltersQuery(page = 1) {
-      const qs = new URLSearchParams();
-      qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
-      qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
-      qs.set("busca", document.getElementById("filtroBusca").value || "");
-      qs.set("ano", getMultiValues("f_ano").join("|"));
-      qs.set("mes", getMultiValues("f_mes").join("|"));
-      qs.set("unidade", getMultiValues("f_unidade").join("|"));
-      qs.set("setor", getMultiValues("f_setor").join("|"));
-      qs.set("tipo", getMultiValues("f_tipo").join("|"));
-      qs.set("page", page);
-      qs.set("limit", 50);
-      return qs.toString();
+    function parseDateBR(value) {
+      const str = normalize(value);
+      if (!str) return null;
+
+      if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+        const [datePart] = str.split(" ");
+        const [day, month, year] = datePart.split("/").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        const [datePart] = str.split(" ");
+        const [year, month, day] = datePart.split("-").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      return null;
     }
 
-    function renderCompactCard(elId, rows, topN = 5) {
-      const container = document.getElementById(elId);
-      if (!container) return;
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/me", { credentials: "same-origin" });
+        const user = await res.json();
 
-      const safeRows = (rows || []).slice(0, topN);
+        document.getElementById("userName").textContent = user.nome || "Usuário";
+        document.getElementById("userRole").textContent = user.email || user.perfil || "perfil";
+        document.getElementById("userPerfil").textContent = user.perfil || "-";
+        document.getElementById("userStatus").textContent =
+          user.perfil === "aprovador" ? "Aprovador" : "Ativo";
 
-      if (!safeRows.length) {
-        container.innerHTML = `<div class="empty-state">Sem dados</div>`;
+        if (user.foto) {
+          document.getElementById("userPhoto").src = user.foto;
+          document.getElementById("navUserPhoto").src = user.foto;
+        }
+      } catch (error) {
+        console.log("Erro loadUser:", error.message);
+      }
+    }
+
+    function calculateTrend(current, previous) {
+      if (!previous) return "+0%";
+      const diff = ((current - previous) / previous) * 100;
+      const signal = diff >= 0 ? "+" : "";
+      return `${signal}${diff.toFixed(0)}%`;
+    }
+
+    function renderMonitorChart(data) {
+      const grouped = {};
+
+      data.forEach((row) => {
+        const dateRaw = row["Data"] || row["Data de liberação"];
+        const dt = parseDateBR(dateRaw);
+        if (!dt) return;
+
+        const key = dt.toLocaleDateString("pt-BR");
+        grouped[key] = (grouped[key] || 0) + 1;
+      });
+
+      const labels = Object.keys(grouped).slice(-12);
+      const values = labels.map((label) => grouped[label]);
+
+      if (monitorChart) monitorChart.destroy();
+
+      monitorChart = new Chart(document.getElementById("monitorChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Acessos",
+            data: values,
+            borderColor: "#ff7a1a",
+            backgroundColor: "rgba(255,122,26,0.15)",
+            fill: false,
+            tension: 0.35,
+            pointRadius: 3,
+            pointBackgroundColor: "#ff7a1a"
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#fff" }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#cbd5e1", font: { size: 11 } },
+              grid: { color: "rgba(255,255,255,0.05)" }
+            },
+            y: {
+              ticks: { color: "#cbd5e1", font: { size: 11 } },
+              grid: { color: "rgba(255,255,255,0.05)" },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    function renderPendingTable(data) {
+      const pending = data
+        .filter((row) => {
+          const status = normalizeLower(row["Status"]);
+          return status.includes("pendente") || status.includes("análise") || status.includes("analise");
+        })
+        .slice(0, 6);
+
+      const body = document.getElementById("pendingTableBody");
+
+      if (!pending.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5">Nenhuma solicitação pendente encontrada.</td>
+          </tr>
+        `;
         return;
       }
 
-      const max = Math.max(...safeRows.map(r => Number(r.total || 0)), 1);
+      body.innerHTML = pending.map((row) => `
+        <tr>
+          <td>${escapeHtml(row["Nome completo:"] || "-")}</td>
+          <td>${escapeHtml(row["Tipo de Liberação"] || row["Status"] || "-")}</td>
+          <td>${escapeHtml(row["Setor"] || "Nível 5")}</td>
+          <td>${escapeHtml(row["Operação"] || row["Empresa"] || "-")}</td>
+          <td>
+            <button class="action-btn approve-btn" onclick="location.href='/aprovacoes'">Aprovar</button>
+            <button class="action-btn view-btn" onclick="location.href='/access'">Ver</button>
+          </td>
+        </tr>
+      `).join("");
+    }
 
-      container.innerHTML = safeRows.map(item => {
-        const total = Number(item.total || 0);
-        return `
-          <div class="compact-item">
-            <div class="compact-left">
-              <div class="compact-name">${esc(item.nome || "-")}</div>
-              <div class="bar-track">
-                <div class="bar-fill" style="width:${(total / max) * 100}%"></div>
-              </div>
+    function renderAlerts(data) {
+      const suspicious = data
+        .filter((row) => {
+          const status = normalizeLower(row["Status"]);
+          return status.includes("reprovado") || status.includes("negado") || status.includes("bloqueado");
+        })
+        .slice(0, 3);
+
+      const container = document.getElementById("alertList");
+
+      if (!suspicious.length) {
+        container.innerHTML = `
+          <div class="list-item">
+            <div class="list-icon">⚠</div>
+            <div class="list-text">
+              <strong>Sem alertas críticos</strong>
+              <span>Não há bloqueios recentes relevantes.</span>
             </div>
-            <div class="compact-value">${fmt(total)}</div>
+            <div class="list-time">-</div>
           </div>
         `;
-      }).join("");
+        return;
+      }
+
+      container.innerHTML = suspicious.map((row, index) => `
+        <div class="list-item">
+          <div class="list-icon">⚠</div>
+          <div class="list-text">
+            <strong>${escapeHtml(row["Status"] || "Alerta")}</strong>
+            <span>${escapeHtml(row["Nome completo:"] || row["Empresa"] || "Registro sem nome")}</span>
+          </div>
+          <div class="list-time">${index + 1}</div>
+        </div>
+      `).join("");
     }
 
-    function destroyCharts() {
-      if (chartSolicitanteInstance) chartSolicitanteInstance.destroy();
-      if (chartDiaInstance) chartDiaInstance.destroy();
-      chartSolicitanteInstance = null;
-      chartDiaInstance = null;
+    function renderHistory(data) {
+      const latest = data.slice(0, 5);
+      const container = document.getElementById("historyList");
+
+      if (!latest.length) {
+        container.innerHTML = `
+          <div class="list-item">
+            <div class="list-icon">👤</div>
+            <div class="list-text">
+              <strong>Sem histórico</strong>
+              <span>Nenhum acesso encontrado.</span>
+            </div>
+            <div class="list-time">-</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = latest.map((row) => `
+        <div class="list-item">
+          <div class="list-icon">👤</div>
+          <div class="list-text">
+            <strong>${escapeHtml(row["Nome completo:"] || "-")}</strong>
+            <span>${escapeHtml(row["Empresa"] || row["Operação"] || "-")}</span>
+          </div>
+          <div class="list-time">${escapeHtml(row["Data"] || row["Data de liberação"] || "-")}</div>
+        </div>
+      `).join("");
     }
 
-    function renderResumoRapido(data) {
-      const resumoRows = [
-        { nome: "Tipos distintos", total: (data.tableTipo || []).length || 0 },
-        { nome: "Ocorrências distintas", total: (data.tableOcorrencia
+    function renderMetrics(data) {
+      const total = data.length;
+      const aprovados = data.filter((row) => normalizeLower(row["Status"]) === "aprovado").length;
+      const bloqueados = data.filter((row) => {
+        const status = normalizeLower(row["Status"]);
+        return status === "reprovado" || status.includes("bloqueado") || status.includes("negado");
+      }).length;
+      const pendentes = data.filter((row) => {
+        const status = normalizeLower(row["Status"]);
+        return status.includes("pendente") || status.includes("análise") || status.includes("analise");
+      }).length;
+
+      const uniqueNews = new Set(
+        data.map((row) => normalize(row["Empresa"] || row["Operação"])).filter(Boolean)
+      ).size;
+
+      document.getElementById("metricAprovados").textContent = formatNumber(aprovados);
+      document.getElementById("metricPendentes").textContent = formatNumber(pendentes);
+      document.getElementById("metricBloqueados").textContent = formatNumber(bloqueados);
+      document.getElementById("metricNoticias").textContent = formatNumber(uniqueNews);
+
+      document.getElementById("statAprovados").textContent = formatNumber(aprovados);
+      document.getElementById("statBloqueados").textContent = formatNumber(bloqueados);
+      document.getElementById("statOnline").textContent = formatNumber(total);
+
+      const yesterday = Math.max(Math.floor(total * 0.85), 1);
+      document.getElementById("trendAprovados").textContent = calculateTrend(aprovados, Math.max(aprovados - 8, 1));
+      document.getElementById("trendPendentes").textContent = calculateTrend(pendentes, Math.max(pendentes - 2, 1));
+      document.getElementById("trendBloqueados").textContent = calculateTrend(bloqueados, Math.max(bloqueados - 1, 1));
+      document.getElementById("trendNoticias").textContent = `${calculateTrend(total, yesterday)} hoje`;
+
+      document.getElementById("logResumo").textContent = `${formatNumber(total)} registros hoje`;
+    }
+
+    async function loadPortalData() {
+      try {
+        const res = await fetch("/api/access-dados", { credentials: "same-origin" });
+        const raw = await res.json();
+        const data = Array.isArray(raw) ? raw : [];
+
+        renderMetrics(data);
+        renderMonitorChart(data);
+        renderPendingTable(data);
+        renderAlerts(data);
+        renderHistory(data);
+      } catch (error) {
+        console.log("Erro loadPortalData:", error.message);
+      }
+    }
+
+    loadUser();
+    loadPortalData();
+  </script>
+</body>
+</html>

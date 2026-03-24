@@ -5,42 +5,451 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CCO FBS</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="/cco-fbs.css" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    :root {
+      --bg: #041325;
+      --card: #142744;
+      --card-2: #11233c;
+      --line: rgba(255,255,255,0.08);
+      --text: #ffffff;
+      --muted: #c7d2e0;
+      --orange: #ff7a1a;
+      --blue: #58a6ff;
+      --green: #22c55e;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --yellow: #f59e0b;
+    }
+
+    body {
+      background: linear-gradient(180deg, #03101f 0%, #041325 100%);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: #0f2138;
+      padding: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .brand-text h1 {
+      color: var(--orange);
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 2px;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .btn {
+      background: #163154;
+      border: 1px solid var(--line);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero h2 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 780px;
+    }
+
+    .hero-right {
+      text-align: right;
+      min-width: 150px;
+    }
+
+    .hero-right .small {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .hero-right .time {
+      color: var(--orange);
+      font-weight: 900;
+      font-size: 22px;
+    }
+
+    .filters {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: 150px 150px minmax(220px, 1fr) repeat(5, minmax(140px, 1fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+      color: #dfe8f4;
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 38px;
+      background: #0a1b32;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: #fff;
+      padding: 0 10px;
+      outline: none;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      height: 38px;
+      border: none;
+      border-radius: 10px;
+      padding: 0 14px;
+      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-ghost {
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0 14px;
+      background: #0d213b;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .kpi {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 92px;
+    }
+
+    .kpi-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #dbe4ef;
+      margin-bottom: 10px;
+    }
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .orange { color: var(--orange); }
+    .blue { color: var(--blue); }
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+    .purple { color: var(--purple); }
+    .yellow { color: var(--yellow); }
+
+    .grid-top {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr 1.1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .grid-middle {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panel {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      overflow: hidden;
+      min-height: 250px;
+    }
+
+    .panel.short {
+      min-height: 220px;
+    }
+
+    .panel-title {
+      color: var(--orange);
+      font-weight: 900;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .compact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .compact-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 56px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .compact-left {
+      min-width: 0;
+    }
+
+    .compact-name {
+      font-size: 12px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+
+    .compact-value {
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+      color: #fff;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 9px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff7a1a, #ff9540);
+      border-radius: 999px;
+    }
+
+    .chart-box {
+      height: 210px;
+      position: relative;
+    }
+
+    .chart-box.line {
+      height: 270px;
+    }
+
+    .wide-panel {
+      background: linear-gradient(135deg, #1a2f50, #152844);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .detail-wrap {
+      overflow: auto;
+      max-height: 520px;
+      border-radius: 12px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      font-size: 12px;
+    }
+
+    .detail-table th,
+    .detail-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .detail-table th {
+      position: sticky;
+      top: 0;
+      background: #10233f;
+      z-index: 1;
+    }
+
+    .pager {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pager-info {
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+    }
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      height: 100%;
+      min-height: 120px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1280px) {
+      .filters-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid-top {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-middle {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .filters-grid,
+      .kpis,
+      .grid-middle {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-right {
+        text-align: left;
+      }
+
+      .kpi-value {
+        font-size: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="page-shell">
+  <div class="page">
     <header class="topbar">
       <div class="brand">
-        <div class="brand-logo-wrap">
-          <img src="/images/logo.png" alt="Logo Security" class="brand-logo" />
-        </div>
+        <img src="/images/logo.png" alt="Logo" class="brand-logo" />
         <div class="brand-text">
           <h1>CCO FBS</h1>
           <p>Dashboard operacional com indicadores compactos</p>
         </div>
       </div>
 
-      <div class="top-actions">
-        <a href="/portal" class="btn-secondary">Voltar ao Portal</a>
-      </div>
+      <a href="/portal" class="btn">Voltar ao Portal</a>
     </header>
 
-    <section class="hero-card">
+    <section class="hero">
       <div>
         <h2>Dashboard CCO FBS</h2>
-        <p>
-          Aba utilizada: Solicitações de imagens | Layout anterior ajustado com filtros corretos,
-          multiseleção e foco nos principais indicadores.
-        </p>
+        <p id="heroDescription">Carregando informações da base...</p>
       </div>
 
       <div class="hero-right">
-        <div>Última atualização</div>
-        <div id="ultimaAtualizacao" class="hero-time">--:--</div>
+        <div class="small">Última atualização</div>
+        <div class="time" id="ultimaAtualizacao">--:--</div>
       </div>
     </section>
 
-    <section class="filters-card">
+    <section class="filters">
       <div class="filters-grid">
         <div class="field">
           <label>Data inicial</label>
@@ -52,125 +461,130 @@
           <input type="date" id="filtroDataFim" />
         </div>
 
-        <div class="field search-field">
+        <div class="field">
           <label>Busca geral</label>
           <input type="text" id="filtroBusca" placeholder="Buscar..." />
         </div>
 
         <div class="field">
           <label>Ano</label>
-          <select id="filtroAno" multiple size="5"></select>
+          <select id="f_ano"><option value="">Todos</option></select>
         </div>
 
         <div class="field">
           <label>Mês</label>
-          <select id="filtroMes" multiple size="5"></select>
+          <select id="f_mes"><option value="">Todos</option></select>
         </div>
 
         <div class="field">
           <label>Unidade</label>
-          <select id="filtroUnidade" multiple size="5"></select>
+          <select id="f_unidade"><option value="">Todas</option></select>
         </div>
 
         <div class="field">
           <label>Setor</label>
-          <select id="filtroSetor" multiple size="5"></select>
+          <select id="f_setor"><option value="">Todos</option></select>
         </div>
 
         <div class="field">
           <label>Tipo de solicitação</label>
-          <select id="filtroTipo" multiple size="5"></select>
+          <select id="f_tipo"><option value="">Todos</option></select>
         </div>
       </div>
 
-      <div class="filter-hint">
-        Para selecionar várias opções, use Ctrl no Windows ou Command no Mac.
-      </div>
-
-      <div class="filters-actions">
+      <div class="actions">
         <button class="btn-primary" id="btnAplicar">Aplicar</button>
-        <button class="btn-secondary" id="btnLimpar">Limpar</button>
+        <button class="btn-ghost" id="btnLimpar">Limpar</button>
       </div>
     </section>
 
-    <section class="cards-grid cards-grid-4">
-      <div class="info-card">
-        <div class="info-label">Total de registros</div>
-        <div class="info-value orange" id="totalRegistros">0</div>
+    <section class="kpis">
+      <div class="kpi">
+        <div class="kpi-title">Total de registros</div>
+        <div class="kpi-value orange" id="kpiTotal">0</div>
       </div>
 
-      <div class="info-card">
-        <div class="info-label">Unidades</div>
-        <div class="info-value blue" id="totalUnidades">0</div>
+      <div class="kpi">
+        <div class="kpi-title">Unidades</div>
+        <div class="kpi-value blue" id="kpiUnidades">0</div>
       </div>
 
-      <div class="info-card">
-        <div class="info-label">Ocorrências</div>
-        <div class="info-value orange" id="totalOcorrencias">0</div>
+      <div class="kpi">
+        <div class="kpi-title">Tipos</div>
+        <div class="kpi-value purple" id="kpiTipos">0</div>
       </div>
 
-      <div class="info-card">
-        <div class="info-label">Solicitante líder</div>
-        <div class="info-value orange small-fit" id="solicitanteLider">-</div>
+      <div class="kpi">
+        <div class="kpi-title">Ocorrências</div>
+        <div class="kpi-value yellow" id="kpiOcorrencias">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Status</div>
+        <div class="kpi-value green" id="kpiStatusCount">0</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Solicitante líder</div>
+        <div class="kpi-value orange" id="kpiTopSolicitante">-</div>
       </div>
     </section>
 
-    <section class="charts-grid three-cols">
-      <div class="panel-card">
+    <section class="grid-top">
+      <div class="panel short">
         <div class="panel-title">Tipo de Solicitação</div>
         <div id="cardTipo" class="compact-list"></div>
       </div>
 
-      <div class="panel-card">
+      <div class="panel short">
         <div class="panel-title">Ocorrência</div>
         <div id="cardOcorrencia" class="compact-list"></div>
       </div>
 
-      <div class="panel-card">
+      <div class="panel short">
         <div class="panel-title">Solicitações por Requisitante</div>
-        <div class="chart-wrap">
+        <div class="chart-box">
           <canvas id="chartSolicitante"></canvas>
         </div>
       </div>
     </section>
 
-    <section class="charts-grid four-cols">
-      <div class="panel-card">
+    <section class="grid-middle">
+      <div class="panel short">
         <div class="panel-title">Unidade</div>
         <div id="cardUnidade" class="compact-list"></div>
       </div>
 
-      <div class="panel-card">
+      <div class="panel short">
         <div class="panel-title">Status das Solicitações</div>
         <div id="cardStatus" class="compact-list"></div>
       </div>
 
-      <div class="panel-card">
+      <div class="panel short">
         <div class="panel-title">Solicitações por Setor</div>
         <div id="cardSetor" class="compact-list"></div>
       </div>
 
-      <div class="panel-card">
+      <div class="panel short">
         <div class="panel-title">Resumo Rápido</div>
-        <div class="mini-summary" id="resumoRapido"></div>
+        <div id="cardResumo" class="compact-list"></div>
       </div>
     </section>
 
-    <section class="panel-card">
+    <section class="wide-panel">
       <div class="panel-title">Solicitações Realizadas por Dia</div>
-      <div class="chart-wrap large-chart">
+      <div class="chart-box line">
         <canvas id="chartDia"></canvas>
       </div>
     </section>
 
-    <section class="panel-card">
+    <section class="wide-panel">
       <div class="panel-title">Detalhamento</div>
-      <div class="table-wrap" id="tableWrap"></div>
-
+      <div class="detail-wrap" id="detailWrap"></div>
       <div class="pager">
         <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
-        <button class="btn-secondary" id="btnPrev">Anterior</button>
-        <button class="btn-secondary" id="btnNext">Próxima</button>
+        <button class="btn-ghost" id="btnPrev">Anterior</button>
+        <button class="btn-ghost" id="btnNext">Próxima</button>
       </div>
     </section>
   </div>
@@ -178,12 +592,12 @@
   <script>
     let currentPage = 1;
     let totalPages = 1;
+    let chartSolicitanteInstance = null;
+    let chartDiaInstance = null;
+    let filterMap = {};
 
-    let chartSolicitante = null;
-    let chartDia = null;
-
-    function esc(value) {
-      return String(value ?? "")
+    function esc(v) {
+      return String(v ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -191,51 +605,55 @@
         .replace(/'/g, "&#039;");
     }
 
-    function fmt(value) {
-      return new Intl.NumberFormat("pt-BR").format(Number(value) || 0);
+    function fmt(n) {
+      return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
     }
 
-    function getMultiValues(id) {
-      return [...document.getElementById(id).selectedOptions]
-        .map((opt) => opt.value)
-        .filter(Boolean);
+    function normalizeText(v) {
+      return String(v || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
     }
 
-    function setMultiOptions(id, values) {
+    function fillSelect(id, values, firstLabel) {
       const el = document.getElementById(id);
-      el.innerHTML = (values || [])
-        .map((v) => `<option value="${esc(v)}">${esc(v)}</option>`)
-        .join("");
+      if (!el) return;
+      el.innerHTML = `<option value="">${firstLabel}</option>` +
+        (values || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
     }
 
-    function buildQuery(page = 1) {
-      const qs = new URLSearchParams();
+    function findFilterValues(filtros, terms) {
+      const found = (filtros || []).find(f => {
+        const key = normalizeText(f.key);
+        const label = normalizeText(f.label);
+        return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
+      });
+      return found?.values || [];
+    }
 
+    function getFiltersQuery(page = 1) {
+      const qs = new URLSearchParams();
       qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
       qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
       qs.set("busca", document.getElementById("filtroBusca").value || "");
-
-      qs.set("ano", getMultiValues("filtroAno").join("|"));
-      qs.set("mes", getMultiValues("filtroMes").join("|"));
-      qs.set("unidade", getMultiValues("filtroUnidade").join("|"));
-      qs.set("setor", getMultiValues("filtroSetor").join("|"));
-      qs.set("tipo", getMultiValues("filtroTipo").join("|"));
-
       qs.set("page", page);
       qs.set("limit", 50);
+
+      if (filterMap.ano) qs.set(`f_${filterMap.ano}`, document.getElementById("f_ano").value || "");
+      if (filterMap.mes) qs.set(`f_${filterMap.mes}`, document.getElementById("f_mes").value || "");
+      if (filterMap.unidade) qs.set(`f_${filterMap.unidade}`, document.getElementById("f_unidade").value || "");
+      if (filterMap.setor) qs.set(`f_${filterMap.setor}`, document.getElementById("f_setor").value || "");
+      if (filterMap.tipo) qs.set(`f_${filterMap.tipo}`, document.getElementById("f_tipo").value || "");
 
       return qs.toString();
     }
 
-    function destroyCharts() {
-      if (chartSolicitante) chartSolicitante.destroy();
-      if (chartDia) chartDia.destroy();
-      chartSolicitante = null;
-      chartDia = null;
-    }
-
-    function renderCompactCard(elId, rows, topN = 10) {
+    function renderCompactCard(elId, rows, topN = 5) {
       const container = document.getElementById(elId);
+      if (!container) return;
+
       const safeRows = (rows || []).slice(0, topN);
 
       if (!safeRows.length) {
@@ -243,11 +661,10 @@
         return;
       }
 
-      const max = Math.max(...safeRows.map((r) => Number(r.total || 0)), 1);
+      const max = Math.max(...safeRows.map(r => Number(r.total || 0)), 1);
 
-      container.innerHTML = safeRows.map((item) => {
+      container.innerHTML = safeRows.map(item => {
         const total = Number(item.total || 0);
-
         return `
           <div class="compact-item">
             <div class="compact-left">
@@ -262,85 +679,110 @@
       }).join("");
     }
 
-    function renderResumoRapido(data) {
-      const el = document.getElementById("resumoRapido");
-
-      const linhas = [
-        { label: "Tipos distintos", valor: (data.tableTipo || []).length },
-        { label: "Ocorrências distintas", valor: (data.tableOcorrencia || []).length },
-        { label: "Unidades distintas", valor: (data.tableUnidade || []).length },
-        { label: "Setores distintos", valor: (data.tableSetor || []).length },
-        { label: "Status distintos", valor: (data.tableStatus || []).length }
-      ];
-
-      const max = Math.max(...linhas.map((l) => l.valor), 1);
-
-      el.innerHTML = linhas.map((item) => `
-        <div class="compact-item">
-          <div class="compact-left">
-            <div class="compact-name">${esc(item.label)}</div>
-            <div class="bar-track">
-              <div class="bar-fill" style="width:${(item.valor / max) * 100}%"></div>
-            </div>
-          </div>
-          <div class="compact-value">${fmt(item.valor)}</div>
-        </div>
-      `).join("");
+    function destroyCharts() {
+      if (chartSolicitanteInstance) chartSolicitanteInstance.destroy();
+      if (chartDiaInstance) chartDiaInstance.destroy();
     }
 
-    async function carregarFiltros() {
-      const res = await fetch("/api/cco-fbs-filtros", {
-        credentials: "same-origin"
-      });
+    function getTopName(rows) {
+      return rows && rows.length ? rows[0].nome : "-";
+    }
 
+    function getDayOnlyLabels(labels) {
+      return (labels || []).map(label => {
+        const str = String(label || "").trim();
+        if (/^\d{2}$/.test(str)) return str;
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(8, 10);
+        const match = str.match(/(\d{1,2})(?!.*\d)/);
+        return match ? match[1].padStart(2, "0") : str;
+      });
+    }
+
+    async function loadFilters() {
+      const res = await fetch("/api/cco-fbs-filtros", { credentials: "same-origin" });
       const data = await res.json();
 
-      setMultiOptions("filtroAno", data.anos || []);
-      setMultiOptions("filtroMes", data.meses || []);
-      setMultiOptions("filtroUnidade", data.unidades || []);
-      setMultiOptions("filtroSetor", data.setores || []);
-      setMultiOptions("filtroTipo", data.tipos || []);
+      document.getElementById("heroDescription").textContent =
+        `Aba utilizada: ${data.sheetTitle || "N/A"} | Layout anterior com cards compactos e foco nos principais indicadores.`;
+
+      const filtros = data.filtros || [];
+
+      const anoFilter = filtros.find(f => normalizeText(f.label).includes("ano") || normalizeText(f.key).includes("ano"));
+      const mesFilter = filtros.find(f => normalizeText(f.label).includes("mes") || normalizeText(f.label).includes("mês") || normalizeText(f.key).includes("mes"));
+      const unidadeFilter = filtros.find(f => normalizeText(f.label).includes("unidade") || normalizeText(f.key).includes("unidade"));
+      const setorFilter = filtros.find(f => normalizeText(f.label).includes("setor") || normalizeText(f.key).includes("setor"));
+      const tipoFilter = filtros.find(f => normalizeText(f.label).includes("tipo") || normalizeText(f.key).includes("tipo"));
+
+      filterMap = {
+        ano: anoFilter?.key || null,
+        mes: mesFilter?.key || null,
+        unidade: unidadeFilter?.key || null,
+        setor: setorFilter?.key || null,
+        tipo: tipoFilter?.key || null
+      };
+
+      fillSelect("f_ano", anoFilter?.values || [], "Todos");
+      fillSelect("f_mes", mesFilter?.values || [], "Todos");
+      fillSelect("f_unidade", unidadeFilter?.values || [], "Todas");
+      fillSelect("f_setor", setorFilter?.values || [], "Todos");
+      fillSelect("f_tipo", tipoFilter?.values || [], "Todos");
     }
 
-    async function carregarResumo() {
-      const res = await fetch(`/api/cco-fbs-resumo?${buildQuery(currentPage)}`, {
+    async function loadResumo() {
+      const res = await fetch(`/api/cco-fbs-resumo?${getFiltersQuery(currentPage)}`, {
         credentials: "same-origin"
       });
+      const data = await res.json();
 
-      const resumo = await res.json();
-
-      document.getElementById("totalRegistros").textContent = fmt(resumo.total || 0);
-      document.getElementById("totalUnidades").textContent = fmt(resumo.totalUnidades || 0);
-      document.getElementById("totalOcorrencias").textContent = fmt(resumo.totalOcorrencias || 0);
-      document.getElementById("solicitanteLider").textContent = resumo.solicitanteLider || "-";
-      document.getElementById("ultimaAtualizacao").textContent = resumo.ultimaAtualizacao || "--:--";
+      document.getElementById("kpiTotal").textContent = fmt(data.total || 0);
+      document.getElementById("kpiUnidades").textContent = fmt(data.totalUnidades || 0);
+      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
     }
 
-    async function carregarGraficos() {
-      const res = await fetch(`/api/cco-fbs-graficos?${buildQuery(currentPage)}`, {
+    async function loadGraficos() {
+      const res = await fetch(`/api/cco-fbs-graficos?${getFiltersQuery(currentPage)}`, {
         credentials: "same-origin"
       });
-
       const data = await res.json();
 
       destroyCharts();
 
-      renderCompactCard("cardTipo", data.tableTipo || [], 6);
-      renderCompactCard("cardOcorrencia", data.tableOcorrencia || [], 6);
-      renderCompactCard("cardUnidade", data.tableUnidade || [], 6);
-      renderCompactCard("cardStatus", data.tableStatus || [], 6);
-      renderCompactCard("cardSetor", data.tableSetor || [], 6);
-      renderResumoRapido(data);
+      const tableTipo = data.tableTipo || [];
+      const tableOcorrencia = data.tableOcorrencia || [];
+      const tableUnidade = data.tableUnidade || [];
+      const tableSetor = data.tableSetor || [];
+      const tableStatus = data.tableStatus || [];
+      const chartSolicitante = data.chartSolicitante || { labels: [], values: [] };
 
-      chartSolicitante = new Chart(document.getElementById("chartSolicitante"), {
+      renderCompactCard("cardTipo", tableTipo, 5);
+      renderCompactCard("cardOcorrencia", tableOcorrencia, 5);
+      renderCompactCard("cardUnidade", tableUnidade, 5);
+      renderCompactCard("cardStatus", tableStatus, 5);
+      renderCompactCard("cardSetor", tableSetor, 5);
+
+      const resumoRows = [
+        { nome: "Tipos distintos", total: tableTipo.length || 0 },
+        { nome: "Ocorrências distintas", total: tableOcorrencia.length || 0 },
+        { nome: "Unidades distintas", total: tableUnidade.length || 0 },
+        { nome: "Setores distintos", total: tableSetor.length || 0 },
+        { nome: "Status distintos", total: tableStatus.length || 0 }
+      ];
+      renderCompactCard("cardResumo", resumoRows, 5);
+
+      document.getElementById("kpiTipos").textContent = fmt(tableTipo.length || 0);
+      document.getElementById("kpiOcorrencias").textContent = fmt(tableOcorrencia.length || 0);
+      document.getElementById("kpiStatusCount").textContent = fmt(tableStatus.length || 0);
+      document.getElementById("kpiTopSolicitante").textContent = chartSolicitante.labels?.[0] || "-";
+
+      chartSolicitanteInstance = new Chart(document.getElementById("chartSolicitante"), {
         type: "bar",
         data: {
-          labels: data.chartSolicitante?.labels || [],
+          labels: chartSolicitante.labels || [],
           datasets: [{
-            label: "Solicitações",
-            data: data.chartSolicitante?.values || [],
+            label: "Qtd",
+            data: chartSolicitante.values || [],
             backgroundColor: "#ff7a1a",
-            borderRadius: 8
+            borderRadius: 6
           }]
         },
         options: {
@@ -348,34 +790,32 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              display: false
-            }
+            legend: { display: false }
           },
           scales: {
             x: {
-              ticks: { color: "#d1d5db" },
-              grid: { color: "rgba(255,255,255,0.06)" },
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.05)" },
               beginAtZero: true
             },
             y: {
-              ticks: { color: "#d1d5db" },
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
               grid: { display: false }
             }
           }
         }
       });
 
-      chartDia = new Chart(document.getElementById("chartDia"), {
+      chartDiaInstance = new Chart(document.getElementById("chartDia"), {
         type: "line",
         data: {
-          labels: data.porDia?.labels || [],
+          labels: getDayOnlyLabels(data.porDia?.labels || []),
           datasets: [{
             label: "Solicitações",
             data: data.porDia?.values || [],
             borderColor: "#58a6ff",
-            backgroundColor: "rgba(88,166,255,0.12)",
-            fill: true,
+            backgroundColor: "rgba(88,166,255,0.15)",
+            fill: false,
             tension: 0.35,
             pointRadius: 3,
             pointBackgroundColor: "#58a6ff"
@@ -385,38 +825,33 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              labels: { color: "#fff" }
-            }
+            legend: { display: false }
           },
           scales: {
             x: {
-              ticks: { color: "#d1d5db" },
-              grid: { color: "rgba(255,255,255,0.04)" }
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { display: false }
             },
             y: {
-              beginAtZero: true,
-              ticks: { color: "#d1d5db" },
-              grid: { color: "rgba(255,255,255,0.06)" }
+              ticks: { color: "#cbd5e1", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.05)" },
+              beginAtZero: true
             }
           }
         }
       });
     }
 
-    async function carregarDetalhes(page = 1) {
-      currentPage = page;
-
-      const res = await fetch(`/api/cco-fbs-detalhes?${buildQuery(page)}`, {
+    async function loadDetalhes() {
+      const res = await fetch(`/api/cco-fbs-detalhes?${getFiltersQuery(currentPage)}`, {
         credentials: "same-origin"
       });
-
       const data = await res.json();
-      totalPages = data.totalPages || 1;
 
+      totalPages = data.totalPages || 1;
       document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
 
-      let html = `<table><thead><tr>`;
+      let html = `<table class="detail-table"><thead><tr>`;
       (data.headers || []).forEach((header) => {
         html += `<th>${esc(header)}</th>`;
       });
@@ -431,54 +866,45 @@
       });
 
       if (!(data.rows || []).length) {
-        html += `<tr><td colspan="${(data.headers || []).length || 1}" style="text-align:center;">Sem dados para os filtros aplicados.</td></tr>`;
+        html += `<tr><td colspan="${(data.headers || []).length || 1}" style="text-align:center; color:#c7d2e0;">Sem dados para os filtros aplicados.</td></tr>`;
       }
 
       html += `</tbody></table>`;
-
-      document.getElementById("tableWrap").innerHTML = html;
+      document.getElementById("detailWrap").innerHTML = html;
     }
 
-    async function carregarTudo(page = 1) {
+    async function loadAll(page = 1) {
       currentPage = page;
-      await carregarResumo();
-      await carregarGraficos();
-      await carregarDetalhes(page);
+      await loadResumo();
+      await loadGraficos();
+      await loadDetalhes();
     }
 
-    document.getElementById("btnAplicar").addEventListener("click", () => {
-      carregarTudo(1);
-    });
+    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
 
     document.getElementById("btnLimpar").addEventListener("click", () => {
       document.getElementById("filtroDataInicio").value = "";
       document.getElementById("filtroDataFim").value = "";
       document.getElementById("filtroBusca").value = "";
-
-      ["filtroAno", "filtroMes", "filtroUnidade", "filtroSetor", "filtroTipo"].forEach((id) => {
-        [...document.getElementById(id).options].forEach((opt) => {
-          opt.selected = false;
-        });
-      });
-
-      carregarTudo(1);
+      document.getElementById("f_ano").value = "";
+      document.getElementById("f_mes").value = "";
+      document.getElementById("f_unidade").value = "";
+      document.getElementById("f_setor").value = "";
+      document.getElementById("f_tipo").value = "";
+      loadAll(1);
     });
 
     document.getElementById("btnPrev").addEventListener("click", () => {
-      if (currentPage > 1) {
-        carregarDetalhes(currentPage - 1);
-      }
+      if (currentPage > 1) loadAll(currentPage - 1);
     });
 
     document.getElementById("btnNext").addEventListener("click", () => {
-      if (currentPage < totalPages) {
-        carregarDetalhes(currentPage + 1);
-      }
+      if (currentPage < totalPages) loadAll(currentPage + 1);
     });
 
     (async function init() {
-      await carregarFiltros();
-      await carregarTudo(1);
+      await loadFilters();
+      await loadAll(1);
     })();
   </script>
 </body>

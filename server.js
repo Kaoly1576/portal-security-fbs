@@ -424,65 +424,25 @@ app.post("/login", (req, res) => {
     return res.send("Informe e-mail e senha.");
   }
 
-  db.get("SELECT * FROM usuarios WHERE email = ?", [email], (err, user) => {
-  if (err) return done(err);
+  db.get("SELECT * FROM usuarios WHERE email = ?", [email], async (err, user) => {
+    if (err) return res.send("Erro no servidor.");
+    if (!user) return res.send("Usuário não encontrado.");
 
-  if (user) {
-    db.run(
-      `
-      UPDATE usuarios
-      SET nome = ?, foto = ?, google_id = ?, atualizado_em = CURRENT_TIMESTAMP
-      WHERE email = ?
-      `,
-      [nome, foto, profile.id || "", email],
-      (updErr) => {
-        if (updErr) return done(updErr);
-
-        db.get("SELECT * FROM usuarios WHERE email = ?", [email], (selErr, updatedUser) => {
-          if (selErr) return done(selErr);
-          return done(null, updatedUser);
-        });
-      }
-    );
-    return;
-  }
-
-  db.run(
-    `
-    INSERT INTO usuarios (
-      nome, email, senha, perfil, status, cargo, nivel_acesso, area, foto, google_id, permissoes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
-    [
-      nome,
-      email,
-      "",
-      "usuario",
-      "pendente",
-      "Não definido",
-      1,
-      "Security",
-      foto,
-      profile.id || "",
-      JSON.stringify({
-        portal: true,
-        access: false,
-        hc: false,
-        first_mile: false,
-        dashboard_av: false,
-        desligados: false,
-        cco_fbs: false
-      })
-    ],
-    function (insErr) {
-      if (insErr) return done(insErr);
-
-      db.get("SELECT * FROM usuarios WHERE id = ?", [this.lastID], (selErr, newUser) => {
-        if (selErr) return done(selErr);
-        return done(null, newUser);
-      });
+    if (user.status !== "aprovado") {
+      return res.send("Usuário ainda não aprovado pelo Security.");
     }
-  );
+
+    const senhaValida = await bcrypt.compare(senha, user.senha || "");
+    if (!senhaValida) return res.send("Senha incorreta.");
+
+    req.session.userId = user.id;
+    req.session.nome = user.nome;
+    req.session.email = user.email;
+    req.session.perfil = user.perfil;
+    req.session.foto = user.foto || "";
+
+    return res.redirect("/portal");
+  });
 });
 
 // ================== LOGOUT ==================

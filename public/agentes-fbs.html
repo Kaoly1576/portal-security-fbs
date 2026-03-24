@@ -370,7 +370,10 @@
     }
 
     function normalizeLower(v) {
-      return normalize(v).toLowerCase();
+      return normalize(v)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
     }
 
     function formatNumber(v) {
@@ -431,29 +434,33 @@
     }
 
     function isFalta(oc) {
-      return normalizeLower(oc).includes("falta");
+      const v = normalizeLower(oc);
+      return v.includes("falta");
     }
 
     function isAtestado(oc) {
-      return normalizeLower(oc).includes("atestado");
+      const v = normalizeLower(oc);
+      return v.includes("atestado");
     }
 
-    function isSemCobertura(obs) {
-      return normalizeLower(obs).includes("sem cobertura");
+    function isSemCobertura(obs, oc) {
+      const a = normalizeLower(obs);
+      const b = normalizeLower(oc);
+      return a.includes("sem cobertura") || b.includes("sem cobertura");
     }
 
     function renderCards(data) {
-      const totalOcorrencias = data.length;
+      const totalOcorrencias = data.reduce((acc, item) => acc + (Number(item["QTD"]) || 1), 0);
       const colaboradores = new Set(data.map(item => normalize(item["COLABORADOR"])).filter(Boolean)).size;
-      const faltas = data.filter(item => isFalta(item["OCORRÊNCIA"])).length;
-      const atestados = data.filter(item => isAtestado(item["OCORRÊNCIA"])).length;
-      const semCobertura = data.filter(item => isSemCobertura(item["OBSERVAÇÕES"])).length;
+      const faltas = data.filter(item => isFalta(item["OCORRÊNCIA"])).reduce((acc, item) => acc + (Number(item["QTD"]) || 1), 0);
+      const atestados = data.filter(item => isAtestado(item["OCORRÊNCIA"])).reduce((acc, item) => acc + (Number(item["QTD"]) || 1), 0);
+      const semCobertura = data.filter(item => isSemCobertura(item["OBSERVAÇÕES"], item["OCORRÊNCIA"])).reduce((acc, item) => acc + (Number(item["QTD"]) || 1), 0);
       const plantoes = new Set(data.map(item => normalize(item["PLANTÃO"])).filter(Boolean)).size;
       const turnos = new Set(data.map(item => normalize(item["TURNO"])).filter(Boolean)).size;
 
       const percValidos = data
         .map(item => parsePercent(item["%ABS"]))
-        .filter(v => v > 0);
+        .filter(v => v >= 0);
 
       const absMedio = percValidos.length
         ? percValidos.reduce((a, b) => a + b, 0) / percValidos.length
@@ -479,7 +486,7 @@
       data.forEach(item => {
         const unidade = normalize(item["UNIDADE"]) || "SEM UNIDADE";
         if (!grouped[unidade]) grouped[unidade] = 0;
-        grouped[unidade]++;
+        grouped[unidade] += Number(item["QTD"]) || 1;
       });
 
       const labels = Object.keys(grouped);
@@ -544,14 +551,16 @@
         }
 
         const g = grouped[unidade];
-        g.total++;
+        const qtd = Number(item["QTD"]) || 1;
 
-        if (isFalta(item["OCORRÊNCIA"])) g.faltas++;
-        if (isAtestado(item["OCORRÊNCIA"])) g.atestados++;
-        if (isSemCobertura(item["OBSERVAÇÕES"])) g.semCobertura++;
+        g.total += qtd;
+
+        if (isFalta(item["OCORRÊNCIA"])) g.faltas += qtd;
+        if (isAtestado(item["OCORRÊNCIA"])) g.atestados += qtd;
+        if (isSemCobertura(item["OBSERVAÇÕES"], item["OCORRÊNCIA"])) g.semCobertura += qtd;
 
         const absVal = parsePercent(item["%ABS"]);
-        if (absVal > 0) g.abs.push(absVal);
+        if (absVal >= 0) g.abs.push(absVal);
 
         if (normalize(item["COLABORADOR"])) g.colaboradores.add(normalize(item["COLABORADOR"]));
         if (normalize(item["PLANTÃO"])) g.plantoes.add(normalize(item["PLANTÃO"]));

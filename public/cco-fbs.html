@@ -870,16 +870,27 @@
       };
     }
 
-    function deriveFilterListsFromFallback(fallback) {
-      const rows = fallback.rows || [];
-      return {
-        anos: unique(rows.map(r => r._ano)).sort(),
-        meses: unique(rows.map(r => r._mes)).sort().map(monthLabel),
-        unidades: unique(rows.map(r => r.unidade)).sort((a,b) => a.localeCompare(b, "pt-BR")),
-        setores: unique(rows.map(r => r.setor)).sort((a,b) => a.localeCompare(b, "pt-BR")),
-        tipos: unique(rows.map(r => r.tipo)).sort((a,b) => a.localeCompare(b, "pt-BR"))
-      };
-    }
+  function deriveFilterListsFromFallback(fallback) {
+    const rows = fallback.rows || [];
+
+    const anos = unique(
+      rows.map(r => r._ano).filter(v => /^\d{4}$/.test(String(v || "")))
+    ).sort((a, b) => Number(a) - Number(b));
+
+    const mesesBase = unique(
+      rows.map(r => r._mes).filter(v => /^(0[1-9]|1[0-2])$/.test(String(v || "")))
+    ).sort((a, b) => Number(a) - Number(b));
+
+    return {
+      anos,
+      meses: mesesBase.map(monthLabel),
+      unidades: unique(rows.map(r => r.unidade).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR")),
+      setores: unique(rows.map(r => r.setor).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR")),
+      tipos: unique(rows.map(r => r.tipo).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR"))
+    };
+  }
+    
+</script>
 
     function renderCompactCard(elId, rows, topN = 5) {
       const container = document.getElementById(elId);
@@ -1042,90 +1053,90 @@
 
       return qs.toString();
     }
+    
+<script>
+  async function loadFilters() {
+    let filtroData = null;
+    let fallbackFilterData = null;
 
-    async function loadFilters() {
-      let filtroData = null;
-      let fallbackFilterData = null;
-
-      try {
-        const resFiltros = await fetch("/api/cco-fbs-filtros", { credentials: "same-origin" });
-        filtroData = await resFiltros.json();
-      } catch (e) {
-        filtroData = null;
-      }
-
-      try {
-        const resDetalhes = await fetch("/api/cco-fbs-detalhes?page=1&limit=200", { credentials: "same-origin" });
-        const detalhes = await resDetalhes.json();
-        const fallback = buildFallbackFromRows(detalhes);
-        fallbackFilterData = deriveFilterListsFromFallback(fallback);
-      } catch (e) {
-        fallbackFilterData = null;
-      }
-
-      document.getElementById("heroDescription").textContent =
-        `Aba utilizada: ${filtroData?.sheetTitle || "Solicitações de imagens"} | Filtros corrigidos por colunas reais da base e seleção múltipla habilitada.`;
-
-      let anos = [];
-      let meses = [];
-      let unidades = [];
-      let setores = [];
-      let tipos = [];
-
-      if (Array.isArray(filtroData?.filtros) && filtroData.filtros.length) {
-        const findFilter = (terms) => (filtroData.filtros || []).find(f => {
-          const key = normalizeText(f.key);
-          const label = normalizeText(f.label);
-          return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
-        });
-
-        const anoFilter = findFilter(["ano"]);
-        const mesFilter = findFilter(["mes", "mês"]);
-        const unidadeFilter = findFilter(["unidade"]);
-        const setorFilter = findFilter(["setor"]);
-        const tipoFilter = findFilter(["tipo"]);
-
-        filterMap = {
-          ano: anoFilter?.key || "ano",
-          mes: mesFilter?.key || "mes",
-          unidade: unidadeFilter?.key || "unidade",
-          setor: setorFilter?.key || "setor",
-          tipo: tipoFilter?.key || "tipo"
-        };
-
-        anos = anoFilter?.values || [];
-        meses = mesFilter?.values || [];
-        unidades = unidadeFilter?.values || [];
-        setores = setorFilter?.values || [];
-        tipos = tipoFilter?.values || [];
-      } else {
-        filterMap = {
-          ano: "ano",
-          mes: "mes",
-          unidade: "unidade",
-          setor: "setor",
-          tipo: "tipo"
-        };
-
-        anos = filtroData?.anos || [];
-        meses = filtroData?.meses || [];
-        unidades = filtroData?.unidades || [];
-        setores = filtroData?.setores || [];
-        tipos = filtroData?.tipos || [];
-      }
-
-      if (!anos.length && fallbackFilterData?.anos?.length) anos = fallbackFilterData.anos;
-      if (!meses.length && fallbackFilterData?.meses?.length) meses = fallbackFilterData.meses;
-      if (!unidades.length && fallbackFilterData?.unidades?.length) unidades = fallbackFilterData.unidades;
-      if (!setores.length && fallbackFilterData?.setores?.length) setores = fallbackFilterData.setores;
-      if (!tipos.length && fallbackFilterData?.tipos?.length) tipos = fallbackFilterData.tipos;
-
-      createMultiSelect("ano", anos, "Todos");
-      createMultiSelect("mes", meses, "Todos");
-      createMultiSelect("unidade", unidades, "Todas");
-      createMultiSelect("setor", setores, "Todos");
-      createMultiSelect("tipo", tipos, "Todos");
+    try {
+      const resFiltros = await fetch("/api/cco-fbs-filtros", {
+        credentials: "same-origin"
+      });
+      filtroData = await resFiltros.json();
+    } catch (e) {
+      filtroData = null;
     }
+
+    try {
+      // pega uma amostra MUITO maior para descobrir anos/meses reais
+      const resDetalhes = await fetch("/api/cco-fbs-detalhes?page=1&limit=5000", {
+        credentials: "same-origin"
+      });
+      const detalhes = await resDetalhes.json();
+      const fallback = buildFallbackFromRows(detalhes);
+      fallbackFilterData = deriveFilterListsFromFallback(fallback);
+    } catch (e) {
+      fallbackFilterData = null;
+    }
+
+    document.getElementById("heroDescription").textContent =
+      `Aba utilizada: ${filtroData?.sheetTitle || "Solicitações de imagens"} | Filtros corrigidos por colunas reais da base e seleção múltipla habilitada.`;
+
+    let anos = [];
+    let meses = [];
+    let unidades = [];
+    let setores = [];
+    let tipos = [];
+
+    if (Array.isArray(filtroData?.filtros) && filtroData.filtros.length) {
+      const findFilter = (terms) => (filtroData.filtros || []).find(f => {
+        const key = normalizeText(f.key);
+        const label = normalizeText(f.label);
+        return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
+      });
+
+      const unidadeFilter = findFilter(["unidade"]);
+      const setorFilter = findFilter(["setor"]);
+      const tipoFilter = findFilter(["tipo"]);
+
+      filterMap = {
+        ano: "ano",
+        mes: "mes",
+        unidade: unidadeFilter?.key || "unidade",
+        setor: setorFilter?.key || "setor",
+        tipo: tipoFilter?.key || "tipo"
+      };
+
+      unidades = unidadeFilter?.values || [];
+      setores = setorFilter?.values || [];
+      tipos = tipoFilter?.values || [];
+    } else {
+      filterMap = {
+        ano: "ano",
+        mes: "mes",
+        unidade: "unidade",
+        setor: "setor",
+        tipo: "tipo"
+      };
+    }
+
+    // ANO e MÊS sempre do fallback derivado da coluna Data
+    anos = fallbackFilterData?.anos || [];
+    meses = fallbackFilterData?.meses || [];
+
+    if (!unidades.length && fallbackFilterData?.unidades?.length) unidades = fallbackFilterData.unidades;
+    if (!setores.length && fallbackFilterData?.setores?.length) setores = fallbackFilterData.setores;
+    if (!tipos.length && fallbackFilterData?.tipos?.length) tipos = fallbackFilterData.tipos;
+
+    createMultiSelect("ano", anos, "Todos");
+    createMultiSelect("mes", meses, "Todos");
+    createMultiSelect("unidade", unidades, "Todas");
+    createMultiSelect("setor", setores, "Todos");
+    createMultiSelect("tipo", tipos, "Todos");
+  }
+</script>
+    
 
     async function loadResumoAndGraficos() {
       const query = getFiltersQuery(currentPage);

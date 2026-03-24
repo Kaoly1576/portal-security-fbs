@@ -21,13 +21,16 @@ app.use(express.json());
 
 app.use(
   session({
+    name: "portal_security_sid",
     secret: process.env.SESSION_SECRET || "segredo_super_secreto",
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
+      maxAge: 1000 * 60 * 60 * 12
     },
   })
 );

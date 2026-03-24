@@ -1754,6 +1754,8 @@ app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
 
 // ================== CCO FBS DASHBOARD ==================
 
+// ================== CCO FBS DASHBOARD ==================
+
 app.get("/cco-fbs", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "cco-fbs.html"));
 });
@@ -1805,14 +1807,14 @@ function ccoIsUsefulHeader(header) {
   return h && !/^unnamed/i.test(h);
 }
 
+function ccoIsSecurityHeader(header) {
+  const h = ccoNormalizeLower(header);
+  return /^security\s*\d+$/i.test(h) || /analista security/i.test(h);
+}
+
 function ccoLooksLikeDateHeader(header) {
   const h = ccoNormalizeLower(header);
   return /data|date|dia/.test(h);
-}
-
-function ccoIsSecurityAnalystHeader(header) {
-  const h = ccoNormalizeLower(header);
-  return /^security\s*\d+$/i.test(h) || /analista security/i.test(h);
 }
 
 function ccoFindHeader(headers, possibilities) {
@@ -1831,7 +1833,9 @@ async function ccoGetBestSheetTitle() {
     spreadsheetId: CCO_FBS_SPREADSHEET_ID,
   });
 
-  const abas = (meta.data.sheets || []).map((s) => s.properties?.title).filter(Boolean);
+  const abas = (meta.data.sheets || [])
+    .map((s) => s.properties?.title)
+    .filter(Boolean);
 
   let bestTitle = abas[0] || "Página1";
   let bestScore = -1;
@@ -1840,31 +1844,31 @@ async function ccoGetBestSheetTitle() {
     try {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: CCO_FBS_SPREADSHEET_ID,
-        range: '"Solicitações de imagens"!A1:AZ2000',
+        range: `'${title}'!A1:AZ2000`,
       });
 
       const values = response.data.values || [];
-      if (!values.length) continue;
+      if (!values.length || values.length < 2) continue;
 
-      const headers = values[0].map((h) => ccoNormalize(h));
+      const headers = (values[0] || []).map((h) => ccoNormalize(h));
       const usefulHeaders = headers.filter(
-        (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityAnalystHeader(header)
+        (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityHeader(header)
       );
 
-      const rowCount = Math.max(values.length - 1, 0);
-      const score = rowCount * 100 + usefulHeaders.length;
+      const rows = values.slice(1).filter((r) => r.some((cell) => ccoNormalize(cell)));
+      const score = rows.length * 100 + usefulHeaders.length;
 
       if (score > bestScore) {
         bestScore = score;
         bestTitle = title;
       }
-    } catch (e) {
-      console.log("Erro ao avaliar aba CCO:", title, e.message);
+    } catch (error) {
+      console.log("Erro avaliando aba CCO:", title, error.message);
     }
   }
 
   ccoSheetTitle = bestTitle;
-  console.log("CCO aba escolhida:", ccoSheetTitle);
+  console.log("CCO FBS aba escolhida:", ccoSheetTitle);
   return ccoSheetTitle;
 }
 
@@ -1878,24 +1882,25 @@ async function ccoLoadRaw() {
   });
 
   const values = response.data.values || [];
+
   if (!values.length || values.length < 2) {
     return { headers: [], rows: [], sheetTitle };
   }
 
-  const rawHeaders = values[0].map((h, idx) => {
-    const header = ccoNormalize(h);
-    return header || `COL_${idx + 1}`;
+  const headers = (values[0] || []).map((h, idx) => {
+    const name = ccoNormalize(h);
+    return name || `COL_${idx + 1}`;
   });
 
   const rows = values.slice(1).map((line) => {
     const obj = {};
-    rawHeaders.forEach((header, i) => {
+    headers.forEach((header, i) => {
       obj[header] = line[i] ?? "";
     });
     return obj;
   });
 
-  return { headers: rawHeaders, rows, sheetTitle };
+  return { headers, rows, sheetTitle };
 }
 
 async function ccoLoadWithCache() {
@@ -1907,74 +1912,88 @@ async function ccoLoadWithCache() {
 
   const { headers, rows, sheetTitle } = await ccoLoadRaw();
 
-  const usefulHeaders = headers.filter(
-    (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityAnalystHeader(header)
+  const cleanHeaders = headers.filter(
+    (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityHeader(header)
   );
 
-  const detectedDateColumns = usefulHeaders.filter((header) => {
+  const cleanRows = rows
+    .map((row) => {
+      const obj = {};
+      cleanHeaders.forEach((header) => {
+        obj[header] = row[header] ?? "";
+      });
+      return obj;
+    })
+    .filter((row) => cleanHeaders.some((header) => ccoNormalize(row[header])));
+
+  const dateColumns = cleanHeaders.filter((header) => {
     if (!ccoLooksLikeDateHeader(header)) return false;
-    const sample = rows.find((r) => ccoNormalize(r[header]));
+    const sample = cleanRows.find((r) => ccoNormalize(r[header]));
     return sample ? !!ccoParseDate(sample[header]) : false;
   });
 
-  const primaryDateColumn = detectedDateColumns[0] || null;
+  const primaryDateColumn = dateColumns[0] || null;
 
-  const enrichedRows = rows
-    .map((row) => {
-      const cleanRow = {};
-      usefulHeaders.forEach((header) => {
-        cleanRow[header] = row[header] ?? "";
-      });
+  const enrichedRows = cleanRows.map((row) => ({
+    ...row,
+    _primaryDate: primaryDateColumn ? ccoParseDate(row[primaryDateColumn]) : null,
+  }));
 
-      cleanRow._primaryDate = primaryDateColumn ? ccoParseDate(cleanRow[primaryDateColumn]) : null;
-      return cleanRow;
-    })
-    .filter((row) => {
-      const filled = usefulHeaders.filter((header) => ccoNormalize(row[header])).length;
-      return filled > 0;
-    });
-
-  const categoricalHeaders = usefulHeaders.filter((header) => {
+  const categoricalHeaders = cleanHeaders.filter((header) => {
     const distinct = new Set(
-      enrichedRows.map((r) => ccoNormalize(r[header])).filter(Boolean).slice(0, 5000)
+      enrichedRows
+        .map((r) => ccoNormalize(r[header]))
+        .filter(Boolean)
+        .slice(0, 5000)
     );
     return distinct.size > 1 && distinct.size <= 300;
   });
 
-  const unidadeHeader = ccoFindHeader(usefulHeaders, [
+  const unidadeHeader = ccoFindHeader(cleanHeaders, [
     "ID Unidade",
     "Unidade",
-    "Site",
     "Base",
+    "Site",
     "Operação",
   ]);
 
-  const statusHeader = ccoFindHeader(usefulHeaders, [
+  const statusHeader = ccoFindHeader(cleanHeaders, [
     "Status",
     "Situação",
     "Situacao",
+    "Status da solicitação",
+    "Status das Solicitações",
+  ]);
+
+  const solicitanteHeader = ccoFindHeader(cleanHeaders, [
+    "E-mail do solicitante",
+    "Solicitante",
+    "Nome do solicitante",
+    "Requisitante",
   ]);
 
   ccoCache = {
     sheetTitle,
-    headers: usefulHeaders,
+    headers: cleanHeaders,
     rows: enrichedRows,
     primaryDateColumn,
-    dateColumns: detectedDateColumns,
+    dateColumns,
     categoricalHeaders,
     unidadeHeader,
     statusHeader,
+    solicitanteHeader,
   };
 
   ccoCacheTime = now;
 
   console.log("CCO cache atualizado:", {
-    sheetTitle,
-    totalRows: enrichedRows.length,
-    totalHeaders: usefulHeaders.length,
-    primaryDateColumn,
+    aba: sheetTitle,
+    totalLinhas: enrichedRows.length,
+    totalColunas: cleanHeaders.length,
+    dataPrincipal: primaryDateColumn,
     unidadeHeader,
     statusHeader,
+    solicitanteHeader,
   });
 
   return ccoCache;
@@ -1988,12 +2007,12 @@ function ccoParseMulti(value) {
     .filter(Boolean);
 }
 
-function ccoApplyFilters(data, query, allowedHeaders) {
+function ccoApplyFilters(rows, query, filterHeaders) {
   const dataInicio = ccoNormalize(query.dataInicio);
   const dataFim = ccoNormalize(query.dataFim);
   const busca = ccoNormalizeLower(query.busca);
 
-  return data.filter((row) => {
+  return rows.filter((row) => {
     const dt = row._primaryDate;
 
     const okDataInicio = !dataInicio || (dt && ccoFormatInputDate(dt) >= dataInicio);
@@ -2001,7 +2020,7 @@ function ccoApplyFilters(data, query, allowedHeaders) {
 
     if (!okDataInicio || !okDataFim) return false;
 
-    for (const header of allowedHeaders) {
+    for (const header of filterHeaders) {
       const selected = ccoParseMulti(query[`f_${header}`]);
       if (selected.length && !selected.includes(ccoNormalize(row[header]))) {
         return false;
@@ -2033,7 +2052,6 @@ function ccoGroupCount(data, header) {
 app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
   try {
     const meta = await ccoLoadWithCache();
-
     return res.json({
       ok: true,
       abaUsada: meta.sheetTitle,
@@ -2042,6 +2060,7 @@ app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
       primaryDateColumn: meta.primaryDateColumn,
       unidadeHeader: meta.unidadeHeader,
       statusHeader: meta.statusHeader,
+      solicitanteHeader: meta.solicitanteHeader,
       filtrosDetectados: meta.categoricalHeaders.slice(0, 20),
       primeiraLinha: meta.rows[0] || null,
     });
@@ -2049,6 +2068,7 @@ app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: error.message,
+      details: error.response?.data || null,
     });
   }
 });
@@ -2060,8 +2080,9 @@ app.get("/api/cco-fbs-filtros", requireAuth, async (req, res) => {
     const filtros = meta.categoricalHeaders.slice(0, 8).map((header) => ({
       key: header,
       label: header,
-      values: [...new Set(meta.rows.map((r) => ccoNormalize(r[header])).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "pt-BR")),
+      values: [...new Set(
+        meta.rows.map((r) => ccoNormalize(r[header])).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, "pt-BR")),
     }));
 
     return res.json({
@@ -2084,34 +2105,30 @@ app.get("/api/cco-fbs-resumo", requireAuth, async (req, res) => {
     const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
 
     const total = filtrados.length;
-
     const totalUnidades = meta.unidadeHeader
-      ? new Set(filtrados.map((r) => ccoNormalize(r[meta.unidadeHeader])).filter(Boolean)).size
+      ? new Set(
+          filtrados.map((r) => ccoNormalize(r[meta.unidadeHeader])).filter(Boolean)
+        ).size
       : 0;
 
-    const statusMap = meta.statusHeader ? ccoGroupCount(filtrados, meta.statusHeader) : {};
+    const ocorrencias = meta.statusHeader
+      ? Object.entries(ccoGroupCount(filtrados, meta.statusHeader))
+          .filter(([k]) => /recus|negad|reprov|bloque|pendente|anal/i.test(k))
+          .reduce((acc, [, v]) => acc + v, 0)
+      : 0;
 
-    const ativos = Object.entries(statusMap)
-      .filter(([key]) => /ativo/i.test(key) && !/inativo/i.test(key))
-      .reduce((acc, [, val]) => acc + val, 0);
-
-    const pendentes = Object.entries(statusMap)
-      .filter(([key]) => /pendente/i.test(key))
-      .reduce((acc, [, val]) => acc + val, 0);
-
-    const inativos = Object.entries(statusMap)
-      .filter(([key]) => /inativo|desligado|bloqueado/i.test(key))
-      .reduce((acc, [, val]) => acc + val, 0);
-
-    const topStatus = Object.entries(statusMap).sort((a, b) => b[1] - a[1])[0] || null;
+    let solicitanteLider = "-";
+    if (meta.solicitanteHeader) {
+      const top = Object.entries(ccoGroupCount(filtrados, meta.solicitanteHeader))
+        .sort((a, b) => b[1] - a[1])[0];
+      solicitanteLider = top ? `${top[0]} (${top[1]})` : "-";
+    }
 
     return res.json({
       total,
       totalUnidades,
-      ativos,
-      pendentes,
-      inativos,
-      statusDominante: topStatus ? `${topStatus[0]} (${topStatus[1]})` : "-",
+      ocorrencias,
+      solicitanteLider,
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
@@ -2131,81 +2148,56 @@ app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
     const filterHeaders = meta.categoricalHeaders.slice(0, 8);
     const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
 
-    const headers = meta.headers;
+    const preferredHeaders = [
+      ccoFindHeader(meta.headers, ["Tipo de solicitação", "Tipo de Solicitação"]),
+      ccoFindHeader(meta.headers, ["Ocorrência", "Ocorrencia", "Motivo", "Motivo de recusa"]),
+      ccoFindHeader(meta.headers, ["E-mail do solicitante", "Requisitante", "Solicitante"]),
+      ccoFindHeader(meta.headers, ["Unidade", "ID Unidade"]),
+      ccoFindHeader(meta.headers, ["Status", "Status da solicitação", "Status das Solicitações"]),
+      ccoFindHeader(meta.headers, ["Setor"]),
+    ].filter(Boolean);
 
-    // 🔥 MAPEAMENTO INTELIGENTE (NÃO MAIS ALEATÓRIO)
-    function findHeader(names) {
-      return headers.find(h =>
-        names.some(n => ccoNormalizeLower(h).includes(ccoNormalizeLower(n)))
-      );
-    }
+    const uniquePreferred = [...new Set(preferredHeaders)];
+    const fallbackHeaders = meta.categoricalHeaders.filter((h) => !uniquePreferred.includes(h));
+    const finalHeaders = [...uniquePreferred, ...fallbackHeaders].slice(0, 6);
 
-    const tipoHeader = findHeader(["tipo de solicitacao", "tipo de solicitação", "tipo"]);
-    const ocorrenciaHeader = findHeader(["ocorrencia", "ocorrência"]);
-    const unidadeHeader = findHeader(["unidade", "site", "base"]);
-    const setorHeader = findHeader(["setor"]);
-    const statusHeader = findHeader(["status"]);
-    const solicitanteHeader = findHeader([
-      "email do solicitante",
-      "e-mail do solicitante",
-      "solicitante",
-      "requisitante"
-    ]);
-
-    // 🔥 FUNÇÃO PADRÃO
-    function buildTable(header) {
-      if (!header) return [];
-
-      return Object.entries(ccoGroupCount(filtrados, header))
+    const makeTop = (header, limit = 10) => {
+      if (!header) return { header: "Sem dados", labels: [], values: [] };
+      const grouped = ccoGroupCount(filtrados, header);
+      const ordered = Object.entries(grouped)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 50)
-        .map(([nome, total]) => ({ nome, total }));
-    }
+        .slice(0, limit);
 
-    const tableTipo = buildTable(tipoHeader);
-    const tableOcorrencia = buildTable(ocorrenciaHeader);
-    const tableUnidade = buildTable(unidadeHeader);
-    const tableSetor = buildTable(setorHeader);
-    const tableStatus = buildTable(statusHeader);
-
-    // 🔥 GRÁFICO DE SOLICITANTE (ÚNICO)
-    const solicitanteGrouped = solicitanteHeader
-      ? Object.entries(ccoGroupCount(filtrados, solicitanteHeader))
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 15)
-      : [];
-
-    const chartSolicitante = {
-      labels: solicitanteGrouped.map(x => x[0]),
-      values: solicitanteGrouped.map(x => x[1]),
+      return {
+        header,
+        labels: ordered.map((x) => x[0]),
+        values: ordered.map((x) => x[1]),
+      };
     };
 
-    // 🔥 AGRUPAMENTO POR DIA (CORRIGIDO)
+    const charts = finalHeaders.map((header, idx) => makeTop(header, idx < 3 ? 12 : 10));
+
     const byDay = {};
     filtrados.forEach((row) => {
       if (!row._primaryDate) return;
-
-      const d = row._primaryDate;
-      const day = String(d.getDate()).padStart(2, "0");
-
-      byDay[day] = (byDay[day] || 0) + 1;
+      const key = row._primaryDate.toLocaleDateString("pt-BR");
+      byDay[key] = (byDay[key] || 0) + 1;
     });
 
-    const dayLabels = Object.keys(byDay).sort((a, b) => Number(a) - Number(b));
+    const dayLabels = Object.keys(byDay).sort((a, b) => {
+      const da = ccoParseDate(a);
+      const db = ccoParseDate(b);
+      if (!da || !db) return 0;
+      return da - db;
+    });
 
     return res.json({
-      tableTipo,
-      tableOcorrencia,
-      tableUnidade,
-      tableSetor,
-      tableStatus,
-      chartSolicitante,
+      charts,
       porDia: {
         labels: dayLabels,
-        values: dayLabels.map(d => byDay[d]),
-      }
+        values: dayLabels.map((k) => byDay[k]),
+      },
     });
-
   } catch (error) {
     return res.status(500).json({
       ok: false,
@@ -2213,6 +2205,7 @@ app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
     });
   }
 });
+
 app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
   try {
     const meta = await ccoLoadWithCache();
@@ -2225,18 +2218,16 @@ app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
     const start = (page - 1) * limit;
     const end = start + limit;
 
-    const safeHeaders = meta.headers.filter((header) => !ccoIsSecurityAnalystHeader(header));
-
     const rows = filtrados.slice(start, end).map((row) => {
       const obj = {};
-      safeHeaders.forEach((header) => {
+      meta.headers.forEach((header) => {
         obj[header] = row[header] || "";
       });
       return obj;
     });
 
     return res.json({
-      headers: safeHeaders,
+      headers: meta.headers,
       total: filtrados.length,
       page,
       limit,

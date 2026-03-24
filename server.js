@@ -46,7 +46,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
   email TEXT UNIQUE,
   senha TEXT,
   perfil TEXT DEFAULT 'usuario',
-  status TEXT DEFAULT 'pendente'
+  status TEXT DEFAULT 'pendente',
+  cargo TEXT DEFAULT 'Não definido',
+  nivel_acesso INTEGER DEFAULT 1,
+  area TEXT DEFAULT 'Security',
+  foto TEXT DEFAULT '',
+  google_id TEXT DEFAULT '',
+  permissoes TEXT DEFAULT '{}',
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 )
 `);
 

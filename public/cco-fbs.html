@@ -116,7 +116,7 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.5;
-      max-width: 780px;
+      max-width: 820px;
     }
 
     .hero-right {
@@ -147,13 +147,14 @@
 
     .filters-grid {
       display: grid;
-      grid-template-columns: 150px 150px minmax(220px, 1fr) repeat(5, minmax(140px, 1fr));
+      grid-template-columns: 140px 140px minmax(200px,1fr) repeat(5, minmax(140px,1fr));
       gap: 10px;
       align-items: start;
     }
 
     .field {
       min-width: 0;
+      position: relative;
     }
 
     .field label {
@@ -164,9 +165,9 @@
       font-weight: 700;
     }
 
-    .field input,
-    .field select {
+    .field input {
       width: 100%;
+      height: 38px;
       background: var(--input);
       border: 1px solid #3a3a3a;
       border-radius: 10px;
@@ -176,27 +177,86 @@
       font-size: 13px;
     }
 
-    .field input {
+    .ms-trigger {
+      width: 100%;
       height: 38px;
+      background: var(--input);
+      border: 1px solid #3a3a3a;
+      border-radius: 10px;
+      color: #fff;
+      padding: 0 12px;
+      outline: none;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      text-align: left;
     }
 
-    .field select {
-      min-height: 38px;
+    .ms-trigger span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .field select[multiple] {
-      height: 120px;
-      padding: 8px 10px;
+    .ms-panel {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 100%;
+      background: #242424;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.35);
+      display: none;
+      z-index: 50;
+      overflow: hidden;
     }
 
-    .field option {
-      padding: 4px;
+    .ms-panel.open {
+      display: block;
     }
 
-    .filters-note {
-      margin-top: 10px;
-      color: var(--muted);
+    .ms-search {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: #202020;
+    }
+
+    .ms-search input {
+      height: 34px;
       font-size: 12px;
+    }
+
+    .ms-options {
+      max-height: 220px;
+      overflow: auto;
+      padding: 8px;
+    }
+
+    .ms-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .ms-option:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .ms-option input {
+      width: 14px;
+      height: 14px;
+      accent-color: var(--orange);
+      flex: 0 0 auto;
     }
 
     .actions {
@@ -226,6 +286,12 @@
       color: #fff;
       font-weight: 700;
       cursor: pointer;
+    }
+
+    .filters-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
     }
 
     .kpis {
@@ -260,8 +326,8 @@
     }
 
     .kpi-value.leader-fit {
-      font-size: 16px;
-      line-height: 1.25;
+      font-size: 15px;
+      line-height: 1.3;
     }
 
     .orange { color: var(--orange); }
@@ -461,7 +527,7 @@
       }
 
       .kpi-value.leader-fit {
-        font-size: 15px;
+        font-size: 14px;
       }
     }
   </style>
@@ -511,32 +577,72 @@
 
         <div class="field">
           <label>Ano</label>
-          <select id="f_ano" multiple size="5"></select>
+          <button class="ms-trigger" type="button" data-ms="ano">
+            <span id="label-ano">Todos</span><strong>▼</strong>
+          </button>
+          <div class="ms-panel" id="panel-ano">
+            <div class="ms-search">
+              <input type="text" placeholder="Buscar..." id="search-ano" />
+            </div>
+            <div class="ms-options" id="opts-ano"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Mês</label>
-          <select id="f_mes" multiple size="5"></select>
+          <button class="ms-trigger" type="button" data-ms="mes">
+            <span id="label-mes">Todos</span><strong>▼</strong>
+          </button>
+          <div class="ms-panel" id="panel-mes">
+            <div class="ms-search">
+              <input type="text" placeholder="Buscar..." id="search-mes" />
+            </div>
+            <div class="ms-options" id="opts-mes"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Unidade</label>
-          <select id="f_unidade" multiple size="5"></select>
+          <button class="ms-trigger" type="button" data-ms="unidade">
+            <span id="label-unidade">Todas</span><strong>▼</strong>
+          </button>
+          <div class="ms-panel" id="panel-unidade">
+            <div class="ms-search">
+              <input type="text" placeholder="Buscar..." id="search-unidade" />
+            </div>
+            <div class="ms-options" id="opts-unidade"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Setor</label>
-          <select id="f_setor" multiple size="5"></select>
+          <button class="ms-trigger" type="button" data-ms="setor">
+            <span id="label-setor">Todos</span><strong>▼</strong>
+          </button>
+          <div class="ms-panel" id="panel-setor">
+            <div class="ms-search">
+              <input type="text" placeholder="Buscar..." id="search-setor" />
+            </div>
+            <div class="ms-options" id="opts-setor"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Tipo de solicitação</label>
-          <select id="f_tipo" multiple size="5"></select>
+          <button class="ms-trigger" type="button" data-ms="tipo">
+            <span id="label-tipo">Todos</span><strong>▼</strong>
+          </button>
+          <div class="ms-panel" id="panel-tipo">
+            <div class="ms-search">
+              <input type="text" placeholder="Buscar..." id="search-tipo" />
+            </div>
+            <div class="ms-options" id="opts-tipo"></div>
+          </div>
         </div>
       </div>
 
       <div class="filters-note">
-        Para selecionar várias opções, use Ctrl no Windows ou Command no Mac.
+        Clique no filtro para abrir e selecionar várias opções sem usar Ctrl.
       </div>
 
       <div class="actions">
@@ -632,6 +738,13 @@
     let chartSolicitanteInstance = null;
     let chartDiaInstance = null;
     let filterMap = {};
+    let multiselectState = {
+      ano: [],
+      mes: [],
+      unidade: [],
+      setor: [],
+      tipo: []
+    };
 
     function esc(v) {
       return String(v ?? "")
@@ -654,60 +767,118 @@
         .toLowerCase();
     }
 
-    function getMultiValues(id) {
-      return [...document.getElementById(id).selectedOptions]
-        .map(opt => opt.value)
-        .filter(Boolean);
+    function unique(arr) {
+      return [...new Set((arr || []).filter(Boolean))];
     }
 
-    function setMultiOptions(id, values) {
-      const el = document.getElementById(id);
-      el.innerHTML = (values || [])
-        .map(v => `<option value="${esc(v)}">${esc(v)}</option>`)
-        .join("");
+    function parseDateFlexible(value) {
+      const str = String(value || "").trim();
+      if (!str) return null;
+
+      if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+        const [datePart] = str.split(" ");
+        const [d, m, y] = datePart.split("/").map(Number);
+        return new Date(y, m - 1, d);
+      }
+
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        const [datePart] = str.split(" ");
+        const [y, m, d] = datePart.split("-").map(Number);
+        return new Date(y, m - 1, d);
+      }
+
+      return null;
     }
 
-    function findFilter(filtros, terms) {
-      return (filtros || []).find(f => {
-        const key = normalizeText(f.key);
-        const label = normalizeText(f.label);
-        return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
+    function monthLabel(num) {
+      const months = {
+        "01": "01 - Janeiro",
+        "02": "02 - Fevereiro",
+        "03": "03 - Março",
+        "04": "04 - Abril",
+        "05": "05 - Maio",
+        "06": "06 - Junho",
+        "07": "07 - Julho",
+        "08": "08 - Agosto",
+        "09": "09 - Setembro",
+        "10": "10 - Outubro",
+        "11": "11 - Novembro",
+        "12": "12 - Dezembro"
+      };
+      return months[num] || num;
+    }
+
+    function groupRows(rows, field) {
+      const map = {};
+      (rows || []).forEach(row => {
+        const key = String(row[field] || "").trim() || "Sem valor";
+        map[key] = (map[key] || 0) + 1;
+      });
+      return Object.entries(map)
+        .map(([nome, total]) => ({ nome, total }))
+        .sort((a, b) => b.total - a.total);
+    }
+
+    function getHeaderMatch(headers, terms) {
+      return (headers || []).find(h => {
+        const norm = normalizeText(h);
+        return terms.some(t => norm.includes(normalizeText(t)));
       });
     }
 
-    function getFiltersQuery(page = 1) {
-      const qs = new URLSearchParams();
+    function buildFallbackFromRows(detailData) {
+      const headers = detailData?.headers || [];
+      const rows = detailData?.rows || [];
 
-      const dataInicio = document.getElementById("filtroDataInicio").value || "";
-      const dataFim = document.getElementById("filtroDataFim").value || "";
-      const busca = document.getElementById("filtroBusca").value || "";
+      const dateHeader = getHeaderMatch(headers, ["data"]);
+      const unitHeader = getHeaderMatch(headers, ["unidade"]);
+      const setorHeader = getHeaderMatch(headers, ["setor"]);
+      const tipoHeader = getHeaderMatch(headers, ["tipo de solicitacao", "tipo de solicitação", "tipo"]);
+      const statusHeader = getHeaderMatch(headers, ["status"]);
+      const solicitanteHeader = getHeaderMatch(headers, ["e-mail do solicitante", "email do solicitante", "solicitante"]);
+      const ocorrenciaHeader = getHeaderMatch(headers, ["ocorrencia", "ocorrência"]);
 
-      const anos = getMultiValues("f_ano");
-      const meses = getMultiValues("f_mes");
-      const unidades = getMultiValues("f_unidade");
-      const setores = getMultiValues("f_setor");
-      const tipos = getMultiValues("f_tipo");
+      const normalizedRows = rows.map(row => {
+        const dt = dateHeader ? parseDateFlexible(row[dateHeader]) : null;
+        const ano = dt ? String(dt.getFullYear()) : "";
+        const mes = dt ? String(dt.getMonth() + 1).padStart(2, "0") : "";
+        return {
+          _date: dt,
+          _ano: ano,
+          _mes: mes,
+          unidade: unitHeader ? row[unitHeader] || "" : "",
+          setor: setorHeader ? row[setorHeader] || "" : "",
+          tipo: tipoHeader ? row[tipoHeader] || "" : "",
+          status: statusHeader ? row[statusHeader] || "" : "",
+          solicitante: solicitanteHeader ? row[solicitanteHeader] || "" : "",
+          ocorrencia: ocorrenciaHeader ? row[ocorrenciaHeader] || "" : ""
+        };
+      });
 
-      qs.set("dataInicio", dataInicio);
-      qs.set("dataFim", dataFim);
-      qs.set("busca", busca);
+      return {
+        headers,
+        rows: normalizedRows,
+        match: {
+          dateHeader,
+          unitHeader,
+          setorHeader,
+          tipoHeader,
+          statusHeader,
+          solicitanteHeader,
+          ocorrenciaHeader
+        }
+      };
+    }
 
-      qs.set("ano", anos.join("|"));
-      qs.set("mes", meses.join("|"));
-      qs.set("unidade", unidades.join("|"));
-      qs.set("setor", setores.join("|"));
-      qs.set("tipo", tipos.join("|"));
-
-      if (filterMap.ano) qs.set(`f_${filterMap.ano}`, anos.join("|"));
-      if (filterMap.mes) qs.set(`f_${filterMap.mes}`, meses.join("|"));
-      if (filterMap.unidade) qs.set(`f_${filterMap.unidade}`, unidades.join("|"));
-      if (filterMap.setor) qs.set(`f_${filterMap.setor}`, setores.join("|"));
-      if (filterMap.tipo) qs.set(`f_${filterMap.tipo}`, tipos.join("|"));
-
-      qs.set("page", page);
-      qs.set("limit", 50);
-
-      return qs.toString();
+    function deriveFilterListsFromFallback(fallback) {
+      const rows = fallback.rows || [];
+      return {
+        anos: unique(rows.map(r => r._ano)).sort(),
+        meses: unique(rows.map(r => r._mes)).sort().map(monthLabel),
+        unidades: unique(rows.map(r => r.unidade)).sort((a,b) => a.localeCompare(b, "pt-BR")),
+        setores: unique(rows.map(r => r.setor)).sort((a,b) => a.localeCompare(b, "pt-BR")),
+        tipos: unique(rows.map(r => r.tipo)).sort((a,b) => a.localeCompare(b, "pt-BR"))
+      };
     }
 
     function renderCompactCard(elId, rows, topN = 5) {
@@ -757,46 +928,176 @@
       renderCompactCard("cardResumo", resumoRows, 5);
     }
 
-    function getLeaderName(summaryData, graphData) {
-      if (summaryData?.solicitanteLider) return summaryData.solicitanteLider;
-      if (graphData?.chartSolicitante?.labels?.length) return graphData.chartSolicitante.labels[0];
-      return "-";
+    function createMultiSelect(name, values, defaultLabel) {
+      const optsEl = document.getElementById(`opts-${name}`);
+      const searchEl = document.getElementById(`search-${name}`);
+
+      optsEl.innerHTML = (values || []).map(value => `
+        <label class="ms-option" data-value="${esc(value)}">
+          <input type="checkbox" value="${esc(value)}" />
+          <span>${esc(value)}</span>
+        </label>
+      `).join("");
+
+      searchEl.value = "";
+
+      searchEl.oninput = () => {
+        const term = normalizeText(searchEl.value);
+        optsEl.querySelectorAll(".ms-option").forEach(item => {
+          const text = normalizeText(item.dataset.value);
+          item.style.display = !term || text.includes(term) ? "flex" : "none";
+        });
+      };
+
+      optsEl.querySelectorAll('input[type="checkbox"]').forEach(chk => {
+        chk.addEventListener("change", () => {
+          multiselectState[name] = [...optsEl.querySelectorAll('input:checked')].map(i => i.value);
+          updateMultiLabel(name, defaultLabel);
+        });
+      });
+
+      updateMultiLabel(name, defaultLabel);
     }
 
-    function getOccurrencesValue(summaryData, graphData) {
-      if (typeof summaryData?.totalOcorrencias !== "undefined") return summaryData.totalOcorrencias;
-      return (graphData?.tableOcorrencia || []).reduce((acc, item) => acc + Number(item.total || 0), 0);
+    function updateMultiLabel(name, defaultLabel) {
+      const labelEl = document.getElementById(`label-${name}`);
+      const selected = multiselectState[name] || [];
+      if (!selected.length) {
+        labelEl.textContent = defaultLabel;
+      } else if (selected.length === 1) {
+        labelEl.textContent = selected[0];
+      } else {
+        labelEl.textContent = `${selected.length} selecionados`;
+      }
+    }
+
+    function clearMultiSelect(name, defaultLabel) {
+      multiselectState[name] = [];
+      const optsEl = document.getElementById(`opts-${name}`);
+      if (optsEl) {
+        optsEl.querySelectorAll('input[type="checkbox"]').forEach(chk => chk.checked = false);
+      }
+      const searchEl = document.getElementById(`search-${name}`);
+      if (searchEl) searchEl.value = "";
+      if (optsEl) {
+        optsEl.querySelectorAll(".ms-option").forEach(item => item.style.display = "flex");
+      }
+      updateMultiLabel(name, defaultLabel);
+    }
+
+    function setupDropdowns() {
+      document.querySelectorAll(".ms-trigger").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const name = btn.dataset.ms;
+          const panel = document.getElementById(`panel-${name}`);
+          const isOpen = panel.classList.contains("open");
+
+          document.querySelectorAll(".ms-panel").forEach(p => p.classList.remove("open"));
+          if (!isOpen) panel.classList.add("open");
+        });
+      });
+
+      document.querySelectorAll(".ms-panel").forEach(panel => {
+        panel.addEventListener("click", (e) => e.stopPropagation());
+      });
+
+      document.addEventListener("click", () => {
+        document.querySelectorAll(".ms-panel").forEach(p => p.classList.remove("open"));
+      });
+    }
+
+    function getFiltersQuery(page = 1) {
+      const qs = new URLSearchParams();
+
+      const dataInicio = document.getElementById("filtroDataInicio").value || "";
+      const dataFim = document.getElementById("filtroDataFim").value || "";
+      const busca = document.getElementById("filtroBusca").value || "";
+
+      const anos = multiselectState.ano || [];
+      const mesesLidos = multiselectState.mes || [];
+      const meses = mesesLidos.map(v => String(v).slice(0, 2));
+      const unidades = multiselectState.unidade || [];
+      const setores = multiselectState.setor || [];
+      const tipos = multiselectState.tipo || [];
+
+      qs.set("dataInicio", dataInicio);
+      qs.set("dataFim", dataFim);
+      qs.set("busca", busca);
+
+      qs.set("ano", anos.join("|"));
+      qs.set("mes", meses.join("|"));
+      qs.set("unidade", unidades.join("|"));
+      qs.set("setor", setores.join("|"));
+      qs.set("tipo", tipos.join("|"));
+
+      if (filterMap.ano) qs.set(`f_${filterMap.ano}`, anos.join("|"));
+      if (filterMap.mes) qs.set(`f_${filterMap.mes}`, meses.join("|"));
+      if (filterMap.unidade) qs.set(`f_${filterMap.unidade}`, unidades.join("|"));
+      if (filterMap.setor) qs.set(`f_${filterMap.setor}`, setores.join("|"));
+      if (filterMap.tipo) qs.set(`f_${filterMap.tipo}`, tipos.join("|"));
+
+      qs.set("page", page);
+      qs.set("limit", 50);
+
+      return qs.toString();
     }
 
     async function loadFilters() {
-      const res = await fetch("/api/cco-fbs-filtros", {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
+      let filtroData = null;
+      let fallbackFilterData = null;
+
+      try {
+        const resFiltros = await fetch("/api/cco-fbs-filtros", { credentials: "same-origin" });
+        filtroData = await resFiltros.json();
+      } catch (e) {
+        filtroData = null;
+      }
+
+      try {
+        const resDetalhes = await fetch("/api/cco-fbs-detalhes?page=1&limit=200", { credentials: "same-origin" });
+        const detalhes = await resDetalhes.json();
+        const fallback = buildFallbackFromRows(detalhes);
+        fallbackFilterData = deriveFilterListsFromFallback(fallback);
+      } catch (e) {
+        fallbackFilterData = null;
+      }
 
       document.getElementById("heroDescription").textContent =
-        `Aba utilizada: ${data.sheetTitle || "N/A"} | Filtros corrigidos por colunas reais da base e seleção múltipla habilitada.`;
+        `Aba utilizada: ${filtroData?.sheetTitle || "Solicitações de imagens"} | Filtros corrigidos por colunas reais da base e seleção múltipla habilitada.`;
 
-      if (Array.isArray(data.filtros) && data.filtros.length) {
-        const anoFilter = findFilter(data.filtros, ["ano"]);
-        const mesFilter = findFilter(data.filtros, ["mes", "mês"]);
-        const unidadeFilter = findFilter(data.filtros, ["unidade"]);
-        const setorFilter = findFilter(data.filtros, ["setor"]);
-        const tipoFilter = findFilter(data.filtros, ["tipo"]);
+      let anos = [];
+      let meses = [];
+      let unidades = [];
+      let setores = [];
+      let tipos = [];
+
+      if (Array.isArray(filtroData?.filtros) && filtroData.filtros.length) {
+        const findFilter = (terms) => (filtroData.filtros || []).find(f => {
+          const key = normalizeText(f.key);
+          const label = normalizeText(f.label);
+          return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
+        });
+
+        const anoFilter = findFilter(["ano"]);
+        const mesFilter = findFilter(["mes", "mês"]);
+        const unidadeFilter = findFilter(["unidade"]);
+        const setorFilter = findFilter(["setor"]);
+        const tipoFilter = findFilter(["tipo"]);
 
         filterMap = {
-          ano: anoFilter?.key || null,
-          mes: mesFilter?.key || null,
-          unidade: unidadeFilter?.key || null,
-          setor: setorFilter?.key || null,
-          tipo: tipoFilter?.key || null
+          ano: anoFilter?.key || "ano",
+          mes: mesFilter?.key || "mes",
+          unidade: unidadeFilter?.key || "unidade",
+          setor: setorFilter?.key || "setor",
+          tipo: tipoFilter?.key || "tipo"
         };
 
-        setMultiOptions("f_ano", anoFilter?.values || []);
-        setMultiOptions("f_mes", mesFilter?.values || []);
-        setMultiOptions("f_unidade", unidadeFilter?.values || []);
-        setMultiOptions("f_setor", setorFilter?.values || []);
-        setMultiOptions("f_tipo", tipoFilter?.values || []);
+        anos = anoFilter?.values || [];
+        meses = mesFilter?.values || [];
+        unidades = unidadeFilter?.values || [];
+        setores = setorFilter?.values || [];
+        tipos = tipoFilter?.values || [];
       } else {
         filterMap = {
           ano: "ano",
@@ -806,56 +1107,124 @@
           tipo: "tipo"
         };
 
-        setMultiOptions("f_ano", data.anos || []);
-        setMultiOptions("f_mes", data.meses || []);
-        setMultiOptions("f_unidade", data.unidades || []);
-        setMultiOptions("f_setor", data.setores || []);
-        setMultiOptions("f_tipo", data.tipos || []);
+        anos = filtroData?.anos || [];
+        meses = filtroData?.meses || [];
+        unidades = filtroData?.unidades || [];
+        setores = filtroData?.setores || [];
+        tipos = filtroData?.tipos || [];
       }
+
+      if (!anos.length && fallbackFilterData?.anos?.length) anos = fallbackFilterData.anos;
+      if (!meses.length && fallbackFilterData?.meses?.length) meses = fallbackFilterData.meses;
+      if (!unidades.length && fallbackFilterData?.unidades?.length) unidades = fallbackFilterData.unidades;
+      if (!setores.length && fallbackFilterData?.setores?.length) setores = fallbackFilterData.setores;
+      if (!tipos.length && fallbackFilterData?.tipos?.length) tipos = fallbackFilterData.tipos;
+
+      createMultiSelect("ano", anos, "Todos");
+      createMultiSelect("mes", meses, "Todos");
+      createMultiSelect("unidade", unidades, "Todas");
+      createMultiSelect("setor", setores, "Todos");
+      createMultiSelect("tipo", tipos, "Todos");
     }
 
     async function loadResumoAndGraficos() {
-      const [resResumo, resGraficos] = await Promise.all([
-        fetch(`/api/cco-fbs-resumo?${getFiltersQuery(currentPage)}`, {
-          credentials: "same-origin"
-        }),
-        fetch(`/api/cco-fbs-graficos?${getFiltersQuery(currentPage)}`, {
-          credentials: "same-origin"
-        })
+      const query = getFiltersQuery(currentPage);
+
+      const [resResumo, resGraficos, resDetalhes] = await Promise.all([
+        fetch(`/api/cco-fbs-resumo?${query}`, { credentials: "same-origin" }),
+        fetch(`/api/cco-fbs-graficos?${query}`, { credentials: "same-origin" }),
+        fetch(`/api/cco-fbs-detalhes?${query}`, { credentials: "same-origin" })
       ]);
 
       const resumo = await resResumo.json();
       const data = await resGraficos.json();
+      const detalhes = await resDetalhes.json();
+
+      const fallback = buildFallbackFromRows(detalhes);
+
+      const chartSolicitanteHasData = (data.chartSolicitante?.labels || []).length > 0;
+      const tipoHasData = (data.tableTipo || []).length > 0;
+      const ocorrenciaHasData = (data.tableOcorrencia || []).length > 0;
+      const unidadeHasData = (data.tableUnidade || []).length > 0;
+      const setorHasData = (data.tableSetor || []).length > 0;
+      const statusHasData = (data.tableStatus || []).length > 0;
+
+      if (!tipoHasData) data.tableTipo = groupRows(fallback.rows, "tipo");
+      if (!ocorrenciaHasData) {
+        data.tableOcorrencia = groupRows(
+          fallback.rows.filter(r => String(r.ocorrencia || "").trim()),
+          "ocorrencia"
+        );
+      }
+      if (!unidadeHasData) data.tableUnidade = groupRows(fallback.rows, "unidade");
+      if (!setorHasData) data.tableSetor = groupRows(fallback.rows, "setor");
+      if (!statusHasData) data.tableStatus = groupRows(fallback.rows, "status");
+
+      if (!chartSolicitanteHasData) {
+        const solicitantes = groupRows(fallback.rows, "solicitante").slice(0, 10);
+        data.chartSolicitante = {
+          labels: solicitantes.map(x => x.nome),
+          values: solicitantes.map(x => x.total)
+        };
+      }
+
+      if (!(data.porDia?.labels || []).length) {
+        const dayMap = {};
+        fallback.rows.forEach(row => {
+          if (!row._date) return;
+          const dd = String(row._date.getDate()).padStart(2, "0");
+          dayMap[dd] = (dayMap[dd] || 0) + 1;
+        });
+        const labels = Object.keys(dayMap).sort((a,b) => Number(a) - Number(b));
+        data.porDia = {
+          labels,
+          values: labels.map(l => dayMap[l])
+        };
+      }
 
       destroyCharts();
 
-      const tableTipo = data.tableTipo || [];
-      const tableOcorrencia = data.tableOcorrencia || [];
-      const tableUnidade = data.tableUnidade || [];
-      const tableSetor = data.tableSetor || [];
-      const tableStatus = data.tableStatus || [];
-      const chartSolicitante = data.chartSolicitante || { labels: [], values: [] };
+      const totalRegistros = typeof resumo.total !== "undefined"
+        ? resumo.total
+        : (detalhes.total || fallback.rows.length || 0);
 
-      document.getElementById("kpiTotal").textContent = fmt(resumo.total || 0);
-      document.getElementById("kpiUnidades").textContent = fmt(resumo.totalUnidades || 0);
-      document.getElementById("kpiOcorrencias").textContent = fmt(getOccurrencesValue(resumo, data));
-      document.getElementById("kpiTopSolicitante").textContent = getLeaderName(resumo, data);
-      document.getElementById("ultimaAtualizacao").textContent = resumo.ultimaAtualizacao || "--:--";
+      const totalUnidades = typeof resumo.totalUnidades !== "undefined"
+        ? resumo.totalUnidades
+        : unique(fallback.rows.map(r => r.unidade)).length;
 
-      renderCompactCard("cardTipo", tableTipo, 5);
-      renderCompactCard("cardOcorrencia", tableOcorrencia, 5);
-      renderCompactCard("cardUnidade", tableUnidade, 5);
-      renderCompactCard("cardStatus", tableStatus, 5);
-      renderCompactCard("cardSetor", tableSetor, 5);
+      const totalOcorrencias = typeof resumo.totalOcorrencias !== "undefined"
+        ? resumo.totalOcorrencias
+        : fallback.rows.filter(r => String(r.ocorrencia || "").trim()).length;
+
+      let solicitanteLider = resumo.solicitanteLider || "-";
+      if (solicitanteLider === "-" || !solicitanteLider) {
+        const top = groupRows(fallback.rows, "solicitante")[0];
+        solicitanteLider = top ? `${top.nome} (${top.total})` : "-";
+      }
+
+      document.getElementById("kpiTotal").textContent = fmt(totalRegistros);
+      document.getElementById("kpiUnidades").textContent = fmt(totalUnidades);
+      document.getElementById("kpiOcorrencias").textContent = fmt(totalOcorrencias);
+      document.getElementById("kpiTopSolicitante").textContent = solicitanteLider;
+      document.getElementById("ultimaAtualizacao").textContent =
+        resumo.ultimaAtualizacao ||
+        new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+      renderCompactCard("cardTipo", data.tableTipo || [], 5);
+      renderCompactCard("cardOcorrencia", data.tableOcorrencia || [], 5);
+      renderCompactCard("cardUnidade", data.tableUnidade || [], 5);
+      renderCompactCard("cardStatus", data.tableStatus || [], 5);
+      renderCompactCard("cardSetor", data.tableSetor || [], 5);
+
       renderResumoRapido(data);
 
       chartSolicitanteInstance = new Chart(document.getElementById("chartSolicitante"), {
         type: "bar",
         data: {
-          labels: chartSolicitante.labels || [],
+          labels: data.chartSolicitante?.labels || [],
           datasets: [{
             label: "Qtd",
-            data: chartSolicitante.values || [],
+            data: data.chartSolicitante?.values || [],
             backgroundColor: "#ff7a1a",
             borderRadius: 6
           }]
@@ -915,14 +1284,11 @@
           }
         }
       });
+
+      renderDetailTable(detalhes);
     }
 
-    async function loadDetalhes() {
-      const res = await fetch(`/api/cco-fbs-detalhes?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
+    function renderDetailTable(data) {
       totalPages = data.totalPages || 1;
       document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
 
@@ -951,7 +1317,6 @@
     async function loadAll(page = 1) {
       currentPage = page;
       await loadResumoAndGraficos();
-      await loadDetalhes();
     }
 
     document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
@@ -961,11 +1326,11 @@
       document.getElementById("filtroDataFim").value = "";
       document.getElementById("filtroBusca").value = "";
 
-      ["f_ano", "f_mes", "f_unidade", "f_setor", "f_tipo"].forEach((id) => {
-        [...document.getElementById(id).options].forEach((opt) => {
-          opt.selected = false;
-        });
-      });
+      clearMultiSelect("ano", "Todos");
+      clearMultiSelect("mes", "Todos");
+      clearMultiSelect("unidade", "Todas");
+      clearMultiSelect("setor", "Todos");
+      clearMultiSelect("tipo", "Todos");
 
       loadAll(1);
     });
@@ -977,6 +1342,8 @@
     document.getElementById("btnNext").addEventListener("click", () => {
       if (currentPage < totalPages) loadAll(currentPage + 1);
     });
+
+    setupDropdowns();
 
     (async function init() {
       await loadFilters();

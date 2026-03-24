@@ -631,6 +631,7 @@
     let totalPages = 1;
     let chartSolicitanteInstance = null;
     let chartDiaInstance = null;
+    let filterMap = {};
 
     function esc(v) {
       return String(v ?? "")
@@ -643,6 +644,14 @@
 
     function fmt(n) {
       return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
+    }
+
+    function normalizeText(v) {
+      return String(v || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
     }
 
     function getMultiValues(id) {
@@ -658,18 +667,46 @@
         .join("");
     }
 
+    function findFilter(filtros, terms) {
+      return (filtros || []).find(f => {
+        const key = normalizeText(f.key);
+        const label = normalizeText(f.label);
+        return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
+      });
+    }
+
     function getFiltersQuery(page = 1) {
       const qs = new URLSearchParams();
-      qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
-      qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
-      qs.set("busca", document.getElementById("filtroBusca").value || "");
-      qs.set("ano", getMultiValues("f_ano").join("|"));
-      qs.set("mes", getMultiValues("f_mes").join("|"));
-      qs.set("unidade", getMultiValues("f_unidade").join("|"));
-      qs.set("setor", getMultiValues("f_setor").join("|"));
-      qs.set("tipo", getMultiValues("f_tipo").join("|"));
+
+      const dataInicio = document.getElementById("filtroDataInicio").value || "";
+      const dataFim = document.getElementById("filtroDataFim").value || "";
+      const busca = document.getElementById("filtroBusca").value || "";
+
+      const anos = getMultiValues("f_ano");
+      const meses = getMultiValues("f_mes");
+      const unidades = getMultiValues("f_unidade");
+      const setores = getMultiValues("f_setor");
+      const tipos = getMultiValues("f_tipo");
+
+      qs.set("dataInicio", dataInicio);
+      qs.set("dataFim", dataFim);
+      qs.set("busca", busca);
+
+      qs.set("ano", anos.join("|"));
+      qs.set("mes", meses.join("|"));
+      qs.set("unidade", unidades.join("|"));
+      qs.set("setor", setores.join("|"));
+      qs.set("tipo", tipos.join("|"));
+
+      if (filterMap.ano) qs.set(`f_${filterMap.ano}`, anos.join("|"));
+      if (filterMap.mes) qs.set(`f_${filterMap.mes}`, meses.join("|"));
+      if (filterMap.unidade) qs.set(`f_${filterMap.unidade}`, unidades.join("|"));
+      if (filterMap.setor) qs.set(`f_${filterMap.setor}`, setores.join("|"));
+      if (filterMap.tipo) qs.set(`f_${filterMap.tipo}`, tipos.join("|"));
+
       qs.set("page", page);
       qs.set("limit", 50);
+
       return qs.toString();
     }
 
@@ -720,6 +757,17 @@
       renderCompactCard("cardResumo", resumoRows, 5);
     }
 
+    function getLeaderName(summaryData, graphData) {
+      if (summaryData?.solicitanteLider) return summaryData.solicitanteLider;
+      if (graphData?.chartSolicitante?.labels?.length) return graphData.chartSolicitante.labels[0];
+      return "-";
+    }
+
+    function getOccurrencesValue(summaryData, graphData) {
+      if (typeof summaryData?.totalOcorrencias !== "undefined") return summaryData.totalOcorrencias;
+      return (graphData?.tableOcorrencia || []).reduce((acc, item) => acc + Number(item.total || 0), 0);
+    }
+
     async function loadFilters() {
       const res = await fetch("/api/cco-fbs-filtros", {
         credentials: "same-origin"
@@ -729,31 +777,55 @@
       document.getElementById("heroDescription").textContent =
         `Aba utilizada: ${data.sheetTitle || "N/A"} | Filtros corrigidos por colunas reais da base e seleção múltipla habilitada.`;
 
-      setMultiOptions("f_ano", data.anos || []);
-      setMultiOptions("f_mes", data.meses || []);
-      setMultiOptions("f_unidade", data.unidades || []);
-      setMultiOptions("f_setor", data.setores || []);
-      setMultiOptions("f_tipo", data.tipos || []);
+      if (Array.isArray(data.filtros) && data.filtros.length) {
+        const anoFilter = findFilter(data.filtros, ["ano"]);
+        const mesFilter = findFilter(data.filtros, ["mes", "mês"]);
+        const unidadeFilter = findFilter(data.filtros, ["unidade"]);
+        const setorFilter = findFilter(data.filtros, ["setor"]);
+        const tipoFilter = findFilter(data.filtros, ["tipo"]);
+
+        filterMap = {
+          ano: anoFilter?.key || null,
+          mes: mesFilter?.key || null,
+          unidade: unidadeFilter?.key || null,
+          setor: setorFilter?.key || null,
+          tipo: tipoFilter?.key || null
+        };
+
+        setMultiOptions("f_ano", anoFilter?.values || []);
+        setMultiOptions("f_mes", mesFilter?.values || []);
+        setMultiOptions("f_unidade", unidadeFilter?.values || []);
+        setMultiOptions("f_setor", setorFilter?.values || []);
+        setMultiOptions("f_tipo", tipoFilter?.values || []);
+      } else {
+        filterMap = {
+          ano: "ano",
+          mes: "mes",
+          unidade: "unidade",
+          setor: "setor",
+          tipo: "tipo"
+        };
+
+        setMultiOptions("f_ano", data.anos || []);
+        setMultiOptions("f_mes", data.meses || []);
+        setMultiOptions("f_unidade", data.unidades || []);
+        setMultiOptions("f_setor", data.setores || []);
+        setMultiOptions("f_tipo", data.tipos || []);
+      }
     }
 
-    async function loadResumo() {
-      const res = await fetch(`/api/cco-fbs-resumo?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
+    async function loadResumoAndGraficos() {
+      const [resResumo, resGraficos] = await Promise.all([
+        fetch(`/api/cco-fbs-resumo?${getFiltersQuery(currentPage)}`, {
+          credentials: "same-origin"
+        }),
+        fetch(`/api/cco-fbs-graficos?${getFiltersQuery(currentPage)}`, {
+          credentials: "same-origin"
+        })
+      ]);
 
-      document.getElementById("kpiTotal").textContent = fmt(data.total || 0);
-      document.getElementById("kpiUnidades").textContent = fmt(data.totalUnidades || 0);
-      document.getElementById("kpiOcorrencias").textContent = fmt(data.totalOcorrencias || 0);
-      document.getElementById("kpiTopSolicitante").textContent = data.solicitanteLider || "-";
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
-    }
-
-    async function loadGraficos() {
-      const res = await fetch(`/api/cco-fbs-graficos?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
+      const resumo = await resResumo.json();
+      const data = await resGraficos.json();
 
       destroyCharts();
 
@@ -763,6 +835,12 @@
       const tableSetor = data.tableSetor || [];
       const tableStatus = data.tableStatus || [];
       const chartSolicitante = data.chartSolicitante || { labels: [], values: [] };
+
+      document.getElementById("kpiTotal").textContent = fmt(resumo.total || 0);
+      document.getElementById("kpiUnidades").textContent = fmt(resumo.totalUnidades || 0);
+      document.getElementById("kpiOcorrencias").textContent = fmt(getOccurrencesValue(resumo, data));
+      document.getElementById("kpiTopSolicitante").textContent = getLeaderName(resumo, data);
+      document.getElementById("ultimaAtualizacao").textContent = resumo.ultimaAtualizacao || "--:--";
 
       renderCompactCard("cardTipo", tableTipo, 5);
       renderCompactCard("cardOcorrencia", tableOcorrencia, 5);
@@ -872,8 +950,7 @@
 
     async function loadAll(page = 1) {
       currentPage = page;
-      await loadResumo();
-      await loadGraficos();
+      await loadResumoAndGraficos();
       await loadDetalhes();
     }
 

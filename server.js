@@ -158,7 +158,17 @@ if (googleOAuthEnabled) {
 // ================== HELPERS ==================
 
 function requireAuth(req, res, next) {
-  if (!req.session.userId) return res.redirect("/login");
+  console.log("AUTH CHECK:", {
+    path: req.path,
+    userId: req.session.userId || null,
+    email: req.session.email || null,
+    perfil: req.session.perfil || null
+  });
+
+  if (!req.session.userId) {
+    return res.redirect("/login");
+  }
+
   next();
 }
 

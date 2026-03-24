@@ -598,116 +598,41 @@ app.get("/api/hc-dados", requireAuth, async (req, res) => {
 
 // ================== HC AGENTES FBS ==================
 
-const HC_AGENTES_FBS_SPREADSHEET_ID = "1XtP5ylCpA42aLE1EklytzHH2hUzik5JdY8meAg84Et4";
-const HC_AGENTES_FBS_RANGE = "'CONTROLE DE FALTAS FBS'!A1:Z200000";
+app.get("/api/hc-agentes-fbs-debug", requireAuth, async (req, res) => {
+  try {
+    const sheets = await conectarSheets();
 
-let hcAgentesCache = null;
-let hcAgentesCacheTime = 0;
-const HC_AGENTES_CACHE_TTL = 5 * 60 * 1000;
-
-function hcNorm(value) {
-  return String(value || "").trim();
-}
-
-function hcNormLower(value) {
-  return hcNorm(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function hcFindHeader(headers, possibilities) {
-  for (const p of possibilities) {
-    const exact = headers.find(h => hcNormLower(h) === hcNormLower(p));
-    if (exact) return exact;
-  }
-
-  for (const p of possibilities) {
-    const partial = headers.find(h => hcNormLower(h).includes(hcNormLower(p)));
-    if (partial) return partial;
-  }
-
-  return null;
-}
-
-async function carregarHcAgentesFbsRaw() {
-  const sheets = await conectarSheets();
-
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: HC_AGENTES_FBS_SPREADSHEET_ID,
-    range: HC_AGENTES_FBS_RANGE,
-  });
-
-  const values = response.data.values || [];
-  if (!values.length || values.length < 2) return [];
-
-  const headers = values[0].map((h, i) => hcNorm(h) || `COL_${i + 1}`);
-
-  const headerMap = {
-    data: hcFindHeader(headers, ["DATA", "Data"]),
-    unidade: hcFindHeader(headers, ["UNIDADE", "Unidade", "WH", "Warehouse"]),
-    colaborador: hcFindHeader(headers, ["COLABORADOR", "Colaborador", "NOME", "Nome"]),
-    plantao: hcFindHeader(headers, ["PLANTÃO", "PLANTAO", "Plantão"]),
-    turno: hcFindHeader(headers, ["TURNO", "Turno"]),
-    ocorrencia: hcFindHeader(headers, ["OCORRÊNCIA", "OCORRENCIA", "Ocorrência"]),
-    qtd: hcFindHeader(headers, ["QTD", "Quantidade"]),
-    absenteismo: hcFindHeader(headers, ["ABSENTEÍSMO", "ABSENTEISMO", "%ABS", "ABS"]),
-    observacoes: hcFindHeader(headers, ["OBSERVAÇÕES", "OBSERVACOES", "DESCONTO", "OBS"]),
-  };
-
-  const rows = values.slice(1).map((line) => {
-    const raw = {};
-    headers.forEach((header, i) => {
-      raw[header] = line[i] ?? "";
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId: "1XtP5ylCpA42aLE1EklytzHH2hUzik5JdY8meAg84Et4",
     });
 
-    return {
-      DATA: headerMap.data ? raw[headerMap.data] || "" : "",
-      UNIDADE: headerMap.unidade ? raw[headerMap.unidade] || "" : "",
-      COLABORADOR: headerMap.colaborador ? raw[headerMap.colaborador] || "" : "",
-      "PLANTÃO": headerMap.plantao ? raw[headerMap.plantao] || "" : "",
-      TURNO: headerMap.turno ? raw[headerMap.turno] || "" : "",
-      "OCORRÊNCIA": headerMap.ocorrencia ? raw[headerMap.ocorrencia] || "" : "",
-      QTD: headerMap.qtd ? raw[headerMap.qtd] || "" : "1",
-      "%ABS": headerMap.absenteismo ? raw[headerMap.absenteismo] || "" : "",
-      "OBSERVAÇÕES": headerMap.observacoes ? raw[headerMap.observacoes] || "" : "",
-      _raw: raw
-    };
-  }).filter((row) =>
-    hcNorm(row.DATA) ||
-    hcNorm(row.UNIDADE) ||
-    hcNorm(row.COLABORADOR) ||
-    hcNorm(row["PLANTÃO"]) ||
-    hcNorm(row.TURNO) ||
-    hcNorm(row["OCORRÊNCIA"])
-  );
+    const abas = (meta.data.sheets || []).map(
+      (s) => s.properties?.title || "SEM_NOME"
+    );
 
-  console.log("HC AGENTES FBS headers detectados:", headerMap);
-  console.log("HC AGENTES FBS linhas:", rows.length);
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: "1XtP5ylCpA42aLE1EklytzHH2hUzik5JdY8meAg84Et4",
+      range: "'CONTROLE DE FALTAS FBS'!A1:Z30",
+    });
 
-  return rows;
-}
+    const values = response.data.values || [];
 
-async function carregarHcAgentesFbsComCache() {
-  const now = Date.now();
-
-  if (hcAgentesCache && now - hcAgentesCacheTime < HC_AGENTES_CACHE_TTL) {
-    return hcAgentesCache;
-  }
-
-  hcAgentesCache = await carregarHcAgentesFbsRaw();
-  hcAgentesCacheTime = now;
-
-  return hcAgentesCache;
-}
-
-app.get("/api/hc-agentes-fbs", requireAuth, async (req, res) => {
-  try {
-    const dados = await carregarHcAgentesFbsComCache();
-    return res.json(dados);
-  } catch (err) {
-    console.log("Erro HC AGENTES FBS nova base:", err);
-    return res.status(500).json({ error: "Erro ao carregar HC AGENTES FBS." });
+    return res.json({
+      ok: true,
+      abas,
+      totalLinhas: values.length,
+      linha1: values[0] || [],
+      linha2: values[1] || [],
+      linha3: values[2] || [],
+      linha4: values[3] || [],
+      linha5: values[4] || []
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+      details: error.response?.data || null
+    });
   }
 });
 

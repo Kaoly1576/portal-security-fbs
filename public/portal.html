@@ -11,18 +11,22 @@
 
   <style>
     :root{
-      --bg:#05080f;
-      --panel:rgba(9,12,18,.94);
-      --panel-2:rgba(15,20,30,.96);
-      --line:rgba(255,255,255,.07);
-      --text:#f5f7fb;
-      --muted:#9aa7c0;
+      --bg:#1b1b1b;
+      --bg-2:#111111;
+      --card:#2e2e2e;
+      --card-2:#1d1d1d;
+      --input:#232323;
+      --line:rgba(255,255,255,.08);
+      --text:#ffffff;
+      --muted:#c7c7c7;
       --orange:#ff7a1a;
       --orange-2:#ff9b52;
-      --blue:#4d78ff;
+      --blue:#58a6ff;
       --green:#22c55e;
       --red:#ef4444;
-      --shadow:0 12px 34px rgba(0,0,0,.42);
+      --purple:#8b5cf6;
+      --yellow:#f59e0b;
+      --shadow:0 12px 34px rgba(0,0,0,.34);
     }
 
     *{
@@ -32,29 +36,16 @@
       font-family:'Inter',sans-serif;
     }
 
-    html, body{
+    html,body{
       min-height:100%;
     }
 
     body{
       color:var(--text);
       background:
-        radial-gradient(circle at 78% 14%, rgba(255,124,33,.08), transparent 16%),
-        radial-gradient(circle at 15% 0%, rgba(65,103,255,.07), transparent 20%),
-        linear-gradient(180deg, rgba(5,8,14,.97), rgba(3,5,10,.995)),
-        url("/images/plano de fundo.png") center/cover no-repeat fixed;
-      background-blend-mode:screen,screen,normal,normal;
-    }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(to bottom, rgba(255,255,255,.015), transparent 120px),
-        radial-gradient(circle at center, rgba(255,255,255,.01), transparent 55%);
-      opacity:.75;
+        linear-gradient(180deg, rgba(27,27,27,0.96) 0%, rgba(17,17,17,0.98) 100%),
+        url("/images/plano de fundo.png") center/cover fixed no-repeat;
+      background-blend-mode:normal,normal;
     }
 
     a{
@@ -69,9 +60,7 @@
     .page-shell{
       max-width:1450px;
       margin:0 auto;
-      padding:18px;
-      position:relative;
-      z-index:1;
+      padding:12px 18px 18px;
     }
 
     .topbar{
@@ -79,19 +68,19 @@
       align-items:center;
       justify-content:space-between;
       gap:18px;
-      padding:14px 20px;
+      padding:10px 14px;
       border:1px solid var(--line);
-      border-radius:20px;
-      background:linear-gradient(180deg, rgba(10,14,22,.95), rgba(7,10,17,.92));
-      backdrop-filter:blur(14px);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(16,16,16,.88), rgba(10,10,10,.9));
       box-shadow:var(--shadow);
+      margin-bottom:14px;
     }
 
     .brand{
       display:flex;
       align-items:center;
       gap:12px;
-      min-width:240px;
+      min-width:220px;
     }
 
     .brand img{
@@ -99,13 +88,13 @@
       height:34px;
       object-fit:contain;
       border-radius:8px;
-      background:rgba(255,255,255,.03);
+      background:#232323;
+      padding:3px;
     }
 
     .brand h1{
-      font-size:18px;
+      font-size:16px;
       font-weight:700;
-      letter-spacing:.2px;
     }
 
     .nav{
@@ -121,8 +110,8 @@
       padding:10px 14px;
       border-radius:12px;
       color:#d9e3f8;
-      font-size:14px;
-      font-weight:500;
+      font-size:13px;
+      font-weight:600;
       position:relative;
       transition:.2s;
     }
@@ -149,7 +138,7 @@
       display:flex;
       align-items:center;
       gap:10px;
-      min-width:220px;
+      min-width:320px;
       justify-content:flex-end;
     }
 
@@ -162,25 +151,26 @@
       border:1px solid var(--line);
       background:rgba(255,255,255,.03);
       color:#fff;
-      font-size:16px;
+      font-size:15px;
       cursor:pointer;
+      flex:0 0 auto;
     }
 
     .profile-mini{
       display:flex;
       align-items:center;
       gap:10px;
-      padding:5px 12px 5px 6px;
-      border-radius:999px;
+      padding:6px 12px 6px 6px;
+      border-radius:16px;
       border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      min-width:120px;
-      max-width:260px;
+      background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
+      min-width:220px;
+      max-width:320px;
     }
 
     .profile-mini img{
-      width:34px;
-      height:34px;
+      width:42px;
+      height:42px;
       border-radius:50%;
       object-fit:cover;
       border:2px solid rgba(255,255,255,.14);
@@ -188,154 +178,157 @@
       flex:0 0 auto;
     }
 
-    .profile-mini span{
+    .profile-mini-text{
+      min-width:0;
+      line-height:1.15;
+    }
+
+    .profile-mini-text strong{
+      display:block;
+      font-size:13px;
+      font-weight:700;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      font-size:14px;
-      font-weight:600;
+    }
+
+    .profile-mini-text span{
+      display:block;
+      font-size:10px;
+      color:#ffbf8c;
+      margin-top:2px;
+      text-transform:capitalize;
+    }
+
+    .profile-mini-text small{
+      display:block;
+      font-size:10px;
+      color:#d1d5db;
+      margin-top:2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
     .main-grid{
       display:grid;
-      grid-template-columns:minmax(0,1.95fr) 355px;
-      gap:18px;
-      margin-top:18px;
+      grid-template-columns:minmax(0,1.9fr) 320px;
+      gap:14px;
     }
 
     .left-col,
     .right-col{
       display:flex;
       flex-direction:column;
-      gap:18px;
+      gap:14px;
       min-width:0;
     }
 
-    .hero{
-      position:relative;
-      min-height:250px;
-      border-radius:24px;
+    .hero-card{
+      display:grid;
+      grid-template-columns:1.45fr .95fr;
+      min-height:205px;
+      border-radius:22px;
       overflow:hidden;
-      border:1px solid rgba(255,255,255,.08);
+      border:1px solid var(--line);
       box-shadow:var(--shadow);
+      background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
+    }
+
+    .hero-left{
+      padding:30px 26px;
       background:
-        linear-gradient(90deg, rgba(5,8,14,.97) 0%, rgba(5,8,14,.88) 45%, rgba(5,8,14,.38) 100%),
+        linear-gradient(90deg, rgba(10,10,10,.72) 0%, rgba(10,10,10,.56) 55%, rgba(10,10,10,.20) 100%),
         url("/images/plano de fundo.png") center/cover no-repeat;
       display:flex;
-      align-items:center;
-      padding:36px;
-    }
-
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 68% 35%, rgba(255,170,90,.14), transparent 23%),
-        linear-gradient(180deg, transparent, rgba(0,0,0,.22));
-      pointer-events:none;
-    }
-
-    .hero-content{
-      position:relative;
-      z-index:2;
-      max-width:560px;
-    }
-
-    .hero h2{
-      font-size:24px;
-      font-weight:600;
-      margin-bottom:14px;
-    }
-
-    .hero p{
-      font-size:15px;
-      line-height:1.6;
-      color:#d3ddf2;
-      margin-bottom:24px;
-    }
-
-    .hero-actions{
-      display:flex;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      border:none;
-      cursor:pointer;
-      padding:13px 22px;
-      border-radius:12px;
-      font-size:15px;
-      font-weight:700;
-      transition:.2s;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
+      flex-direction:column;
       justify-content:center;
     }
 
-    .btn:hover{
-      transform:translateY(-1px);
-    }
-
-    .btn-primary{
-      color:#fff;
-      background:linear-gradient(135deg,#ff9546,#ff5d00);
-      box-shadow:0 10px 28px rgba(255,122,26,.25);
-    }
-
-    .btn-dark{
-      color:#eef3ff;
-      background:linear-gradient(180deg, rgba(38,46,62,.95), rgba(20,25,35,.98));
-      border:1px solid rgba(255,255,255,.08);
-    }
-
-    .hero-eagle{
-      position:absolute;
-      right:10px;
-      bottom:0;
-      width:min(42%, 430px);
-      max-height:92%;
-      object-fit:contain;
-      z-index:1;
-      filter:drop-shadow(0 10px 30px rgba(0,0,0,.45));
-      pointer-events:none;
-    }
-
-    .section-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:18px;
-    }
-
-    .category-card,
-    .profile-card,
-    .info-card{
-      background:linear-gradient(180deg, rgba(12,16,24,.96), rgba(8,11,18,.98));
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-    }
-
-    .category-card{
-      padding:18px;
-      min-height:220px;
-    }
-
-    .category-title{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-size:18px;
+    .hero-left h2{
+      font-size:22px;
       font-weight:700;
       margin-bottom:14px;
     }
 
-    .category-links{
+    .hero-left p{
+      font-size:15px;
+      line-height:1.6;
+      color:#d3ddf2;
+      max-width:560px;
+    }
+
+    .hero-right{
+      background:linear-gradient(135deg, rgba(46,46,46,.98), rgba(29,29,29,.98));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      position:relative;
+    }
+
+    .hero-right img{
+      width:100%;
+      max-width:255px;
+      object-fit:contain;
+      filter:drop-shadow(0 12px 28px rgba(0,0,0,.45));
+    }
+
+    .portal-sections{
       display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .accordion-card,
+    .profile-card,
+    .site-card,
+    .action-card{
+      background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
+      border:1px solid var(--line);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .accordion-card{
+      padding:12px;
+    }
+
+    .accordion-header{
+      width:100%;
+      border:none;
+      background:transparent;
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
       gap:12px;
+      padding:2px 4px 10px;
+      cursor:pointer;
+    }
+
+    .accordion-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:16px;
+      font-weight:700;
+    }
+
+    .accordion-icon{
+      font-size:14px;
+      color:#ddd;
+      transition:transform .22s ease;
+    }
+
+    .accordion-card.open .accordion-icon{
+      transform:rotate(180deg);
+    }
+
+    .accordion-body{
+      display:grid;
+      gap:10px;
     }
 
     .category-link{
@@ -343,7 +336,7 @@
       align-items:center;
       justify-content:space-between;
       gap:14px;
-      padding:16px 16px;
+      padding:14px 16px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,.06);
       background:rgba(255,255,255,.03);
@@ -351,7 +344,7 @@
     }
 
     .category-link:hover{
-      transform:translateY(-2px);
+      transform:translateY(-1px);
       background:rgba(255,122,26,.08);
       border-color:rgba(255,122,26,.20);
     }
@@ -371,26 +364,27 @@
     .category-link .arrow{
       color:#dce5f8;
       font-weight:800;
-      font-size:16px;
+      font-size:18px;
       flex:0 0 auto;
     }
 
+    .right-col{
+      gap:12px;
+    }
+
     .profile-card{
-      padding:18px;
+      padding:14px;
     }
 
     .profile-head{
       display:flex;
-      align-items:center;
-      gap:14px;
-      padding-bottom:16px;
-      border-bottom:1px solid rgba(255,255,255,.07);
-      margin-bottom:16px;
+      align-items:flex-start;
+      gap:12px;
     }
 
     .profile-head img{
-      width:56px;
-      height:56px;
+      width:58px;
+      height:58px;
       border-radius:50%;
       object-fit:cover;
       border:2px solid rgba(255,255,255,.15);
@@ -398,30 +392,37 @@
       flex:0 0 auto;
     }
 
+    .profile-head-text{
+      min-width:0;
+      flex:1;
+    }
+
     .profile-name{
-      font-size:20px;
-      font-weight:700;
+      font-size:17px;
+      font-weight:800;
       line-height:1.2;
+      margin-bottom:4px;
     }
 
     .profile-role{
-      margin-top:4px;
       font-size:13px;
       color:#ffbf8c;
-      font-weight:600;
+      font-weight:700;
       text-transform:capitalize;
+      margin-bottom:2px;
     }
 
     .profile-email-head{
-      margin-top:4px;
-      font-size:14px;
+      font-size:13px;
       color:#eef4ff;
       word-break:break-word;
+      font-weight:600;
     }
 
     .profile-grid{
       display:grid;
       gap:12px;
+      margin-top:14px;
     }
 
     .profile-info{
@@ -445,39 +446,86 @@
       word-break:break-word;
     }
 
-    .info-card{
-      padding:18px;
-      min-height:180px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(255,149,70,.08), transparent 30%),
-        linear-gradient(180deg, rgba(12,16,24,.98), rgba(8,11,18,.98));
+    .action-card{
+      padding:0;
+      overflow:hidden;
     }
 
-    .info-card img{
-      width:180px;
+    .action-card a{
+      display:flex;
+      width:100%;
+      min-height:54px;
+      align-items:center;
+      padding:12px 16px;
+      font-weight:800;
+      font-size:14px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      transition:.2s;
+    }
+
+    .action-card a:last-child{
+      border-bottom:none;
+    }
+
+    .action-card a:hover{
+      background:rgba(255,122,26,.08);
+    }
+
+    .action-card strong{
+      display:block;
+      font-size:14px;
+    }
+
+    .action-card span{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:3px;
+      font-weight:500;
+    }
+
+    .site-card{
+      padding:18px;
+      min-height:305px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      transition:.2s;
+      cursor:pointer;
+      background:
+        linear-gradient(180deg, rgba(14,14,14,.92), rgba(10,10,10,.96)),
+        url("/images/plano de fundo.png") center/cover no-repeat;
+    }
+
+    .site-card:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,122,26,.22);
+      box-shadow:0 14px 34px rgba(0,0,0,.44);
+    }
+
+    .site-card-content img{
+      width:215px;
       max-width:100%;
       object-fit:contain;
-      margin-bottom:12px;
-      filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));
+      margin-bottom:14px;
+      filter:drop-shadow(0 12px 28px rgba(0,0,0,.45));
     }
 
-    .info-card h3{
-      font-size:18px;
+    .site-card-content h3{
+      font-size:19px;
+      font-weight:800;
+      line-height:1.2;
       margin-bottom:8px;
     }
 
-    .info-card p{
+    .site-card-content p{
       font-size:13px;
       color:var(--muted);
       line-height:1.5;
     }
 
-    @media (max-width: 1230px){
+    @media (max-width: 1200px){
       .main-grid{
         grid-template-columns:1fr;
       }
@@ -485,11 +533,12 @@
       .right-col{
         display:grid;
         grid-template-columns:1fr 1fr;
+        align-items:start;
       }
     }
 
-    @media (max-width: 980px){
-      .section-grid{
+    @media (max-width: 900px){
+      .portal-sections{
         grid-template-columns:1fr;
       }
 
@@ -497,13 +546,12 @@
         grid-template-columns:1fr;
       }
 
-      .hero{
-        min-height:260px;
+      .hero-card{
+        grid-template-columns:1fr;
       }
 
-      .hero-eagle{
-        width:42%;
-        opacity:.92;
+      .hero-right{
+        min-height:180px;
       }
     }
 
@@ -528,30 +576,24 @@
         overflow:auto;
       }
 
-      .hero{
-        min-height:auto;
-        padding:24px 20px;
+      .top-actions{
+        min-width:0;
       }
 
-      .hero-content{
+      .profile-mini{
         max-width:100%;
-        padding-right:0;
       }
 
-      .hero h2{
+      .hero-left{
+        padding:24px 18px;
+      }
+
+      .hero-left h2{
         font-size:18px;
       }
 
-      .hero p{
+      .hero-left p{
         font-size:14px;
-        max-width:100%;
-      }
-
-      .hero-eagle{
-        opacity:.14;
-        width:80%;
-        right:-18%;
-        bottom:-2%;
       }
     }
   </style>
@@ -575,9 +617,14 @@
 
       <div class="top-actions">
         <button class="icon-btn" aria-label="Buscar">⌕</button>
+
         <div class="profile-mini">
           <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
-          <span id="topUserName">Usuário</span>
+          <div class="profile-mini-text">
+            <strong id="topUserName">Usuário</strong>
+            <span id="topUserPerfil">usuário</span>
+            <small id="topUserEmail">Não informado</small>
+          </div>
         </div>
       </div>
     </header>
@@ -585,30 +632,31 @@
     <div class="main-grid">
       <section class="left-col">
 
-        <section class="hero">
-          <div class="hero-content">
+        <section class="hero-card">
+          <div class="hero-left">
             <h2>Bem-vindo ao Portal Security</h2>
             <p>
               Central de gestão de acessos, HC, processos e auditorias.
               Utilize os módulos abaixo para navegar entre os dashboards e áreas operacionais.
             </p>
-
-            <div class="hero-actions">
-              <a class="btn btn-primary" href="/access">Verificar Segurança</a>
-              <a class="btn btn-dark" href="/aprovacoes">Ver Aprovações</a>
-            </div>
           </div>
 
-          <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
+          <div class="hero-right">
+            <img src="/images/logo.png" alt="Logo Security">
+          </div>
         </section>
 
-        <section class="section-grid">
-          <div class="category-card">
-            <div class="category-title">🔐 Controle de Acesso</div>
-            <div class="category-links">
+        <section class="portal-sections">
+          <div class="accordion-card open">
+            <button class="accordion-header" type="button">
+              <div class="accordion-title">🔐 Controle de Acesso</div>
+              <div class="accordion-icon">⌄</div>
+            </button>
+
+            <div class="accordion-body">
               <a class="category-link" href="/access">
                 <div>
-                  <strong>Dashboard ACCESS</strong>
+                  <strong>ACCESS</strong>
                   <span>Acessos e liberações</span>
                 </div>
                 <div class="arrow">›</div>
@@ -622,19 +670,23 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/cadastro">
+              <a class="category-link" href="/first-mile-access">
                 <div>
-                  <strong>Cadastro</strong>
-                  <span>Novos acessos</span>
+                  <strong>First Mile</strong>
+                  <span>Rotas e coletas</span>
                 </div>
                 <div class="arrow">›</div>
               </a>
             </div>
           </div>
 
-          <div class="category-card">
-            <div class="category-title">👥 HC</div>
-            <div class="category-links">
+          <div class="accordion-card open">
+            <button class="accordion-header" type="button">
+              <div class="accordion-title">👥 HC</div>
+              <div class="accordion-icon">⌄</div>
+            </button>
+
+            <div class="accordion-body">
               <a class="category-link" href="/hc">
                 <div>
                   <strong>Dashboard HC</strong>
@@ -650,27 +702,6 @@
                 </div>
                 <div class="arrow">›</div>
               </a>
-            </div>
-          </div>
-
-          <div class="category-card">
-            <div class="category-title">⚙️ Processos</div>
-            <div class="category-links">
-              <a class="category-link" href="/first-mile-access">
-                <div>
-                  <strong>First Mile</strong>
-                  <span>Rotas e coletas</span>
-                </div>
-                <div class="arrow">›</div>
-              </a>
-
-              <a class="category-link" href="/ronda-geral">
-                <div>
-                  <strong>Rondas</strong>
-                  <span>Monitoramento</span>
-                </div>
-                <div class="arrow">›</div>
-              </a>
 
               <a class="category-link" href="/chamada-agentes">
                 <div>
@@ -682,9 +713,30 @@
             </div>
           </div>
 
-          <div class="category-card">
-            <div class="category-title">🧾 Auditorias</div>
-            <div class="category-links">
+          <div class="accordion-card open">
+            <button class="accordion-header" type="button">
+              <div class="accordion-title">⚙️ Processos</div>
+              <div class="accordion-icon">⌄</div>
+            </button>
+
+            <div class="accordion-body">
+              <a class="category-link" href="/ronda-geral">
+                <div>
+                  <strong>Rondas</strong>
+                  <span>Monitoramento</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+            </div>
+          </div>
+
+          <div class="accordion-card open">
+            <button class="accordion-header" type="button">
+              <div class="accordion-title">🧾 Auditorias</div>
+              <div class="accordion-icon">⌄</div>
+            </button>
+
+            <div class="accordion-body">
               <a class="category-link" href="/dashboard">
                 <div>
                   <strong>Resultado Operacional</strong>
@@ -717,7 +769,7 @@
         <section class="profile-card">
           <div class="profile-head">
             <img id="sideUserPhoto" src="/images/logo.png" alt="Minha foto">
-            <div>
+            <div class="profile-head-text">
               <div class="profile-name" id="sideUserName">Usuário</div>
               <div class="profile-role" id="sideUserRole">Usuário</div>
               <div class="profile-email-head" id="userEmailHead">Não informado</div>
@@ -742,13 +794,33 @@
           </div>
         </section>
 
-        <section class="info-card">
-          <img src="/images/Aguia.png" alt="Águia Security">
-          <h3>Portal Security FBS</h3>
-          <p>
-            Navegação central dos módulos operacionais e dashboards do ambiente.
-          </p>
+        <section class="action-card">
+          <a href="/aprovacoes">
+            <div>
+              <strong>Ver Aprovações</strong>
+            </div>
+          </a>
+
+          <a href="/cadastro">
+            <div>
+              <strong>Cadastro</strong>
+              <span>Novos acessos</span>
+            </div>
+          </a>
         </section>
+
+        <a
+          class="site-card"
+          href="https://sites.google.com/shopee.com/security-center-brasil?usp=sharing"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div class="site-card-content">
+            <img src="/images/site.png" alt="Website Security FBS">
+            <h3>WEBSITE SECURITY FBS</h3>
+            <p>Clique para acessar o portal oficial do Security Center Brasil.</p>
+          </div>
+        </a>
       </aside>
     </div>
   </div>
@@ -763,9 +835,7 @@
           method: "GET",
           credentials: "same-origin",
           cache: "no-store",
-          headers: {
-            "Accept": "application/json"
-          }
+          headers: { "Accept": "application/json" }
         });
 
         if (!response.ok) {
@@ -783,6 +853,8 @@
         const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
         const sideUserName = document.getElementById("sideUserName");
+        const topUserPerfil = document.getElementById("topUserPerfil");
+        const topUserEmail = document.getElementById("topUserEmail");
         const userEmailHead = document.getElementById("userEmailHead");
         const userEmailCard = document.getElementById("userEmailCard");
         const userRole = document.getElementById("sideUserRole");
@@ -791,31 +863,23 @@
 
         if (topUserPhoto) {
           topUserPhoto.src = foto;
-          topUserPhoto.onerror = function () {
-            this.src = fallbackPhoto;
-          };
+          topUserPhoto.onerror = function () { this.src = fallbackPhoto; };
         }
 
         if (sideUserPhoto) {
           sideUserPhoto.src = foto;
-          sideUserPhoto.onerror = function () {
-            this.src = fallbackPhoto;
-          };
+          sideUserPhoto.onerror = function () { this.src = fallbackPhoto; };
         }
 
         if (topUserName) topUserName.textContent = nome;
         if (sideUserName) sideUserName.textContent = nome;
+        if (topUserPerfil) topUserPerfil.textContent = perfil;
+        if (topUserEmail) topUserEmail.textContent = email;
         if (userEmailHead) userEmailHead.textContent = email;
         if (userEmailCard) userEmailCard.textContent = email;
         if (userRole) userRole.textContent = perfil;
-
-        if (userStatus) {
-          userStatus.textContent = user.status || "Aprovado";
-        }
-
-        if (userLevel) {
-          userLevel.textContent = user.nivel_acesso || user.nivel || "5";
-        }
+        if (userStatus) userStatus.textContent = user.status || "Aprovado";
+        if (userLevel) userLevel.textContent = user.nivel_acesso || user.nivel || "5";
       } catch (error) {
         console.error("Erro ao carregar perfil do usuário:", error);
 
@@ -831,7 +895,26 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", loadUserProfile);
+    function setupAccordions() {
+      document.querySelectorAll(".accordion-card").forEach(card => {
+        const header = card.querySelector(".accordion-header");
+        const body = card.querySelector(".accordion-body");
+
+        if (!header || !body) return;
+
+        header.addEventListener("click", () => {
+          card.classList.toggle("open");
+          body.style.display = card.classList.contains("open") ? "grid" : "none";
+        });
+
+        body.style.display = card.classList.contains("open") ? "grid" : "none";
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadUserProfile();
+      setupAccordions();
+    });
   </script>
 </body>
 </html>

@@ -5,27 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Portal Security FBS</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      --bg:#1b1b1b;
+      --bg:#080808;
       --bg-2:#111111;
-      --card:#2e2e2e;
-      --card-2:#1d1d1d;
-      --panel:#202020;
-      --panel-2:#171717;
+      --panel:rgba(18,18,18,.92);
+      --panel-2:rgba(28,28,28,.96);
       --line:rgba(255,255,255,.08);
-      --text:#ffffff;
-      --muted:#b5bfd4;
-      --muted-2:#8e99b3;
+      --text:#f5f7fb;
+      --muted:#a9b0bc;
       --orange:#ff7a1a;
-      --orange-2:#ff9f5a;
-      --blue:#4d78ff;
-      --shadow:0 12px 34px rgba(0,0,0,.34);
-      --radius:22px;
+      --orange-2:#ff9b52;
+      --shadow:0 12px 34px rgba(0,0,0,.35);
     }
 
     *{
@@ -35,16 +30,27 @@
       font-family:'Inter',sans-serif;
     }
 
-    html,body{
+    html, body{
       min-height:100%;
     }
 
     body{
       color:var(--text);
       background:
-        linear-gradient(180deg, rgba(27,27,27,.96) 0%, rgba(17,17,17,.98) 100%),
+        linear-gradient(180deg, rgba(10,10,10,.94), rgba(8,8,8,.98)),
         url("/images/plano de fundo.png") center/cover fixed no-repeat;
       background-blend-mode:normal,normal;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 85% 10%, rgba(255,122,26,.10), transparent 18%),
+        radial-gradient(circle at 15% 0%, rgba(255,255,255,.03), transparent 20%);
+      opacity:.95;
     }
 
     a{
@@ -57,77 +63,75 @@
     }
 
     .page-shell{
-      width:100%;
-      max-width:1480px;
+      max-width:1450px;
       margin:0 auto;
-      padding:4px 4px 18px;
+      padding:18px;
+      position:relative;
+      z-index:1;
     }
 
     .topbar{
-      display:grid;
-      grid-template-columns:265px 1fr 280px;
+      display:flex;
       align-items:center;
-      gap:0;
+      justify-content:space-between;
+      gap:18px;
+      padding:12px 18px;
       border:1px solid var(--line);
-      border-radius:0 0 22px 22px;
-      overflow:hidden;
-      background:linear-gradient(180deg, rgba(18,18,18,.92), rgba(10,10,10,.94));
+      border-radius:20px;
+      background:linear-gradient(180deg, rgba(10,10,10,.96), rgba(14,14,14,.94));
+      backdrop-filter:blur(12px);
       box-shadow:var(--shadow);
-      margin-bottom:14px;
     }
 
     .brand{
-      min-height:76px;
       display:flex;
       align-items:center;
       gap:12px;
-      padding:0 22px;
-      background:linear-gradient(135deg, #101826 0%, #0d1220 100%);
-      border-right:1px solid rgba(255,255,255,.05);
+      min-width:240px;
+      padding-right:10px;
+      background:transparent;
     }
 
     .brand img{
       width:34px;
       height:34px;
       object-fit:contain;
-      border-radius:8px;
-      background:#232323;
-      padding:2px;
-      flex:0 0 auto;
+      border-radius:10px;
+      background:transparent;
+      box-shadow:none;
+      display:block;
     }
 
     .brand h1{
-      font-size:16px;
-      font-weight:800;
-      color:var(--orange);
+      font-size:18px;
+      font-weight:700;
       letter-spacing:.2px;
+      color:var(--orange);
     }
 
     .nav{
-      min-height:76px;
       display:flex;
       align-items:center;
       justify-content:center;
-      gap:18px;
-      padding:0 12px;
-      overflow:auto;
-      white-space:nowrap;
+      flex:1;
+      gap:8px;
+      flex-wrap:wrap;
     }
 
     .nav a{
-      position:relative;
-      color:#e2e7f2;
-      font-size:14px;
-      font-weight:700;
-      padding:12px 14px;
+      padding:10px 14px;
       border-radius:12px;
-      transition:.2s ease;
-      flex:0 0 auto;
+      color:#d9e3f8;
+      font-size:14px;
+      font-weight:500;
+      position:relative;
+      transition:.2s;
     }
 
     .nav a:hover,
     .nav a.active{
       background:rgba(255,255,255,.05);
+      color:#fff;
     }
 
     .nav a.active::after{
@@ -135,278 +139,169 @@
       position:absolute;
       left:14px;
       right:14px;
-      bottom:5px;
+      bottom:3px;
       height:2px;
       border-radius:999px;
-      background:linear-gradient(90deg, var(--orange), #ffd0aa);
-      box-shadow:0 0 12px rgba(255,122,26,.45);
+      background:linear-gradient(90deg,var(--orange),#ffc593);
+      box-shadow:0 0 12px rgba(255,122,26,.55);
     }
 
     .top-actions{
-      min-height:76px;
       display:flex;
       align-items:center;
-      justify-content:flex-end;
       gap:10px;
-      padding:0 14px;
+      min-width:220px;
+      justify-content:flex-end;
     }
 
     .icon-btn{
-      width:42px;
-      height:42px;
+      width:40px;
+      height:40px;
       display:grid;
       place-items:center;
       border-radius:12px;
       border:1px solid var(--line);
       background:rgba(255,255,255,.03);
       color:#fff;
-      font-size:15px;
+      font-size:16px;
       cursor:pointer;
-      flex:0 0 auto;
     }
 
     .profile-mini{
       display:flex;
       align-items:center;
       gap:10px;
-      min-width:0;
-      max-width:100%;
-      padding:6px 12px 6px 6px;
-      border-radius:18px;
+      padding:5px 12px 5px 6px;
+      border-radius:999px;
       border:1px solid var(--line);
-      background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
+      background:rgba(255,255,255,.04);
+      min-width:120px;
+      max-width:260px;
     }
 
     .profile-mini img{
-      width:44px;
-      height:44px;
+      width:34px;
+      height:34px;
       border-radius:50%;
       object-fit:cover;
-      border:2px solid rgba(255,255,255,.12);
-      background:#111827;
+      border:2px solid rgba(255,255,255,.14);
+      background:#111;
       flex:0 0 auto;
     }
 
-    .profile-mini-text{
-      min-width:0;
-      line-height:1.15;
-    }
-
-    .profile-mini-text strong{
-      display:block;
-      font-size:13px;
-      font-weight:800;
+    .profile-mini span{
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-    }
-
-    .profile-mini-text span{
-      display:block;
-      font-size:11px;
-      color:#ffbf8c;
-      margin-top:2px;
-      font-weight:700;
-      text-transform:capitalize;
-    }
-
-    .profile-mini-text small{
-      display:block;
-      font-size:10px;
-      color:#d1d5db;
-      margin-top:2px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      font-size:14px;
+      font-weight:600;
+      color:#fff;
     }
 
     .main-grid{
       display:grid;
-      grid-template-columns:minmax(0,1fr) 310px;
-      gap:14px;
+      grid-template-columns:minmax(0,1.95fr) 355px;
+      gap:18px;
+      margin-top:18px;
     }
 
     .left-col,
     .right-col{
+      display:flex;
+      flex-direction:column;
+      gap:18px;
       min-width:0;
     }
 
-    .left-col{
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-
-    .right-col{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    .hero-card{
-      display:grid;
-      grid-template-columns:minmax(0,1fr) 320px;
-      min-height:260px;
-      border:1px solid var(--line);
+    .hero{
+      position:relative;
+      min-height:290px;
       border-radius:24px;
       overflow:hidden;
+      border:1px solid rgba(255,255,255,.08);
       box-shadow:var(--shadow);
-      background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
-    }
-
-    .hero-left{
-      position:relative;
-      padding:34px 36px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
       background:
-        linear-gradient(90deg, rgba(7,13,26,.92) 0%, rgba(10,18,34,.84) 38%, rgba(22,22,22,.55) 100%),
+        linear-gradient(90deg, rgba(12,12,12,.96) 0%, rgba(12,12,12,.82) 42%, rgba(12,12,12,.28) 100%),
         url("/images/plano de fundo.png") center/cover no-repeat;
+      display:flex;
+      align-items:center;
+      padding:36px;
     }
 
-    .hero-left::after{
+    .hero::after{
       content:"";
       position:absolute;
       inset:0;
       background:
-        radial-gradient(circle at 14% 15%, rgba(50,102,255,.16), transparent 24%),
-        radial-gradient(circle at 78% 18%, rgba(255,122,26,.10), transparent 22%);
+        radial-gradient(circle at 68% 35%, rgba(255,170,90,.18), transparent 23%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.18));
       pointer-events:none;
     }
 
     .hero-content{
       position:relative;
-      z-index:1;
-      max-width:520px;
+      z-index:2;
+      max-width:580px;
     }
 
-    .hero-content h2{
-      font-size:22px;
-      font-weight:800;
-      margin-bottom:12px;
-      color:#fff;
+    .hero h2{
+      font-size:24px;
+      font-weight:700;
+      margin-bottom:14px;
     }
 
-    .hero-content p{
+    .hero p{
       font-size:15px;
-      line-height:1.6;
-      color:#d6def0;
-      margin-bottom:22px;
-      max-width:500px;
+      line-height:1.7;
+      color:#d3ddf2;
+      margin-bottom:0;
     }
 
-    .hero-actions{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      border:none;
-      cursor:pointer;
-      padding:12px 18px;
-      border-radius:12px;
-      font-size:14px;
-      font-weight:800;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      transition:.2s ease;
-    }
-
-    .btn:hover{
-      transform:translateY(-1px);
-    }
-
-    .btn-primary{
-      background:linear-gradient(135deg, #ff9546 0%, #ff5d00 100%);
-      color:#fff;
-      box-shadow:0 8px 24px rgba(255,122,26,.22);
-    }
-
-    .btn-dark{
-      background:linear-gradient(180deg, rgba(43,56,84,.92), rgba(18,26,44,.95));
-      color:#eef3ff;
-      border:1px solid rgba(255,255,255,.08);
-    }
-
-    .hero-right{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:16px;
-      background:linear-gradient(135deg, rgba(49,49,49,.96), rgba(30,30,30,.98));
-    }
-
-    .hero-right img{
-      width:100%;
-      max-width:250px;
+    .hero-eagle{
+      position:absolute;
+      right:10px;
+      bottom:0;
+      width:min(42%, 430px);
+      max-height:92%;
       object-fit:contain;
-      filter:drop-shadow(0 12px 28px rgba(0,0,0,.45));
+      z-index:1;
+      filter:drop-shadow(0 10px 30px rgba(0,0,0,.45));
+      pointer-events:none;
     }
 
-    .portal-sections{
+    .section-grid{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:14px;
+      gap:18px;
     }
 
-    .accordion-card,
-    .site-card,
-    .side-actions{
-      background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
-      border:1px solid var(--line);
+    .category-card,
+    .profile-card,
+    .info-card{
+      background:linear-gradient(180deg, rgba(20,20,20,.94), rgba(14,14,14,.96));
+      border:1px solid rgba(255,255,255,.07);
       border-radius:22px;
       box-shadow:var(--shadow);
       overflow:hidden;
     }
 
-    .accordion-card{
-      padding:12px;
-      min-height:286px;
+    .category-card{
+      padding:18px;
+      min-height:220px;
     }
 
-    .accordion-header{
-      width:100%;
-      border:none;
-      background:transparent;
-      color:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:2px 4px 12px;
-      cursor:pointer;
-    }
-
-    .accordion-title{
+    .category-title{
       display:flex;
       align-items:center;
       gap:10px;
-      font-size:17px;
-      font-weight:800;
+      font-size:18px;
+      font-weight:700;
+      margin-bottom:14px;
     }
 
-    .accordion-icon{
-      color:#d9d9d9;
-      font-size:16px;
-      font-weight:900;
-      transition:transform .22s ease;
-    }
-
-    .accordion-card.closed .accordion-icon{
-      transform:rotate(-180deg);
-    }
-
-    .accordion-body{
+    .category-links{
       display:grid;
       gap:12px;
-    }
-
-    .accordion-card.closed .accordion-body{
-      display:none;
     }
 
     .category-link{
@@ -414,127 +309,141 @@
       align-items:center;
       justify-content:space-between;
       gap:14px;
-      padding:16px 18px;
-      border-radius:18px;
+      padding:16px;
+      border-radius:16px;
       border:1px solid rgba(255,255,255,.06);
       background:rgba(255,255,255,.03);
       transition:.2s ease;
     }
 
     .category-link:hover{
-      transform:translateY(-1px);
-      background:rgba(255,122,26,.08);
-      border-color:rgba(255,122,26,.20);
+      transform:translateY(-2px);
+      background:rgba(255,122,26,.10);
+      border-color:rgba(255,122,26,.22);
     }
 
     .category-link strong{
       display:block;
       font-size:15px;
-      font-weight:800;
       margin-bottom:4px;
     }
 
     .category-link span{
       display:block;
-      color:var(--muted-2);
+      color:#9eabc4;
       font-size:12px;
-      font-weight:500;
     }
 
     .category-link .arrow{
-      font-size:24px;
+      color:#dce5f8;
       font-weight:800;
-      color:#e8eefb;
-      line-height:1;
+      font-size:16px;
       flex:0 0 auto;
     }
 
-    .site-card{
-      min-height:336px;
+    .profile-card{
       padding:18px;
-      background:
-        linear-gradient(180deg, rgba(14,14,14,.92), rgba(10,10,10,.96)),
-        url("/images/plano de fundo.png") center/cover no-repeat;
-      transition:.2s ease;
     }
 
-    .site-card:hover{
-      transform:translateY(-2px);
-      border-color:rgba(255,122,26,.22);
-      box-shadow:0 14px 34px rgba(0,0,0,.44);
+    .profile-head{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding-bottom:16px;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      margin-bottom:16px;
     }
 
-    .site-card-content{
-      height:100%;
+    .profile-head img{
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,.15);
+      background:#111;
+      flex:0 0 auto;
+    }
+
+    .profile-name{
+      font-size:20px;
+      font-weight:700;
+      line-height:1.2;
+    }
+
+    .profile-role{
+      margin-top:4px;
+      font-size:13px;
+      color:#ffbf8c;
+      font-weight:600;
+    }
+
+    .profile-email-top{
+      margin-top:4px;
+      font-size:14px;
+      color:#eef4ff;
+      word-break:break-word;
+      display:block;
+    }
+
+    .profile-grid{
+      display:grid;
+      gap:12px;
+    }
+
+    .profile-info{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:14px;
+      padding:12px 14px;
+    }
+
+    .profile-info small{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .profile-info strong{
+      display:block;
+      font-size:15px;
+      color:#eef4ff;
+      word-break:break-word;
+    }
+
+    .info-card{
+      padding:18px;
+      min-height:180px;
       display:flex;
       flex-direction:column;
-      align-items:center;
       justify-content:center;
+      align-items:center;
       text-align:center;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255,149,70,.10), transparent 30%),
+        linear-gradient(180deg, rgba(18,18,18,.95), rgba(12,12,12,.96));
     }
 
-    .site-card-content img{
-      width:210px;
+    .info-card img{
+      width:180px;
       max-width:100%;
       object-fit:contain;
-      margin-bottom:14px;
-      filter:drop-shadow(0 12px 28px rgba(0,0,0,.45));
+      margin-bottom:12px;
+      filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));
     }
 
-    .site-card-content h3{
-      font-size:19px;
-      font-weight:900;
-      line-height:1.2;
+    .info-card h3{
+      font-size:18px;
       margin-bottom:8px;
     }
 
-    .site-card-content p{
+    .info-card p{
       font-size:13px;
       color:var(--muted);
       line-height:1.5;
-      max-width:230px;
     }
 
-    .side-actions{
-      overflow:hidden;
-    }
-
-    .side-actions a{
-      display:flex;
-      align-items:center;
-      min-height:58px;
-      padding:14px 18px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      transition:.2s ease;
-    }
-
-    .side-actions a:last-child{
-      border-bottom:none;
-    }
-
-    .side-actions a:hover{
-      background:rgba(255,122,26,.08);
-    }
-
-    .side-actions strong{
-      display:block;
-      font-size:16px;
-      font-weight:800;
-      margin-bottom:3px;
-    }
-
-    .side-actions span{
-      display:block;
-      font-size:12px;
-      color:var(--muted-2);
-      font-weight:500;
-    }
-
-    @media (max-width: 1200px){
-      .topbar{
-        grid-template-columns:240px 1fr 260px;
-      }
-
+    @media (max-width: 1230px){
       .main-grid{
         grid-template-columns:1fr;
       }
@@ -542,17 +451,36 @@
       .right-col{
         display:grid;
         grid-template-columns:1fr 1fr;
-        align-items:start;
-      }
-
-      .site-card{
-        min-height:260px;
       }
     }
 
-    @media (max-width: 920px){
-      .topbar{
+    @media (max-width: 980px){
+      .section-grid{
         grid-template-columns:1fr;
+      }
+
+      .right-col{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        min-height:260px;
+      }
+
+      .hero-eagle{
+        width:42%;
+        opacity:.92;
+      }
+    }
+
+    @media (max-width: 760px){
+      .page-shell{
+        padding:12px;
+      }
+
+      .topbar{
+        flex-direction:column;
+        align-items:stretch;
       }
 
       .brand,
@@ -562,49 +490,34 @@
 
       .nav{
         justify-content:flex-start;
+        flex-wrap:nowrap;
+        overflow:auto;
       }
 
-      .hero-card{
-        grid-template-columns:1fr;
+      .hero{
+        min-height:auto;
+        padding:24px 20px;
       }
 
-      .portal-sections{
-        grid-template-columns:1fr;
+      .hero-content{
+        max-width:100%;
+        padding-right:0;
       }
 
-      .right-col{
-        grid-template-columns:1fr;
-      }
-    }
-
-    @media (max-width: 640px){
-      .page-shell{
-        padding:4px 4px 14px;
-      }
-
-      .hero-left{
-        padding:24px 18px;
-      }
-
-      .hero-content h2{
+      .hero h2{
         font-size:18px;
       }
 
-      .hero-content p{
+      .hero p{
         font-size:14px;
-      }
-
-      .hero-actions{
-        flex-direction:column;
-        align-items:flex-start;
-      }
-
-      .btn{
-        width:100%;
-      }
-
-      .profile-mini{
         max-width:100%;
+      }
+
+      .hero-eagle{
+        opacity:.18;
+        width:80%;
+        right:-18%;
+        bottom:-2%;
       }
     }
   </style>
@@ -627,52 +540,34 @@
 
       <div class="top-actions">
         <button class="icon-btn" aria-label="Buscar">⌕</button>
-
         <div class="profile-mini">
           <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
-          <div class="profile-mini-text">
-            <strong id="topUserName">Usuário</strong>
-            <span id="topUserPerfil">Aprovador</span>
-            <small id="topUserEmail">nao informado</small>
-          </div>
+          <span id="topUserName">Usuário</span>
         </div>
       </div>
     </header>
 
     <div class="main-grid">
       <section class="left-col">
-        <section class="hero-card">
-          <div class="hero-left">
-            <div class="hero-content">
-              <h2>Bem-vindo ao Security FBS</h2>
-              <p>
-                Protegendo a operação com monitoramento de acessos, aprovações, eventos
-                críticos e dashboards operacionais em tempo real.
-              </p>
-
-              <div class="hero-actions">
-                <a class="btn btn-primary" href="/access">Verificar Segurança</a>
-                <a class="btn btn-dark" href="#">Reportar incidente</a>
-              </div>
-            </div>
+        <section class="hero">
+          <div class="hero-content">
+            <h2>Bem-vindo ao Security FBS</h2>
+            <p>
+              Protegendo a operação com monitoramento de acessos, aprovações,
+              eventos críticos e dashboards operacionais em tempo real.
+            </p>
           </div>
 
-          <div class="hero-right">
-            <img src="/images/logo.png" alt="Logo Security">
-          </div>
+          <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
         </section>
 
-        <section class="portal-sections">
-          <div class="accordion-card open">
-            <button class="accordion-header" type="button">
-              <div class="accordion-title">🔐 Controle de Acesso</div>
-              <div class="accordion-icon">⌃</div>
-            </button>
-
-            <div class="accordion-body">
+        <section class="section-grid">
+          <div class="category-card">
+            <div class="category-title">🔐 Controle de Acesso</div>
+            <div class="category-links">
               <a class="category-link" href="/access">
                 <div>
-                  <strong>ACCESS</strong>
+                  <strong>Dashboard ACCESS</strong>
                   <span>Acessos e liberações</span>
                 </div>
                 <div class="arrow">›</div>
@@ -686,23 +581,19 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/first-mile-access">
+              <a class="category-link" href="/cadastro">
                 <div>
-                  <strong>First Mile</strong>
-                  <span>Rotas e coletas</span>
+                  <strong>Cadastro</strong>
+                  <span>Novos acessos</span>
                 </div>
                 <div class="arrow">›</div>
               </a>
             </div>
           </div>
 
-          <div class="accordion-card open">
-            <button class="accordion-header" type="button">
-              <div class="accordion-title">👥 HC</div>
-              <div class="accordion-icon">⌃</div>
-            </button>
-
-            <div class="accordion-body">
+          <div class="category-card">
+            <div class="category-title">👥 HC</div>
+            <div class="category-links">
               <a class="category-link" href="/hc">
                 <div>
                   <strong>Dashboard HC</strong>
@@ -718,6 +609,27 @@
                 </div>
                 <div class="arrow">›</div>
               </a>
+            </div>
+          </div>
+
+          <div class="category-card">
+            <div class="category-title">⚙️ Processos</div>
+            <div class="category-links">
+              <a class="category-link" href="/first-mile-access">
+                <div>
+                  <strong>First Mile</strong>
+                  <span>Rotas e coletas</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+
+              <a class="category-link" href="/ronda-geral">
+                <div>
+                  <strong>Rondas</strong>
+                  <span>Monitoramento</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
 
               <a class="category-link" href="/chamada-agentes">
                 <div>
@@ -729,30 +641,9 @@
             </div>
           </div>
 
-          <div class="accordion-card open">
-            <button class="accordion-header" type="button">
-              <div class="accordion-title">⚙️ Processos</div>
-              <div class="accordion-icon">⌃</div>
-            </button>
-
-            <div class="accordion-body">
-              <a class="category-link" href="/ronda-geral">
-                <div>
-                  <strong>Rondas</strong>
-                  <span>Monitoramento</span>
-                </div>
-                <div class="arrow">›</div>
-              </a>
-            </div>
-          </div>
-
-          <div class="accordion-card open">
-            <button class="accordion-header" type="button">
-              <div class="accordion-title">📄 Auditorias</div>
-              <div class="accordion-icon">⌃</div>
-            </button>
-
-            <div class="accordion-body">
+          <div class="category-card">
+            <div class="category-title">🧾 Auditorias</div>
+            <div class="category-links">
               <a class="category-link" href="/dashboard">
                 <div>
                   <strong>Resultado Operacional</strong>
@@ -782,32 +673,40 @@
       </section>
 
       <aside class="right-col">
-        <a
-          class="site-card"
-          href="https://sites.google.com/shopee.com/security-center-brasil?usp=sharing"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div class="site-card-content">
-            <img src="/images/site.png" alt="Website Security FBS">
-            <h3>WEBSITE SECURITY FBS</h3>
-            <p>Clique para acessar o portal oficial do Security Center Brasil.</p>
+        <section class="profile-card">
+          <div class="profile-head">
+            <img id="sideUserPhoto" src="/images/logo.png" alt="Minha foto">
+            <div>
+              <div class="profile-name" id="sideUserName">Usuário</div>
+              <div class="profile-role" id="sideUserRole">Aprovador</div>
+              <span class="profile-email-top" id="userEmailTop">Não informado</span>
+            </div>
           </div>
-        </a>
 
-        <section class="side-actions">
-          <a href="/aprovacoes">
-            <div>
-              <strong>Ver Aprovações</strong>
+          <div class="profile-grid">
+            <div class="profile-info">
+              <small>Status</small>
+              <strong id="userStatus">Aprovado</strong>
             </div>
-          </a>
 
-          <a href="/cadastro">
-            <div>
-              <strong>Cadastro</strong>
-              <span>Novos acessos</span>
+            <div class="profile-info">
+              <small>Nível</small>
+              <strong id="userLevel">5</strong>
             </div>
-          </a>
+
+            <div class="profile-info">
+              <small>E-mail</small>
+              <strong id="userEmailBottom">Não informado</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="info-card">
+          <img src="/images/Aguia.png" alt="Águia Security">
+          <h3>Portal Security FBS</h3>
+          <p>
+            Navegação central dos módulos operacionais e dashboards do ambiente.
+          </p>
         </section>
       </aside>
     </div>
@@ -823,7 +722,9 @@
           method: "GET",
           credentials: "same-origin",
           cache: "no-store",
-          headers: { "Accept": "application/json" }
+          headers: {
+            "Accept": "application/json"
+          }
         });
 
         if (!response.ok) {
@@ -838,9 +739,12 @@
         const perfil = user.perfil || "Usuário";
 
         const topUserPhoto = document.getElementById("topUserPhoto");
+        const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
-        const topUserPerfil = document.getElementById("topUserPerfil");
-        const topUserEmail = document.getElementById("topUserEmail");
+        const sideUserName = document.getElementById("sideUserName");
+        const userEmailTop = document.getElementById("userEmailTop");
+        const userEmailBottom = document.getElementById("userEmailBottom");
+        const userRole = document.getElementById("sideUserRole");
 
         if (topUserPhoto) {
           topUserPhoto.src = foto;
@@ -849,35 +753,34 @@
           };
         }
 
+        if (sideUserPhoto) {
+          sideUserPhoto.src = foto;
+          sideUserPhoto.onerror = function () {
+            this.src = fallbackPhoto;
+          };
+        }
+
         if (topUserName) topUserName.textContent = nome;
-        if (topUserPerfil) topUserPerfil.textContent = perfil;
-        if (topUserEmail) topUserEmail.textContent = email;
+        if (sideUserName) sideUserName.textContent = nome;
+        if (userEmailTop) userEmailTop.textContent = email;
+        if (userEmailBottom) userEmailBottom.textContent = email;
+        if (userRole) userRole.textContent = perfil;
       } catch (error) {
         console.error("Erro ao carregar perfil do usuário:", error);
+
         const topUserPhoto = document.getElementById("topUserPhoto");
+        const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
+        const sideUserName = document.getElementById("sideUserName");
 
         if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
+        if (sideUserPhoto) sideUserPhoto.src = fallbackPhoto;
         if (topUserName) topUserName.textContent = fallbackName;
+        if (sideUserName) sideUserName.textContent = fallbackName;
       }
     }
 
-    function setupAccordions() {
-      document.querySelectorAll(".accordion-card").forEach(card => {
-        const header = card.querySelector(".accordion-header");
-        if (!header) return;
-
-        header.addEventListener("click", () => {
-          card.classList.toggle("closed");
-          card.classList.toggle("open");
-        });
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      loadUserProfile();
-      setupAccordions();
-    });
+    document.addEventListener("DOMContentLoaded", loadUserProfile);
   </script>
 </body>
 </html>

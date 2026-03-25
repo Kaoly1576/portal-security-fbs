@@ -1055,7 +1055,7 @@
       if (filterMap.tipo) qs.set(`f_${filterMap.tipo}`, tipos.join("|"));
 
       qs.set("page", page);
-      qs.set("limit", 50);
+      qs.set("limit", 5000);
 
       return qs.toString();
     }

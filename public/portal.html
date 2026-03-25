@@ -11,18 +11,16 @@
 
   <style>
     :root{
-      --bg:#05080f;
-      --panel:rgba(9,12,18,.94);
-      --panel-2:rgba(15,20,30,.96);
-      --line:rgba(255,255,255,.07);
+      --bg:#080808;
+      --bg-2:#111111;
+      --panel:rgba(18,18,18,.92);
+      --panel-2:rgba(28,28,28,.96);
+      --line:rgba(255,255,255,.08);
       --text:#f5f7fb;
-      --muted:#9aa7c0;
+      --muted:#a9b0bc;
       --orange:#ff7a1a;
       --orange-2:#ff9b52;
-      --blue:#4d78ff;
-      --green:#22c55e;
-      --red:#ef4444;
-      --shadow:0 12px 34px rgba(0,0,0,.42);
+      --shadow:0 12px 34px rgba(0,0,0,.35);
     }
 
     *{
@@ -39,11 +37,9 @@
     body{
       color:var(--text);
       background:
-        radial-gradient(circle at 78% 14%, rgba(255,124,33,.08), transparent 16%),
-        radial-gradient(circle at 15% 0%, rgba(65,103,255,.07), transparent 20%),
-        linear-gradient(180deg, rgba(5,8,14,.97), rgba(3,5,10,.995)),
-        url("/images/plano de fundo.png") center/cover no-repeat fixed;
-      background-blend-mode:screen,screen,normal,normal;
+        linear-gradient(180deg, rgba(10,10,10,.94), rgba(8,8,8,.98)),
+        url("/images/plano de fundo.png") center/cover fixed no-repeat;
+      background-blend-mode:normal,normal;
     }
 
     body::before{
@@ -52,9 +48,9 @@
       inset:0;
       pointer-events:none;
       background:
-        linear-gradient(to bottom, rgba(255,255,255,.015), transparent 120px),
-        radial-gradient(circle at center, rgba(255,255,255,.01), transparent 55%);
-      opacity:.75;
+        radial-gradient(circle at 85% 10%, rgba(255,122,26,.10), transparent 18%),
+        radial-gradient(circle at 15% 0%, rgba(255,255,255,.03), transparent 20%);
+      opacity:.95;
     }
 
     a{
@@ -79,11 +75,11 @@
       align-items:center;
       justify-content:space-between;
       gap:18px;
-      padding:14px 20px;
+      padding:12px 18px;
       border:1px solid var(--line);
       border-radius:20px;
-      background:linear-gradient(180deg, rgba(10,14,22,.95), rgba(7,10,17,.92));
-      backdrop-filter:blur(14px);
+      background:linear-gradient(180deg, rgba(10,10,10,.96), rgba(14,14,14,.94));
+      backdrop-filter:blur(12px);
       box-shadow:var(--shadow);
     }
 
@@ -92,20 +88,25 @@
       align-items:center;
       gap:12px;
       min-width:240px;
+      padding-right:10px;
+      background:transparent;
     }
 
     .brand img{
       width:34px;
       height:34px;
       object-fit:contain;
-      border-radius:8px;
-      background:rgba(255,255,255,.03);
+      border-radius:10px;
+      background:transparent;
+      box-shadow:none;
+      display:block;
     }
 
     .brand h1{
       font-size:18px;
       font-weight:700;
       letter-spacing:.2px;
+      color:var(--orange);
     }
 
     .nav{
@@ -129,7 +130,7 @@
 
     .nav a:hover,
     .nav a.active{
-      background:rgba(255,255,255,.04);
+      background:rgba(255,255,255,.05);
       color:#fff;
     }
 
@@ -184,7 +185,7 @@
       border-radius:50%;
       object-fit:cover;
       border:2px solid rgba(255,255,255,.14);
-      background:#111827;
+      background:#111;
       flex:0 0 auto;
     }
 
@@ -194,6 +195,7 @@
       text-overflow:ellipsis;
       font-size:14px;
       font-weight:600;
+      color:#fff;
     }
 
     .main-grid{
@@ -213,13 +215,13 @@
 
     .hero{
       position:relative;
-      min-height:250px;
+      min-height:290px;
       border-radius:24px;
       overflow:hidden;
       border:1px solid rgba(255,255,255,.08);
       box-shadow:var(--shadow);
       background:
-        linear-gradient(90deg, rgba(5,8,14,.97) 0%, rgba(5,8,14,.88) 45%, rgba(5,8,14,.38) 100%),
+        linear-gradient(90deg, rgba(12,12,12,.96) 0%, rgba(12,12,12,.82) 42%, rgba(12,12,12,.28) 100%),
         url("/images/plano de fundo.png") center/cover no-repeat;
       display:flex;
       align-items:center;
@@ -231,64 +233,28 @@
       position:absolute;
       inset:0;
       background:
-        radial-gradient(circle at 68% 35%, rgba(255,170,90,.14), transparent 23%),
-        linear-gradient(180deg, transparent, rgba(0,0,0,.22));
+        radial-gradient(circle at 68% 35%, rgba(255,170,90,.18), transparent 23%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.18));
       pointer-events:none;
     }
 
     .hero-content{
       position:relative;
       z-index:2;
-      max-width:560px;
+      max-width:580px;
     }
 
     .hero h2{
       font-size:24px;
-      font-weight:600;
+      font-weight:700;
       margin-bottom:14px;
     }
 
     .hero p{
       font-size:15px;
-      line-height:1.6;
+      line-height:1.7;
       color:#d3ddf2;
-      margin-bottom:24px;
-    }
-
-    .hero-actions{
-      display:flex;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-
-    .btn{
-      border:none;
-      cursor:pointer;
-      padding:13px 22px;
-      border-radius:12px;
-      font-size:15px;
-      font-weight:700;
-      transition:.2s;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    .btn:hover{
-      transform:translateY(-1px);
-    }
-
-    .btn-primary{
-      color:#fff;
-      background:linear-gradient(135deg,#ff9546,#ff5d00);
-      box-shadow:0 10px 28px rgba(255,122,26,.25);
-    }
-
-    .btn-dark{
-      color:#eef3ff;
-      background:linear-gradient(180deg, rgba(38,46,62,.95), rgba(20,25,35,.98));
-      border:1px solid rgba(255,255,255,.08);
+      margin-bottom:0;
     }
 
     .hero-eagle{
@@ -312,7 +278,7 @@
     .category-card,
     .profile-card,
     .info-card{
-      background:linear-gradient(180deg, rgba(12,16,24,.96), rgba(8,11,18,.98));
+      background:linear-gradient(180deg, rgba(20,20,20,.94), rgba(14,14,14,.96));
       border:1px solid rgba(255,255,255,.07);
       border-radius:22px;
       box-shadow:var(--shadow);
@@ -343,7 +309,7 @@
       align-items:center;
       justify-content:space-between;
       gap:14px;
-      padding:16px 16px;
+      padding:16px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,.06);
       background:rgba(255,255,255,.03);
@@ -352,8 +318,8 @@
 
     .category-link:hover{
       transform:translateY(-2px);
-      background:rgba(255,122,26,.08);
-      border-color:rgba(255,122,26,.20);
+      background:rgba(255,122,26,.10);
+      border-color:rgba(255,122,26,.22);
     }
 
     .category-link strong{
@@ -394,7 +360,7 @@
       border-radius:50%;
       object-fit:cover;
       border:2px solid rgba(255,255,255,.15);
-      background:#111827;
+      background:#111;
       flex:0 0 auto;
     }
 
@@ -409,14 +375,14 @@
       font-size:13px;
       color:#ffbf8c;
       font-weight:600;
-      text-transform:capitalize;
     }
 
-    .profile-email-head{
+    .profile-email-top{
       margin-top:4px;
       font-size:14px;
       color:#eef4ff;
       word-break:break-word;
+      display:block;
     }
 
     .profile-grid{
@@ -454,8 +420,8 @@
       align-items:center;
       text-align:center;
       background:
-        radial-gradient(circle at 50% 20%, rgba(255,149,70,.08), transparent 30%),
-        linear-gradient(180deg, rgba(12,16,24,.98), rgba(8,11,18,.98));
+        radial-gradient(circle at 50% 20%, rgba(255,149,70,.10), transparent 30%),
+        linear-gradient(180deg, rgba(18,18,18,.95), rgba(12,12,12,.96));
     }
 
     .info-card img{
@@ -548,7 +514,7 @@
       }
 
       .hero-eagle{
-        opacity:.14;
+        opacity:.18;
         width:80%;
         right:-18%;
         bottom:-2%;
@@ -558,7 +524,6 @@
 </head>
 <body>
   <div class="page-shell">
-
     <header class="topbar">
       <div class="brand">
         <img src="/images/logo.png" alt="Logo">
@@ -584,19 +549,13 @@
 
     <div class="main-grid">
       <section class="left-col">
-
         <section class="hero">
           <div class="hero-content">
-            <h2>Bem-vindo ao Portal Security</h2>
+            <h2>Bem-vindo ao Security FBS</h2>
             <p>
-              Central de gestão de acessos, HC, processos e auditorias.
-              Utilize os módulos abaixo para navegar entre os dashboards e áreas operacionais.
+              Protegendo a operação com monitoramento de acessos, aprovações,
+              eventos críticos e dashboards operacionais em tempo real.
             </p>
-
-            <div class="hero-actions">
-              <a class="btn btn-primary" href="/access">Verificar Segurança</a>
-              <a class="btn btn-dark" href="/aprovacoes">Ver Aprovações</a>
-            </div>
           </div>
 
           <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
@@ -719,8 +678,8 @@
             <img id="sideUserPhoto" src="/images/logo.png" alt="Minha foto">
             <div>
               <div class="profile-name" id="sideUserName">Usuário</div>
-              <div class="profile-role" id="sideUserRole">Usuário</div>
-              <div class="profile-email-head" id="userEmailHead">Não informado</div>
+              <div class="profile-role" id="sideUserRole">Aprovador</div>
+              <span class="profile-email-top" id="userEmailTop">Não informado</span>
             </div>
           </div>
 
@@ -737,7 +696,7 @@
 
             <div class="profile-info">
               <small>E-mail</small>
-              <strong id="userEmailCard">Não informado</strong>
+              <strong id="userEmailBottom">Não informado</strong>
             </div>
           </div>
         </section>
@@ -783,11 +742,9 @@
         const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
         const sideUserName = document.getElementById("sideUserName");
-        const userEmailHead = document.getElementById("userEmailHead");
-        const userEmailCard = document.getElementById("userEmailCard");
+        const userEmailTop = document.getElementById("userEmailTop");
+        const userEmailBottom = document.getElementById("userEmailBottom");
         const userRole = document.getElementById("sideUserRole");
-        const userStatus = document.getElementById("userStatus");
-        const userLevel = document.getElementById("userLevel");
 
         if (topUserPhoto) {
           topUserPhoto.src = foto;
@@ -805,17 +762,9 @@
 
         if (topUserName) topUserName.textContent = nome;
         if (sideUserName) sideUserName.textContent = nome;
-        if (userEmailHead) userEmailHead.textContent = email;
-        if (userEmailCard) userEmailCard.textContent = email;
+        if (userEmailTop) userEmailTop.textContent = email;
+        if (userEmailBottom) userEmailBottom.textContent = email;
         if (userRole) userRole.textContent = perfil;
-
-        if (userStatus) {
-          userStatus.textContent = user.status || "Aprovado";
-        }
-
-        if (userLevel) {
-          userLevel.textContent = user.nivel_acesso || user.nivel || "5";
-        }
       } catch (error) {
         console.error("Erro ao carregar perfil do usuário:", error);
 

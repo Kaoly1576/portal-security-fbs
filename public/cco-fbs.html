@@ -808,6 +808,12 @@
       return months[num] || num;
     }
 
+    function monthNumberFromLabel(label) {
+      const value = String(label || "").trim();
+      const match = value.match(/^(\d{2})/);
+      return match ? match[1] : value;
+    }
+
     function groupRows(rows, field) {
       const map = {};
       (rows || []).forEach(row => {
@@ -870,27 +876,25 @@
       };
     }
 
-  function deriveFilterListsFromFallback(fallback) {
-    const rows = fallback.rows || [];
+    function deriveFilterListsFromFallback(fallback) {
+      const rows = fallback.rows || [];
 
-    const anos = unique(
-      rows.map(r => r._ano).filter(v => /^\d{4}$/.test(String(v || "")))
-    ).sort((a, b) => Number(a) - Number(b));
+      const anos = unique(
+        rows.map(r => r._ano).filter(v => /^\d{4}$/.test(String(v || "")))
+      ).sort((a, b) => Number(a) - Number(b));
 
-    const mesesBase = unique(
-      rows.map(r => r._mes).filter(v => /^(0[1-9]|1[0-2])$/.test(String(v || "")))
-    ).sort((a, b) => Number(a) - Number(b));
+      const mesesBase = unique(
+        rows.map(r => r._mes).filter(v => /^(0[1-9]|1[0-2])$/.test(String(v || "")))
+      ).sort((a, b) => Number(a) - Number(b));
 
-    return {
-      anos,
-      meses: mesesBase.map(monthLabel),
-      unidades: unique(rows.map(r => r.unidade).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR")),
-      setores: unique(rows.map(r => r.setor).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR")),
-      tipos: unique(rows.map(r => r.tipo).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR"))
-    };
-  }
-    
-</script>
+      return {
+        anos,
+        meses: mesesBase.map(monthLabel),
+        unidades: unique(rows.map(r => r.unidade).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR")),
+        setores: unique(rows.map(r => r.setor).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR")),
+        tipos: unique(rows.map(r => r.tipo).filter(Boolean)).sort((a,b) => a.localeCompare(b, "pt-BR"))
+      };
+    }
 
     function renderCompactCard(elId, rows, topN = 5) {
       const container = document.getElementById(elId);
@@ -942,6 +946,7 @@
     function createMultiSelect(name, values, defaultLabel) {
       const optsEl = document.getElementById(`opts-${name}`);
       const searchEl = document.getElementById(`search-${name}`);
+      if (!optsEl || !searchEl) return;
 
       optsEl.innerHTML = (values || []).map(value => `
         <label class="ms-option" data-value="${esc(value)}">
@@ -973,6 +978,8 @@
     function updateMultiLabel(name, defaultLabel) {
       const labelEl = document.getElementById(`label-${name}`);
       const selected = multiselectState[name] || [];
+      if (!labelEl) return;
+
       if (!selected.length) {
         labelEl.textContent = defaultLabel;
       } else if (selected.length === 1) {
@@ -987,12 +994,10 @@
       const optsEl = document.getElementById(`opts-${name}`);
       if (optsEl) {
         optsEl.querySelectorAll('input[type="checkbox"]').forEach(chk => chk.checked = false);
+        optsEl.querySelectorAll(".ms-option").forEach(item => item.style.display = "flex");
       }
       const searchEl = document.getElementById(`search-${name}`);
       if (searchEl) searchEl.value = "";
-      if (optsEl) {
-        optsEl.querySelectorAll(".ms-option").forEach(item => item.style.display = "flex");
-      }
       updateMultiLabel(name, defaultLabel);
     }
 
@@ -1002,8 +1007,9 @@
           e.stopPropagation();
           const name = btn.dataset.ms;
           const panel = document.getElementById(`panel-${name}`);
-          const isOpen = panel.classList.contains("open");
+          if (!panel) return;
 
+          const isOpen = panel.classList.contains("open");
           document.querySelectorAll(".ms-panel").forEach(p => p.classList.remove("open"));
           if (!isOpen) panel.classList.add("open");
         });
@@ -1027,7 +1033,7 @@
 
       const anos = multiselectState.ano || [];
       const mesesLidos = multiselectState.mes || [];
-      const meses = mesesLidos.map(v => String(v).slice(0, 2));
+      const meses = mesesLidos.map(monthNumberFromLabel);
       const unidades = multiselectState.unidade || [];
       const setores = multiselectState.setor || [];
       const tipos = multiselectState.tipo || [];
@@ -1053,90 +1059,85 @@
 
       return qs.toString();
     }
-    
-<script>
-  async function loadFilters() {
-    let filtroData = null;
-    let fallbackFilterData = null;
 
-    try {
-      const resFiltros = await fetch("/api/cco-fbs-filtros", {
-        credentials: "same-origin"
-      });
-      filtroData = await resFiltros.json();
-    } catch (e) {
-      filtroData = null;
+    async function loadFilters() {
+      let filtroData = null;
+      let fallbackFilterData = null;
+
+      try {
+        const resFiltros = await fetch("/api/cco-fbs-filtros", {
+          credentials: "same-origin"
+        });
+        filtroData = await resFiltros.json();
+      } catch (e) {
+        filtroData = null;
+      }
+
+      try {
+        const resDetalhes = await fetch("/api/cco-fbs-detalhes?page=1&limit=5000", {
+          credentials: "same-origin"
+        });
+        const detalhes = await resDetalhes.json();
+        const fallback = buildFallbackFromRows(detalhes);
+        fallbackFilterData = deriveFilterListsFromFallback(fallback);
+      } catch (e) {
+        fallbackFilterData = null;
+      }
+
+      document.getElementById("heroDescription").textContent =
+        `Aba utilizada: ${filtroData?.sheetTitle || "Solicitações de imagens"} | Filtros corrigidos por colunas reais da base e seleção múltipla habilitada.`;
+
+      let anos = [];
+      let meses = [];
+      let unidades = [];
+      let setores = [];
+      let tipos = [];
+
+      if (Array.isArray(filtroData?.filtros) && filtroData.filtros.length) {
+        const findFilter = (terms) => (filtroData.filtros || []).find(f => {
+          const key = normalizeText(f.key);
+          const label = normalizeText(f.label);
+          return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
+        });
+
+        const unidadeFilter = findFilter(["unidade"]);
+        const setorFilter = findFilter(["setor"]);
+        const tipoFilter = findFilter(["tipo"]);
+
+        filterMap = {
+          ano: "ano",
+          mes: "mes",
+          unidade: unidadeFilter?.key || "unidade",
+          setor: setorFilter?.key || "setor",
+          tipo: tipoFilter?.key || "tipo"
+        };
+
+        unidades = unidadeFilter?.values || [];
+        setores = setorFilter?.values || [];
+        tipos = tipoFilter?.values || [];
+      } else {
+        filterMap = {
+          ano: "ano",
+          mes: "mes",
+          unidade: "unidade",
+          setor: "setor",
+          tipo: "tipo"
+        };
+      }
+
+      anos = fallbackFilterData?.anos || [];
+      meses = fallbackFilterData?.meses || [];
+
+      if (!unidades.length && fallbackFilterData?.unidades?.length) unidades = fallbackFilterData.unidades;
+      if (!setores.length && fallbackFilterData?.setores?.length) setores = fallbackFilterData.setores;
+      if (!tipos.length && fallbackFilterData?.tipos?.length) tipos = fallbackFilterData.tipos;
+
+      createMultiSelect("ano", anos, "Todos");
+      createMultiSelect("mes", meses, "Todos");
+      createMultiSelect("unidade", unidades, "Todas");
+      createMultiSelect("setor", setores, "Todos");
+      createMultiSelect("tipo", tipos, "Todos");
     }
-
-    try {
-      // pega uma amostra MUITO maior para descobrir anos/meses reais
-      const resDetalhes = await fetch("/api/cco-fbs-detalhes?page=1&limit=5000", {
-        credentials: "same-origin"
-      });
-      const detalhes = await resDetalhes.json();
-      const fallback = buildFallbackFromRows(detalhes);
-      fallbackFilterData = deriveFilterListsFromFallback(fallback);
-    } catch (e) {
-      fallbackFilterData = null;
-    }
-
-    document.getElementById("heroDescription").textContent =
-      `Aba utilizada: ${filtroData?.sheetTitle || "Solicitações de imagens"} | Filtros corrigidos por colunas reais da base e seleção múltipla habilitada.`;
-
-    let anos = [];
-    let meses = [];
-    let unidades = [];
-    let setores = [];
-    let tipos = [];
-
-    if (Array.isArray(filtroData?.filtros) && filtroData.filtros.length) {
-      const findFilter = (terms) => (filtroData.filtros || []).find(f => {
-        const key = normalizeText(f.key);
-        const label = normalizeText(f.label);
-        return terms.some(t => key.includes(normalizeText(t)) || label.includes(normalizeText(t)));
-      });
-
-      const unidadeFilter = findFilter(["unidade"]);
-      const setorFilter = findFilter(["setor"]);
-      const tipoFilter = findFilter(["tipo"]);
-
-      filterMap = {
-        ano: "ano",
-        mes: "mes",
-        unidade: unidadeFilter?.key || "unidade",
-        setor: setorFilter?.key || "setor",
-        tipo: tipoFilter?.key || "tipo"
-      };
-
-      unidades = unidadeFilter?.values || [];
-      setores = setorFilter?.values || [];
-      tipos = tipoFilter?.values || [];
-    } else {
-      filterMap = {
-        ano: "ano",
-        mes: "mes",
-        unidade: "unidade",
-        setor: "setor",
-        tipo: "tipo"
-      };
-    }
-
-    // ANO e MÊS sempre do fallback derivado da coluna Data
-    anos = fallbackFilterData?.anos || [];
-    meses = fallbackFilterData?.meses || [];
-
-    if (!unidades.length && fallbackFilterData?.unidades?.length) unidades = fallbackFilterData.unidades;
-    if (!setores.length && fallbackFilterData?.setores?.length) setores = fallbackFilterData.setores;
-    if (!tipos.length && fallbackFilterData?.tipos?.length) tipos = fallbackFilterData.tipos;
-
-    createMultiSelect("ano", anos, "Todos");
-    createMultiSelect("mes", meses, "Todos");
-    createMultiSelect("unidade", unidades, "Todas");
-    createMultiSelect("setor", setores, "Todos");
-    createMultiSelect("tipo", tipos, "Todos");
-  }
-</script>
-    
 
     async function loadResumoAndGraficos() {
       const query = getFiltersQuery(currentPage);
@@ -1226,7 +1227,6 @@
       renderCompactCard("cardUnidade", data.tableUnidade || [], 5);
       renderCompactCard("cardStatus", data.tableStatus || [], 5);
       renderCompactCard("cardSetor", data.tableSetor || [], 5);
-
       renderResumoRapido(data);
 
       chartSolicitanteInstance = new Chart(document.getElementById("chartSolicitante"), {

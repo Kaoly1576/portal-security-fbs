@@ -11,9 +11,9 @@
 
   <style>
     :root{
-      --bg:#07101d;
-      --panel:rgba(10,17,31,.80);
-      --panel-2:rgba(17,26,46,.86);
+      --bg:#05080f;
+      --panel:rgba(9,12,18,.94);
+      --panel-2:rgba(15,20,30,.96);
       --line:rgba(255,255,255,.07);
       --text:#f5f7fb;
       --muted:#9aa7c0;
@@ -22,7 +22,7 @@
       --blue:#4d78ff;
       --green:#22c55e;
       --red:#ef4444;
-      --shadow:0 12px 34px rgba(0,0,0,.34);
+      --shadow:0 12px 34px rgba(0,0,0,.42);
     }
 
     *{
@@ -39,9 +39,9 @@
     body{
       color:var(--text);
       background:
-        radial-gradient(circle at 80% 16%, rgba(255,124,33,.16), transparent 18%),
-        radial-gradient(circle at 18% 0%, rgba(65,103,255,.12), transparent 22%),
-        linear-gradient(180deg, rgba(8,14,28,.93), rgba(5,10,20,.96)),
+        radial-gradient(circle at 78% 14%, rgba(255,124,33,.08), transparent 16%),
+        radial-gradient(circle at 15% 0%, rgba(65,103,255,.07), transparent 20%),
+        linear-gradient(180deg, rgba(5,8,14,.97), rgba(3,5,10,.995)),
         url("/images/plano de fundo.png") center/cover no-repeat fixed;
       background-blend-mode:screen,screen,normal,normal;
     }
@@ -52,9 +52,9 @@
       inset:0;
       pointer-events:none;
       background:
-        linear-gradient(to bottom, rgba(255,255,255,.02), transparent 120px),
-        radial-gradient(circle at center, rgba(255,255,255,.015), transparent 55%);
-      opacity:.85;
+        linear-gradient(to bottom, rgba(255,255,255,.015), transparent 120px),
+        radial-gradient(circle at center, rgba(255,255,255,.01), transparent 55%);
+      opacity:.75;
     }
 
     a{
@@ -82,7 +82,7 @@
       padding:14px 20px;
       border:1px solid var(--line);
       border-radius:20px;
-      background:linear-gradient(180deg, rgba(13,20,36,.9), rgba(9,15,28,.82));
+      background:linear-gradient(180deg, rgba(10,14,22,.95), rgba(7,10,17,.92));
       backdrop-filter:blur(14px);
       box-shadow:var(--shadow);
     }
@@ -175,7 +175,7 @@
       border:1px solid var(--line);
       background:rgba(255,255,255,.04);
       min-width:120px;
-      max-width:240px;
+      max-width:260px;
     }
 
     .profile-mini img{
@@ -219,7 +219,7 @@
       border:1px solid rgba(255,255,255,.08);
       box-shadow:var(--shadow);
       background:
-        linear-gradient(90deg, rgba(7,11,22,.96) 0%, rgba(7,11,22,.80) 42%, rgba(7,11,22,.24) 100%),
+        linear-gradient(90deg, rgba(5,8,14,.97) 0%, rgba(5,8,14,.88) 45%, rgba(5,8,14,.38) 100%),
         url("/images/plano de fundo.png") center/cover no-repeat;
       display:flex;
       align-items:center;
@@ -231,8 +231,8 @@
       position:absolute;
       inset:0;
       background:
-        radial-gradient(circle at 68% 35%, rgba(255,170,90,.22), transparent 23%),
-        linear-gradient(180deg, transparent, rgba(0,0,0,.16));
+        radial-gradient(circle at 68% 35%, rgba(255,170,90,.14), transparent 23%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.22));
       pointer-events:none;
     }
 
@@ -287,7 +287,7 @@
 
     .btn-dark{
       color:#eef3ff;
-      background:linear-gradient(180deg, rgba(43,56,84,.92), rgba(18,26,44,.95));
+      background:linear-gradient(180deg, rgba(38,46,62,.95), rgba(20,25,35,.98));
       border:1px solid rgba(255,255,255,.08);
     }
 
@@ -312,7 +312,7 @@
     .category-card,
     .profile-card,
     .info-card{
-      background:linear-gradient(180deg, rgba(16,24,40,.92), rgba(10,16,29,.95));
+      background:linear-gradient(180deg, rgba(12,16,24,.96), rgba(8,11,18,.98));
       border:1px solid rgba(255,255,255,.07);
       border-radius:22px;
       box-shadow:var(--shadow);
@@ -352,8 +352,8 @@
 
     .category-link:hover{
       transform:translateY(-2px);
-      background:rgba(255,122,26,.10);
-      border-color:rgba(255,122,26,.22);
+      background:rgba(255,122,26,.08);
+      border-color:rgba(255,122,26,.20);
     }
 
     .category-link strong{
@@ -409,6 +409,14 @@
       font-size:13px;
       color:#ffbf8c;
       font-weight:600;
+      text-transform:capitalize;
+    }
+
+    .profile-email-head{
+      margin-top:4px;
+      font-size:14px;
+      color:#eef4ff;
+      word-break:break-word;
     }
 
     .profile-grid{
@@ -446,8 +454,8 @@
       align-items:center;
       text-align:center;
       background:
-        radial-gradient(circle at 50% 20%, rgba(255,149,70,.12), transparent 30%),
-        linear-gradient(180deg, rgba(14,22,38,.95), rgba(9,15,28,.96));
+        radial-gradient(circle at 50% 20%, rgba(255,149,70,.08), transparent 30%),
+        linear-gradient(180deg, rgba(12,16,24,.98), rgba(8,11,18,.98));
     }
 
     .info-card img{
@@ -540,7 +548,7 @@
       }
 
       .hero-eagle{
-        opacity:.18;
+        opacity:.14;
         width:80%;
         right:-18%;
         bottom:-2%;
@@ -558,11 +566,11 @@
       </div>
 
       <nav class="nav">
-        <a href="/portal.html" class="active">Dashboard</a>
-        <a href="/access.html">Controle de Acesso</a>
-        <a href="/aprovacoes.html">Aprovações</a>
-        <a href="/dashboard.html">Resultado</a>
-        <a href="/first-mile-access.html">First Mile</a>
+        <a href="/portal" class="active">Dashboard</a>
+        <a href="/access">Controle de Acesso</a>
+        <a href="/aprovacoes">Aprovações</a>
+        <a href="/dashboard">Resultado</a>
+        <a href="/first-mile-access">First Mile</a>
       </nav>
 
       <div class="top-actions">
@@ -586,8 +594,8 @@
             </p>
 
             <div class="hero-actions">
-              <a class="btn btn-primary" href="/access.html">Verificar Segurança</a>
-              <a class="btn btn-dark" href="/aprovacoes.html">Ver Aprovações</a>
+              <a class="btn btn-primary" href="/access">Verificar Segurança</a>
+              <a class="btn btn-dark" href="/aprovacoes">Ver Aprovações</a>
             </div>
           </div>
 
@@ -598,7 +606,7 @@
           <div class="category-card">
             <div class="category-title">🔐 Controle de Acesso</div>
             <div class="category-links">
-              <a class="category-link" href="/access.html">
+              <a class="category-link" href="/access">
                 <div>
                   <strong>Dashboard ACCESS</strong>
                   <span>Acessos e liberações</span>
@@ -606,7 +614,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/aprovacoes.html">
+              <a class="category-link" href="/aprovacoes">
                 <div>
                   <strong>Aprovações</strong>
                   <span>Gestão de solicitações</span>
@@ -614,7 +622,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/cadastro.html">
+              <a class="category-link" href="/cadastro">
                 <div>
                   <strong>Cadastro</strong>
                   <span>Novos acessos</span>
@@ -627,7 +635,7 @@
           <div class="category-card">
             <div class="category-title">👥 HC</div>
             <div class="category-links">
-              <a class="category-link" href="/hc.html">
+              <a class="category-link" href="/hc">
                 <div>
                   <strong>Dashboard HC</strong>
                   <span>Headcount e presença</span>
@@ -635,7 +643,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/agentes-fbs.html">
+              <a class="category-link" href="/agentes-fbs">
                 <div>
                   <strong>Times</strong>
                   <span>Gestão de equipe</span>
@@ -648,7 +656,7 @@
           <div class="category-card">
             <div class="category-title">⚙️ Processos</div>
             <div class="category-links">
-              <a class="category-link" href="/first-mile-access.html">
+              <a class="category-link" href="/first-mile-access">
                 <div>
                   <strong>First Mile</strong>
                   <span>Rotas e coletas</span>
@@ -656,7 +664,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/rondas.html">
+              <a class="category-link" href="/ronda-geral">
                 <div>
                   <strong>Rondas</strong>
                   <span>Monitoramento</span>
@@ -664,7 +672,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/chamada-agentes.html">
+              <a class="category-link" href="/chamada-agentes">
                 <div>
                   <strong>Chamadas</strong>
                   <span>Controle operacional</span>
@@ -677,7 +685,7 @@
           <div class="category-card">
             <div class="category-title">🧾 Auditorias</div>
             <div class="category-links">
-              <a class="category-link" href="/dashboard.html">
+              <a class="category-link" href="/dashboard">
                 <div>
                   <strong>Resultado Operacional</strong>
                   <span>AV recuperado</span>
@@ -685,7 +693,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/cco-fbs.html">
+              <a class="category-link" href="/cco-fbs">
                 <div>
                   <strong>CCO</strong>
                   <span>Controle de qualidade</span>
@@ -693,7 +701,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/desligados.html">
+              <a class="category-link" href="/desligados">
                 <div>
                   <strong>Desligados</strong>
                   <span>Controle de acessos removidos</span>
@@ -711,8 +719,8 @@
             <img id="sideUserPhoto" src="/images/logo.png" alt="Minha foto">
             <div>
               <div class="profile-name" id="sideUserName">Usuário</div>
-              <div class="profile-role" id="sideUserRole">Aprovador</div>
-              <strong id="userEmail">Não informado</strong>
+              <div class="profile-role" id="sideUserRole">Usuário</div>
+              <div class="profile-email-head" id="userEmailHead">Não informado</div>
             </div>
           </div>
 
@@ -729,7 +737,7 @@
 
             <div class="profile-info">
               <small>E-mail</small>
-              <strong id="userEmail">caíque.nascimento@shopee.com</strong>
+              <strong id="userEmailCard">Não informado</strong>
             </div>
           </div>
         </section>
@@ -746,70 +754,84 @@
   </div>
 
   <script>
-  const fallbackPhoto = "/images/logo.png";
-  const fallbackName = "Usuário";
+    const fallbackPhoto = "/images/logo.png";
+    const fallbackName = "Usuário";
 
-  async function loadUserProfile() {
-    try {
-      const response = await fetch("/api/me", {
-        method: "GET",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: {
-          "Accept": "application/json"
+    async function loadUserProfile() {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erro ${response.status} ao buscar /api/me`);
         }
-      });
 
-      if (!response.ok) {
-        throw new Error(`Erro ${response.status} ao buscar /api/me`);
+        const user = await response.json();
+
+        const nome = user.nome || fallbackName;
+        const foto = user.foto || fallbackPhoto;
+        const email = user.email || "Não informado";
+        const perfil = user.perfil || "Usuário";
+
+        const topUserPhoto = document.getElementById("topUserPhoto");
+        const sideUserPhoto = document.getElementById("sideUserPhoto");
+        const topUserName = document.getElementById("topUserName");
+        const sideUserName = document.getElementById("sideUserName");
+        const userEmailHead = document.getElementById("userEmailHead");
+        const userEmailCard = document.getElementById("userEmailCard");
+        const userRole = document.getElementById("sideUserRole");
+        const userStatus = document.getElementById("userStatus");
+        const userLevel = document.getElementById("userLevel");
+
+        if (topUserPhoto) {
+          topUserPhoto.src = foto;
+          topUserPhoto.onerror = function () {
+            this.src = fallbackPhoto;
+          };
+        }
+
+        if (sideUserPhoto) {
+          sideUserPhoto.src = foto;
+          sideUserPhoto.onerror = function () {
+            this.src = fallbackPhoto;
+          };
+        }
+
+        if (topUserName) topUserName.textContent = nome;
+        if (sideUserName) sideUserName.textContent = nome;
+        if (userEmailHead) userEmailHead.textContent = email;
+        if (userEmailCard) userEmailCard.textContent = email;
+        if (userRole) userRole.textContent = perfil;
+
+        if (userStatus) {
+          userStatus.textContent = user.status || "Aprovado";
+        }
+
+        if (userLevel) {
+          userLevel.textContent = user.nivel_acesso || user.nivel || "5";
+        }
+      } catch (error) {
+        console.error("Erro ao carregar perfil do usuário:", error);
+
+        const topUserPhoto = document.getElementById("topUserPhoto");
+        const sideUserPhoto = document.getElementById("sideUserPhoto");
+        const topUserName = document.getElementById("topUserName");
+        const sideUserName = document.getElementById("sideUserName");
+
+        if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
+        if (sideUserPhoto) sideUserPhoto.src = fallbackPhoto;
+        if (topUserName) topUserName.textContent = fallbackName;
+        if (sideUserName) sideUserName.textContent = fallbackName;
       }
-
-      const user = await response.json();
-
-      const nome = user.nome || fallbackName;
-      const foto = user.foto || fallbackPhoto;
-      const email = user.email || "Não informado";
-      const perfil = user.perfil || "Usuário";
-
-      const topUserPhoto = document.getElementById("topUserPhoto");
-      const sideUserPhoto = document.getElementById("sideUserPhoto");
-      const topUserName = document.getElementById("topUserName");
-      const sideUserName = document.getElementById("sideUserName");
-      const userEmail = document.getElementById("userEmail");
-      const userRole = document.getElementById("sideUserRole");
-
-      if (topUserPhoto) {
-        topUserPhoto.src = foto;
-        topUserPhoto.onerror = function () {
-          this.src = fallbackPhoto;
-        };
-      }
-
-      if (sideUserPhoto) {
-        sideUserPhoto.src = foto;
-        sideUserPhoto.onerror = function () {
-          this.src = fallbackPhoto;
-        };
-      }
-
-      if (topUserName) topUserName.textContent = nome;
-      if (sideUserName) sideUserName.textContent = nome;
-      if (userEmail) userEmail.textContent = email;
-      if (userRole) userRole.textContent = perfil;
-    } catch (error) {
-      console.error("Erro ao carregar perfil do usuário:", error);
-
-      const topUserPhoto = document.getElementById("topUserPhoto");
-      const sideUserPhoto = document.getElementById("sideUserPhoto");
-      const topUserName = document.getElementById("topUserName");
-      const sideUserName = document.getElementById("sideUserName");
-
-      if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
-      if (sideUserPhoto) sideUserPhoto.src = fallbackPhoto;
-      if (topUserName) topUserName.textContent = fallbackName;
-      if (sideUserName) sideUserName.textContent = fallbackName;
     }
-  }
 
-  document.addEventListener("DOMContentLoaded", loadUserProfile);
-</script>
+    document.addEventListener("DOMContentLoaded", loadUserProfile);
+  </script>
+</body>
+</html>

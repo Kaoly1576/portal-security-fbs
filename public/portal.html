@@ -11,18 +11,22 @@
 
   <style>
     :root{
-      --bg:#05080f;
-      --panel:rgba(9,12,18,.94);
-      --panel-2:rgba(15,20,30,.96);
-      --line:rgba(255,255,255,.07);
+      --bg:#080808;
+      --bg-soft:#111111;
+      --panel:#1a1a1a;
+      --panel-2:#222222;
+      --line:rgba(255,255,255,.08);
+      --line-strong:rgba(255,255,255,.12);
       --text:#f5f7fb;
-      --muted:#9aa7c0;
+      --muted:#9da7b7;
       --orange:#ff7a1a;
-      --orange-2:#ff9b52;
-      --blue:#4d78ff;
-      --green:#22c55e;
-      --red:#ef4444;
-      --shadow:0 12px 34px rgba(0,0,0,.42);
+      --orange-2:#ff9a4d;
+      --blue:#3a63ff;
+      --shadow:0 14px 36px rgba(0,0,0,.35);
+      --radius-xl:24px;
+      --radius-lg:20px;
+      --radius-md:16px;
+      --radius-sm:12px;
     }
 
     *{
@@ -32,29 +36,16 @@
       font-family:'Inter',sans-serif;
     }
 
-    html, body{
+    html,body{
       min-height:100%;
     }
 
     body{
       color:var(--text);
       background:
-        radial-gradient(circle at 78% 14%, rgba(255,124,33,.08), transparent 16%),
-        radial-gradient(circle at 15% 0%, rgba(65,103,255,.07), transparent 20%),
-        linear-gradient(180deg, rgba(5,8,14,.97), rgba(3,5,10,.995)),
-        url("/images/plano de fundo.png") center/cover no-repeat fixed;
-      background-blend-mode:screen,screen,normal,normal;
-    }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        linear-gradient(to bottom, rgba(255,255,255,.015), transparent 120px),
-        radial-gradient(circle at center, rgba(255,255,255,.01), transparent 55%);
-      opacity:.75;
+        linear-gradient(180deg, rgba(8,8,8,.90), rgba(8,8,8,.97)),
+        url("/images/plano de fundo.png") center/cover fixed no-repeat;
+      background-blend-mode:normal,normal;
     }
 
     a{
@@ -66,164 +57,203 @@
       font-family:inherit;
     }
 
-    .page-shell{
-      max-width:1450px;
+    .page{
+      max-width:1325px;
       margin:0 auto;
-      padding:18px;
-      position:relative;
-      z-index:1;
+      padding:14px 14px 22px;
     }
 
     .topbar{
-      display:flex;
+      display:grid;
+      grid-template-columns: 280px 1fr 290px;
       align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:14px 20px;
+      gap:14px;
+      background:rgba(10,10,10,.82);
       border:1px solid var(--line);
       border-radius:20px;
-      background:linear-gradient(180deg, rgba(10,14,22,.95), rgba(7,10,17,.92));
-      backdrop-filter:blur(14px);
       box-shadow:var(--shadow);
+      overflow:hidden;
+      min-height:60px;
     }
 
     .brand{
       display:flex;
       align-items:center;
       gap:12px;
-      min-width:240px;
+      min-height:60px;
+      padding:12px 16px;
+      background:
+        linear-gradient(90deg, rgba(9,9,9,.92), rgba(9,9,9,.80)),
+        radial-gradient(circle at 20% 50%, rgba(58,99,255,.18), transparent 55%);
+      border-right:1px solid rgba(255,255,255,.06);
     }
 
     .brand img{
-      width:34px;
-      height:34px;
+      width:30px;
+      height:30px;
       object-fit:contain;
       border-radius:8px;
-      background:rgba(255,255,255,.03);
+      flex:0 0 auto;
     }
 
-    .brand h1{
-      font-size:18px;
-      font-weight:700;
-      letter-spacing:.2px;
+    .brand span{
+      color:var(--orange);
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:.1px;
+      white-space:nowrap;
     }
 
     .nav{
       display:flex;
-      align-items:center;
       justify-content:center;
-      flex:1;
-      gap:8px;
+      align-items:center;
+      gap:10px;
+      padding:0 8px;
       flex-wrap:wrap;
     }
 
     .nav a{
-      padding:10px 14px;
-      border-radius:12px;
-      color:#d9e3f8;
-      font-size:14px;
-      font-weight:500;
       position:relative;
-      transition:.2s;
+      padding:10px 12px;
+      color:#f4f6fb;
+      font-size:14px;
+      font-weight:700;
+      border-radius:12px;
+      transition:.2s ease;
+      white-space:nowrap;
     }
 
     .nav a:hover,
     .nav a.active{
       background:rgba(255,255,255,.04);
-      color:#fff;
     }
 
     .nav a.active::after{
       content:"";
       position:absolute;
-      left:14px;
-      right:14px;
-      bottom:3px;
+      left:12px;
+      right:12px;
+      bottom:4px;
       height:2px;
       border-radius:999px;
-      background:linear-gradient(90deg,var(--orange),#ffc593);
-      box-shadow:0 0 12px rgba(255,122,26,.55);
+      background:linear-gradient(90deg,var(--orange),#ffc08f);
+      box-shadow:0 0 10px rgba(255,122,26,.45);
     }
 
     .top-actions{
       display:flex;
       align-items:center;
-      gap:10px;
-      min-width:220px;
       justify-content:flex-end;
+      gap:10px;
+      padding:8px 10px 8px 0;
     }
 
-    .icon-btn{
+    .search-btn{
       width:40px;
       height:40px;
-      display:grid;
-      place-items:center;
       border-radius:12px;
       border:1px solid var(--line);
       background:rgba(255,255,255,.03);
       color:#fff;
-      font-size:16px;
+      display:grid;
+      place-items:center;
+      font-size:15px;
       cursor:pointer;
-    }
-
-    .profile-mini{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:5px 12px 5px 6px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      min-width:120px;
-      max-width:260px;
-    }
-
-    .profile-mini img{
-      width:34px;
-      height:34px;
-      border-radius:50%;
-      object-fit:cover;
-      border:2px solid rgba(255,255,255,.14);
-      background:#111827;
       flex:0 0 auto;
     }
 
-    .profile-mini span{
+    .mini-user{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      max-width:230px;
+      padding:4px 12px 4px 6px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+    }
+
+    .mini-user img{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      object-fit:cover;
+      background:#161616;
+      border:2px solid rgba(255,255,255,.10);
+      flex:0 0 auto;
+    }
+
+    .mini-user-info{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      line-height:1.15;
+    }
+
+    .mini-user-info strong{
+      font-size:13px;
+      font-weight:800;
+      color:#fff;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      font-size:14px;
-      font-weight:600;
     }
 
-    .main-grid{
+    .mini-user-info span{
+      font-size:11px;
+      color:#ffbf8c;
+      font-weight:700;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      margin-top:2px;
+    }
+
+    .mini-user-info small{
+      font-size:10px;
+      color:#c9d3e6;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      margin-top:2px;
+    }
+
+    .content{
       display:grid;
-      grid-template-columns:minmax(0,1.95fr) 355px;
-      gap:18px;
-      margin-top:18px;
+      grid-template-columns: 1fr 300px;
+      gap:14px;
+      margin-top:14px;
     }
 
-    .left-col,
-    .right-col{
+    .left{
+      min-width:0;
       display:flex;
       flex-direction:column;
-      gap:18px;
+      gap:14px;
+    }
+
+    .right{
       min-width:0;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
     }
 
     .hero{
       position:relative;
-      min-height:250px;
+      min-height:260px;
       border-radius:24px;
       overflow:hidden;
-      border:1px solid rgba(255,255,255,.08);
+      border:1px solid var(--line);
       box-shadow:var(--shadow);
       background:
-        linear-gradient(90deg, rgba(5,8,14,.97) 0%, rgba(5,8,14,.88) 45%, rgba(5,8,14,.38) 100%),
+        linear-gradient(90deg, rgba(9,11,18,.92) 0%, rgba(9,11,18,.78) 38%, rgba(9,11,18,.18) 100%),
         url("/images/plano de fundo.png") center/cover no-repeat;
+      padding:34px 32px;
       display:flex;
       align-items:center;
-      padding:36px;
     }
 
     .hero::after{
@@ -231,48 +261,50 @@
       position:absolute;
       inset:0;
       background:
-        radial-gradient(circle at 68% 35%, rgba(255,170,90,.14), transparent 23%),
-        linear-gradient(180deg, transparent, rgba(0,0,0,.22));
+        radial-gradient(circle at 72% 35%, rgba(255,122,26,.20), transparent 18%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.14));
       pointer-events:none;
     }
 
     .hero-content{
       position:relative;
       z-index:2;
-      max-width:560px;
+      max-width:520px;
     }
 
-    .hero h2{
-      font-size:24px;
-      font-weight:600;
-      margin-bottom:14px;
+    .hero h1{
+      font-size:23px;
+      font-weight:800;
+      margin-bottom:16px;
+      letter-spacing:.2px;
     }
 
     .hero p{
-      font-size:15px;
-      line-height:1.6;
-      color:#d3ddf2;
-      margin-bottom:24px;
+      font-size:14px;
+      line-height:1.65;
+      color:#d7deea;
+      margin-bottom:22px;
+      max-width:470px;
     }
 
     .hero-actions{
       display:flex;
-      gap:14px;
+      gap:12px;
       flex-wrap:wrap;
     }
 
     .btn{
+      min-height:46px;
       border:none;
-      cursor:pointer;
-      padding:13px 22px;
-      border-radius:12px;
-      font-size:15px;
-      font-weight:700;
-      transition:.2s;
-      text-decoration:none;
+      border-radius:14px;
+      padding:0 24px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
+      font-size:14px;
+      font-weight:800;
+      cursor:pointer;
+      transition:.2s ease;
     }
 
     .btn:hover{
@@ -281,256 +313,246 @@
 
     .btn-primary{
       color:#fff;
-      background:linear-gradient(135deg,#ff9546,#ff5d00);
-      box-shadow:0 10px 28px rgba(255,122,26,.25);
+      background:linear-gradient(135deg,var(--orange-2),#ff5d00);
+      box-shadow:0 10px 24px rgba(255,122,26,.24);
     }
 
-    .btn-dark{
+    .btn-secondary{
       color:#eef3ff;
-      background:linear-gradient(180deg, rgba(38,46,62,.95), rgba(20,25,35,.98));
+      background:linear-gradient(180deg, rgba(43,56,84,.92), rgba(18,26,44,.95));
       border:1px solid rgba(255,255,255,.08);
     }
 
-    .hero-eagle{
+    .hero-image{
       position:absolute;
-      right:10px;
-      bottom:0;
-      width:min(42%, 430px);
-      max-height:92%;
-      object-fit:contain;
+      right:34px;
+      top:50%;
+      transform:translateY(-50%);
+      width:290px;
+      max-width:34%;
       z-index:1;
-      filter:drop-shadow(0 10px 30px rgba(0,0,0,.45));
-      pointer-events:none;
+      object-fit:contain;
+      filter:drop-shadow(0 10px 24px rgba(0,0,0,.35));
     }
 
-    .section-grid{
+    .grid-2{
       display:grid;
       grid-template-columns:1fr 1fr;
-      gap:18px;
+      gap:14px;
     }
 
-    .category-card,
-    .profile-card,
-    .info-card{
-      background:linear-gradient(180deg, rgba(12,16,24,.96), rgba(8,11,18,.98));
-      border:1px solid rgba(255,255,255,.07);
+    .module-card,
+    .promo-card,
+    .quick-card{
+      background:linear-gradient(180deg, rgba(37,37,37,.95), rgba(28,28,28,.96));
+      border:1px solid var(--line);
       border-radius:22px;
       box-shadow:var(--shadow);
-      overflow:hidden;
     }
 
-    .category-card{
-      padding:18px;
-      min-height:220px;
+    .module-card{
+      padding:14px;
+      min-height:260px;
     }
 
-    .category-title{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-size:18px;
-      font-weight:700;
-      margin-bottom:14px;
-    }
-
-    .category-links{
-      display:grid;
-      gap:12px;
-    }
-
-    .category-link{
+    .module-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:14px;
-      padding:16px 16px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-      transition:.2s ease;
+      gap:10px;
+      margin-bottom:12px;
     }
 
-    .category-link:hover{
-      transform:translateY(-2px);
-      background:rgba(255,122,26,.08);
-      border-color:rgba(255,122,26,.20);
-    }
-
-    .category-link strong{
-      display:block;
-      font-size:15px;
-      margin-bottom:4px;
-    }
-
-    .category-link span{
-      display:block;
-      color:#9eabc4;
-      font-size:12px;
-    }
-
-    .category-link .arrow{
-      color:#dce5f8;
-      font-weight:800;
-      font-size:16px;
-      flex:0 0 auto;
-    }
-
-    .profile-card{
-      padding:18px;
-    }
-
-    .profile-head{
+    .module-title{
       display:flex;
       align-items:center;
-      gap:14px;
-      padding-bottom:16px;
-      border-bottom:1px solid rgba(255,255,255,.07);
-      margin-bottom:16px;
+      gap:10px;
+      font-size:16px;
+      font-weight:800;
     }
 
-    .profile-head img{
-      width:56px;
-      height:56px;
-      border-radius:50%;
-      object-fit:cover;
-      border:2px solid rgba(255,255,255,.15);
-      background:#111827;
-      flex:0 0 auto;
+    .module-title .icon{
+      font-size:16px;
     }
 
-    .profile-name{
-      font-size:20px;
-      font-weight:700;
-      line-height:1.2;
+    .module-collapse{
+      color:#c8d0dd;
+      font-size:12px;
+      font-weight:800;
+      opacity:.9;
     }
 
-    .profile-role{
-      margin-top:4px;
-      font-size:13px;
-      color:#ffbf8c;
-      font-weight:600;
-      text-transform:capitalize;
-    }
-
-    .profile-email-head{
-      margin-top:4px;
-      font-size:14px;
-      color:#eef4ff;
-      word-break:break-word;
-    }
-
-    .profile-grid{
+    .module-links{
       display:grid;
       gap:12px;
     }
 
-    .profile-info{
-      background:rgba(255,255,255,.03);
+    .module-link{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+      border-radius:16px;
       border:1px solid rgba(255,255,255,.06);
-      border-radius:14px;
-      padding:12px 14px;
+      background:rgba(255,255,255,.025);
+      transition:.2s ease;
     }
 
-    .profile-info small{
+    .module-link:hover{
+      background:rgba(255,255,255,.05);
+      border-color:rgba(255,122,26,.20);
+      transform:translateY(-1px);
+    }
+
+    .module-link strong{
+      display:block;
+      font-size:14px;
+      font-weight:800;
+      margin-bottom:4px;
+    }
+
+    .module-link span{
       display:block;
       font-size:12px;
       color:var(--muted);
-      margin-bottom:6px;
     }
 
-    .profile-info strong{
-      display:block;
-      font-size:15px;
-      color:#eef4ff;
-      word-break:break-word;
+    .module-link .arrow{
+      font-size:22px;
+      font-weight:800;
+      color:#eef2fb;
+      flex:0 0 auto;
+      line-height:1;
     }
 
-    .info-card{
-      padding:18px;
-      min-height:180px;
+    .promo-card{
+      padding:18px 18px 16px;
+      min-height:296px;
+      text-align:center;
       display:flex;
       flex-direction:column;
       justify-content:center;
       align-items:center;
-      text-align:center;
       background:
-        radial-gradient(circle at 50% 20%, rgba(255,149,70,.08), transparent 30%),
-        linear-gradient(180deg, rgba(12,16,24,.98), rgba(8,11,18,.98));
+        linear-gradient(180deg, rgba(20,20,20,.90), rgba(12,12,12,.96)),
+        url("/images/plano de fundo.png") center/cover no-repeat;
+      overflow:hidden;
     }
 
-    .info-card img{
+    .promo-card img{
       width:180px;
       max-width:100%;
       object-fit:contain;
-      margin-bottom:12px;
-      filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));
+      margin-bottom:18px;
+      filter:drop-shadow(0 10px 28px rgba(0,0,0,.45));
     }
 
-    .info-card h3{
+    .promo-card h3{
       font-size:18px;
-      margin-bottom:8px;
+      font-weight:800;
+      margin-bottom:10px;
     }
 
-    .info-card p{
+    .promo-card p{
       font-size:13px;
-      color:var(--muted);
       line-height:1.5;
+      color:#d2d9e7;
+      max-width:220px;
     }
 
-    @media (max-width: 1230px){
-      .main-grid{
+    .quick-card{
+      padding:10px 0;
+      overflow:hidden;
+    }
+
+    .quick-link{
+      display:block;
+      padding:16px 18px;
+      transition:.2s ease;
+    }
+
+    .quick-link + .quick-link{
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+
+    .quick-link:hover{
+      background:rgba(255,255,255,.04);
+    }
+
+    .quick-link strong{
+      display:block;
+      font-size:14px;
+      font-weight:800;
+      margin-bottom:4px;
+    }
+
+    .quick-link span{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    @media (max-width: 1150px){
+      .topbar{
+        grid-template-columns:1fr;
+        padding:12px;
+      }
+
+      .brand{
+        border-right:none;
+        border-bottom:1px solid rgba(255,255,255,.06);
+      }
+
+      .top-actions{
+        justify-content:center;
+        padding:0;
+      }
+
+      .content{
         grid-template-columns:1fr;
       }
 
-      .right-col{
+      .right{
         display:grid;
         grid-template-columns:1fr 1fr;
       }
     }
 
-    @media (max-width: 980px){
-      .section-grid{
+    @media (max-width: 860px){
+      .grid-2{
         grid-template-columns:1fr;
       }
 
-      .right-col{
+      .right{
         grid-template-columns:1fr;
       }
 
       .hero{
-        min-height:260px;
+        padding:26px 22px;
+        min-height:240px;
       }
 
-      .hero-eagle{
-        width:42%;
-        opacity:.92;
+      .hero-image{
+        width:240px;
+        max-width:42%;
+        right:16px;
       }
     }
 
-    @media (max-width: 760px){
-      .page-shell{
-        padding:12px;
-      }
-
-      .topbar{
-        flex-direction:column;
-        align-items:stretch;
-      }
-
-      .brand,
-      .top-actions{
-        justify-content:center;
+    @media (max-width: 640px){
+      .page{
+        padding:10px;
       }
 
       .nav{
         justify-content:flex-start;
-        flex-wrap:nowrap;
         overflow:auto;
+        flex-wrap:nowrap;
       }
 
       .hero{
         min-height:auto;
-        padding:24px 20px;
       }
 
       .hero-content{
@@ -538,31 +560,29 @@
         padding-right:0;
       }
 
-      .hero h2{
-        font-size:18px;
+      .hero h1{
+        font-size:19px;
       }
 
       .hero p{
-        font-size:14px;
-        max-width:100%;
+        font-size:13px;
       }
 
-      .hero-eagle{
-        opacity:.14;
-        width:80%;
-        right:-18%;
-        bottom:-2%;
+      .hero-image{
+        opacity:.16;
+        right:-30px;
+        width:78%;
+        max-width:none;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page-shell">
-
+  <div class="page">
     <header class="topbar">
       <div class="brand">
-        <img src="/images/logo.png" alt="Logo">
-        <h1>Shopee Security</h1>
+        <img src="/images/logo.png" alt="Logo Security">
+        <span>Shopee Security</span>
       </div>
 
       <nav class="nav">
@@ -574,47 +594,55 @@
       </nav>
 
       <div class="top-actions">
-        <button class="icon-btn" aria-label="Buscar">⌕</button>
-        <div class="profile-mini">
+        <button class="search-btn" aria-label="Buscar">⌕</button>
+
+        <div class="mini-user">
           <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
-          <span id="topUserName">Usuário</span>
+          <div class="mini-user-info">
+            <strong id="topUserName">Usuário</strong>
+            <span id="topUserRole">Aprovador</span>
+            <small id="topUserEmail">usuario@shopee.com</small>
+          </div>
         </div>
       </div>
     </header>
 
-    <div class="main-grid">
-      <section class="left-col">
-
+    <div class="content">
+      <section class="left">
         <section class="hero">
           <div class="hero-content">
-            <h2>Bem-vindo ao Portal Security</h2>
+            <h1>Bem-vindo ao Security FBS</h1>
             <p>
-              Central de gestão de acessos, HC, processos e auditorias.
-              Utilize os módulos abaixo para navegar entre os dashboards e áreas operacionais.
+              Protegendo a operação com monitoramento de acessos, aprovações,
+              eventos críticos e dashboards operacionais em tempo real.
             </p>
 
             <div class="hero-actions">
               <a class="btn btn-primary" href="/access">Verificar Segurança</a>
-              <a class="btn btn-dark" href="/aprovacoes">Ver Aprovações</a>
+              <a class="btn btn-secondary" href="/cco-fbs">Reportar incidente</a>
             </div>
           </div>
 
-          <img class="hero-eagle" src="/images/Aguia.png" alt="Águia Security">
+          <img class="hero-image" src="/images/Aguia.png" alt="Imagem Security">
         </section>
 
-        <section class="section-grid">
-          <div class="category-card">
-            <div class="category-title">🔐 Controle de Acesso</div>
-            <div class="category-links">
-              <a class="category-link" href="/access">
+        <section class="grid-2">
+          <div class="module-card">
+            <div class="module-head">
+              <div class="module-title"><span class="icon">🔐</span> Controle de Acesso</div>
+              <div class="module-collapse">^</div>
+            </div>
+
+            <div class="module-links">
+              <a class="module-link" href="/access">
                 <div>
-                  <strong>Dashboard ACCESS</strong>
+                  <strong>ACCESS</strong>
                   <span>Acessos e liberações</span>
                 </div>
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/aprovacoes">
+              <a class="module-link" href="/aprovacoes">
                 <div>
                   <strong>Aprovações</strong>
                   <span>Gestão de solicitações</span>
@@ -622,20 +650,24 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/cadastro">
+              <a class="module-link" href="/first-mile-access">
                 <div>
-                  <strong>Cadastro</strong>
-                  <span>Novos acessos</span>
+                  <strong>First Mile</strong>
+                  <span>Rotas e coletas</span>
                 </div>
                 <div class="arrow">›</div>
               </a>
             </div>
           </div>
 
-          <div class="category-card">
-            <div class="category-title">👥 HC</div>
-            <div class="category-links">
-              <a class="category-link" href="/hc">
+          <div class="module-card">
+            <div class="module-head">
+              <div class="module-title"><span class="icon">👥</span> HC</div>
+              <div class="module-collapse">^</div>
+            </div>
+
+            <div class="module-links">
+              <a class="module-link" href="/hc">
                 <div>
                   <strong>Dashboard HC</strong>
                   <span>Headcount e presença</span>
@@ -643,36 +675,15 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/agentes-fbs">
+              <a class="module-link" href="/agentes-fbs">
                 <div>
                   <strong>Times</strong>
                   <span>Gestão de equipe</span>
                 </div>
                 <div class="arrow">›</div>
               </a>
-            </div>
-          </div>
 
-          <div class="category-card">
-            <div class="category-title">⚙️ Processos</div>
-            <div class="category-links">
-              <a class="category-link" href="/first-mile-access">
-                <div>
-                  <strong>First Mile</strong>
-                  <span>Rotas e coletas</span>
-                </div>
-                <div class="arrow">›</div>
-              </a>
-
-              <a class="category-link" href="/ronda-geral">
-                <div>
-                  <strong>Rondas</strong>
-                  <span>Monitoramento</span>
-                </div>
-                <div class="arrow">›</div>
-              </a>
-
-              <a class="category-link" href="/chamada-agentes">
+              <a class="module-link" href="/chamada-agentes">
                 <div>
                   <strong>Chamadas</strong>
                   <span>Controle operacional</span>
@@ -682,10 +693,31 @@
             </div>
           </div>
 
-          <div class="category-card">
-            <div class="category-title">🧾 Auditorias</div>
-            <div class="category-links">
-              <a class="category-link" href="/dashboard">
+          <div class="module-card">
+            <div class="module-head">
+              <div class="module-title"><span class="icon">⚙️</span> Processos</div>
+              <div class="module-collapse">^</div>
+            </div>
+
+            <div class="module-links">
+              <a class="module-link" href="/ronda-geral">
+                <div>
+                  <strong>Rondas</strong>
+                  <span>Monitoramento</span>
+                </div>
+                <div class="arrow">›</div>
+              </a>
+            </div>
+          </div>
+
+          <div class="module-card">
+            <div class="module-head">
+              <div class="module-title"><span class="icon">🧾</span> Auditorias</div>
+              <div class="module-collapse">^</div>
+            </div>
+
+            <div class="module-links">
+              <a class="module-link" href="/dashboard">
                 <div>
                   <strong>Resultado Operacional</strong>
                   <span>AV recuperado</span>
@@ -693,7 +725,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/cco-fbs">
+              <a class="module-link" href="/cco-fbs">
                 <div>
                   <strong>CCO</strong>
                   <span>Controle de qualidade</span>
@@ -701,7 +733,7 @@
                 <div class="arrow">›</div>
               </a>
 
-              <a class="category-link" href="/desligados">
+              <a class="module-link" href="/desligados">
                 <div>
                   <strong>Desligados</strong>
                   <span>Controle de acessos removidos</span>
@@ -713,41 +745,24 @@
         </section>
       </section>
 
-      <aside class="right-col">
-        <section class="profile-card">
-          <div class="profile-head">
-            <img id="sideUserPhoto" src="/images/logo.png" alt="Minha foto">
-            <div>
-              <div class="profile-name" id="sideUserName">Usuário</div>
-              <div class="profile-role" id="sideUserRole">Usuário</div>
-              <div class="profile-email-head" id="userEmailHead">Não informado</div>
-            </div>
-          </div>
-
-          <div class="profile-grid">
-            <div class="profile-info">
-              <small>Status</small>
-              <strong id="userStatus">Aprovado</strong>
-            </div>
-
-            <div class="profile-info">
-              <small>Nível</small>
-              <strong id="userLevel">5</strong>
-            </div>
-
-            <div class="profile-info">
-              <small>E-mail</small>
-              <strong id="userEmailCard">Não informado</strong>
-            </div>
-          </div>
+      <aside class="right">
+        <section class="promo-card">
+          <img src="/images/Aguia.png" alt="Website Security">
+          <h3>WEBSITE SECURITY FBS</h3>
+          <p>
+            Clique para acessar o portal oficial do Security Center Brasil.
+          </p>
         </section>
 
-        <section class="info-card">
-          <img src="/images/Aguia.png" alt="Águia Security">
-          <h3>Portal Security FBS</h3>
-          <p>
-            Navegação central dos módulos operacionais e dashboards do ambiente.
-          </p>
+        <section class="quick-card">
+          <a class="quick-link" href="/aprovacoes">
+            <strong>Ver Aprovações</strong>
+          </a>
+
+          <a class="quick-link" href="/cadastro">
+            <strong>Cadastro</strong>
+            <span>Novos acessos</span>
+          </a>
         </section>
       </aside>
     </div>
@@ -756,6 +771,8 @@
   <script>
     const fallbackPhoto = "/images/logo.png";
     const fallbackName = "Usuário";
+    const fallbackEmail = "usuario@shopee.com";
+    const fallbackRole = "Aprovador";
 
     async function loadUserProfile() {
       try {
@@ -763,31 +780,24 @@
           method: "GET",
           credentials: "same-origin",
           cache: "no-store",
-          headers: {
-            "Accept": "application/json"
-          }
+          headers: { "Accept": "application/json" }
         });
 
         if (!response.ok) {
-          throw new Error(`Erro ${response.status} ao buscar /api/me`);
+          throw new Error("Falha ao carregar /api/me");
         }
 
         const user = await response.json();
 
         const nome = user.nome || fallbackName;
         const foto = user.foto || fallbackPhoto;
-        const email = user.email || "Não informado";
-        const perfil = user.perfil || "Usuário";
+        const email = user.email || fallbackEmail;
+        const perfil = user.perfil || fallbackRole;
 
         const topUserPhoto = document.getElementById("topUserPhoto");
-        const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
-        const sideUserName = document.getElementById("sideUserName");
-        const userEmailHead = document.getElementById("userEmailHead");
-        const userEmailCard = document.getElementById("userEmailCard");
-        const userRole = document.getElementById("sideUserRole");
-        const userStatus = document.getElementById("userStatus");
-        const userLevel = document.getElementById("userLevel");
+        const topUserRole = document.getElementById("topUserRole");
+        const topUserEmail = document.getElementById("topUserEmail");
 
         if (topUserPhoto) {
           topUserPhoto.src = foto;
@@ -796,38 +806,21 @@
           };
         }
 
-        if (sideUserPhoto) {
-          sideUserPhoto.src = foto;
-          sideUserPhoto.onerror = function () {
-            this.src = fallbackPhoto;
-          };
-        }
-
         if (topUserName) topUserName.textContent = nome;
-        if (sideUserName) sideUserName.textContent = nome;
-        if (userEmailHead) userEmailHead.textContent = email;
-        if (userEmailCard) userEmailCard.textContent = email;
-        if (userRole) userRole.textContent = perfil;
-
-        if (userStatus) {
-          userStatus.textContent = user.status || "Aprovado";
-        }
-
-        if (userLevel) {
-          userLevel.textContent = user.nivel_acesso || user.nivel || "5";
-        }
+        if (topUserRole) topUserRole.textContent = perfil;
+        if (topUserEmail) topUserEmail.textContent = email;
       } catch (error) {
-        console.error("Erro ao carregar perfil do usuário:", error);
+        console.error("Erro ao carregar perfil:", error);
 
         const topUserPhoto = document.getElementById("topUserPhoto");
-        const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
-        const sideUserName = document.getElementById("sideUserName");
+        const topUserRole = document.getElementById("topUserRole");
+        const topUserEmail = document.getElementById("topUserEmail");
 
         if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
-        if (sideUserPhoto) sideUserPhoto.src = fallbackPhoto;
         if (topUserName) topUserName.textContent = fallbackName;
-        if (sideUserName) sideUserName.textContent = fallbackName;
+        if (topUserRole) topUserRole.textContent = fallbackRole;
+        if (topUserEmail) topUserEmail.textContent = fallbackEmail;
       }
     }
 

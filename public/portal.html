@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Portal Security FBS</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <style>
     :root{
@@ -15,18 +15,17 @@
       --bg-2:#111111;
       --card:#2e2e2e;
       --card-2:#1d1d1d;
-      --input:#232323;
+      --panel:#202020;
+      --panel-2:#171717;
       --line:rgba(255,255,255,.08);
       --text:#ffffff;
-      --muted:#c7c7c7;
+      --muted:#b5bfd4;
+      --muted-2:#8e99b3;
       --orange:#ff7a1a;
-      --orange-2:#ff9b52;
-      --blue:#58a6ff;
-      --green:#22c55e;
-      --red:#ef4444;
-      --purple:#8b5cf6;
-      --yellow:#f59e0b;
+      --orange-2:#ff9f5a;
+      --blue:#4d78ff;
       --shadow:0 12px 34px rgba(0,0,0,.34);
+      --radius:22px;
     }
 
     *{
@@ -43,7 +42,7 @@
     body{
       color:var(--text);
       background:
-        linear-gradient(180deg, rgba(27,27,27,0.96) 0%, rgba(17,17,17,0.98) 100%),
+        linear-gradient(180deg, rgba(27,27,27,.96) 0%, rgba(17,17,17,.98) 100%),
         url("/images/plano de fundo.png") center/cover fixed no-repeat;
       background-blend-mode:normal,normal;
     }
@@ -58,29 +57,33 @@
     }
 
     .page-shell{
-      max-width:1450px;
+      width:100%;
+      max-width:1480px;
       margin:0 auto;
-      padding:12px 18px 18px;
+      padding:4px 4px 18px;
     }
 
     .topbar{
-      display:flex;
+      display:grid;
+      grid-template-columns:265px 1fr 280px;
       align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:10px 14px;
+      gap:0;
       border:1px solid var(--line);
-      border-radius:18px;
-      background:linear-gradient(180deg, rgba(16,16,16,.88), rgba(10,10,10,.9));
+      border-radius:0 0 22px 22px;
+      overflow:hidden;
+      background:linear-gradient(180deg, rgba(18,18,18,.92), rgba(10,10,10,.94));
       box-shadow:var(--shadow);
       margin-bottom:14px;
     }
 
     .brand{
+      min-height:76px;
       display:flex;
       align-items:center;
       gap:12px;
-      min-width:220px;
+      padding:0 22px;
+      background:linear-gradient(135deg, #101826 0%, #0d1220 100%);
+      border-right:1px solid rgba(255,255,255,.05);
     }
 
     .brand img{
@@ -89,37 +92,42 @@
       object-fit:contain;
       border-radius:8px;
       background:#232323;
-      padding:3px;
+      padding:2px;
+      flex:0 0 auto;
     }
 
     .brand h1{
       font-size:16px;
-      font-weight:700;
+      font-weight:800;
+      color:var(--orange);
+      letter-spacing:.2px;
     }
 
     .nav{
+      min-height:76px;
       display:flex;
       align-items:center;
       justify-content:center;
-      flex:1;
-      gap:8px;
-      flex-wrap:wrap;
+      gap:18px;
+      padding:0 12px;
+      overflow:auto;
+      white-space:nowrap;
     }
 
     .nav a{
-      padding:10px 14px;
-      border-radius:12px;
-      color:#d9e3f8;
-      font-size:13px;
-      font-weight:600;
       position:relative;
-      transition:.2s;
+      color:#e2e7f2;
+      font-size:14px;
+      font-weight:700;
+      padding:12px 14px;
+      border-radius:12px;
+      transition:.2s ease;
+      flex:0 0 auto;
     }
 
     .nav a:hover,
     .nav a.active{
-      background:rgba(255,255,255,.04);
-      color:#fff;
+      background:rgba(255,255,255,.05);
     }
 
     .nav a.active::after{
@@ -127,24 +135,25 @@
       position:absolute;
       left:14px;
       right:14px;
-      bottom:3px;
+      bottom:5px;
       height:2px;
       border-radius:999px;
-      background:linear-gradient(90deg,var(--orange),#ffc593);
-      box-shadow:0 0 12px rgba(255,122,26,.55);
+      background:linear-gradient(90deg, var(--orange), #ffd0aa);
+      box-shadow:0 0 12px rgba(255,122,26,.45);
     }
 
     .top-actions{
+      min-height:76px;
       display:flex;
       align-items:center;
-      gap:10px;
-      min-width:320px;
       justify-content:flex-end;
+      gap:10px;
+      padding:0 14px;
     }
 
     .icon-btn{
-      width:40px;
-      height:40px;
+      width:42px;
+      height:42px;
       display:grid;
       place-items:center;
       border-radius:12px;
@@ -160,20 +169,20 @@
       display:flex;
       align-items:center;
       gap:10px;
+      min-width:0;
+      max-width:100%;
       padding:6px 12px 6px 6px;
-      border-radius:16px;
+      border-radius:18px;
       border:1px solid var(--line);
       background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
-      min-width:220px;
-      max-width:320px;
     }
 
     .profile-mini img{
-      width:42px;
-      height:42px;
+      width:44px;
+      height:44px;
       border-radius:50%;
       object-fit:cover;
-      border:2px solid rgba(255,255,255,.14);
+      border:2px solid rgba(255,255,255,.12);
       background:#111827;
       flex:0 0 auto;
     }
@@ -186,7 +195,7 @@
     .profile-mini-text strong{
       display:block;
       font-size:13px;
-      font-weight:700;
+      font-weight:800;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
@@ -194,9 +203,10 @@
 
     .profile-mini-text span{
       display:block;
-      font-size:10px;
+      font-size:11px;
       color:#ffbf8c;
       margin-top:2px;
+      font-weight:700;
       text-transform:capitalize;
     }
 
@@ -212,64 +222,127 @@
 
     .main-grid{
       display:grid;
-      grid-template-columns:minmax(0,1.9fr) 320px;
+      grid-template-columns:minmax(0,1fr) 310px;
       gap:14px;
     }
 
     .left-col,
     .right-col{
+      min-width:0;
+    }
+
+    .left-col{
       display:flex;
       flex-direction:column;
       gap:14px;
-      min-width:0;
+    }
+
+    .right-col{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
     }
 
     .hero-card{
       display:grid;
-      grid-template-columns:1.45fr .95fr;
-      min-height:205px;
-      border-radius:22px;
-      overflow:hidden;
+      grid-template-columns:minmax(0,1fr) 320px;
+      min-height:260px;
       border:1px solid var(--line);
+      border-radius:24px;
+      overflow:hidden;
       box-shadow:var(--shadow);
       background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
     }
 
     .hero-left{
-      padding:30px 26px;
-      background:
-        linear-gradient(90deg, rgba(10,10,10,.72) 0%, rgba(10,10,10,.56) 55%, rgba(10,10,10,.20) 100%),
-        url("/images/plano de fundo.png") center/cover no-repeat;
+      position:relative;
+      padding:34px 36px;
       display:flex;
       flex-direction:column;
       justify-content:center;
+      background:
+        linear-gradient(90deg, rgba(7,13,26,.92) 0%, rgba(10,18,34,.84) 38%, rgba(22,22,22,.55) 100%),
+        url("/images/plano de fundo.png") center/cover no-repeat;
     }
 
-    .hero-left h2{
+    .hero-left::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 14% 15%, rgba(50,102,255,.16), transparent 24%),
+        radial-gradient(circle at 78% 18%, rgba(255,122,26,.10), transparent 22%);
+      pointer-events:none;
+    }
+
+    .hero-content{
+      position:relative;
+      z-index:1;
+      max-width:520px;
+    }
+
+    .hero-content h2{
       font-size:22px;
-      font-weight:700;
-      margin-bottom:14px;
+      font-weight:800;
+      margin-bottom:12px;
+      color:#fff;
     }
 
-    .hero-left p{
+    .hero-content p{
       font-size:15px;
       line-height:1.6;
-      color:#d3ddf2;
-      max-width:560px;
+      color:#d6def0;
+      margin-bottom:22px;
+      max-width:500px;
+    }
+
+    .hero-actions{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+      padding:12px 18px;
+      border-radius:12px;
+      font-size:14px;
+      font-weight:800;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition:.2s ease;
+    }
+
+    .btn:hover{
+      transform:translateY(-1px);
+    }
+
+    .btn-primary{
+      background:linear-gradient(135deg, #ff9546 0%, #ff5d00 100%);
+      color:#fff;
+      box-shadow:0 8px 24px rgba(255,122,26,.22);
+    }
+
+    .btn-dark{
+      background:linear-gradient(180deg, rgba(43,56,84,.92), rgba(18,26,44,.95));
+      color:#eef3ff;
+      border:1px solid rgba(255,255,255,.08);
     }
 
     .hero-right{
-      background:linear-gradient(135deg, rgba(46,46,46,.98), rgba(29,29,29,.98));
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:18px;
-      position:relative;
+      padding:16px;
+      background:linear-gradient(135deg, rgba(49,49,49,.96), rgba(30,30,30,.98));
     }
 
     .hero-right img{
       width:100%;
-      max-width:255px;
+      max-width:250px;
       object-fit:contain;
       filter:drop-shadow(0 12px 28px rgba(0,0,0,.45));
     }
@@ -281,18 +354,18 @@
     }
 
     .accordion-card,
-    .profile-card,
     .site-card,
-    .action-card{
+    .side-actions{
       background:linear-gradient(135deg, var(--card) 0%, var(--card-2) 100%);
       border:1px solid var(--line);
-      border-radius:20px;
+      border-radius:22px;
       box-shadow:var(--shadow);
       overflow:hidden;
     }
 
     .accordion-card{
       padding:12px;
+      min-height:286px;
     }
 
     .accordion-header{
@@ -304,7 +377,7 @@
       align-items:center;
       justify-content:space-between;
       gap:12px;
-      padding:2px 4px 10px;
+      padding:2px 4px 12px;
       cursor:pointer;
     }
 
@@ -312,23 +385,28 @@
       display:flex;
       align-items:center;
       gap:10px;
-      font-size:16px;
-      font-weight:700;
+      font-size:17px;
+      font-weight:800;
     }
 
     .accordion-icon{
-      font-size:14px;
-      color:#ddd;
+      color:#d9d9d9;
+      font-size:16px;
+      font-weight:900;
       transition:transform .22s ease;
     }
 
-    .accordion-card.open .accordion-icon{
-      transform:rotate(180deg);
+    .accordion-card.closed .accordion-icon{
+      transform:rotate(-180deg);
     }
 
     .accordion-body{
       display:grid;
-      gap:10px;
+      gap:12px;
+    }
+
+    .accordion-card.closed .accordion-body{
+      display:none;
     }
 
     .category-link{
@@ -336,8 +414,8 @@
       align-items:center;
       justify-content:space-between;
       gap:14px;
-      padding:14px 16px;
-      border-radius:16px;
+      padding:16px 18px;
+      border-radius:18px;
       border:1px solid rgba(255,255,255,.06);
       background:rgba(255,255,255,.03);
       transition:.2s ease;
@@ -352,150 +430,32 @@
     .category-link strong{
       display:block;
       font-size:15px;
+      font-weight:800;
       margin-bottom:4px;
     }
 
     .category-link span{
       display:block;
-      color:#9eabc4;
+      color:var(--muted-2);
       font-size:12px;
-    }
-
-    .category-link .arrow{
-      color:#dce5f8;
-      font-weight:800;
-      font-size:18px;
-      flex:0 0 auto;
-    }
-
-    .right-col{
-      gap:12px;
-    }
-
-    .profile-card{
-      padding:14px;
-    }
-
-    .profile-head{
-      display:flex;
-      align-items:flex-start;
-      gap:12px;
-    }
-
-    .profile-head img{
-      width:58px;
-      height:58px;
-      border-radius:50%;
-      object-fit:cover;
-      border:2px solid rgba(255,255,255,.15);
-      background:#111827;
-      flex:0 0 auto;
-    }
-
-    .profile-head-text{
-      min-width:0;
-      flex:1;
-    }
-
-    .profile-name{
-      font-size:17px;
-      font-weight:800;
-      line-height:1.2;
-      margin-bottom:4px;
-    }
-
-    .profile-role{
-      font-size:13px;
-      color:#ffbf8c;
-      font-weight:700;
-      text-transform:capitalize;
-      margin-bottom:2px;
-    }
-
-    .profile-email-head{
-      font-size:13px;
-      color:#eef4ff;
-      word-break:break-word;
-      font-weight:600;
-    }
-
-    .profile-grid{
-      display:grid;
-      gap:12px;
-      margin-top:14px;
-    }
-
-    .profile-info{
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:14px;
-      padding:12px 14px;
-    }
-
-    .profile-info small{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:6px;
-    }
-
-    .profile-info strong{
-      display:block;
-      font-size:15px;
-      color:#eef4ff;
-      word-break:break-word;
-    }
-
-    .action-card{
-      padding:0;
-      overflow:hidden;
-    }
-
-    .action-card a{
-      display:flex;
-      width:100%;
-      min-height:54px;
-      align-items:center;
-      padding:12px 16px;
-      font-weight:800;
-      font-size:14px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      transition:.2s;
-    }
-
-    .action-card a:last-child{
-      border-bottom:none;
-    }
-
-    .action-card a:hover{
-      background:rgba(255,122,26,.08);
-    }
-
-    .action-card strong{
-      display:block;
-      font-size:14px;
-    }
-
-    .action-card span{
-      display:block;
-      font-size:11px;
-      color:var(--muted);
-      margin-top:3px;
       font-weight:500;
     }
 
+    .category-link .arrow{
+      font-size:24px;
+      font-weight:800;
+      color:#e8eefb;
+      line-height:1;
+      flex:0 0 auto;
+    }
+
     .site-card{
+      min-height:336px;
       padding:18px;
-      min-height:305px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      transition:.2s;
-      cursor:pointer;
       background:
         linear-gradient(180deg, rgba(14,14,14,.92), rgba(10,10,10,.96)),
         url("/images/plano de fundo.png") center/cover no-repeat;
+      transition:.2s ease;
     }
 
     .site-card:hover{
@@ -504,8 +464,17 @@
       box-shadow:0 14px 34px rgba(0,0,0,.44);
     }
 
+    .site-card-content{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+
     .site-card-content img{
-      width:215px;
+      width:210px;
       max-width:100%;
       object-fit:contain;
       margin-bottom:14px;
@@ -514,7 +483,7 @@
 
     .site-card-content h3{
       font-size:19px;
-      font-weight:800;
+      font-weight:900;
       line-height:1.2;
       margin-bottom:8px;
     }
@@ -523,9 +492,49 @@
       font-size:13px;
       color:var(--muted);
       line-height:1.5;
+      max-width:230px;
+    }
+
+    .side-actions{
+      overflow:hidden;
+    }
+
+    .side-actions a{
+      display:flex;
+      align-items:center;
+      min-height:58px;
+      padding:14px 18px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      transition:.2s ease;
+    }
+
+    .side-actions a:last-child{
+      border-bottom:none;
+    }
+
+    .side-actions a:hover{
+      background:rgba(255,122,26,.08);
+    }
+
+    .side-actions strong{
+      display:block;
+      font-size:16px;
+      font-weight:800;
+      margin-bottom:3px;
+    }
+
+    .side-actions span{
+      display:block;
+      font-size:12px;
+      color:var(--muted-2);
+      font-weight:500;
     }
 
     @media (max-width: 1200px){
+      .topbar{
+        grid-template-columns:240px 1fr 260px;
+      }
+
       .main-grid{
         grid-template-columns:1fr;
       }
@@ -535,34 +544,15 @@
         grid-template-columns:1fr 1fr;
         align-items:start;
       }
-    }
 
-    @media (max-width: 900px){
-      .portal-sections{
-        grid-template-columns:1fr;
-      }
-
-      .right-col{
-        grid-template-columns:1fr;
-      }
-
-      .hero-card{
-        grid-template-columns:1fr;
-      }
-
-      .hero-right{
-        min-height:180px;
+      .site-card{
+        min-height:260px;
       }
     }
 
-    @media (max-width: 760px){
-      .page-shell{
-        padding:12px;
-      }
-
+    @media (max-width: 920px){
       .topbar{
-        flex-direction:column;
-        align-items:stretch;
+        grid-template-columns:1fr;
       }
 
       .brand,
@@ -572,35 +562,55 @@
 
       .nav{
         justify-content:flex-start;
-        flex-wrap:nowrap;
-        overflow:auto;
       }
 
-      .top-actions{
-        min-width:0;
+      .hero-card{
+        grid-template-columns:1fr;
       }
 
-      .profile-mini{
-        max-width:100%;
+      .portal-sections{
+        grid-template-columns:1fr;
+      }
+
+      .right-col{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 640px){
+      .page-shell{
+        padding:4px 4px 14px;
       }
 
       .hero-left{
         padding:24px 18px;
       }
 
-      .hero-left h2{
+      .hero-content h2{
         font-size:18px;
       }
 
-      .hero-left p{
+      .hero-content p{
         font-size:14px;
+      }
+
+      .hero-actions{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .btn{
+        width:100%;
+      }
+
+      .profile-mini{
+        max-width:100%;
       }
     }
   </style>
 </head>
 <body>
   <div class="page-shell">
-
     <header class="topbar">
       <div class="brand">
         <img src="/images/logo.png" alt="Logo">
@@ -622,8 +632,8 @@
           <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
           <div class="profile-mini-text">
             <strong id="topUserName">Usuário</strong>
-            <span id="topUserPerfil">usuário</span>
-            <small id="topUserEmail">Não informado</small>
+            <span id="topUserPerfil">Aprovador</span>
+            <small id="topUserEmail">nao informado</small>
           </div>
         </div>
       </div>
@@ -631,14 +641,20 @@
 
     <div class="main-grid">
       <section class="left-col">
-
         <section class="hero-card">
           <div class="hero-left">
-            <h2>Bem-vindo ao Portal Security</h2>
-            <p>
-              Central de gestão de acessos, HC, processos e auditorias.
-              Utilize os módulos abaixo para navegar entre os dashboards e áreas operacionais.
-            </p>
+            <div class="hero-content">
+              <h2>Bem-vindo ao Security FBS</h2>
+              <p>
+                Protegendo a operação com monitoramento de acessos, aprovações, eventos
+                críticos e dashboards operacionais em tempo real.
+              </p>
+
+              <div class="hero-actions">
+                <a class="btn btn-primary" href="/access">Verificar Segurança</a>
+                <a class="btn btn-dark" href="#">Reportar incidente</a>
+              </div>
+            </div>
           </div>
 
           <div class="hero-right">
@@ -650,7 +666,7 @@
           <div class="accordion-card open">
             <button class="accordion-header" type="button">
               <div class="accordion-title">🔐 Controle de Acesso</div>
-              <div class="accordion-icon">⌄</div>
+              <div class="accordion-icon">⌃</div>
             </button>
 
             <div class="accordion-body">
@@ -683,7 +699,7 @@
           <div class="accordion-card open">
             <button class="accordion-header" type="button">
               <div class="accordion-title">👥 HC</div>
-              <div class="accordion-icon">⌄</div>
+              <div class="accordion-icon">⌃</div>
             </button>
 
             <div class="accordion-body">
@@ -716,7 +732,7 @@
           <div class="accordion-card open">
             <button class="accordion-header" type="button">
               <div class="accordion-title">⚙️ Processos</div>
-              <div class="accordion-icon">⌄</div>
+              <div class="accordion-icon">⌃</div>
             </button>
 
             <div class="accordion-body">
@@ -732,8 +748,8 @@
 
           <div class="accordion-card open">
             <button class="accordion-header" type="button">
-              <div class="accordion-title">🧾 Auditorias</div>
-              <div class="accordion-icon">⌄</div>
+              <div class="accordion-title">📄 Auditorias</div>
+              <div class="accordion-icon">⌃</div>
             </button>
 
             <div class="accordion-body">
@@ -766,35 +782,20 @@
       </section>
 
       <aside class="right-col">
-        <section class="profile-card">
-          <div class="profile-head">
-            <img id="sideUserPhoto" src="/images/logo.png" alt="Minha foto">
-            <div class="profile-head-text">
-              <div class="profile-name" id="sideUserName">Usuário</div>
-              <div class="profile-role" id="sideUserRole">Usuário</div>
-              <div class="profile-email-head" id="userEmailHead">Não informado</div>
-            </div>
+        <a
+          class="site-card"
+          href="https://sites.google.com/shopee.com/security-center-brasil?usp=sharing"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div class="site-card-content">
+            <img src="/images/site.png" alt="Website Security FBS">
+            <h3>WEBSITE SECURITY FBS</h3>
+            <p>Clique para acessar o portal oficial do Security Center Brasil.</p>
           </div>
+        </a>
 
-          <div class="profile-grid">
-            <div class="profile-info">
-              <small>Status</small>
-              <strong id="userStatus">Aprovado</strong>
-            </div>
-
-            <div class="profile-info">
-              <small>Nível</small>
-              <strong id="userLevel">5</strong>
-            </div>
-
-            <div class="profile-info">
-              <small>E-mail</small>
-              <strong id="userEmailCard">Não informado</strong>
-            </div>
-          </div>
-        </section>
-
-        <section class="action-card">
+        <section class="side-actions">
           <a href="/aprovacoes">
             <div>
               <strong>Ver Aprovações</strong>
@@ -808,19 +809,6 @@
             </div>
           </a>
         </section>
-
-        <a
-          class="site-card"
-          href="https://sites.google.com/shopee.com/security-center-brasil?usp=sharing"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div class="site-card-content">
-            <img src="/images/site.png" alt="Website Security FBS">
-            <h3>WEBSITE SECURITY FBS</h3>
-            <p>Clique para acessar o portal oficial do Security Center Brasil.</p>
-          </div>
-        </a>
       </aside>
     </div>
   </div>
@@ -850,64 +838,39 @@
         const perfil = user.perfil || "Usuário";
 
         const topUserPhoto = document.getElementById("topUserPhoto");
-        const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
-        const sideUserName = document.getElementById("sideUserName");
         const topUserPerfil = document.getElementById("topUserPerfil");
         const topUserEmail = document.getElementById("topUserEmail");
-        const userEmailHead = document.getElementById("userEmailHead");
-        const userEmailCard = document.getElementById("userEmailCard");
-        const userRole = document.getElementById("sideUserRole");
-        const userStatus = document.getElementById("userStatus");
-        const userLevel = document.getElementById("userLevel");
 
         if (topUserPhoto) {
           topUserPhoto.src = foto;
-          topUserPhoto.onerror = function () { this.src = fallbackPhoto; };
-        }
-
-        if (sideUserPhoto) {
-          sideUserPhoto.src = foto;
-          sideUserPhoto.onerror = function () { this.src = fallbackPhoto; };
+          topUserPhoto.onerror = function () {
+            this.src = fallbackPhoto;
+          };
         }
 
         if (topUserName) topUserName.textContent = nome;
-        if (sideUserName) sideUserName.textContent = nome;
         if (topUserPerfil) topUserPerfil.textContent = perfil;
         if (topUserEmail) topUserEmail.textContent = email;
-        if (userEmailHead) userEmailHead.textContent = email;
-        if (userEmailCard) userEmailCard.textContent = email;
-        if (userRole) userRole.textContent = perfil;
-        if (userStatus) userStatus.textContent = user.status || "Aprovado";
-        if (userLevel) userLevel.textContent = user.nivel_acesso || user.nivel || "5";
       } catch (error) {
         console.error("Erro ao carregar perfil do usuário:", error);
-
         const topUserPhoto = document.getElementById("topUserPhoto");
-        const sideUserPhoto = document.getElementById("sideUserPhoto");
         const topUserName = document.getElementById("topUserName");
-        const sideUserName = document.getElementById("sideUserName");
 
         if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
-        if (sideUserPhoto) sideUserPhoto.src = fallbackPhoto;
         if (topUserName) topUserName.textContent = fallbackName;
-        if (sideUserName) sideUserName.textContent = fallbackName;
       }
     }
 
     function setupAccordions() {
       document.querySelectorAll(".accordion-card").forEach(card => {
         const header = card.querySelector(".accordion-header");
-        const body = card.querySelector(".accordion-body");
-
-        if (!header || !body) return;
+        if (!header) return;
 
         header.addEventListener("click", () => {
+          card.classList.toggle("closed");
           card.classList.toggle("open");
-          body.style.display = card.classList.contains("open") ? "grid" : "none";
         });
-
-        body.style.display = card.classList.contains("open") ? "grid" : "none";
       });
     }
 

@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Security FBS - Dashboard</title>
+  <title>Security FBS - AV LOST Dashboard</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
   <style>
     *{
       margin:0;
@@ -13,55 +16,88 @@
       font-family:Arial, Helvetica, sans-serif;
     }
 
+    :root{
+      --bg:#08111f;
+      --bg-soft:#0b1628;
+      --panel:#182436;
+      --panel-2:#1e293b;
+      --panel-3:#0d1728;
+      --border:rgba(255,255,255,0.08);
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --muted-2:#cbd5e1;
+      --orange:#ff5a00;
+      --orange-2:#ff7a1a;
+      --blue:#3b82f6;
+      --blue-2:#60a5fa;
+      --shadow:0 10px 28px rgba(0,0,0,0.28);
+      --radius:18px;
+      --radius-sm:12px;
+    }
+
     html, body{
       overflow-x:hidden;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 30%),
+        linear-gradient(180deg,#46505d 0%, #111827 20%, #07111f 46%, #07111f 100%);
+      color:var(--text);
+      min-height:100vh;
     }
 
     body{
-      background:#0b1220;
-      color:#f8fafc;
+      color:var(--text);
     }
 
     .topbar{
-      height:52px;
-      background:linear-gradient(90deg,#ff5a00,#ff3c00);
+      height:56px;
+      background:linear-gradient(90deg,var(--orange),#ff3c00);
       display:flex;
       align-items:center;
       justify-content:space-between;
-      padding:0 16px;
+      padding:0 18px;
       box-shadow:0 4px 16px rgba(0,0,0,0.24);
+      position:sticky;
+      top:0;
+      z-index:100;
     }
 
     .topbar h2{
       font-size:14px;
       font-weight:700;
+      letter-spacing:.4px;
     }
 
     .topbar a{
       color:#fff;
       text-decoration:none;
       font-weight:700;
-      padding:6px 12px;
-      border:1px solid rgba(255,255,255,0.35);
-      border-radius:10px;
+      padding:8px 14px;
+      border:1px solid rgba(255,255,255,0.28);
+      border-radius:12px;
       font-size:12px;
+      transition:.2s ease;
+    }
+
+    .topbar a:hover{
+      background:rgba(255,255,255,0.08);
     }
 
     .layout{
       display:flex;
-      min-height:calc(100vh - 52px);
+      min-height:calc(100vh - 56px);
     }
 
     .sidebar{
-      width:110px;
-      background:#091327;
+      width:118px;
+      background:rgba(8,17,31,0.82);
+      backdrop-filter:blur(10px);
       border-right:1px solid rgba(255,255,255,0.05);
-      padding:14px 10px;
+      padding:16px 10px;
       flex-shrink:0;
     }
 
     .sidebar h3{
-      color:#94a3b8;
+      color:var(--muted);
       font-size:11px;
       letter-spacing:1px;
       margin-bottom:14px;
@@ -76,7 +112,8 @@
       padding:10px 10px;
       border-radius:14px;
       margin-bottom:8px;
-      line-height:1.3;
+      line-height:1.35;
+      transition:.2s ease;
     }
 
     .sidebar a:hover,
@@ -86,7 +123,7 @@
 
     .content{
       flex:1;
-      padding:14px 18px 18px;
+      padding:18px;
       overflow-x:hidden;
       min-width:0;
     }
@@ -96,25 +133,41 @@
       justify-content:space-between;
       gap:16px;
       align-items:flex-start;
-      margin-bottom:14px;
+      margin-bottom:16px;
     }
 
     .header-row h1{
-      font-size:32px;
-      margin-bottom:4px;
+      font-size:30px;
+      margin-bottom:6px;
+      font-weight:800;
     }
 
     .header-row p{
       font-size:12px;
-      color:#94a3b8;
+      color:var(--muted);
     }
 
     .meta{
       text-align:right;
-      color:#93c5fd;
+      color:#cbd5e1;
       font-size:11px;
       padding-top:4px;
-      line-height:1.4;
+      line-height:1.5;
+    }
+
+    .panel{
+      background:rgba(24,36,54,0.95);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:14px;
+      box-shadow:var(--shadow);
+      margin-bottom:16px;
+      min-width:0;
+    }
+
+    .panel h2{
+      font-size:16px;
+      margin-bottom:12px;
     }
 
     .cards{
@@ -125,48 +178,54 @@
     }
 
     .card{
-      background:#1e293b;
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:18px;
-      padding:14px 16px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.20);
+      background:rgba(24,36,54,0.95);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:var(--shadow);
       min-width:0;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0 auto 0 0;
+      width:4px;
+      background:linear-gradient(180deg,var(--orange),var(--orange-2));
+      opacity:.95;
     }
 
     .card .label{
-      color:#9ca3af;
-      font-size:12px;
-      margin-bottom:8px;
+      color:#a7b1bf;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.5px;
+      margin-bottom:10px;
     }
 
     .card .value{
-      font-size:clamp(16px, 1.7vw, 24px);
-      font-weight:700;
+      font-size:clamp(18px, 1.8vw, 26px);
+      font-weight:800;
       line-height:1.1;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
 
-    .panel{
-      background:#1e293b;
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:18px;
-      padding:14px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.20);
-      margin-bottom:16px;
-    }
-
-    .panel h2{
-      font-size:18px;
-      margin-bottom:12px;
-    }
-
-    .filters-top{
+    .filters-grid{
       display:grid;
       grid-template-columns:repeat(7, minmax(0, 1fr));
       gap:10px;
-      margin-bottom:8px;
+      margin-bottom:10px;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:end;
     }
 
     .field{
@@ -178,13 +237,14 @@
     }
 
     .field label{
-      color:#b8c1cc;
+      color:#c0c9d4;
       font-size:11px;
+      font-weight:600;
     }
 
     .field input{
       background:#071225;
-      border:1px solid rgba(255,255,255,0.08);
+      border:1px solid var(--border);
       color:#fff;
       border-radius:12px;
       padding:10px 12px;
@@ -199,16 +259,8 @@
       color:#6b7280;
     }
 
-    .toolbar{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:end;
-      margin-bottom:0;
-    }
-
     .btn{
-      background:#ff5a00;
+      background:linear-gradient(180deg,var(--orange),#ff4600);
       color:#fff;
       border:none;
       border-radius:12px;
@@ -217,133 +269,24 @@
       font-weight:700;
       cursor:pointer;
       height:40px;
+      transition:.2s ease;
+      box-shadow:0 8px 20px rgba(255,90,0,0.22);
     }
 
     .btn:hover{
-      background:#ff6f1e;
+      background:linear-gradient(180deg,#ff6f1e,#ff4d00);
+      transform:translateY(-1px);
     }
 
-    .charts-grid{
-      display:grid;
-      grid-template-columns:1.15fr 0.95fr 0.8fr;
-      gap:12px;
-      margin-bottom:16px;
-      align-items:stretch;
-    }
-
-    .chart-card{
-      background:#1e293b;
+    .btn-secondary{
+      background:#13203a;
+      box-shadow:none;
       border:1px solid rgba(255,255,255,0.06);
-      border-radius:18px;
-      padding:12px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.20);
-      min-width:0;
     }
 
-    .chart-title{
-      text-align:center;
-      font-weight:700;
-      font-size:14px;
-      color:#ff6f1e;
-      margin-bottom:8px;
-    }
-
-    .chart-wrap{
-      position:relative;
-      width:100%;
-      height:180px;
-    }
-
-    .chart-wrap.top-chart{
-      height:255px;
-    }
-
-    .right-summary{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-      margin-bottom:12px;
-    }
-
-    .mini-card{
-      background:#1e293b;
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:14px;
-      padding:12px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.20);
-      min-width:0;
-    }
-
-    .mini-card .mini-label{
-      font-size:11px;
-      color:#9ca3af;
-      margin-bottom:6px;
-      text-transform:uppercase;
-    }
-
-    .mini-card .mini-value{
-      font-size:clamp(15px, 1.3vw, 22px);
-      font-weight:700;
-      line-height:1.1;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .wide-chart{
-      background:#1e293b;
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:18px;
-      padding:12px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.20);
-      margin-bottom:16px;
-    }
-
-    .wide-chart .chart-wrap{
-      height:220px;
-    }
-
-    .table-wrap{
-      overflow:auto;
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:14px;
-      max-height:260px;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:1200px;
-      background:#0b1220;
-    }
-
-    th, td{
-      padding:8px 10px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      text-align:left;
-      font-size:11px;
-      white-space:nowrap;
-    }
-
-    th{
-      background:#111c33;
-      position:sticky;
-      top:0;
-      z-index:2;
-    }
-
-    tr:hover td{
-      background:#13203b;
-    }
-
-    .empty{
-      color:#94a3b8;
-      padding:18px;
-      font-size:12px;
-    }
-
-    canvas{
-      max-width:100% !important;
+    .btn-secondary:hover{
+      background:#1a2942;
+      transform:translateY(-1px);
     }
 
     .multi-select{
@@ -353,7 +296,7 @@
 
     .multi-select-trigger{
       background:#071225;
-      border:1px solid rgba(255,255,255,0.08);
+      border:1px solid var(--border);
       color:#fff;
       border-radius:12px;
       padding:10px 34px 10px 12px;
@@ -377,24 +320,75 @@
       pointer-events:none;
     }
 
+    .multi-select.open .multi-select-trigger{
+      border-color:rgba(255,122,26,0.55);
+      box-shadow:0 0 0 2px rgba(255,122,26,0.08);
+    }
+
     .multi-select-menu{
       position:absolute;
       top:44px;
       left:0;
       width:100%;
       background:#071225;
-      border:1px solid rgba(255,255,255,0.08);
+      border:1px solid var(--border);
       border-radius:12px;
-      max-height:180px;
-      overflow-y:auto;
       display:none;
-      z-index:50;
-      box-shadow:0 10px 24px rgba(0,0,0,0.35);
+      z-index:60;
+      box-shadow:0 12px 28px rgba(0,0,0,0.42);
       padding:6px;
     }
 
     .multi-select.open .multi-select-menu{
       display:block;
+    }
+
+    .multi-search{
+      padding:6px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      margin-bottom:4px;
+    }
+
+    .multi-search input{
+      width:100%;
+      height:34px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:#0d1a30;
+      color:#fff;
+      font-size:12px;
+      padding:8px 10px;
+      outline:none;
+    }
+
+    .multi-actions{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      padding:6px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      margin-bottom:4px;
+    }
+
+    .multi-actions button{
+      flex:1;
+      background:#1a2942;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      padding:7px 8px;
+      font-size:11px;
+      cursor:pointer;
+    }
+
+    .multi-actions button:hover{
+      background:#243756;
+    }
+
+    .multi-options{
+      max-height:190px;
+      overflow-y:auto;
+      padding-right:2px;
     }
 
     .multi-option{
@@ -415,39 +409,163 @@
     .multi-option input{
       width:auto;
       height:auto;
-      accent-color:#ff6f1e;
+      accent-color:var(--orange-2);
     }
 
-    .multi-actions{
+    .multi-empty{
+      padding:10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .charts-grid{
+      display:grid;
+      grid-template-columns:1.15fr 0.95fr 0.85fr;
+      gap:12px;
+      margin-bottom:16px;
+      align-items:stretch;
+    }
+
+    .chart-card{
+      background:rgba(24,36,54,0.95);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:12px;
+      box-shadow:var(--shadow);
+      min-width:0;
       display:flex;
-      justify-content:space-between;
-      gap:6px;
-      padding:6px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      margin-bottom:4px;
+      flex-direction:column;
     }
 
-    .multi-actions button{
-      flex:1;
-      background:#1a2942;
-      color:#fff;
-      border:none;
-      border-radius:8px;
-      padding:6px 8px;
+    .chart-title{
+      text-align:center;
+      font-weight:800;
+      font-size:13px;
+      color:var(--orange-2);
+      margin-bottom:10px;
+      letter-spacing:.2px;
+    }
+
+    .chart-wrap{
+      position:relative;
+      width:100%;
+      height:200px;
+      min-width:0;
+    }
+
+    .chart-wrap.top-chart{
+      height:265px;
+    }
+
+    .right-summary{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .mini-card{
+      background:rgba(24,36,54,0.95);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      box-shadow:var(--shadow);
+      min-width:0;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .mini-card::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:4px;
+      background:linear-gradient(180deg,var(--orange),var(--orange-2));
+    }
+
+    .mini-card .mini-label{
       font-size:11px;
-      cursor:pointer;
+      color:#9ca3af;
+      margin-bottom:6px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
     }
 
-    .multi-actions button:hover{
-      background:#243756;
+    .mini-card .mini-value{
+      font-size:clamp(15px, 1.25vw, 22px);
+      font-weight:800;
+      line-height:1.1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    @media (max-width: 1300px){
+    .wide-chart{
+      background:rgba(24,36,54,0.95);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:12px;
+      box-shadow:var(--shadow);
+      margin-bottom:16px;
+    }
+
+    .wide-chart .chart-wrap{
+      height:240px;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px;
+      max-height:330px;
+      background:#091322;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1200px;
+      background:#0b1220;
+    }
+
+    th, td{
+      padding:9px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      text-align:left;
+      font-size:11px;
+      white-space:nowrap;
+    }
+
+    th{
+      background:#111c33;
+      position:sticky;
+      top:0;
+      z-index:2;
+      color:#e2e8f0;
+    }
+
+    tr:hover td{
+      background:#13203b;
+    }
+
+    .empty{
+      color:var(--muted);
+      padding:18px;
+      font-size:12px;
+    }
+
+    canvas{
+      max-width:100% !important;
+    }
+
+    @media (max-width: 1380px){
       .cards{
         grid-template-columns:repeat(2, minmax(0, 1fr));
       }
 
-      .filters-top{
+      .filters-grid{
         grid-template-columns:repeat(4, minmax(0, 1fr));
       }
 
@@ -462,7 +580,7 @@
       }
 
       .cards,
-      .filters-top{
+      .filters-grid{
         grid-template-columns:1fr;
       }
 
@@ -471,7 +589,16 @@
       }
 
       .header-row h1{
-        font-size:28px;
+        font-size:26px;
+      }
+
+      .toolbar{
+        flex-direction:column;
+        align-items:stretch;
+      }
+
+      .toolbar .field{
+        width:100% !important;
       }
     }
   </style>
@@ -493,9 +620,10 @@
     <main class="content">
       <div class="header-row">
         <div>
-          <h1>Dashboard</h1>
-          <p>Painel completo com todos os dados da planilha</p>
+          <h1>AV LOST Dashboard</h1>
+          <p>Painel operacional padronizado com filtros inteligentes, cards e gráficos com valores.</p>
         </div>
+
         <div class="meta">
           <div id="userInfo">Carregando usuário...</div>
           <div id="sheetInfo">Carregando planilha...</div>
@@ -527,7 +655,7 @@
       <section class="panel">
         <h2>Filtros</h2>
 
-        <div class="filters-top">
+        <div class="filters-grid">
           <div class="field">
             <label>Ano</label>
             <div class="multi-select" id="multiAno">
@@ -586,7 +714,7 @@
         </div>
 
         <div class="toolbar">
-          <div class="field" style="width:280px;">
+          <div class="field" style="width:320px;">
             <label>Busca geral</label>
             <input type="text" id="globalSearch" placeholder="Buscar em todas as colunas..." />
           </div>
@@ -597,7 +725,7 @@
 
       <section class="charts-grid">
         <div class="chart-card">
-          <div class="chart-title">Ocorrências Por FF</div>
+          <div class="chart-title">Ocorrências por Unidade</div>
           <div class="chart-wrap top-chart">
             <canvas id="chartFF"></canvas>
           </div>
@@ -624,7 +752,7 @@
 
             <div class="mini-card">
               <div class="mini-label">US$ Encontrado</div>
-              <div class="mini-value" id="metricUsd">\$0.00</div>
+              <div class="mini-value" id="metricUsd">$0.00</div>
             </div>
           </div>
 
@@ -638,14 +766,14 @@
       </section>
 
       <section class="wide-chart">
-        <div class="chart-title">Encontrados Por Dia</div>
+        <div class="chart-title">Encontrados por Dia</div>
         <div class="chart-wrap">
           <canvas id="chartDia"></canvas>
         </div>
       </section>
 
       <section class="wide-chart">
-        <div class="chart-title">Validação Por Colaborador</div>
+        <div class="chart-title">Validação por Colaborador</div>
         <div class="chart-wrap">
           <canvas id="chartValidacao"></canvas>
         </div>
@@ -659,6 +787,8 @@
   </div>
 
   <script>
+    Chart.register(ChartDataLabels);
+
     let rawData = [];
     let filteredData = [];
     let headers = [];
@@ -743,6 +873,13 @@
       return isNaN(num) ? 0 : num;
     }
 
+    function parseNumeric(value) {
+      if (value === null || value === undefined) return 0;
+      const cleaned = String(value).replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "");
+      const num = Number(cleaned);
+      return isNaN(num) ? 0 : num;
+    }
+
     function formatUsd(value) {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -757,14 +894,20 @@
       }).format(value || 0);
     }
 
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(value || 0);
+    }
+
     function parseDateBR(value) {
       const str = String(value || "").trim();
       if (!str) return null;
+
       const parts = str.split("/");
       if (parts.length !== 3) return null;
 
       const [day, month, year] = parts.map(Number);
       if (!day || !month || !year) return null;
+
       return new Date(year, month - 1, day);
     }
 
@@ -776,33 +919,53 @@
       return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     }
 
+    function sortNumericStrings(values) {
+      return [...values].sort((a, b) => Number(a) - Number(b));
+    }
+
     function buildMultiSelect(containerId, triggerId, menuId, values, placeholder) {
       const container = document.getElementById(containerId);
       const trigger = document.getElementById(triggerId);
       const menu = document.getElementById(menuId);
 
       menu.innerHTML = `
+        <div class="multi-search">
+          <input type="text" class="multi-search-input" placeholder="Buscar..." />
+        </div>
         <div class="multi-actions">
           <button type="button" class="select-all">Todos</button>
           <button type="button" class="clear-all">Limpar</button>
         </div>
+        <div class="multi-options"></div>
       `;
+
+      const optionsWrap = menu.querySelector(".multi-options");
+      const searchInput = menu.querySelector(".multi-search-input");
 
       values.forEach(value => {
         const label = document.createElement("label");
         label.className = "multi-option";
-        label.innerHTML = `<input type="checkbox" value="${escapeHtml(value)}"><span>${escapeHtml(value)}</span>`;
-        menu.appendChild(label);
+        label.dataset.value = normalizeText(value);
+        label.innerHTML = `
+          <input type="checkbox" value="${escapeHtml(value)}">
+          <span>${escapeHtml(value)}</span>
+        `;
+        optionsWrap.appendChild(label);
       });
+
+      if (!values.length) {
+        optionsWrap.innerHTML = `<div class="multi-empty">Nenhuma opção disponível</div>`;
+      }
 
       function updateTriggerText() {
         const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+
         if (selected.length === 0) {
           trigger.textContent = placeholder;
         } else if (selected.length === 1) {
           trigger.textContent = selected[0];
         } else {
-          trigger.textContent = selected.length + " selecionados";
+          trigger.textContent = `${selected.length} selecionados`;
         }
       }
 
@@ -811,26 +974,41 @@
           if (el !== container) el.classList.remove("open");
         });
         container.classList.toggle("open");
+        if (container.classList.contains("open") && searchInput) {
+          setTimeout(() => searchInput.focus(), 30);
+        }
       };
 
       menu.querySelector(".select-all").onclick = () => {
-        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+        menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(i => {
+          if (i.closest(".multi-option")?.style.display !== "none") i.checked = true;
+        });
         updateTriggerText();
         applyFilters();
       };
 
       menu.querySelector(".clear-all").onclick = () => {
-        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+        menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(i => i.checked = false);
         updateTriggerText();
         applyFilters();
       };
 
-      menu.querySelectorAll('input[type="checkbox"]').forEach(input => {
+      menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(input => {
         input.addEventListener("change", () => {
           updateTriggerText();
           applyFilters();
         });
       });
+
+      if (searchInput) {
+        searchInput.addEventListener("input", () => {
+          const term = normalizeText(searchInput.value);
+          menu.querySelectorAll(".multi-option").forEach(option => {
+            const show = !term || option.dataset.value.includes(term);
+            option.style.display = show ? "flex" : "none";
+          });
+        });
+      }
 
       container.dataset.placeholder = placeholder;
       updateTriggerText();
@@ -845,18 +1023,40 @@
     });
 
     function getSelectedValues(menuId) {
-      return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+      return [...document.querySelectorAll(`#${menuId} .multi-option input[type="checkbox"]:checked`)]
         .map(i => i.value);
     }
 
     function buildTopFilters() {
-      const years = [...new Set(rawData.map(r => String(r._year)).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
-      const months = [...new Set(rawData.map(r => String(r._month)).filter(Boolean))].sort((a,b) => Number(a) - Number(b)).map(m => monthNames[m]);
-      const days = [...new Set(rawData.map(r => String(r._day)).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
-      const weeks = [...new Set(rawData.map(r => String(r._week)).filter(Boolean))].sort((a,b) => Number(a) - Number(b));
-      const colaboradores = [...new Set(rawData.map(r => normalizeValue(r[COLABORADOR_COLUMN])).filter(Boolean))].sort((a,b) => a.localeCompare(b, "pt-BR"));
-      const unidades = [...new Set(rawData.map(r => normalizeValue(r[UNIDADE_COLUMN])).filter(Boolean))].sort((a,b) => a.localeCompare(b, "pt-BR"));
-      const status = [...new Set(rawData.map(r => normalizeValue(r[STATUS_COLUMN])).filter(Boolean))].sort((a,b) => a.localeCompare(b, "pt-BR"));
+      const years = sortNumericStrings(
+        [...new Set(rawData.map(r => String(r._year)).filter(Boolean))]
+      );
+
+      const monthNumbers = sortNumericStrings(
+        [...new Set(rawData.map(r => String(r._month)).filter(Boolean))]
+      );
+
+      const months = monthNumbers.map(m => monthNames[Number(m)]);
+
+      const days = sortNumericStrings(
+        [...new Set(rawData.map(r => String(r._day)).filter(Boolean))]
+      );
+
+      const weeks = sortNumericStrings(
+        [...new Set(rawData.map(r => String(r._week)).filter(Boolean))]
+      );
+
+      const colaboradores = [...new Set(
+        rawData.map(r => normalizeValue(r[COLABORADOR_COLUMN])).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+      const unidades = [...new Set(
+        rawData.map(r => normalizeValue(r[UNIDADE_COLUMN])).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+      const status = [...new Set(
+        rawData.map(r => normalizeValue(r[STATUS_COLUMN])).filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
       buildMultiSelect("multiAno", "triggerAno", "menuAno", years, "Todos");
       buildMultiSelect("multiMes", "triggerMes", "menuMes", months, "Todos");
@@ -902,29 +1102,25 @@
 
     function updateCards() {
       const totalRegistros = filteredData.length;
-      const totalColunas = headers.length;
-      const totalUsd = filteredData.reduce((sum, row) => sum + parseMoney(row[USD_COLUMN] || 0), 0);
-      const totalBrl = filteredData.reduce((sum, row) => sum + parseMoney(row[BRL_COLUMN] || 0), 0);
+      const totalColunas = headers.filter(h => !h.startsWith("_")).length;
+      const totalUsd = filteredData.reduce((sum, row) => sum + parseMoney(row[USD_COLUMN]), 0);
+      const totalBrl = filteredData.reduce((sum, row) => sum + parseMoney(row[BRL_COLUMN]), 0);
 
-      totalRegistrosEl.textContent = new Intl.NumberFormat("pt-BR").format(totalRegistros);
+      totalRegistrosEl.textContent = formatNumber(totalRegistros);
       totalUsdEl.textContent = formatUsd(totalUsd);
       totalBrlEl.textContent = formatBrl(totalBrl);
-      totalColunasEl.textContent = totalColunas;
+      totalColunasEl.textContent = formatNumber(totalColunas);
 
       sheetInfo.textContent =
-        "Linhas: " + new Intl.NumberFormat("pt-BR").format(rawData.length) +
-        " | Filtradas: " + new Intl.NumberFormat("pt-BR").format(filteredData.length) +
-        " | Colunas: " + headers.length;
+        `Linhas: ${formatNumber(rawData.length)} | Filtradas: ${formatNumber(filteredData.length)} | Colunas: ${formatNumber(totalColunas)}`;
     }
 
     function updateMiniCards() {
-      const totalAv = filteredData.reduce((sum, row) => sum + Number(row[AV_COLUMN] || 0), 0);
-      const totalUsd = filteredData.reduce((sum, row) => sum + parseMoney(row[USD_COLUMN] || 0), 0);
-      const totalBrl = filteredData.reduce((sum, row) => sum + parseMoney(row[BRL_COLUMN] || 0), 0);
+      const totalAv = filteredData.reduce((sum, row) => sum + parseNumeric(row[AV_COLUMN]), 0);
+      const totalUsd = filteredData.reduce((sum, row) => sum + parseMoney(row[USD_COLUMN]), 0);
+      const totalBrl = filteredData.reduce((sum, row) => sum + parseMoney(row[BRL_COLUMN]), 0);
 
-      document.getElementById("metricAv").textContent =
-        new Intl.NumberFormat("pt-BR").format(totalAv);
-
+      document.getElementById("metricAv").textContent = formatNumber(totalAv);
       document.getElementById("metricUsd").textContent = formatUsd(totalUsd);
       document.getElementById("metricBrlMini").textContent = formatBrl(totalBrl);
     }
@@ -937,98 +1133,145 @@
       if (chartStatus) chartStatus.destroy();
     }
 
+    function buildBaseOptions(horizontal = false, showLegend = true) {
+      return {
+        indexAxis: horizontal ? "y" : "x",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: showLegend,
+            labels: {
+              color: "#cbd5e1",
+              font: { size: 10 },
+              boxWidth: 10
+            }
+          },
+          datalabels: {
+            color: "#f8fafc",
+            anchor: horizontal ? "end" : "end",
+            align: horizontal ? "right" : "top",
+            offset: 2,
+            clamp: true,
+            font: {
+              weight: "700",
+              size: 10
+            },
+            formatter: (value) => {
+              if (typeof value !== "number") return value;
+              return Number.isInteger(value) ? formatNumber(value) : value.toFixed(2);
+            }
+          },
+          tooltip: {
+            backgroundColor: "#0f172a",
+            titleColor: "#fff",
+            bodyColor: "#e2e8f0",
+            borderColor: "rgba(255,255,255,0.08)",
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#cbd5e1", font: { size: 10 } },
+            grid: { color: "rgba(255,255,255,0.06)" },
+            beginAtZero: true
+          },
+          y: {
+            ticks: { color: "#cbd5e1", font: { size: 10 } },
+            grid: { color: "rgba(255,255,255,0.06)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    function topEntriesFromMap(map, limit = 10) {
+      return Object.entries(map)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit);
+    }
+
     function renderCharts() {
       destroyCharts();
 
       const ffMap = {};
       filteredData.forEach(row => {
         const label = normalizeValue(row[UNIDADE_COLUMN]) || "Sem valor";
-        ffMap[label] = (ffMap[label] || 0) + Number(row[AV_COLUMN] || 0);
+        ffMap[label] = (ffMap[label] || 0) + parseNumeric(row[AV_COLUMN]);
       });
+
+      const ffEntries = topEntriesFromMap(ffMap, 12);
 
       chartFF = new Chart(document.getElementById("chartFF"), {
         type: "bar",
         data: {
-          labels: Object.keys(ffMap),
+          labels: ffEntries.map(([label]) => label),
           datasets: [{
             label: "AV Encontrado",
-            data: Object.values(ffMap),
-            backgroundColor: "#1d4ed8",
+            data: ffEntries.map(([, value]) => value),
+            backgroundColor: "#2563eb",
             borderRadius: 8,
             barPercentage: 0.72,
             categoryPercentage: 0.82
           }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true,
-              labels: {
-                color: "#cbd5e1",
-                font: { size: 11 },
-                boxWidth: 10
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.04)" }
-            },
-            y: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.06)" },
-              beginAtZero: true
-            }
-          },
-          layout: {
-            padding: {
-              top: 6,
-              bottom: 0,
-              left: 0,
-              right: 0
-            }
-          }
-        }
+        options: buildBaseOptions(false, true)
       });
 
       const colaboradorMap = {};
       filteredData.forEach(row => {
         const label = normalizeValue(row[COLABORADOR_COLUMN]) || "Sem valor";
-        colaboradorMap[label] = (colaboradorMap[label] || 0) + Number(row[AV_COLUMN] || 0);
+        colaboradorMap[label] = (colaboradorMap[label] || 0) + parseNumeric(row[AV_COLUMN]);
       });
+
+      const colaboradorEntries = topEntriesFromMap(colaboradorMap, 8);
 
       chartColaboradorPie = new Chart(document.getElementById("chartColaboradorPie"), {
         type: "doughnut",
         data: {
-          labels: Object.keys(colaboradorMap),
+          labels: colaboradorEntries.map(([label]) => label),
           datasets: [{
-            data: Object.values(colaboradorMap),
+            data: colaboradorEntries.map(([, value]) => value),
             backgroundColor: [
-              "#1d4ed8","#2563eb","#3b82f6","#60a5fa","#93c5fd",
-              "#334155","#475569","#64748b","#94a3b8","#cbd5e1"
+              "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa",
+              "#93c5fd", "#f97316", "#fb923c", "#fdba74"
             ],
             borderWidth: 0,
-            radius: "96%"
+            radius: "95%"
           }]
         },
         options: {
-          responsive:true,
-          maintainAspectRatio:false,
-          cutout:"50%",
-          layout: {
-            padding: 6
-          },
-          plugins:{
-            legend:{
-              position:"right",
-              labels:{
-                color:"#cbd5e1",
-                boxWidth:10,
-                font:{ size:10 }
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "46%",
+          plugins: {
+            legend: {
+              position: "right",
+              labels: {
+                color: "#cbd5e1",
+                boxWidth: 10,
+                font: { size: 10 }
               }
+            },
+            datalabels: {
+              color: "#fff",
+              font: {
+                weight: "700",
+                size: 10
+              },
+              formatter: (value, ctx) => {
+                const data = ctx.chart.data.datasets[0].data;
+                const total = data.reduce((sum, item) => sum + item, 0);
+                const pct = total ? (value / total) * 100 : 0;
+                return `${pct.toFixed(1)}%`;
+              }
+            },
+            tooltip: {
+              backgroundColor: "#0f172a",
+              titleColor: "#fff",
+              bodyColor: "#e2e8f0",
+              borderColor: "rgba(255,255,255,0.08)",
+              borderWidth: 1
             }
           }
         }
@@ -1038,10 +1281,11 @@
       filteredData.forEach(row => {
         const day = row._day || 0;
         if (!day) return;
-        byDay[day] = (byDay[day] || 0) + Number(row[AV_COLUMN] || 0);
+        byDay[day] = (byDay[day] || 0) + parseNumeric(row[AV_COLUMN]);
       });
 
-      const dayLabels = Object.keys(byDay).sort((a,b)=> Number(a) - Number(b));
+      const dayLabels = Object.keys(byDay).sort((a, b) => Number(a) - Number(b));
+
       chartDia = new Chart(document.getElementById("chartDia"), {
         type: "line",
         data: {
@@ -1051,23 +1295,42 @@
             data: dayLabels.map(day => byDay[day]),
             borderColor: "#60a5fa",
             backgroundColor: "#60a5fa",
-            tension:0.35,
-            pointRadius:2,
-            pointHoverRadius:4
+            tension: 0.35,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            fill: false
           }]
         },
-        options: chartOptions(false)
+        options: {
+          ...buildBaseOptions(false, true),
+          plugins: {
+            ...buildBaseOptions(false, true).plugins,
+            datalabels: {
+              color: "#f8fafc",
+              align: "top",
+              anchor: "end",
+              offset: 4,
+              font: {
+                weight: "700",
+                size: 10
+              },
+              formatter: (value) => formatNumber(value)
+            }
+          }
+        }
       });
 
       const validMap = {};
       const qtdMap = {};
       filteredData.forEach(row => {
         const label = normalizeValue(row[COLABORADOR_COLUMN]) || "Sem valor";
-        validMap[label] = (validMap[label] || 0) + Number(row[AV_COLUMN] || 0);
-        qtdMap[label] = (qtdMap[label] || 0) + Number(row[QTD_COLUMN] || 0);
+        validMap[label] = (validMap[label] || 0) + parseNumeric(row[AV_COLUMN]);
+        qtdMap[label] = (qtdMap[label] || 0) + parseNumeric(row[QTD_COLUMN]);
       });
 
-      const validLabels = Object.keys(validMap).sort((a,b) => validMap[b] - validMap[a]);
+      const validLabels = Object.keys(validMap)
+        .sort((a, b) => (validMap[b] || 0) - (validMap[a] || 0))
+        .slice(0, 12);
 
       chartValidacao = new Chart(document.getElementById("chartValidacao"), {
         type: "bar",
@@ -1088,7 +1351,7 @@
             }
           ]
         },
-        options: chartOptions(true)
+        options: buildBaseOptions(true, true)
       });
 
       const statusMap = {};
@@ -1097,49 +1360,21 @@
         statusMap[label] = (statusMap[label] || 0) + 1;
       });
 
+      const statusEntries = topEntriesFromMap(statusMap, 10);
+
       chartStatus = new Chart(document.getElementById("chartStatus"), {
         type: "bar",
         data: {
-          labels: Object.keys(statusMap),
+          labels: statusEntries.map(([label]) => label),
           datasets: [{
             label: "Registros",
-            data: Object.values(statusMap),
+            data: statusEntries.map(([, value]) => value),
             backgroundColor: "#f97316",
             borderRadius: 8
           }]
         },
-        options: chartOptions(false)
+        options: buildBaseOptions(true, true)
       });
-    }
-
-    function chartOptions(horizontal) {
-      return {
-        indexAxis: horizontal ? "y" : "x",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            labels: {
-              color: "#cbd5e1",
-              font: { size: 10 },
-              boxWidth: 10
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: { color: "#cbd5e1", font:{ size:10 } },
-            grid: { color: "rgba(255,255,255,0.06)" },
-            beginAtZero: true
-          },
-          y: {
-            ticks: { color: "#cbd5e1", font:{ size:10 } },
-            grid: { color: "rgba(255,255,255,0.06)" },
-            beginAtZero: true
-          }
-        }
-      };
     }
 
     function renderTable() {
@@ -1148,15 +1383,17 @@
         return;
       }
 
+      const visibleHeaders = headers.filter(header => !header.startsWith("_"));
+
       let html = "<table><thead><tr>";
-      headers.forEach(header => {
+      visibleHeaders.forEach(header => {
         html += "<th>" + escapeHtml(header) + "</th>";
       });
       html += "</tr></thead><tbody>";
 
       filteredData.slice(0, 300).forEach(row => {
         html += "<tr>";
-        headers.forEach(header => {
+        visibleHeaders.forEach(header => {
           html += "<td>" + escapeHtml(row[header] || "") + "</td>";
         });
         html += "</tr>";
@@ -1170,7 +1407,7 @@
       try {
         const res = await fetch("/api/me");
         const user = await res.json();
-        userInfo.textContent = (user.nome || "Usuário") + " | " + (user.perfil || "usuario");
+        userInfo.textContent = `${user.nome || "Usuário"} | ${user.perfil || "usuario"}`;
       } catch {
         userInfo.textContent = "Usuário não identificado";
       }
@@ -1182,7 +1419,6 @@
         const data = await res.json();
 
         rawData = Array.isArray(data) ? data : [];
-        headers = [...new Set(rawData.flatMap(row => Object.keys(row)))];
 
         rawData = rawData.map(row => {
           const dt = parseDateBR(row[DATE_COLUMN]);
@@ -1195,6 +1431,8 @@
             _week: dt ? getWeekNumber(dt) : ""
           };
         });
+
+        headers = [...new Set(rawData.flatMap(row => Object.keys(row)))];
 
         buildTopFilters();
         filteredData = [...rawData];
@@ -1216,6 +1454,14 @@
 
       document.querySelectorAll('.multi-select-menu input[type="checkbox"]').forEach(input => {
         input.checked = false;
+      });
+
+      document.querySelectorAll('.multi-search-input').forEach(input => {
+        input.value = "";
+      });
+
+      document.querySelectorAll('.multi-option').forEach(option => {
+        option.style.display = "flex";
       });
 
       document.getElementById("triggerAno").textContent = "Todos";

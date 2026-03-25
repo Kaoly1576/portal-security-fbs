@@ -458,7 +458,7 @@ app.get("/portal", requireAuth, (req, res) => {
 });
 
 app.get("/dashboard", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "dashboard.html"));
+  return res.sendFile(path.join(__dirname, "public", "av-lost.html"));
 });
 
 app.get("/hc", requireAuth, (req, res) => {

@@ -262,37 +262,39 @@
     }
 
     .kpi-value{
-      font-size:34px;
-      font-weight:900;
-      line-height:1;
-      color:var(--orange);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
+  font-size:28px;
+  font-weight:800;
+  line-height:1.05;
+  color:var(--orange);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 
-    .kpi-sub{
-      font-size:11px;
-      margin-top:6px;
-      color:#cbd5e1;
-      min-height:15px;
-    }
+.kpi-sub{
+  font-size:12px;
+  margin-top:8px;
+  color:#e5e7eb;
+  min-height:18px;
+  font-weight:700;
+}
 
     .variation{
-      font-weight:800;
-    }
+  font-weight:800;
+  letter-spacing:.2px;
+}
 
-    .variation.positive{
-      color:var(--green);
-    }
+.variation.positive{
+  color:#22c55e;
+}
 
-    .variation.negative{
-      color:var(--red);
-    }
+.variation.negative{
+  color:#f87171;
+}
 
-    .variation.neutral{
-      color:#e5e7eb;
-    }
+.variation.neutral{
+  color:#e5e7eb;
+}
 
     .chart-grid-top{
       display:grid;
@@ -1363,9 +1365,15 @@
           datasets: [{
             data: colaboradorTop.map(([, value]) => value),
             backgroundColor: [
-              "#ff7a1a","#60a5fa","#f59e0b","#a78bfa",
-              "#34d399","#f87171","#22d3ee","#fb7185"
-            ],
+  "#ff6a00",
+  "#ff7a1a",
+  "#ff8c33",
+  "#ff9f52",
+  "#ffb06b",
+  "#ffc287",
+  "#ffd2a3",
+  "#ffe3c7"
+],
             borderWidth: 0
           }]
         },

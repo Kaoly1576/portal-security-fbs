@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cadastro de Usuários - Security FBS</title>
+  <title>Solicitação de Cadastro - Security FBS</title>
   <style>
     *{
       margin:0;
@@ -43,7 +43,7 @@
 
     .page{
       width:100%;
-      max-width:1100px;
+      max-width:980px;
     }
 
     .topbar{
@@ -132,6 +132,69 @@
       padding:22px 24px 24px;
     }
 
+    .message{
+      display:none;
+      margin-bottom:16px;
+      padding:14px 16px;
+      border-radius:14px;
+      font-size:13px;
+      font-weight:700;
+      line-height:1.5;
+    }
+
+    .message.show{
+      display:block;
+    }
+
+    .message.success{
+      background:rgba(34,197,94,0.12);
+      border:1px solid rgba(34,197,94,0.28);
+      color:#bbf7d0;
+    }
+
+    .message.error{
+      background:rgba(239,68,68,0.12);
+      border:1px solid rgba(239,68,68,0.28);
+      color:#fecaca;
+    }
+
+    .user-box{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:16px;
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:18px;
+      background:rgba(255,255,255,0.03);
+      margin-bottom:18px;
+    }
+
+    .user-avatar{
+      width:68px;
+      height:68px;
+      border-radius:50%;
+      object-fit:cover;
+      border:2px solid rgba(255,255,255,0.10);
+      background:#0b1220;
+      flex-shrink:0;
+    }
+
+    .user-info{
+      min-width:0;
+    }
+
+    .user-info h3{
+      font-size:18px;
+      margin-bottom:4px;
+    }
+
+    .user-info p{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.5;
+      word-break:break-word;
+    }
+
     .grid{
       display:grid;
       grid-template-columns:repeat(2, minmax(0, 1fr));
@@ -156,8 +219,7 @@
     }
 
     .field input,
-    .field select,
-    .field textarea{
+    .field select{
       width:100%;
       min-width:0;
       height:44px;
@@ -171,28 +233,23 @@
       transition:border-color .2s ease, box-shadow .2s ease;
     }
 
-    .field textarea{
-      min-height:110px;
-      padding:12px 14px;
-      resize:vertical;
-    }
-
     .field input:focus,
-    .field select:focus,
-    .field textarea:focus{
+    .field select:focus{
       border-color:rgba(255,106,0,0.65);
       box-shadow:0 0 0 3px rgba(255,106,0,0.12);
     }
 
-    .field input::placeholder,
-    .field textarea::placeholder{
-      color:#64748b;
+    .field input[readonly]{
+      background:#111827;
+      color:#cbd5e1;
+      cursor:not-allowed;
     }
 
     .hint{
       font-size:11px;
       color:var(--muted);
       line-height:1.4;
+      margin-top:2px;
     }
 
     .actions{
@@ -235,32 +292,6 @@
       background:rgba(255,255,255,0.14);
     }
 
-    .message{
-      display:none;
-      margin-bottom:16px;
-      padding:14px 16px;
-      border-radius:14px;
-      font-size:13px;
-      font-weight:700;
-      line-height:1.5;
-    }
-
-    .message.show{
-      display:block;
-    }
-
-    .message.success{
-      background:rgba(34,197,94,0.12);
-      border:1px solid rgba(34,197,94,0.28);
-      color:#bbf7d0;
-    }
-
-    .message.error{
-      background:rgba(239,68,68,0.12);
-      border:1px solid rgba(239,68,68,0.28);
-      color:#fecaca;
-    }
-
     .loading{
       opacity:0.7;
       pointer-events:none;
@@ -291,6 +322,10 @@
       .brand-text h1{
         font-size:24px;
       }
+
+      .user-box{
+        align-items:flex-start;
+      }
     }
   </style>
 </head>
@@ -300,8 +335,8 @@
       <div class="brand">
         <div class="brand-badge">🛡️</div>
         <div class="brand-text">
-          <h1>Cadastro de Usuários</h1>
-          <p>Security FBS • Solicitação de acesso ao portal</p>
+          <h1>Solicitação de Acesso</h1>
+          <p>Security FBS • Cadastro vinculado à conta Google</p>
         </div>
       </div>
 
@@ -310,36 +345,35 @@
 
     <section class="card">
       <div class="card-header">
-        <h2>Solicitar cadastro</h2>
+        <h2>Completar cadastro</h2>
         <p>
-          Preencha os dados abaixo para enviar seu cadastro. Os campos de
-          <strong>cargo</strong> e <strong>nível de acesso</strong> são carregados automaticamente da sua planilha.
+          Seus dados básicos serão preenchidos automaticamente com sua conta Google.
+          Você só precisa informar cargo, nível de acesso, área, unidade e empresa.
         </p>
       </div>
 
       <div class="card-body">
         <div id="messageBox" class="message"></div>
 
+        <div class="user-box">
+          <img id="userFoto" class="user-avatar" src="" alt="Foto do usuário" />
+          <div class="user-info">
+            <h3 id="userNome">Carregando usuário...</h3>
+            <p id="userEmail">Carregando e-mail...</p>
+            <p>Os dados acima serão usados automaticamente no seu cadastro.</p>
+          </div>
+        </div>
+
         <form id="formCadastro">
           <div class="grid">
             <div class="field">
-              <label for="nome">Nome completo</label>
-              <input type="text" id="nome" name="nome" placeholder="Digite seu nome completo" required />
+              <label for="nome">Nome</label>
+              <input type="text" id="nome" name="nome" readonly />
             </div>
 
             <div class="field">
               <label for="email">E-mail</label>
-              <input type="email" id="email" name="email" placeholder="nome@empresa.com" required />
-            </div>
-
-            <div class="field">
-              <label for="login">Login</label>
-              <input type="text" id="login" name="login" placeholder="Seu login de acesso" required />
-            </div>
-
-            <div class="field">
-              <label for="senha">Senha</label>
-              <input type="password" id="senha" name="senha" placeholder="Crie uma senha" required />
+              <input type="email" id="email" name="email" readonly />
             </div>
 
             <div class="field">
@@ -358,45 +392,25 @@
 
             <div class="field">
               <label for="area">Área</label>
-              <input type="text" id="area" name="area" placeholder="Ex.: Security, Operações..." />
+              <input type="text" id="area" name="area" placeholder="Ex.: Security, Operações..." required />
             </div>
 
             <div class="field">
               <label for="unidade">Unidade</label>
-              <input type="text" id="unidade" name="unidade" placeholder="Ex.: FBS - SP9" />
-            </div>
-
-            <div class="field">
-              <label for="telefone">Telefone</label>
-              <input type="text" id="telefone" name="telefone" placeholder="(11) 99999-9999" />
-            </div>
-
-            <div class="field">
-              <label for="matricula">Matrícula</label>
-              <input type="text" id="matricula" name="matricula" placeholder="Digite sua matrícula" />
-            </div>
-
-            <div class="field">
-              <label for="empresa">Empresa</label>
-              <input type="text" id="empresa" name="empresa" placeholder="Ex.: Shopee" />
-            </div>
-
-            <div class="field">
-              <label for="foto">Foto (URL)</label>
-              <input type="text" id="foto" name="foto" placeholder="https://..." />
+              <input type="text" id="unidade" name="unidade" placeholder="Ex.: FBS - SP9" required />
             </div>
 
             <div class="field full">
-              <label for="observacoes">Observações</label>
-              <textarea id="observacoes" name="observacoes" placeholder="Informações adicionais do cadastro"></textarea>
+              <label for="empresa">Empresa</label>
+              <input type="text" id="empresa" name="empresa" placeholder="Ex.: Shopee" required />
               <div class="hint">
-                O cadastro será enviado com status pendente e poderá passar por aprovação, de acordo com o nível de acesso solicitado.
+                Após o envio, seu cadastro ficará pendente até aprovação, conforme a política do nível solicitado.
               </div>
             </div>
           </div>
 
           <div class="actions">
-            <button type="button" class="btn btn-secondary" id="btnLimpar">Limpar</button>
+            <button type="button" class="btn btn-secondary" id="btnLimpar">Limpar campos editáveis</button>
             <button type="submit" class="btn btn-primary" id="btnSalvar">Enviar cadastro</button>
           </div>
         </form>
@@ -411,6 +425,8 @@
     const messageBox = document.getElementById("messageBox");
     const btnSalvar = document.getElementById("btnSalvar");
     const btnLimpar = document.getElementById("btnLimpar");
+
+    let currentUser = null;
 
     function showMessage(type, text) {
       messageBox.className = `message show ${type}`;
@@ -435,6 +451,27 @@
       option.value = "";
       option.textContent = placeholder;
       select.appendChild(option);
+    }
+
+    async function carregarUsuario() {
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) throw new Error("Não foi possível carregar o usuário.");
+
+        const user = await res.json();
+        currentUser = user;
+
+        document.getElementById("nome").value = user.nome || "";
+        document.getElementById("email").value = user.email || "";
+        document.getElementById("userNome").textContent = user.nome || "Usuário";
+        document.getElementById("userEmail").textContent = user.email || "E-mail não disponível";
+
+        const foto = user.foto || "https://via.placeholder.com/120x120.png?text=User";
+        document.getElementById("userFoto").src = foto;
+      } catch (error) {
+        console.error(error);
+        showMessage("error", "Não foi possível carregar seus dados do Google. Faça login novamente.");
+      }
     }
 
     async function carregarCargos() {
@@ -483,63 +520,40 @@
       }
     }
 
-    function gerarLoginAutomatico(nome, email) {
-      if (document.getElementById("login").value.trim()) return;
-
-      const nomeBase = (nome || "")
-        .trim()
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9\s]/g, "")
-        .split(/\s+/)
-        .slice(0, 2)
-        .join(".");
-
-      const emailBase = (email || "").split("@")[0];
-
-      document.getElementById("login").value = nomeBase || emailBase || "";
-    }
-
-    document.getElementById("nome").addEventListener("blur", () => {
-      gerarLoginAutomatico(
-        document.getElementById("nome").value,
-        document.getElementById("email").value
-      );
-    });
-
-    document.getElementById("email").addEventListener("blur", () => {
-      gerarLoginAutomatico(
-        document.getElementById("nome").value,
-        document.getElementById("email").value
-      );
-    });
-
     btnLimpar.addEventListener("click", () => {
-      formCadastro.reset();
+      document.getElementById("cargo").value = "";
+      document.getElementById("nivel_acesso").value = "";
+      document.getElementById("area").value = "";
+      document.getElementById("unidade").value = "";
+      document.getElementById("empresa").value = "";
       clearMessage();
     });
 
     formCadastro.addEventListener("submit", async (e) => {
       e.preventDefault();
       clearMessage();
+
+      if (!currentUser || !currentUser.email) {
+        showMessage("error", "Usuário do Google não carregado. Faça login novamente.");
+        return;
+      }
+
       setLoading(true);
 
       try {
         const dados = {
           nome: document.getElementById("nome").value.trim(),
           email: document.getElementById("email").value.trim(),
-          login: document.getElementById("login").value.trim(),
-          senha: document.getElementById("senha").value.trim(),
+          login: currentUser.email ? currentUser.email.split("@")[0] : "",
+          senha: "",
           cargo: document.getElementById("cargo").value,
           nivel_acesso: document.getElementById("nivel_acesso").value,
           area: document.getElementById("area").value.trim(),
           unidade: document.getElementById("unidade").value.trim(),
-          telefone: document.getElementById("telefone").value.trim(),
-          matricula: document.getElementById("matricula").value.trim(),
           empresa: document.getElementById("empresa").value.trim(),
-          foto: document.getElementById("foto").value.trim(),
-          observacoes: document.getElementById("observacoes").value.trim()
+          foto: currentUser.foto || "",
+          google_id: currentUser.google_id || "",
+          observacoes: ""
         };
 
         const res = await fetch("/api/usuarios/cadastrar", {
@@ -557,7 +571,11 @@
         }
 
         showMessage("success", "Cadastro enviado com sucesso para aprovação.");
-        formCadastro.reset();
+        document.getElementById("cargo").value = "";
+        document.getElementById("nivel_acesso").value = "";
+        document.getElementById("area").value = "";
+        document.getElementById("unidade").value = "";
+        document.getElementById("empresa").value = "";
       } catch (error) {
         console.error(error);
         showMessage("error", error.message || "Erro ao enviar cadastro.");
@@ -566,6 +584,7 @@
       }
     });
 
+    carregarUsuario();
     carregarCargos();
     carregarNiveis();
   </script>

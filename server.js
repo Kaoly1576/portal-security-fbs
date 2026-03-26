@@ -89,70 +89,71 @@ db.run(
 
 // ================== PASSPORT GOOGLE ==================
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_CALLBACK_URL =
-  process.env.GOOGLE_CALLBACK_URL ||
-  "http://localhost:3000/auth/google/callback";
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || "/auth/google/callback"
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails?.[0]?.value || "";
+        const nome = profile.displayName || "";
+        const foto = profile.photos?.[0]?.value || "";
+        const googleId = profile.id || "";
 
-const googleOAuthEnabled =
-  Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);
-
-if (googleOAuthEnabled) {
-  passport.use(
-    new GoogleStrategy(
-      {
-        clientID: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: GOOGLE_CALLBACK_URL,
-      },
-      (accessToken, refreshToken, profile, done) => {
-        try {
-          const email = profile?.emails?.[0]?.value || "";
-          const nome = profile?.displayName || "Usuário";
-          const foto = profile?.photos?.[0]?.value || "";
-
-          if (!email.endsWith("@shopee.com")) {
-            return done(null, false);
-          }
-
-          db.get("SELECT * FROM usuarios WHERE email = ?", [email], (err, user) => {
-            if (err) return done(err);
-
-            if (user) {
-              return done(null, { ...user, foto });
-            }
-
-            db.run(
-              `
-              INSERT INTO usuarios (nome, email, senha, perfil, status)
-              VALUES (?, ?, ?, ?, ?)
-              `,
-              [nome, email, "", "usuario", "pendente"],
-              function (insErr) {
-                if (insErr) return done(insErr);
-
-                db.get(
-                  "SELECT * FROM usuarios WHERE id = ?",
-                  [this.lastID],
-                  (selErr, newUser) => {
-                    if (selErr) return done(selErr);
-                    return done(null, { ...newUser, foto });
-                  }
-                );
-              }
-            );
-          });
-        } catch (e) {
-          return done(e);
+        if (!email) {
+          return done(null, false, { message: "E-mail Google não encontrado." });
         }
-      }
-    )
-  );
 
-  console.log("Google OAuth habilitado.");
+        const usuarioCadastro = await findUsuarioCadastroByEmail(email);
+
+        if (!usuarioCadastro) {
+          return done(null, false, { message: "Seu e-mail ainda não possui cadastro no portal." });
+        }
+
+        const status = cadastroNormalizeLower(usuarioCadastro.status);
+        const cadastroPendente = cadastroNormalize(usuarioCadastro.cadastro_pendente);
+
+        if (status !== "ativo") {
+          return done(null, false, { message: "Seu cadastro está inativo ou ainda não foi aprovado." });
+        }
+
+        if (cadastroPendente !== "0") {
+          return done(null, false, { message: "Seu cadastro ainda está pendente de aprovação." });
+        }
+
+        await updateUsuarioGoogleInfoByEmail(email, {
+          nome,
+          foto,
+          google_id: googleId
+        });
+
+        const usuarioSessao = {
+          id: usuarioCadastro.id || googleId,
+          nome: usuarioCadastro.nome || nome,
+          email,
+          foto: foto || usuarioCadastro.foto || "",
+          google_id: googleId,
+          perfil: usuarioCadastro.nivel_acesso || "usuario",
+          cargo: usuarioCadastro.cargo || "",
+          nivel_acesso: usuarioCadastro.nivel_acesso || "",
+          area: usuarioCadastro.area || "",
+          unidade: usuarioCadastro.unidade || "",
+          empresa: usuarioCadastro.empresa || "",
+          status: usuarioCadastro.status || "",
+          permissoes: usuarioCadastro.permissoes || ""
+        };
+
+        return done(null, usuarioSessao);
+      } catch (error) {
+        console.error("Erro no Google OAuth:", error);
+        return done(error, null);
+      }
+    }
+  ));
 } else {
-  console.warn("Google OAuth desabilitado: GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET ausente.");
+  console.warn("Google OAuth desabilitado: GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET ausentes.");
 }
 
 // ================== HELPERS ==================

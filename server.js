@@ -2603,6 +2603,123 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== FUNÇÕES AUXILIARES ==================
+
+
+const CADASTRO_SHEET_ID = "1iDkB1uHIIXv7qnVGAWYYPrabl_g1-V_435lYdx66Crc";
+const CADASTRO_USUARIOS_RANGE = "usuarios!A1:Z5000";
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeLower(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function sheetRowsToObjects(rows) {
+  if (!rows || !rows.length) return [];
+  const headers = rows[0].map(h => normalizeText(h));
+
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((header, index) => {
+      obj[header] = row[index] ?? "";
+    });
+    return obj;
+  });
+}
+
+async function getUsuariosCadastroSheet() {
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CADASTRO_SHEET_ID,
+    range: CADASTRO_USUARIOS_RANGE
+  });
+
+  const rows = response.data.values || [];
+  return sheetRowsToObjects(rows);
+}
+
+async function findUsuarioByEmail(email) {
+  const usuarios = await getUsuariosCadastroSheet();
+  return usuarios.find(user => normalizeLower(user.email) === normalizeLower(email)) || null;
+}
+
+async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CADASTRO_SHEET_ID,
+    range: CADASTRO_USUARIOS_RANGE
+  });
+
+  const rows = response.data.values || [];
+  if (!rows.length) return false;
+
+  const headers = rows[0].map(h => normalizeText(h));
+  const emailCol = headers.findIndex(h => normalizeLower(h) === "email");
+  const fotoCol = headers.findIndex(h => normalizeLower(h) === "foto");
+  const googleIdCol = headers.findIndex(h => normalizeLower(h) === "google_id");
+  const atualizadoCol = headers.findIndex(h => normalizeLower(h) === "atualizado_em");
+
+  if (emailCol === -1) return false;
+
+  const rowIndex = rows.findIndex((row, idx) => {
+    if (idx === 0) return false;
+    return normalizeLower(row[emailCol]) === normalizeLower(email);
+  });
+
+  if (rowIndex === -1) return false;
+
+  const sheetRowNumber = rowIndex + 1;
+  const now = new Date().toISOString();
+
+  const updates = [];
+
+  if (fotoCol !== -1) {
+    updates.push({
+      range: `usuarios!${columnToLetter(fotoCol + 1)}${sheetRowNumber}`,
+      values: [[googleProfile.foto || ""]]
+    });
+  }
+
+  if (googleIdCol !== -1) {
+    updates.push({
+      range: `usuarios!${columnToLetter(googleIdCol + 1)}${sheetRowNumber}`,
+      values: [[googleProfile.google_id || ""]]
+    });
+  }
+
+  if (atualizadoCol !== -1) {
+    updates.push({
+      range: `usuarios!${columnToLetter(atualizadoCol + 1)}${sheetRowNumber}`,
+      values: [[now]]
+    });
+  }
+
+  if (!updates.length) return true;
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: CADASTRO_SHEET_ID,
+    resource: {
+      valueInputOption: "USER_ENTERED",
+      data: updates
+    }
+  });
+
+  return true;
+}
+
+function columnToLetter(column) {
+  let temp = "";
+  let letter = "";
+  while (column > 0) {
+    temp = (column - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    column = (column - temp - 1) / 26;
+  }
+  return letter;
+}
+
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

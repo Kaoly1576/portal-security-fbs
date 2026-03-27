@@ -284,17 +284,6 @@
       return `${Number(value || 0).toFixed(2)}%`;
     }
 
-    function ajustarHorarioMais3(valor) {
-      if (!valor) return "--:--";
-      const match = String(valor).match(/^(\d{2}):(\d{2})$/);
-      if (!match) return valor;
-
-      let hora = Number(match[1]);
-      const minuto = match[2];
-      hora = (hora + 3) % 24;
-      return `${String(hora).padStart(2, "0")}:${minuto}`;
-    }
-
     function createMultiSelect(menuId, triggerId, values, emptyLabel) {
       const menu = document.getElementById(menuId);
       const trigger = document.getElementById(triggerId);
@@ -497,7 +486,7 @@
       document.getElementById("totalPendentes").textContent = formatNumber(data.pendentes);
       document.getElementById("totalEmpresas").textContent = formatNumber(data.empresas);
       document.getElementById("percentualBloqueio").textContent = formatPercent(data.taxaBloqueio);
-      document.getElementById("ultimaAtualizacao").textContent = ajustarHorarioMais3(data.ultimaAtualizacao || "--:--");
+      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
     }
 
     async function loadGraficos() {
@@ -561,16 +550,8 @@
         options: makeChartOptions(true)
       });
 
-      let labelsTempo = [];
-      let valuesTempo = [];
-
-      if (data.porDia?.labels?.length) {
-        labelsTempo = data.porDia.labels.map(d => String(Number(d)));
-        valuesTempo = data.porDia.values || [];
-      } else {
-        labelsTempo = data.porMes?.labels || [];
-        valuesTempo = data.porMes?.values || [];
-      }
+      const labelsTempo = (data.porDia?.labels || []).map(d => String(Number(d)));
+      const valuesTempo = data.porDia?.values || [];
 
       chartMes = new Chart(document.getElementById("chartMes"), {
         type: "line",

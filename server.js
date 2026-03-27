@@ -1447,6 +1447,8 @@ app.post("/api/chamada/salvar", requireAuth, async (req, res) => {
 
 // ================== ACCESS DASHBOARD ==================
 
+// ================== ACCESS DASHBOARD ==================
+
 app.get("/access", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "access.html"));
 });
@@ -1759,24 +1761,25 @@ app.get("/api/access-graficos", requireAuth, async (req, res) => {
     const dados = await buscarPlanilhaAccessComCache();
     const filtrados = filtrarAccessData(dados, req.query);
 
+    // Mantidos para compatibilidade, caso o front ainda consuma alguma dessas chaves
     const statusMap = groupCountAccess(filtrados, ACCESS_COLUMNS.status);
     const estadoMap = groupCountAccess(filtrados, ACCESS_COLUMNS.estado);
     const tipoMap = groupCountAccess(filtrados, ACCESS_COLUMNS.tipoLiberacao);
     const operacaoMap = groupCountAccess(filtrados, ACCESS_COLUMNS.operacao);
 
+    // Agora porDia retorna SOMENTE APROVADOS e sempre de 1 a 31
     const dayMap = {};
-    filtrados.forEach((row) => {
-      if (!row._dataSolicitacao) return;
-      const key = row._dataSolicitacao.toLocaleDateString("pt-BR");
-      dayMap[key] = (dayMap[key] || 0) + 1;
-    });
+    filtrados
+      .filter((row) => isStatusAprovado(row[ACCESS_COLUMNS.status]))
+      .forEach((row) => {
+        if (!row._dataSolicitacao) return;
+        const day = String(row._dataSolicitacao.getDate()).padStart(2, "0");
+        dayMap[day] = (dayMap[day] || 0) + 1;
+      });
 
-    const diaLabels = Object.keys(dayMap).sort((a, b) => {
-      const da = parseDateBRAccess(a);
-      const db = parseDateBRAccess(b);
-      if (!da || !db) return 0;
-      return da - db;
-    });
+    const diaLabels = Array.from({ length: 31 }, (_, i) =>
+      String(i + 1).padStart(2, "0")
+    );
 
     const cidadeMap = {};
     const operacaoResumoMap = {};
@@ -1814,14 +1817,17 @@ app.get("/api/access-graficos", requireAuth, async (req, res) => {
     });
 
     return res.json({
+      // mantidas para compatibilidade
       status: statusMap,
-      estado: estadoMap,
+      estado: operacaoMap, // front novo pode usar essa chave como "Acessos por Operação"
       tipoLiberacao: tipoMap,
       operacao: operacaoMap,
+
       porDia: {
         labels: diaLabels,
-        values: diaLabels.map((label) => dayMap[label]),
+        values: diaLabels.map((label) => dayMap[label] || 0),
       },
+
       tabelaCidade: Object.entries(cidadeMap)
         .sort((a, b) => b[1].total - a[1].total)
         .slice(0, 50)
@@ -1831,6 +1837,7 @@ app.get("/api/access-graficos", requireAuth, async (req, res) => {
           aprovados: info.aprovados,
           reprovados: info.reprovados,
         })),
+
       tabelaOperacao: Object.entries(operacaoResumoMap)
         .sort((a, b) => b[1].total - a[1].total)
         .slice(0, 50)

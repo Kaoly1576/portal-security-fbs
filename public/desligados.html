@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Desligados - Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <link rel="stylesheet" href="/desligados.css" />
 </head>
 <body>
@@ -114,20 +115,15 @@
         </div>
 
         <div class="field btn-field">
-          <button class="btn-primary" id="btnLimpar">Limpar filtros</button>
+          <button class="btn-primary" id="btnLimpar" type="button">Limpar filtros</button>
         </div>
       </div>
     </section>
 
-    <section class="cards-grid">
+    <section class="cards-grid cards-grid-5">
       <div class="info-card">
         <div class="info-label">Total desligados</div>
         <div class="info-value orange" id="totalDesligados">0</div>
-      </div>
-
-      <div class="info-card">
-        <div class="info-label">Enviados condomínio</div>
-        <div class="info-value blue" id="totalEnviados">0</div>
       </div>
 
       <div class="info-card">
@@ -183,7 +179,7 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">Desligados por Mês</div>
+        <div class="panel-title">Desligados por Dia</div>
         <div class="chart-wrap large">
           <canvas id="chartMes"></canvas>
         </div>
@@ -192,7 +188,7 @@
 
     <section class="panel-card">
       <div class="panel-title">Motivo de Desligamento</div>
-      <div class="chart-wrap large">
+      <div class="chart-wrap xlarge">
         <canvas id="chartMotivo"></canvas>
       </div>
     </section>
@@ -237,13 +233,15 @@
       <div class="panel-title">Detalhamento dos desligados</div>
       <div class="table-wrap big-table" id="tableWrap"></div>
       <div class="pager">
-        <button class="btn-secondary" id="btnPrev">Anterior</button>
-        <button class="btn-secondary" id="btnNext">Próxima</button>
+        <button class="btn-secondary" id="btnPrev" type="button">Anterior</button>
+        <button class="btn-secondary" id="btnNext" type="button">Próxima</button>
       </div>
     </section>
   </div>
 
   <script>
+    Chart.register(ChartDataLabels);
+
     let chartEnviados = null;
     let chartBloqueios = null;
     let chartUnidade = null;
@@ -253,6 +251,7 @@
 
     let currentPage = 1;
     let totalPages = 1;
+    let searchDebounce = null;
 
     const headersDetalhe = [
       "UNIDADE",
@@ -278,11 +277,22 @@
     }
 
     function formatNumber(value) {
-      return new Intl.NumberFormat("pt-BR").format(value || 0);
+      return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
     }
 
     function formatPercent(value) {
       return `${Number(value || 0).toFixed(2)}%`;
+    }
+
+    function ajustarHorarioMais3(valor) {
+      if (!valor) return "--:--";
+      const match = String(valor).match(/^(\d{2}):(\d{2})$/);
+      if (!match) return valor;
+
+      let hora = Number(match[1]);
+      const minuto = match[2];
+      hora = (hora + 3) % 24;
+      return `${String(hora).padStart(2, "0")}:${minuto}`;
     }
 
     function createMultiSelect(menuId, triggerId, values, emptyLabel) {
@@ -297,11 +307,12 @@
       `;
 
       values.forEach((value) => {
+        const safeValue = escapeHtml(value);
         const label = document.createElement("label");
         label.className = "multi-option";
         label.innerHTML = `
-          <input type="checkbox" value="${escapeHtml(value)}" />
-          <span>${escapeHtml(value)}</span>
+          <input type="checkbox" value="${safeValue}" />
+          <span>${safeValue}</span>
         `;
         menu.appendChild(label);
       });
@@ -317,14 +328,14 @@
         }
       }
 
-      trigger.addEventListener("click", () => {
+      trigger.onclick = () => {
         document.querySelectorAll(".multi-select").forEach((wrap) => {
-          if (wrap.id !== trigger.closest(".multi-select").id) {
+          if (wrap !== trigger.closest(".multi-select")) {
             wrap.classList.remove("open");
           }
         });
         trigger.closest(".multi-select").classList.toggle("open");
-      });
+      };
 
       menu.addEventListener("click", (e) => {
         const action = e.target.dataset.action;
@@ -408,18 +419,56 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: "#fff" }
+            labels: { color: "#fff", boxWidth: 10, font: { size: 10 } }
+          },
+          datalabels: {
+            color: "#fff",
+            anchor: horizontal ? "end" : "end",
+            align: horizontal ? "right" : "top",
+            offset: 4,
+            clamp: true,
+            font: {
+              weight: "700",
+              size: 10
+            },
+            formatter: (value) => value > 0 ? formatNumber(value) : ""
           }
         },
         scales: {
           x: {
-            ticks: { color: "#d1d5db" },
+            ticks: { color: "#d1d5db", font: { size: 9 } },
             grid: { color: "rgba(255,255,255,0.06)" }
           },
           y: {
-            ticks: { color: "#d1d5db" },
+            ticks: { color: "#d1d5db", font: { size: 9 } },
             grid: { color: "rgba(255,255,255,0.06)" },
             beginAtZero: true
+          }
+        }
+      };
+    }
+
+    function makeDoughnutOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "58%",
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              color: "#fff",
+              boxWidth: 10,
+              font: { size: 10 }
+            }
+          },
+          datalabels: {
+            color: "#fff",
+            font: {
+              weight: "700",
+              size: 10
+            },
+            formatter: (value) => value > 0 ? formatNumber(value) : ""
           }
         }
       };
@@ -444,12 +493,11 @@
       const data = await res.json();
 
       document.getElementById("totalDesligados").textContent = formatNumber(data.total);
-      document.getElementById("totalEnviados").textContent = formatNumber(data.enviadosSim);
       document.getElementById("totalBloqueados").textContent = formatNumber(data.bloqueadosSim);
       document.getElementById("totalPendentes").textContent = formatNumber(data.pendentes);
       document.getElementById("totalEmpresas").textContent = formatNumber(data.empresas);
       document.getElementById("percentualBloqueio").textContent = formatPercent(data.taxaBloqueio);
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+      document.getElementById("ultimaAtualizacao").textContent = ajustarHorarioMais3(data.ultimaAtualizacao || "--:--");
     }
 
     async function loadGraficos() {
@@ -465,11 +513,11 @@
           labels: Object.keys(data.enviados || {}),
           datasets: [{
             data: Object.values(data.enviados || {}),
-            backgroundColor: ["#ff7a1a", "#22c55e", "#64748b", "#ef4444"],
+            backgroundColor: ["#ff7a1a", "#475569", "#94a3b8", "#1e293b"],
             borderWidth: 0
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#fff" } } } }
+        options: makeDoughnutOptions()
       });
 
       chartBloqueios = new Chart(document.getElementById("chartBloqueios"), {
@@ -482,7 +530,7 @@
             borderWidth: 0
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#fff" } } } }
+        options: makeDoughnutOptions()
       });
 
       chartUnidade = new Chart(document.getElementById("chartUnidade"), {
@@ -496,7 +544,7 @@
             borderRadius: 8
           }]
         },
-        options: makeChartOptions()
+        options: makeChartOptions(true)
       });
 
       chartEmpresa = new Chart(document.getElementById("chartEmpresa"), {
@@ -513,21 +561,64 @@
         options: makeChartOptions(true)
       });
 
+      let labelsTempo = [];
+      let valuesTempo = [];
+
+      if (data.porDia?.labels?.length) {
+        labelsTempo = data.porDia.labels.map(d => String(Number(d)));
+        valuesTempo = data.porDia.values || [];
+      } else {
+        labelsTempo = data.porMes?.labels || [];
+        valuesTempo = data.porMes?.values || [];
+      }
+
       chartMes = new Chart(document.getElementById("chartMes"), {
         type: "line",
         data: {
-          labels: data.porMes?.labels || [],
+          labels: labelsTempo,
           datasets: [{
             label: "Desligados",
-            data: data.porMes?.values || [],
+            data: valuesTempo,
             borderColor: "#ff7a1a",
             backgroundColor: "rgba(255,122,26,0.15)",
             fill: true,
             tension: 0.35,
-            pointRadius: 3
+            pointRadius: 3,
+            pointHoverRadius: 4
           }]
         },
-        options: makeChartOptions()
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#fff", font: { size: 10 } }
+            },
+            datalabels: {
+              color: "#fff",
+              align: "top",
+              anchor: "end",
+              offset: 4,
+              clamp: true,
+              font: {
+                weight: "700",
+                size: 9
+              },
+              formatter: (value) => value > 0 ? formatNumber(value) : ""
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#d1d5db", font: { size: 9 } },
+              grid: { color: "rgba(255,255,255,0.06)" }
+            },
+            y: {
+              ticks: { color: "#d1d5db", font: { size: 9 } },
+              grid: { color: "rgba(255,255,255,0.06)" },
+              beginAtZero: true
+            }
+          }
+        }
       });
 
       chartMotivo = new Chart(document.getElementById("chartMotivo"), {
@@ -535,7 +626,7 @@
         data: {
           labels: Object.keys(data.motivo || {}),
           datasets: [{
-            label: "Desligados",
+            label: "Motivos de desligamento",
             data: Object.values(data.motivo || {}),
             backgroundColor: "#f97316",
             borderRadius: 8
@@ -548,8 +639,8 @@
         <tr>
           <td>${escapeHtml(item.unidade)}</td>
           <td>${formatNumber(item.total)}</td>
-          <td>${formatNumber(item.enviados)}</td>
-          <td>${formatNumber(item.bloqueados)}</td>
+          <td class="orange-text">${formatNumber(item.enviados)}</td>
+          <td class="green-text">${formatNumber(item.bloqueados)}</td>
         </tr>
       `).join("");
 
@@ -557,8 +648,8 @@
         <tr>
           <td>${escapeHtml(item.empresa)}</td>
           <td>${formatNumber(item.total)}</td>
-          <td>${formatNumber(item.enviados)}</td>
-          <td>${formatNumber(item.bloqueados)}</td>
+          <td class="orange-text">${formatNumber(item.enviados)}</td>
+          <td class="green-text">${formatNumber(item.bloqueados)}</td>
         </tr>
       `).join("");
     }
@@ -600,14 +691,14 @@
       await loadDetalhes(page);
     }
 
-    [
-      "filtroDataInicio",
-      "filtroDataFim",
-      "filtroBusca"
-    ].forEach(id => {
+    ["filtroDataInicio", "filtroDataFim"].forEach(id => {
       const el = document.getElementById(id);
-      el.addEventListener("input", () => loadAll(1));
       el.addEventListener("change", () => loadAll(1));
+    });
+
+    document.getElementById("filtroBusca").addEventListener("input", () => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => loadAll(1), 350);
     });
 
     document.getElementById("btnLimpar").addEventListener("click", () => {

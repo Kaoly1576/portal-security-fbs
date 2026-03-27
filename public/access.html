@@ -5,7 +5,98 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ACCESS - Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <link rel="stylesheet" href="/access.css" />
+
+  <style>
+    .cards-grid{
+      display:grid;
+      grid-template-columns:repeat(6, minmax(0, 1fr));
+      gap:8px;
+      margin-bottom:8px;
+    }
+
+    .charts-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-bottom:8px;
+    }
+
+    .charts-grid.two-cols{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-bottom:8px;
+    }
+
+    .panel-card,
+    .info-card,
+    .filters-card,
+    .hero-card{
+      background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.015));
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:14px;
+      box-shadow:0 10px 24px rgba(0,0,0,0.18);
+    }
+
+    .panel-title,
+    .info-label{
+      color:#ffffff;
+    }
+
+    .info-value.orange{
+      color:#ff7a1a;
+    }
+
+    .info-value.green{
+      color:#22c55e;
+    }
+
+    .info-value.red{
+      color:#f87171;
+    }
+
+    .info-value.blue{
+      color:#60a5fa;
+    }
+
+    .info-value.purple{
+      color:#a78bfa;
+    }
+
+    .green-text{
+      color:#22c55e;
+      font-weight:700;
+    }
+
+    .red-text{
+      color:#f87171;
+      font-weight:700;
+    }
+
+    .blue-text{
+      color:#60a5fa;
+      font-weight:700;
+    }
+
+    @media (max-width: 1200px){
+      .cards-grid{
+        grid-template-columns:repeat(3, minmax(0, 1fr));
+      }
+
+      .charts-grid,
+      .charts-grid.two-cols{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 700px){
+      .cards-grid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="page-shell">
@@ -117,7 +208,7 @@
 
     <section class="cards-grid">
       <div class="info-card">
-        <div class="info-label">TOTAL DE ACESSOS</div>
+        <div class="info-label">TOTAL DE SOLICITAÇÕES</div>
         <div class="info-value orange" id="totalAcessos">0</div>
       </div>
 
@@ -149,21 +240,14 @@
 
     <section class="charts-grid">
       <div class="panel-card">
-        <div class="panel-title">Acessos por Status</div>
-        <div class="chart-wrap">
-          <canvas id="chartStatus"></canvas>
-        </div>
-      </div>
-
-      <div class="panel-card">
-        <div class="panel-title">Acessos por Estado</div>
+        <div class="panel-title">Acessos por Operação</div>
         <div class="chart-wrap">
           <canvas id="chartEstado"></canvas>
         </div>
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">Acessos por Tipo de Liberação</div>
+        <div class="panel-title">Acessos por Tipo de Solicitação</div>
         <div class="chart-wrap">
           <canvas id="chartTipo"></canvas>
         </div>
@@ -179,7 +263,7 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">Solicitações por Dia</div>
+        <div class="panel-title">Acessos aprovados por dia</div>
         <div class="chart-wrap large">
           <canvas id="chartDia"></canvas>
         </div>
@@ -233,7 +317,8 @@
   </div>
 
   <script>
-    let chartStatus = null;
+    Chart.register(ChartDataLabels);
+
     let chartEstado = null;
     let chartTipo = null;
     let chartOperacao = null;
@@ -318,20 +403,18 @@
     }
 
     function destroyCharts() {
-      if (chartStatus) chartStatus.destroy();
       if (chartEstado) chartEstado.destroy();
       if (chartTipo) chartTipo.destroy();
       if (chartOperacao) chartOperacao.destroy();
       if (chartDia) chartDia.destroy();
 
-      chartStatus = null;
       chartEstado = null;
       chartTipo = null;
       chartOperacao = null;
       chartDia = null;
     }
 
-    function makeChartOptions(horizontal = false) {
+    function baseChartOptions(horizontal = false) {
       return {
         indexAxis: horizontal ? "y" : "x",
         responsive: true,
@@ -339,17 +422,31 @@
         plugins: {
           legend: {
             labels: {
-              color: "#fff"
+              color: "#ffffff",
+              font: { size: 10 },
+              boxWidth: 10
             }
+          },
+          datalabels: {
+            color: "#ffffff",
+            anchor: horizontal ? "end" : "end",
+            align: horizontal ? "right" : "top",
+            offset: 4,
+            clamp: true,
+            font: {
+              weight: "700",
+              size: 10
+            },
+            formatter: (value) => value > 0 ? formatNumber(value) : ""
           }
         },
         scales: {
           x: {
-            ticks: { color: "#d1d5db" },
+            ticks: { color: "#d1d5db", font: { size: 9 } },
             grid: { color: "rgba(255,255,255,0.06)" }
           },
           y: {
-            ticks: { color: "#d1d5db" },
+            ticks: { color: "#d1d5db", font: { size: 9 } },
             grid: { color: "rgba(255,255,255,0.06)" },
             beginAtZero: true
           }
@@ -397,37 +494,18 @@
 
         destroyCharts();
 
-        chartStatus = new Chart(document.getElementById("chartStatus"), {
-          type: "doughnut",
-          data: {
-            labels: Object.keys(data.status || {}),
-            datasets: [{
-              data: Object.values(data.status || {}),
-              backgroundColor: ["#ff7a1a", "#22c55e", "#ef4444", "#3b82f6", "#8b5cf6", "#64748b"],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { labels: { color: "#fff" } }
-            }
-          }
-        });
-
         chartEstado = new Chart(document.getElementById("chartEstado"), {
           type: "bar",
           data: {
-            labels: Object.keys(data.estado || {}),
+            labels: Object.keys(data.operacao || {}),
             datasets: [{
               label: "Acessos",
-              data: Object.values(data.estado || {}),
+              data: Object.values(data.operacao || {}),
               backgroundColor: "#ff7a1a",
               borderRadius: 8
             }]
           },
-          options: makeChartOptions()
+          options: baseChartOptions(true)
         });
 
         chartTipo = new Chart(document.getElementById("chartTipo"), {
@@ -437,11 +515,11 @@
             datasets: [{
               label: "Acessos",
               data: Object.values(data.tipoLiberacao || {}),
-              backgroundColor: "#f97316",
+              backgroundColor: "#ff7a1a",
               borderRadius: 8
             }]
           },
-          options: makeChartOptions(true)
+          options: baseChartOptions(true)
         });
 
         chartOperacao = new Chart(document.getElementById("chartOperacao"), {
@@ -451,28 +529,79 @@
             datasets: [{
               label: "Acessos",
               data: Object.values(data.operacao || {}),
-              backgroundColor: "#fb923c",
+              backgroundColor: "#ff7a1a",
               borderRadius: 8
             }]
           },
-          options: makeChartOptions(true)
+          options: baseChartOptions(true)
         });
+
+        const rawLabels = data.porDia?.labels || [];
+        const rawValues = data.porDia?.values || [];
+
+        let labelsDia = rawLabels;
+        let valuesDia = rawValues;
+
+        if (rawLabels.length) {
+          const diasFixos = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+          const mapa = {};
+          rawLabels.forEach((label, idx) => {
+            const partes = String(label).split("/");
+            const dia = partes[0]?.padStart(2, "0") || String(label).padStart(2, "0");
+            mapa[dia] = Number(rawValues[idx] || 0);
+          });
+
+          labelsDia = diasFixos.map(d => String(Number(d)));
+          valuesDia = diasFixos.map(d => mapa[d] || 0);
+        }
 
         chartDia = new Chart(document.getElementById("chartDia"), {
           type: "line",
           data: {
-            labels: data.porDia?.labels || [],
+            labels: labelsDia,
             datasets: [{
-              label: "Solicitações",
-              data: data.porDia?.values || [],
-              borderColor: "#ff7a1a",
-              backgroundColor: "rgba(255,122,26,0.15)",
-              fill: true,
+              label: "Acessos aprovados",
+              data: valuesDia,
+              borderColor: "#60a5fa",
+              backgroundColor: "rgba(96,165,250,0.18)",
+              fill: false,
               tension: 0.35,
-              pointRadius: 3
+              pointRadius: 3,
+              pointHoverRadius: 4
             }]
           },
-          options: makeChartOptions()
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: "#ffffff" }
+              },
+              datalabels: {
+                color: "#ffffff",
+                align: "top",
+                anchor: "end",
+                offset: 4,
+                clamp: true,
+                font: {
+                  weight: "700",
+                  size: 9
+                },
+                formatter: (value) => value > 0 ? formatNumber(value) : ""
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: "#d1d5db", font: { size: 9 } },
+                grid: { color: "rgba(255,255,255,0.06)" }
+              },
+              y: {
+                ticks: { color: "#d1d5db", font: { size: 9 } },
+                grid: { color: "rgba(255,255,255,0.06)" },
+                beginAtZero: true
+              }
+            }
+          }
         });
 
         const tabelaCidade = document.getElementById("tabelaCidade");

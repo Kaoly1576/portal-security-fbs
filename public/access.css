@@ -260,3 +260,99 @@ tr:hover td{
     grid-template-columns:1fr;
   }
 }
+
+.multi-select{
+  position:relative;
+  width:100%;
+}
+
+.multi-select-trigger{
+  background:#0b1220;
+  border:1px solid rgba(255,255,255,0.08);
+  color:#fff;
+  border-radius:10px;
+  padding:0 34px 0 12px;
+  font-size:12px;
+  height:40px;
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  position:relative;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.multi-select-trigger::after{
+  content:"▼";
+  position:absolute;
+  right:12px;
+  font-size:10px;
+  color:#cbd5e1;
+  pointer-events:none;
+}
+
+.multi-select-menu{
+  position:absolute;
+  top:44px;
+  left:0;
+  width:100%;
+  background:#0b1220;
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  max-height:220px;
+  overflow-y:auto;
+  display:none;
+  z-index:50;
+  box-shadow:0 10px 24px rgba(0,0,0,0.35);
+  padding:6px;
+}
+
+.multi-select.open .multi-select-menu{
+  display:block;
+}
+
+.multi-option{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:12px;
+  color:#fff;
+}
+
+.multi-option:hover{
+  background:#1a2942;
+}
+
+.multi-option input{
+  width:auto;
+  height:auto;
+  accent-color:#ff7a1a;
+}
+
+.multi-actions{
+  display:flex;
+  justify-content:space-between;
+  gap:6px;
+  padding:6px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  margin-bottom:4px;
+}
+
+.multi-actions button{
+  flex:1;
+  background:#1a2942;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  padding:6px 8px;
+  font-size:11px;
+  cursor:pointer;
+}
+
+.multi-actions button:hover{
+  background:#243756;
+}

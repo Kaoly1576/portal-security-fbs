@@ -4,99 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ACCESS - Dashboard</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <link rel="stylesheet" href="/access.css" />
-
-  <style>
-    .cards-grid{
-      display:grid;
-      grid-template-columns:repeat(6, minmax(0, 1fr));
-      gap:8px;
-      margin-bottom:8px;
-    }
-
-    .charts-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-bottom:8px;
-    }
-
-    .charts-grid.two-cols{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-bottom:8px;
-    }
-
-    .panel-card,
-    .info-card,
-    .filters-card,
-    .hero-card{
-      background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.015));
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:14px;
-      box-shadow:0 10px 24px rgba(0,0,0,0.18);
-    }
-
-    .panel-title,
-    .info-label{
-      color:#ffffff;
-    }
-
-    .info-value.orange{
-      color:#ff7a1a;
-    }
-
-    .info-value.green{
-      color:#22c55e;
-    }
-
-    .info-value.red{
-      color:#f87171;
-    }
-
-    .info-value.blue{
-      color:#60a5fa;
-    }
-
-    .info-value.purple{
-      color:#a78bfa;
-    }
-
-    .green-text{
-      color:#22c55e;
-      font-weight:700;
-    }
-
-    .red-text{
-      color:#f87171;
-      font-weight:700;
-    }
-
-    .blue-text{
-      color:#60a5fa;
-      font-weight:700;
-    }
-
-    @media (max-width: 1200px){
-      .cards-grid{
-        grid-template-columns:repeat(3, minmax(0, 1fr));
-      }
-
-      .charts-grid,
-      .charts-grid.two-cols{
-        grid-template-columns:1fr;
-      }
-    }
-
-    @media (max-width: 700px){
-      .cards-grid{
-        grid-template-columns:1fr;
-      }
-    }
-  </style>
 </head>
 <body>
   <div class="page-shell">
@@ -112,7 +23,7 @@
       </div>
 
       <div class="top-actions">
-        <a href="/portal.html" class="btn-secondary">Voltar ao Portal</a>
+        <a href="/portal" class="btn-secondary">Voltar ao Portal</a>
       </div>
     </header>
 
@@ -155,44 +66,50 @@
 
         <div class="field">
           <label>Estado</label>
-          <select id="filtroEstado">
-            <option value="">Todos</option>
-          </select>
+          <div class="multi-select" id="multiEstado">
+            <div class="multi-select-trigger" id="triggerEstado">Todos</div>
+            <div class="multi-select-menu" id="menuEstado"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Cidade</label>
-          <select id="filtroCidade">
-            <option value="">Todas</option>
-          </select>
+          <div class="multi-select" id="multiCidade">
+            <div class="multi-select-trigger" id="triggerCidade">Todas</div>
+            <div class="multi-select-menu" id="menuCidade"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Operação</label>
-          <select id="filtroOperacao">
-            <option value="">Todas</option>
-          </select>
+          <div class="multi-select" id="multiOperacao">
+            <div class="multi-select-trigger" id="triggerOperacao">Todas</div>
+            <div class="multi-select-menu" id="menuOperacao"></div>
+          </div>
         </div>
 
         <div class="field">
-          <label>Tipo de Liberação</label>
-          <select id="filtroTipoLiberacao">
-            <option value="">Todos</option>
-          </select>
+          <label>Tipo de Solicitação</label>
+          <div class="multi-select" id="multiTipoLiberacao">
+            <div class="multi-select-trigger" id="triggerTipoLiberacao">Todos</div>
+            <div class="multi-select-menu" id="menuTipoLiberacao"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Vai acessar com veículo?</label>
-          <select id="filtroVeiculo">
-            <option value="">Todos</option>
-          </select>
+          <div class="multi-select" id="multiVeiculo">
+            <div class="multi-select-trigger" id="triggerVeiculo">Todos</div>
+            <div class="multi-select-menu" id="menuVeiculo"></div>
+          </div>
         </div>
 
         <div class="field">
           <label>Status</label>
-          <select id="filtroStatus">
-            <option value="">Todos</option>
-          </select>
+          <div class="multi-select" id="multiStatus">
+            <div class="multi-select-trigger" id="triggerStatus">Todos</div>
+            <div class="multi-select-menu" id="menuStatus"></div>
+          </div>
         </div>
 
         <div class="field search-field">
@@ -359,18 +276,92 @@
       setUltimaAtualizacao("--:--");
     }
 
+    function buildMultiSelect(containerId, triggerId, menuId, values, placeholder) {
+      const container = document.getElementById(containerId);
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
+
+      menu.innerHTML = `
+        <div class="multi-actions">
+          <button type="button" class="select-all">Todos</button>
+          <button type="button" class="clear-all">Limpar</button>
+        </div>
+      `;
+
+      values.forEach(value => {
+        const safe = escapeHtml(value);
+        const label = document.createElement("label");
+        label.className = "multi-option";
+        label.innerHTML = `<input type="checkbox" value="${safe}"><span>${safe}</span>`;
+        menu.appendChild(label);
+      });
+
+      function updateTriggerText() {
+        const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+
+        if (selected.length === 0) {
+          trigger.textContent = placeholder;
+        } else if (selected.length === 1) {
+          trigger.textContent = selected[0];
+        } else {
+          trigger.textContent = `${selected.length} selecionados`;
+        }
+      }
+
+      trigger.onclick = () => {
+        document.querySelectorAll(".multi-select").forEach(el => {
+          if (el !== container) el.classList.remove("open");
+        });
+        container.classList.toggle("open");
+      };
+
+      menu.querySelector(".select-all").onclick = () => {
+        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+        updateTriggerText();
+        loadAll(1);
+      };
+
+      menu.querySelector(".clear-all").onclick = () => {
+        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+        updateTriggerText();
+        loadAll(1);
+      };
+
+      menu.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener("change", () => {
+          updateTriggerText();
+          loadAll(1);
+        });
+      });
+
+      updateTriggerText();
+    }
+
+    function getSelectedValues(menuId) {
+      return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+        .map(i => i.value);
+    }
+
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".multi-select").forEach(container => {
+        if (!container.contains(e.target)) {
+          container.classList.remove("open");
+        }
+      });
+    });
+
     function getFilters() {
       return new URLSearchParams({
         dataInicio: document.getElementById("filtroDataInicio").value || "",
         dataFim: document.getElementById("filtroDataFim").value || "",
         liberacaoInicio: document.getElementById("filtroLiberacaoInicio").value || "",
         liberacaoFim: document.getElementById("filtroLiberacaoFim").value || "",
-        estado: document.getElementById("filtroEstado").value || "",
-        cidade: document.getElementById("filtroCidade").value || "",
-        operacao: document.getElementById("filtroOperacao").value || "",
-        tipoLiberacao: document.getElementById("filtroTipoLiberacao").value || "",
-        veiculo: document.getElementById("filtroVeiculo").value || "",
-        status: document.getElementById("filtroStatus").value || "",
+        estado: getSelectedValues("menuEstado").join("|"),
+        cidade: getSelectedValues("menuCidade").join("|"),
+        operacao: getSelectedValues("menuOperacao").join("|"),
+        tipoLiberacao: getSelectedValues("menuTipoLiberacao").join("|"),
+        veiculo: getSelectedValues("menuVeiculo").join("|"),
+        status: getSelectedValues("menuStatus").join("|"),
         busca: document.getElementById("filtroBusca").value || "",
       });
     }
@@ -387,19 +378,10 @@
 
       if (!response.ok) {
         const text = await response.text().catch(() => "");
-        throw new Error(`Erro ${response.status} em ${url} ${text ? "- " + text : ""}`);
+        throw new Error(`Erro ${response.status} em ${url}${text ? " - " + text : ""}`);
       }
 
       return response.json();
-    }
-
-    function fillSelect(id, values, firstLabel) {
-      const select = document.getElementById(id);
-      const safeValues = Array.isArray(values) ? values.filter(Boolean) : [];
-      select.innerHTML = `<option value="">${firstLabel}</option>`;
-      safeValues.forEach(v => {
-        select.innerHTML += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
-      });
     }
 
     function destroyCharts() {
@@ -458,12 +440,12 @@
       try {
         const data = await fetchJson("/api/access-filtros");
 
-        fillSelect("filtroEstado", data.estados || [], "Todos");
-        fillSelect("filtroCidade", data.cidades || [], "Todas");
-        fillSelect("filtroOperacao", data.operacoes || [], "Todas");
-        fillSelect("filtroTipoLiberacao", data.tiposLiberacao || [], "Todos");
-        fillSelect("filtroVeiculo", data.veiculos || [], "Todos");
-        fillSelect("filtroStatus", data.status || [], "Todos");
+        buildMultiSelect("multiEstado", "triggerEstado", "menuEstado", data.estados || [], "Todos");
+        buildMultiSelect("multiCidade", "triggerCidade", "menuCidade", data.cidades || [], "Todas");
+        buildMultiSelect("multiOperacao", "triggerOperacao", "menuOperacao", data.operacoes || [], "Todas");
+        buildMultiSelect("multiTipoLiberacao", "triggerTipoLiberacao", "menuTipoLiberacao", data.tiposLiberacao || [], "Todos");
+        buildMultiSelect("multiVeiculo", "triggerVeiculo", "menuVeiculo", data.veiculos || [], "Todos");
+        buildMultiSelect("multiStatus", "triggerStatus", "menuStatus", data.status || [], "Todos");
       } catch (error) {
         console.error("Erro ao carregar filtros:", error);
       }
@@ -536,24 +518,8 @@
           options: baseChartOptions(true)
         });
 
-        const rawLabels = data.porDia?.labels || [];
-        const rawValues = data.porDia?.values || [];
-
-        let labelsDia = rawLabels;
-        let valuesDia = rawValues;
-
-        if (rawLabels.length) {
-          const diasFixos = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
-          const mapa = {};
-          rawLabels.forEach((label, idx) => {
-            const partes = String(label).split("/");
-            const dia = partes[0]?.padStart(2, "0") || String(label).padStart(2, "0");
-            mapa[dia] = Number(rawValues[idx] || 0);
-          });
-
-          labelsDia = diasFixos.map(d => String(Number(d)));
-          valuesDia = diasFixos.map(d => mapa[d] || 0);
-        }
+        const labelsDia = (data.porDia?.labels || []).map(d => String(Number(d)));
+        const valuesDia = data.porDia?.values || [];
 
         chartDia = new Chart(document.getElementById("chartDia"), {
           type: "line",
@@ -691,21 +657,22 @@
     }
 
     function clearFilters() {
-      [
-        "filtroDataInicio",
-        "filtroDataFim",
-        "filtroLiberacaoInicio",
-        "filtroLiberacaoFim",
-        "filtroEstado",
-        "filtroCidade",
-        "filtroOperacao",
-        "filtroTipoLiberacao",
-        "filtroVeiculo",
-        "filtroStatus",
-        "filtroBusca"
-      ].forEach(id => {
-        document.getElementById(id).value = "";
+      document.getElementById("filtroDataInicio").value = "";
+      document.getElementById("filtroDataFim").value = "";
+      document.getElementById("filtroLiberacaoInicio").value = "";
+      document.getElementById("filtroLiberacaoFim").value = "";
+      document.getElementById("filtroBusca").value = "";
+
+      document.querySelectorAll('.multi-select-menu input[type="checkbox"]').forEach(input => {
+        input.checked = false;
       });
+
+      document.getElementById("triggerEstado").textContent = "Todos";
+      document.getElementById("triggerCidade").textContent = "Todas";
+      document.getElementById("triggerOperacao").textContent = "Todas";
+      document.getElementById("triggerTipoLiberacao").textContent = "Todos";
+      document.getElementById("triggerVeiculo").textContent = "Todos";
+      document.getElementById("triggerStatus").textContent = "Todos";
 
       loadAll(1);
     }
@@ -715,13 +682,7 @@
         "filtroDataInicio",
         "filtroDataFim",
         "filtroLiberacaoInicio",
-        "filtroLiberacaoFim",
-        "filtroEstado",
-        "filtroCidade",
-        "filtroOperacao",
-        "filtroTipoLiberacao",
-        "filtroVeiculo",
-        "filtroStatus"
+        "filtroLiberacaoFim"
       ];
 
       changeIds.forEach(id => {

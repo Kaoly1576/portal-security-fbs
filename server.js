@@ -12,6 +12,22 @@ const path = require("path");
 
 const app = express();
 
+// ================== CONSTANTES ==================
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_CALLBACK_URL =
+  process.env.GOOGLE_CALLBACK_URL ||
+  "http://localhost:3000/auth/google/callback";
+
+const googleOAuthEnabled =
+  Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);
+
+const CADASTRO_SHEET_ID = "1iDkB1uHIIXv7qnVGAWYYPrabl_g1-V_435lYdx66Crc";
+const CADASTRO_USUARIOS_RANGE = "usuarios!A1:Z5000";
+const CADASTRO_CARGOS_RANGE = "cargos!A1:Z500";
+const CADASTRO_NIVEIS_RANGE = "niveis_acesso!A1:Z500";
+
 // ================== MIDDLEWARES ==================
 
 app.set("trust proxy", 1);
@@ -30,7 +46,7 @@ app.use(
       httpOnly: true,
       sameSite: "lax",
       secure: true,
-      maxAge: 1000 * 60 * 60 * 12
+      maxAge: 1000 * 60 * 60 * 12,
     },
   })
 );
@@ -87,89 +103,12 @@ db.run(
   ]
 );
 
-// ================== PASSPORT GOOGLE ==================
-
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  passport.use(new GoogleStrategy({
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "/auth/google/callback"
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const email = profile.emails?.[0]?.value || "";
-        const nome = profile.displayName || "";
-        const foto = profile.photos?.[0]?.value || "";
-        const googleId = profile.id || "";
-
-        if (!email) {
-          return done(null, false, { message: "E-mail Google não encontrado." });
-        }
-
-        const usuarioCadastro = await findUsuarioCadastroByEmail(email);
-
-        if (!usuarioCadastro) {
-          return done(null, false, { message: "Seu e-mail ainda não possui cadastro no portal." });
-        }
-
-        const status = cadastroNormalizeLower(usuarioCadastro.status);
-        const cadastroPendente = cadastroNormalize(usuarioCadastro.cadastro_pendente);
-
-        if (status !== "ativo") {
-          return done(null, false, { message: "Seu cadastro está inativo ou ainda não foi aprovado." });
-        }
-
-        if (cadastroPendente !== "0") {
-          return done(null, false, { message: "Seu cadastro ainda está pendente de aprovação." });
-        }
-
-        await updateUsuarioGoogleInfoByEmail(email, {
-          nome,
-          foto,
-          google_id: googleId
-        });
-
-        const usuarioSessao = {
-          id: usuarioCadastro.id || googleId,
-          nome: usuarioCadastro.nome || nome,
-          email,
-          foto: foto || usuarioCadastro.foto || "",
-          google_id: googleId,
-          perfil: usuarioCadastro.nivel_acesso || "usuario",
-          cargo: usuarioCadastro.cargo || "",
-          nivel_acesso: usuarioCadastro.nivel_acesso || "",
-          area: usuarioCadastro.area || "",
-          unidade: usuarioCadastro.unidade || "",
-          empresa: usuarioCadastro.empresa || "",
-          status: usuarioCadastro.status || "",
-          permissoes: usuarioCadastro.permissoes || ""
-        };
-
-        return done(null, usuarioSessao);
-      } catch (error) {
-        console.error("Erro no Google OAuth:", error);
-        return done(error, null);
-      }
-    }
-  ));
-} else {
-  console.warn("Google OAuth desabilitado: GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET ausentes.");
-}
-
 // ================== HELPERS ==================
 
 function requireAuth(req, res, next) {
-  console.log("AUTH CHECK:", {
-    path: req.path,
-    userId: req.session.userId || null,
-    email: req.session.email || null,
-    perfil: req.session.perfil || null
-  });
-
   if (!req.session.userId) {
     return res.redirect("/login");
   }
-
   next();
 }
 
@@ -187,7 +126,12 @@ async function conectarSheets() {
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
 
-  return google.sheets({ version: "v4", auth });
+  const client = await auth.getClient();
+
+  return google.sheets({
+    version: "v4",
+    auth: client,
+  });
 }
 
 async function conectarSheetsEdicao() {
@@ -332,6 +276,255 @@ async function lerSheetChamada() {
   };
 }
 
+// ================== HELPERS CADASTRO ==================
+
+function cadastroNormalize(value) {
+  return String(value || "").trim();
+}
+
+function cadastroNormalizeLower(value) {
+  return cadastroNormalize(value).toLowerCase();
+}
+
+function sheetRowsToObjects(rows) {
+  if (!rows || !rows.length) return [];
+  const headers = rows[0].map((h) => cadastroNormalize(h));
+
+  return rows.slice(1).map((row) => {
+    const obj = {};
+    headers.forEach((header, index) => {
+      obj[header] = row[index] ?? "";
+    });
+    return obj;
+  });
+}
+
+function columnToLetter(column) {
+  let temp = "";
+  let letter = "";
+  while (column > 0) {
+    temp = (column - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    column = (column - temp - 1) / 26;
+  }
+  return letter;
+}
+
+async function getCadastroSheetObjects(range, writable = false) {
+  const sheets = writable ? await conectarSheetsEdicao() : await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CADASTRO_SHEET_ID,
+    range,
+  });
+
+  const rows = response.data.values || [];
+  return sheetRowsToObjects(rows);
+}
+
+async function getUsuariosCadastroSheet() {
+  return await getCadastroSheetObjects(CADASTRO_USUARIOS_RANGE, false);
+}
+
+async function getCargosCadastroSheet() {
+  return await getCadastroSheetObjects(CADASTRO_CARGOS_RANGE, false);
+}
+
+async function getNiveisCadastroSheet() {
+  return await getCadastroSheetObjects(CADASTRO_NIVEIS_RANGE, false);
+}
+
+async function findUsuarioCadastroByEmail(email) {
+  const usuarios = await getUsuariosCadastroSheet();
+  return (
+    usuarios.find(
+      (user) => cadastroNormalizeLower(user.email) === cadastroNormalizeLower(email)
+    ) || null
+  );
+}
+
+async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
+  const sheets = await conectarSheetsEdicao();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CADASTRO_SHEET_ID,
+    range: CADASTRO_USUARIOS_RANGE,
+  });
+
+  const rows = response.data.values || [];
+  if (!rows.length) return false;
+
+  const headers = rows[0].map((h) => cadastroNormalize(h));
+  const emailCol = headers.findIndex(
+    (h) => cadastroNormalizeLower(h) === "email"
+  );
+  const nomeCol = headers.findIndex(
+    (h) => cadastroNormalizeLower(h) === "nome"
+  );
+  const fotoCol = headers.findIndex(
+    (h) => cadastroNormalizeLower(h) === "foto"
+  );
+  const googleIdCol = headers.findIndex(
+    (h) => cadastroNormalizeLower(h) === "google_id"
+  );
+  const atualizadoCol = headers.findIndex(
+    (h) => cadastroNormalizeLower(h) === "atualizado_em"
+  );
+
+  if (emailCol === -1) return false;
+
+  const rowIndex = rows.findIndex((row, idx) => {
+    if (idx === 0) return false;
+    return cadastroNormalizeLower(row[emailCol]) === cadastroNormalizeLower(email);
+  });
+
+  if (rowIndex === -1) return false;
+
+  const sheetRowNumber = rowIndex + 1;
+  const now = new Date().toISOString();
+  const updates = [];
+
+  if (nomeCol !== -1 && googleProfile.nome) {
+    updates.push({
+      range: `usuarios!${columnToLetter(nomeCol + 1)}${sheetRowNumber}`,
+      values: [[googleProfile.nome]],
+    });
+  }
+
+  if (fotoCol !== -1) {
+    updates.push({
+      range: `usuarios!${columnToLetter(fotoCol + 1)}${sheetRowNumber}`,
+      values: [[googleProfile.foto || ""]],
+    });
+  }
+
+  if (googleIdCol !== -1) {
+    updates.push({
+      range: `usuarios!${columnToLetter(googleIdCol + 1)}${sheetRowNumber}`,
+      values: [[googleProfile.google_id || ""]],
+    });
+  }
+
+  if (atualizadoCol !== -1) {
+    updates.push({
+      range: `usuarios!${columnToLetter(atualizadoCol + 1)}${sheetRowNumber}`,
+      values: [[now]],
+    });
+  }
+
+  if (!updates.length) return true;
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: CADASTRO_SHEET_ID,
+    resource: {
+      valueInputOption: "USER_ENTERED",
+      data: updates,
+    },
+  });
+
+  return true;
+}
+
+// ================== PASSPORT GOOGLE ==================
+
+if (googleOAuthEnabled) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: GOOGLE_CALLBACK_URL,
+        passReqToCallback: true,
+      },
+      async (req, accessToken, refreshToken, profile, done) => {
+        try {
+          const email = profile?.emails?.[0]?.value || "";
+          const nome = profile?.displayName || "Usuário";
+          const foto = profile?.photos?.[0]?.value || "";
+          const googleId = profile?.id || "";
+          const isRegisterFlow = req.query.state === "register";
+
+          if (!email || !email.endsWith("@shopee.com")) {
+            return done(null, false, {
+              message: "Use seu e-mail corporativo @shopee.com.",
+            });
+          }
+
+          if (isRegisterFlow) {
+            return done(null, {
+              id: googleId,
+              nome,
+              email,
+              foto,
+              google_id: googleId,
+              perfil: "pre_cadastro",
+              _registerFlow: true,
+            });
+          }
+
+          const usuarioCadastro = await findUsuarioCadastroByEmail(email);
+
+          if (!usuarioCadastro) {
+            return done(null, false, {
+              message: "Seu e-mail ainda não possui cadastro no portal.",
+            });
+          }
+
+          const status = cadastroNormalizeLower(usuarioCadastro.status);
+          const cadastroPendente = cadastroNormalize(
+            usuarioCadastro.cadastro_pendente
+          );
+
+          if (status !== "ativo") {
+            return done(null, false, {
+              message: "Seu cadastro está inativo ou ainda não foi aprovado.",
+            });
+          }
+
+          if (cadastroPendente !== "0") {
+            return done(null, false, {
+              message: "Seu cadastro ainda está pendente de aprovação.",
+            });
+          }
+
+          await updateUsuarioGoogleInfoByEmail(email, {
+            nome,
+            foto,
+            google_id: googleId,
+          });
+
+          const usuarioSessao = {
+            id: usuarioCadastro.id || googleId,
+            nome: usuarioCadastro.nome || nome,
+            email,
+            foto: foto || usuarioCadastro.foto || "",
+            google_id: googleId,
+            perfil: usuarioCadastro.nivel_acesso || "usuario",
+            cargo: usuarioCadastro.cargo || "",
+            nivel_acesso: usuarioCadastro.nivel_acesso || "",
+            area: usuarioCadastro.area || "",
+            unidade: usuarioCadastro.unidade || "",
+            empresa: usuarioCadastro.empresa || "",
+            status: usuarioCadastro.status || "",
+            permissoes: usuarioCadastro.permissoes || "",
+          };
+
+          return done(null, usuarioSessao);
+        } catch (error) {
+          console.error("Erro no Google OAuth:", error);
+          return done(error, null);
+        }
+      }
+    )
+  );
+
+  console.log("Google OAuth habilitado.");
+} else {
+  console.warn(
+    "Google OAuth desabilitado: GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET ausentes."
+  );
+}
+
 // ================== ROTAS PÚBLICAS ==================
 
 app.get("/", (req, res) => {
@@ -344,13 +537,128 @@ app.get("/login", (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// ================== LOGIN GOOGLE ==================
+// ================== LOGIN / CADASTRO / GOOGLE ==================
+
+app.get("/cadastro", (req, res) => {
+  if (!req.session?.preCadastroUser) {
+    return res.redirect("/auth/google/register");
+  }
+
+  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
+});
+
+app.get("/api/login-status", (req, res) => {
+  const erro = req.session?.loginError || "";
+  req.session.loginError = "";
+  return res.json({ erro });
+});
+
+app.get("/api/cargos", async (req, res) => {
+  try {
+    const cargos = await getCargosCadastroSheet();
+    const ativos = cargos.filter(
+      (item) => cadastroNormalizeLower(item.status) === "ativo"
+    );
+    return res.json(ativos);
+  } catch (err) {
+    console.error("Erro ao buscar cargos:", err);
+    return res.status(500).json({ erro: "Erro ao buscar cargos" });
+  }
+});
+
+app.get("/api/niveis-acesso", async (req, res) => {
+  try {
+    const niveis = await getNiveisCadastroSheet();
+    const ativos = niveis.filter(
+      (item) => cadastroNormalizeLower(item.status) === "ativo"
+    );
+    return res.json(ativos);
+  } catch (err) {
+    console.error("Erro ao buscar níveis de acesso:", err);
+    return res.status(500).json({ erro: "Erro ao buscar níveis de acesso" });
+  }
+});
+
+app.get("/api/pre-cadastro-user", (req, res) => {
+  const preUser = req.session?.preCadastroUser || null;
+  if (!preUser) {
+    return res.status(401).json({ erro: "Usuário de pré-cadastro não autenticado." });
+  }
+  return res.json(preUser);
+});
+
+app.post("/api/usuarios/cadastrar", async (req, res) => {
+  try {
+    const dados = req.body || {};
+    const now = new Date().toISOString();
+
+    if (!cadastroNormalize(dados.nome) || !cadastroNormalize(dados.email)) {
+      return res.status(400).json({ erro: "Nome e e-mail são obrigatórios." });
+    }
+
+    if (!cadastroNormalize(dados.cargo)) {
+      return res.status(400).json({ erro: "Cargo é obrigatório." });
+    }
+
+    if (!cadastroNormalize(dados.nivel_acesso)) {
+      return res.status(400).json({ erro: "Nível de acesso é obrigatório." });
+    }
+
+    const existente = await findUsuarioCadastroByEmail(dados.email);
+    if (existente) {
+      return res.status(400).json({
+        erro: "Já existe um cadastro para este e-mail.",
+      });
+    }
+
+    const sheets = await conectarSheetsEdicao();
+    const novoId = String(Date.now());
+
+    const novaLinha = [
+      novoId,                     // id
+      dados.nome || "",           // nome
+      dados.email || "",          // email
+      dados.login || "",          // login
+      "",                         // senha
+      dados.cargo || "",          // cargo
+      dados.nivel_acesso || "",   // nivel_acesso
+      "pendente",                 // status
+      dados.area || "",           // area
+      dados.unidade || "",        // unidade
+      "",                         // permissoes
+      0,                          // aprovador
+      1,                          // cadastro_pendente
+      dados.foto || "",           // foto
+      dados.google_id || "",      // google_id
+      "",                         // telefone
+      "",                         // matricula
+      dados.empresa || "",        // empresa
+      "",                         // observacoes
+      now,                        // criado_em
+      now                         // atualizado_em
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CADASTRO_SHEET_ID,
+      range: "usuarios!A1",
+      valueInputOption: "USER_ENTERED",
+      resource: {
+        values: [novaLinha],
+      },
+    });
+
+    req.session.preCadastroUser = null;
+
+    return res.json({ sucesso: true });
+  } catch (err) {
+    console.error("Erro ao cadastrar usuário:", err);
+    return res.status(500).json({ erro: "Erro ao cadastrar usuário" });
+  }
+});
 
 app.get("/auth/google", (req, res, next) => {
   if (!googleOAuthEnabled) {
-    return res
-      .status(503)
-      .send("Login Google não configurado no servidor.");
+    return res.status(503).send("Login Google não configurado no servidor.");
   }
 
   return passport.authenticate("google", {
@@ -359,39 +667,68 @@ app.get("/auth/google", (req, res, next) => {
   })(req, res, next);
 });
 
+app.get("/auth/google/register", (req, res, next) => {
+  if (!googleOAuthEnabled) {
+    return res.status(503).send("Login Google não configurado no servidor.");
+  }
+
+  return passport.authenticate("google", {
+    scope: ["openid", "profile", "email"],
+    session: false,
+    state: "register",
+  })(req, res, next);
+});
+
 app.get("/auth/google/callback", (req, res, next) => {
   if (!googleOAuthEnabled) {
     return res.redirect("/login");
   }
 
-  return passport.authenticate("google", {
-    failureRedirect: "/login",
-    session: false,
+  return passport.authenticate("google", { session: false }, (err, user, info) => {
+    if (err) {
+      console.error("Erro no callback Google:", err);
+      req.session.loginError = "Erro ao autenticar com Google.";
+      return res.redirect("/login");
+    }
+
+    if (!user) {
+      req.session.loginError = info?.message || "Acesso não autorizado.";
+      return res.redirect("/login");
+    }
+
+    if (user._registerFlow) {
+      req.session.preCadastroUser = {
+        nome: user.nome || "",
+        email: user.email || "",
+        foto: user.foto || "",
+        google_id: user.google_id || "",
+      };
+      req.session.loginError = "";
+      return res.redirect("/cadastro");
+    }
+
+    req.session.loginError = "";
+    req.session.preCadastroUser = null;
+    req.session.userId = user.id;
+    req.session.nome = user.nome;
+    req.session.email = user.email;
+    req.session.perfil = user.perfil;
+    req.session.foto = user.foto || "";
+    req.session.google_id = user.google_id || "";
+    req.session.cargo = user.cargo || "";
+    req.session.nivel_acesso = user.nivel_acesso || "";
+    req.session.area = user.area || "";
+    req.session.unidade = user.unidade || "";
+    req.session.empresa = user.empresa || "";
+    req.session.permissoes = user.permissoes || "";
+
+    return res.redirect("/portal");
   })(req, res, next);
-}, (req, res) => {
-  if (!req.user) return res.redirect("/login");
-
-  if (req.user.status !== "aprovado") {
-    req.session.destroy(() => {
-      return res.send("Seu acesso ainda está pendente de aprovação pelo Security.");
-    });
-    return;
-  }
-
-  req.session.userId = req.user.id;
-  req.session.nome = req.user.nome;
-  req.session.email = req.user.email;
-  req.session.perfil = req.user.perfil;
-  req.session.foto = req.user.foto || "";
-
-  return res.redirect("/portal");
 });
 
-// ================== CADASTRO ==================
-
-app.get("/cadastro", (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
-});
+// ================== CADASTRO / LOGIN LOCAL ANTIGOS ==================
+// Mantidos só para não quebrar se você ainda usar em algum ponto.
+// Se não usar mais login local, depois podemos remover.
 
 app.post("/cadastro", async (req, res) => {
   const { nome, email, senha } = req.body;
@@ -415,8 +752,6 @@ app.post("/cadastro", async (req, res) => {
     }
   );
 });
-
-// ================== LOGIN LOCAL ==================
 
 app.post("/login", (req, res) => {
   const { email, senha } = req.body;
@@ -474,15 +809,32 @@ app.get("/chamada-agentes", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "chamada-agentes.html"));
 });
 
-app.get("/api/me", requireAuth, (req, res) => {
-  return res.json({
-    id: req.session.userId,
-    nome: req.session.nome || "",
-    email: req.session.email || "",
-    perfil: req.session.perfil || "",
-    foto: req.session.foto || "",
-  });
+app.get("/api/me", (req, res) => {
+  if (req.session?.userId) {
+    return res.json({
+      id: req.session.userId,
+      nome: req.session.nome || "",
+      email: req.session.email || "",
+      perfil: req.session.perfil || "",
+      foto: req.session.foto || "",
+      google_id: req.session.google_id || "",
+      cargo: req.session.cargo || "",
+      nivel_acesso: req.session.nivel_acesso || "",
+      area: req.session.area || "",
+      unidade: req.session.unidade || "",
+      empresa: req.session.empresa || "",
+      permissoes: req.session.permissoes || "",
+    });
+  }
+
+  if (req.session?.preCadastroUser) {
+    return res.json(req.session.preCadastroUser);
+  }
+
+  return res.status(401).json({ erro: "Não autenticado" });
 });
+
+// ================== GOOGLE SHEETS DASHBOARD AV ==================
 
 // ================== GOOGLE SHEETS DASHBOARD AV ==================
 
@@ -2604,121 +2956,6 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
   }
 });
 
-// ================== FUNÇÕES AUXILIARES ==================
-
-
-const CADASTRO_SHEET_ID = "1iDkB1uHIIXv7qnVGAWYYPrabl_g1-V_435lYdx66Crc";
-const CADASTRO_USUARIOS_RANGE = "usuarios!A1:Z5000";
-
-function normalizeText(value) {
-  return String(value || "").trim();
-}
-
-function normalizeLower(value) {
-  return normalizeText(value).toLowerCase();
-}
-
-function sheetRowsToObjects(rows) {
-  if (!rows || !rows.length) return [];
-  const headers = rows[0].map(h => normalizeText(h));
-
-  return rows.slice(1).map(row => {
-    const obj = {};
-    headers.forEach((header, index) => {
-      obj[header] = row[index] ?? "";
-    });
-    return obj;
-  });
-}
-
-async function getUsuariosCadastroSheet() {
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: CADASTRO_SHEET_ID,
-    range: CADASTRO_USUARIOS_RANGE
-  });
-
-  const rows = response.data.values || [];
-  return sheetRowsToObjects(rows);
-}
-
-async function findUsuarioByEmail(email) {
-  const usuarios = await getUsuariosCadastroSheet();
-  return usuarios.find(user => normalizeLower(user.email) === normalizeLower(email)) || null;
-}
-
-async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: CADASTRO_SHEET_ID,
-    range: CADASTRO_USUARIOS_RANGE
-  });
-
-  const rows = response.data.values || [];
-  if (!rows.length) return false;
-
-  const headers = rows[0].map(h => normalizeText(h));
-  const emailCol = headers.findIndex(h => normalizeLower(h) === "email");
-  const fotoCol = headers.findIndex(h => normalizeLower(h) === "foto");
-  const googleIdCol = headers.findIndex(h => normalizeLower(h) === "google_id");
-  const atualizadoCol = headers.findIndex(h => normalizeLower(h) === "atualizado_em");
-
-  if (emailCol === -1) return false;
-
-  const rowIndex = rows.findIndex((row, idx) => {
-    if (idx === 0) return false;
-    return normalizeLower(row[emailCol]) === normalizeLower(email);
-  });
-
-  if (rowIndex === -1) return false;
-
-  const sheetRowNumber = rowIndex + 1;
-  const now = new Date().toISOString();
-
-  const updates = [];
-
-  if (fotoCol !== -1) {
-    updates.push({
-      range: `usuarios!${columnToLetter(fotoCol + 1)}${sheetRowNumber}`,
-      values: [[googleProfile.foto || ""]]
-    });
-  }
-
-  if (googleIdCol !== -1) {
-    updates.push({
-      range: `usuarios!${columnToLetter(googleIdCol + 1)}${sheetRowNumber}`,
-      values: [[googleProfile.google_id || ""]]
-    });
-  }
-
-  if (atualizadoCol !== -1) {
-    updates.push({
-      range: `usuarios!${columnToLetter(atualizadoCol + 1)}${sheetRowNumber}`,
-      values: [[now]]
-    });
-  }
-
-  if (!updates.length) return true;
-
-  await sheets.spreadsheets.values.batchUpdate({
-    spreadsheetId: CADASTRO_SHEET_ID,
-    resource: {
-      valueInputOption: "USER_ENTERED",
-      data: updates
-    }
-  });
-
-  return true;
-}
-
-function columnToLetter(column) {
-  let temp = "";
-  let letter = "";
-  while (column > 0) {
-    temp = (column - 1) % 26;
-    letter = String.fromCharCode(temp + 65) + letter;
-    column = (column - temp - 1) / 26;
-  }
-  return letter;
-}
 
 
 // ================== SERVIDOR ==================

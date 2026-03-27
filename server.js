@@ -1899,6 +1899,19 @@ app.get("/api/access-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+function accessParseMultiValue(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map(v => accessNormalize(v))
+    .filter(Boolean);
+}
+
+function accessMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(accessNormalize(fieldValue));
+}
+
 // ================== DESLIGADOS DASHBOARD ==================
 
 app.get("/desligados", requireAuth, (req, res) => {

@@ -3,243 +3,646 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Aprovações</title>
-  <link rel="stylesheet" href="/portal.css" />
+  <title>Aprovações e Gestão de Usuários</title>
   <style>
-    .aprovacoes-page {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 24px 20px 40px;
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
     }
 
-    .aprovacoes-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 22px;
+    :root{
+      --bg:#07111f;
+      --panel:#182436;
+      --panel-2:#111827;
+      --border:rgba(255,255,255,0.08);
+      --text:#f8fafc;
+      --muted:#94a3b8;
+      --accent:#ff6a00;
+      --success:#22c55e;
+      --danger:#ef4444;
+      --warning:#f59e0b;
     }
 
-    .aprovacoes-title {
-      font-size: 30px;
-      font-weight: 800;
-      color: #ff7a1a;
+    body{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 30%),
+        linear-gradient(180deg,#46505d 0%, #111827 20%, #07111f 46%, #07111f 100%);
+      color:var(--text);
+      padding:20px;
     }
 
-    .aprovacoes-subtitle {
-      color: #e5e7eb;
-      font-size: 14px;
-      margin-top: 6px;
+    .page{
+      max-width:1400px;
+      margin:0 auto;
     }
 
-    .btn-voltar {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(90deg, #1f2b44 0%, #13213a 100%);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 12px 16px;
-      font-weight: 800;
-      min-width: 170px;
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:18px;
     }
 
-    .aprovacoes-grid {
-      display: grid;
-      gap: 16px;
+    .title h1{
+      font-size:28px;
+      color:var(--accent);
+      margin-bottom:4px;
     }
 
-    .aprovacao-card {
-      background: linear-gradient(135deg, #1c2a45 0%, #13213a 100%);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+    .title p{
+      font-size:13px;
+      color:var(--muted);
     }
 
-    .aprovacao-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 14px;
-      flex-wrap: wrap;
+    .btn{
+      height:40px;
+      border:none;
+      border-radius:12px;
+      padding:0 16px;
+      font-size:13px;
+      font-weight:800;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
     }
 
-    .aprovacao-nome {
-      font-size: 20px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 6px;
+    .btn-primary{
+      background:linear-gradient(135deg,var(--accent),#ff4500);
+      color:#fff;
     }
 
-    .aprovacao-email {
-      font-size: 14px;
-      color: #d1d5db;
-      margin-bottom: 6px;
+    .btn-secondary{
+      background:rgba(255,255,255,0.08);
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.10);
     }
 
-    .aprovacao-meta {
-      font-size: 13px;
-      color: #9ca3af;
+    .btn-success{
+      background:var(--success);
+      color:#fff;
     }
 
-    .aprovacao-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .btn-danger{
+      background:var(--danger);
+      color:#fff;
     }
 
-    .btn-aprovar {
-      background: linear-gradient(90deg, #ff7a1a 0%, #ff4d4d 100%);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 12px 18px;
-      font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
+    .panel{
+      background:rgba(24,36,54,0.95);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+      margin-bottom:16px;
+      box-shadow:0 10px 28px rgba(0,0,0,0.28);
     }
 
-    .btn-aprovar:hover {
-      opacity: 0.95;
+    .panel h2{
+      font-size:18px;
+      margin-bottom:12px;
     }
 
-    .empty-box {
-      background: linear-gradient(135deg, #1c2a45 0%, #13213a 100%);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 22px;
-      padding: 24px;
-      color: #d1d5db;
-      font-size: 15px;
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0, 1fr));
+      gap:12px;
+      margin-bottom:18px;
     }
 
-    .loading-box {
-      background: linear-gradient(135deg, #1c2a45 0%, #13213a 100%);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 22px;
-      padding: 24px;
-      color: #fff;
-      font-size: 15px;
+    .stat-card{
+      background:rgba(255,255,255,0.04);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
     }
 
-    @media (max-width: 780px) {
-      .aprovacoes-top {
-        flex-direction: column;
-        align-items: stretch;
+    .stat-card .label{
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+
+    .stat-card .value{
+      font-size:28px;
+      font-weight:800;
+      color:var(--accent);
+    }
+
+    .toolbar{
+      display:grid;
+      grid-template-columns:1.2fr .8fr .8fr .8fr auto;
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .toolbar input,
+    .toolbar select{
+      width:100%;
+      height:40px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:#0b1220;
+      color:#fff;
+      padding:0 12px;
+      font-size:13px;
+      outline:none;
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:14px;
+      background:#091322;
+      max-height:70vh;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1400px;
+    }
+
+    th, td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      text-align:left;
+      font-size:12px;
+      white-space:nowrap;
+      vertical-align:middle;
+    }
+
+    th{
+      background:#111c33;
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+
+    tr:hover td{
+      background:#13203b;
+    }
+
+    .status{
+      display:inline-block;
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      text-transform:uppercase;
+    }
+
+    .status.ativo{
+      background:rgba(34,197,94,0.18);
+      color:#86efac;
+    }
+
+    .status.pendente{
+      background:rgba(245,158,11,0.18);
+      color:#fcd34d;
+    }
+
+    .status.inativo{
+      background:rgba(239,68,68,0.18);
+      color:#fca5a5;
+    }
+
+    .inline-input,
+    .inline-select{
+      width:100%;
+      min-width:120px;
+      height:34px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:#0b1220;
+      color:#fff;
+      padding:0 10px;
+      font-size:12px;
+      outline:none;
+    }
+
+    .row-actions{
+      display:flex;
+      gap:8px;
+    }
+
+    .row-actions button{
+      height:34px;
+      padding:0 12px;
+      border:none;
+      border-radius:10px;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .message{
+      display:none;
+      margin-bottom:14px;
+      padding:12px 14px;
+      border-radius:12px;
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .message.show{
+      display:block;
+    }
+
+    .message.success{
+      background:rgba(34,197,94,0.12);
+      border:1px solid rgba(34,197,94,0.28);
+      color:#bbf7d0;
+    }
+
+    .message.error{
+      background:rgba(239,68,68,0.12);
+      border:1px solid rgba(239,68,68,0.28);
+      color:#fecaca;
+    }
+
+    .empty{
+      padding:18px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    @media (max-width: 1100px){
+      .stats{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
       }
 
-      .btn-voltar {
-        width: 100%;
+      .toolbar{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 700px){
+      .stats{
+        grid-template-columns:1fr;
+      }
+
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
       }
     }
   </style>
 </head>
 <body>
-  <div class="aprovacoes-page">
-    <div class="aprovacoes-top">
-      <div>
-        <div class="aprovacoes-title">Painel de Aprovações</div>
-        <div class="aprovacoes-subtitle">
-          Aprove ou acompanhe usuários pendentes no portal.
-        </div>
+  <div class="page">
+    <div class="topbar">
+      <div class="title">
+        <h1>Aprovações e Gestão de Usuários</h1>
+        <p>Gerencie acessos, aprove cadastros e edite permissões dos usuários.</p>
       </div>
 
-      <a href="/portal" class="btn-voltar">← Voltar ao portal</a>
+      <a href="/portal" class="btn btn-secondary">Voltar ao portal</a>
     </div>
 
-    <div id="listaPendentes" class="aprovacoes-grid">
-      <div class="loading-box">Carregando usuários pendentes...</div>
-    </div>
+    <div id="messageBox" class="message"></div>
+
+    <section class="stats">
+      <div class="stat-card">
+        <div class="label">Total de usuários</div>
+        <div class="value" id="statTotal">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Pendentes</div>
+        <div class="value" id="statPendentes">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Ativos</div>
+        <div class="value" id="statAtivos">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Aprovadores</div>
+        <div class="value" id="statAprovadores">0</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Filtros</h2>
+      <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="Buscar por nome, e-mail, cargo, unidade..." />
+        <select id="statusFilter">
+          <option value="">Todos os status</option>
+          <option value="ativo">Ativo</option>
+          <option value="pendente">Pendente</option>
+          <option value="inativo">Inativo</option>
+        </select>
+        <select id="nivelFilter">
+          <option value="">Todos os níveis</option>
+        </select>
+        <select id="aprovadorFilter">
+          <option value="">Todos</option>
+          <option value="1">Somente aprovadores</option>
+          <option value="0">Não aprovadores</option>
+        </select>
+        <button class="btn btn-primary" id="refreshBtn">Atualizar</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Usuários</h2>
+      <div class="table-wrap" id="tableWrap">
+        <div class="empty">Carregando usuários...</div>
+      </div>
+    </section>
   </div>
 
   <script>
-    async function carregarPendentes() {
-      const container = document.getElementById("listaPendentes");
-      container.innerHTML = `<div class="loading-box">Carregando usuários pendentes...</div>`;
+    let usuarios = [];
+    let niveis = [];
+    let cargos = [];
+
+    const messageBox = document.getElementById("messageBox");
+    const tableWrap = document.getElementById("tableWrap");
+
+    function showMessage(type, text) {
+      messageBox.className = `message show ${type}`;
+      messageBox.textContent = text;
+    }
+
+    function clearMessage() {
+      messageBox.className = "message";
+      messageBox.textContent = "";
+    }
+
+    function normalize(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    async function carregarNiveis() {
+      const res = await fetch("/api/niveis-acesso");
+      niveis = await res.json();
+
+      const select = document.getElementById("nivelFilter");
+      select.innerHTML = `<option value="">Todos os níveis</option>`;
+
+      niveis.forEach((n) => {
+        const opt = document.createElement("option");
+        opt.value = n.nivel_acesso;
+        opt.textContent = n.nivel_acesso;
+        select.appendChild(opt);
+      });
+    }
+
+    async function carregarCargos() {
+      const res = await fetch("/api/cargos");
+      cargos = await res.json();
+    }
+
+    async function carregarUsuarios() {
+      clearMessage();
 
       try {
-        const res = await fetch("/api/aprovacoes/pendentes", {
-          credentials: "same-origin"
-        });
+        const res = await fetch("/api/usuarios");
+        const data = await res.json();
 
         if (!res.ok) {
-          throw new Error("Erro ao buscar pendentes");
+          throw new Error(data.erro || "Erro ao carregar usuários.");
         }
 
-        const users = await res.json();
-
-        if (!Array.isArray(users) || users.length === 0) {
-          container.innerHTML = `
-            <div class="empty-box">
-              Nenhum usuário pendente no momento.
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = users.map(user => `
-          <div class="aprovacao-card">
-            <div class="aprovacao-header">
-              <div>
-                <div class="aprovacao-nome">${escapeHtml(user.nome || "Sem nome")}</div>
-                <div class="aprovacao-email">${escapeHtml(user.email || "-")}</div>
-                <div class="aprovacao-meta">
-                  Perfil: ${escapeHtml(user.perfil || "usuario")} • Status: ${escapeHtml(user.status || "pendente")}
-                </div>
-              </div>
-
-              <div class="aprovacao-actions">
-                <button class="btn-aprovar" onclick="aprovarUsuario(${Number(user.id)})">
-                  Aprovar
-                </button>
-              </div>
-            </div>
-          </div>
-        `).join("");
+        usuarios = Array.isArray(data) ? data : [];
+        atualizarStats();
+        renderTabela();
       } catch (error) {
         console.error(error);
-        container.innerHTML = `
-          <div class="empty-box">
-            Erro ao carregar usuários pendentes.
-          </div>
-        `;
+        tableWrap.innerHTML = `<div class="empty">Erro ao carregar usuários.</div>`;
+        showMessage("error", error.message || "Erro ao carregar usuários.");
       }
+    }
+
+    function atualizarStats() {
+      const total = usuarios.length;
+      const pendentes = usuarios.filter((u) =>
+        normalize(u.status) === "pendente" || String(u.cadastro_pendente || "") === "1"
+      ).length;
+      const ativos = usuarios.filter((u) => normalize(u.status) === "ativo").length;
+      const aprovadores = usuarios.filter((u) => String(u.aprovador || "0") === "1").length;
+
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statPendentes").textContent = pendentes;
+      document.getElementById("statAtivos").textContent = ativos;
+      document.getElementById("statAprovadores").textContent = aprovadores;
+    }
+
+    function getUsuariosFiltrados() {
+      const search = normalize(document.getElementById("searchInput").value);
+      const status = normalize(document.getElementById("statusFilter").value);
+      const nivel = normalize(document.getElementById("nivelFilter").value);
+      const aprovador = normalize(document.getElementById("aprovadorFilter").value);
+
+      return usuarios.filter((u) => {
+        const text = [
+          u.nome,
+          u.email,
+          u.cargo,
+          u.nivel_acesso,
+          u.area,
+          u.unidade,
+          u.empresa
+        ].map(normalize).join(" ");
+
+        const okSearch = !search || text.includes(search);
+        const okStatus = !status || normalize(u.status) === status;
+        const okNivel = !nivel || normalize(u.nivel_acesso) === nivel;
+        const okAprovador = !aprovador || String(u.aprovador || "0") === aprovador;
+
+        return okSearch && okStatus && okNivel && okAprovador;
+      });
+    }
+
+    function statusBadge(status) {
+      const s = normalize(status);
+      return `<span class="status ${s || "pendente"}">${status || "pendente"}</span>`;
+    }
+
+    function renderTabela() {
+      const rows = getUsuariosFiltrados();
+
+      if (!rows.length) {
+        tableWrap.innerHTML = `<div class="empty">Nenhum usuário encontrado.</div>`;
+        return;
+      }
+
+      const cargoOptions = cargos
+        .map((c) => `<option value="${c.cargo}">${c.cargo}</option>`)
+        .join("");
+
+      const nivelOptions = niveis
+        .map((n) => `<option value="${n.nivel_acesso}">${n.nivel_acesso}</option>`)
+        .join("");
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Cargo</th>
+              <th>Nível</th>
+              <th>Área</th>
+              <th>Unidade</th>
+              <th>Empresa</th>
+              <th>Status</th>
+              <th>Aprovador</th>
+              <th>Pendente</th>
+              <th>Criado em</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      rows.forEach((u) => {
+        const id = String(u.id || "");
+        const isPendente = normalize(u.status) === "pendente" || String(u.cadastro_pendente || "0") === "1";
+
+        html += `
+          <tr>
+            <td>${u.nome || ""}</td>
+            <td>${u.email || ""}</td>
+            <td>
+              <select class="inline-select" data-field="cargo" data-id="${id}">
+                <option value="">Selecione</option>
+                ${cargoOptions}
+              </select>
+            </td>
+            <td>
+              <select class="inline-select" data-field="nivel_acesso" data-id="${id}">
+                <option value="">Selecione</option>
+                ${nivelOptions}
+              </select>
+            </td>
+            <td>
+              <input class="inline-input" data-field="area" data-id="${id}" value="${u.area || ""}" />
+            </td>
+            <td>
+              <input class="inline-input" data-field="unidade" data-id="${id}" value="${u.unidade || ""}" />
+            </td>
+            <td>
+              <input class="inline-input" data-field="empresa" data-id="${id}" value="${u.empresa || ""}" />
+            </td>
+            <td>
+              <select class="inline-select" data-field="status" data-id="${id}">
+                <option value="ativo">ativo</option>
+                <option value="pendente">pendente</option>
+                <option value="inativo">inativo</option>
+              </select>
+            </td>
+            <td>
+              <select class="inline-select" data-field="aprovador" data-id="${id}">
+                <option value="0">0</option>
+                <option value="1">1</option>
+              </select>
+            </td>
+            <td>
+              <select class="inline-select" data-field="cadastro_pendente" data-id="${id}">
+                <option value="0">0</option>
+                <option value="1">1</option>
+              </select>
+            </td>
+            <td>${u.criado_em || ""}</td>
+            <td>
+              <div class="row-actions">
+                ${isPendente ? `<button class="btn-success" onclick="aprovarUsuario('${id}')">Aprovar</button>` : ""}
+                <button class="btn-primary" onclick="salvarUsuario('${id}')">Salvar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `</tbody></table>`;
+      tableWrap.innerHTML = html;
+
+      rows.forEach((u) => {
+        setValue("cargo", u.id, u.cargo || "");
+        setValue("nivel_acesso", u.id, u.nivel_acesso || "");
+        setValue("status", u.id, u.status || "pendente");
+        setValue("aprovador", u.id, String(u.aprovador || "0"));
+        setValue("cadastro_pendente", u.id, String(u.cadastro_pendente || "0"));
+      });
+    }
+
+    function setValue(field, id, value) {
+      const el = document.querySelector(`[data-field="${field}"][data-id="${id}"]`);
+      if (el) el.value = value;
     }
 
     async function aprovarUsuario(id) {
+      clearMessage();
+
       try {
-        const res = await fetch(`/api/aprovacoes/aprovar/${id}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          credentials: "same-origin"
+        const res = await fetch(`/api/usuarios/aprovar/${id}`, {
+          method: "POST"
         });
 
-        const result = await res.json();
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || "Erro ao aprovar usuário.");
 
-        if (!res.ok || !result.success) {
-          throw new Error(result.error || "Erro ao aprovar usuário");
-        }
-
-        await carregarPendentes();
+        showMessage("success", "Usuário aprovado com sucesso.");
+        await carregarUsuarios();
       } catch (error) {
         console.error(error);
-        alert("Erro ao aprovar usuário.");
+        showMessage("error", error.message || "Erro ao aprovar usuário.");
       }
     }
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    async function salvarUsuario(id) {
+      clearMessage();
+
+      try {
+        const payload = {
+          cargo: document.querySelector(`[data-field="cargo"][data-id="${id}"]`)?.value || "",
+          nivel_acesso: document.querySelector(`[data-field="nivel_acesso"][data-id="${id}"]`)?.value || "",
+          area: document.querySelector(`[data-field="area"][data-id="${id}"]`)?.value || "",
+          unidade: document.querySelector(`[data-field="unidade"][data-id="${id}"]`)?.value || "",
+          empresa: document.querySelector(`[data-field="empresa"][data-id="${id}"]`)?.value || "",
+          status: document.querySelector(`[data-field="status"][data-id="${id}"]`)?.value || "",
+          aprovador: document.querySelector(`[data-field="aprovador"][data-id="${id}"]`)?.value || "0",
+          cadastro_pendente: document.querySelector(`[data-field="cadastro_pendente"][data-id="${id}"]`)?.value || "0"
+        };
+
+        const res = await fetch(`/api/usuarios/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || "Erro ao salvar usuário.");
+
+        showMessage("success", "Usuário atualizado com sucesso.");
+        await carregarUsuarios();
+      } catch (error) {
+        console.error(error);
+        showMessage("error", error.message || "Erro ao salvar usuário.");
+      }
     }
 
-    carregarPendentes();
+    document.getElementById("searchInput").addEventListener("input", renderTabela);
+    document.getElementById("statusFilter").addEventListener("change", renderTabela);
+    document.getElementById("nivelFilter").addEventListener("change", renderTabela);
+    document.getElementById("aprovadorFilter").addEventListener("change", renderTabela);
+    document.getElementById("refreshBtn").addEventListener("click", carregarUsuarios);
+
+    async function init() {
+      await carregarCargos();
+      await carregarNiveis();
+      await carregarUsuarios();
+    }
+
+    init();
   </script>
 </body>
 </html>

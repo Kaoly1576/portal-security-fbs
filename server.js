@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS registros (
 )
 `);
 
-// ================== CRIAR APROVADOR ==================
+// ================== CRIAR APROVADOR LEGADO SQLITE ==================
 
 const senhaHashAdmin = bcrypt.hashSync("Kaoly1576;", 10);
 
@@ -103,7 +103,7 @@ db.run(
   ]
 );
 
-// ================== HELPERS ==================
+// ================== HELPERS GERAIS ==================
 
 function requireAuth(req, res, next) {
   if (!req.session.userId) {
@@ -114,9 +114,23 @@ function requireAuth(req, res, next) {
 
 function requireAprovador(req, res, next) {
   if (!req.session.userId) return res.redirect("/login");
-  if (req.session.perfil !== "aprovador") {
+
+  const perfil = String(req.session.perfil || "").toLowerCase();
+  const aprovador = String(req.session.aprovador || "0");
+  const nivel = String(req.session.nivel_acesso || "").toLowerCase();
+
+  const podeAprovar =
+    aprovador === "1" ||
+    perfil === "aprovador" ||
+    perfil === "master" ||
+    perfil === "admin" ||
+    nivel === "master" ||
+    nivel === "admin";
+
+  if (!podeAprovar) {
     return res.status(403).send("Acesso negado.");
   }
+
   next();
 }
 
@@ -276,7 +290,7 @@ async function lerSheetChamada() {
   };
 }
 
-// ================== HELPERS CADASTRO ==================
+// ================== HELPERS CADASTRO / PLANILHA ==================
 
 function cadastroNormalize(value) {
   return String(value || "").trim();
@@ -425,6 +439,26 @@ async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
   return true;
 }
 
+async function getUsuariosSheetRaw() {
+  const sheets = await conectarSheetsEdicao();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CADASTRO_SHEET_ID,
+    range: CADASTRO_USUARIOS_RANGE,
+  });
+
+  const rows = response.data.values || [];
+  const headers = rows[0] || [];
+
+  return { sheets, rows, headers };
+}
+
+function findHeaderIndex(headers, headerName) {
+  return headers.findIndex(
+    (h) => cadastroNormalizeLower(h) === cadastroNormalizeLower(headerName)
+  );
+}
+
 // ================== PASSPORT GOOGLE ==================
 
 if (googleOAuthEnabled) {
@@ -507,6 +541,7 @@ if (googleOAuthEnabled) {
             empresa: usuarioCadastro.empresa || "",
             status: usuarioCadastro.status || "",
             permissoes: usuarioCadastro.permissoes || "",
+            aprovador: usuarioCadastro.aprovador || "0",
           };
 
           return done(null, usuarioSessao);
@@ -621,20 +656,17 @@ app.post("/api/usuarios/cadastrar", async (req, res) => {
       dados.login || "",          // login
       "",                         // senha
       dados.cargo || "",          // cargo
-      dados.nivel_acesso || "",   // nivel_acesso
-      "pendente",                 // status
       dados.area || "",           // area
+      "pendente",                 // status
+      dados.nivel_acesso || "",   // nivel_acesso
       dados.unidade || "",        // unidade
+      dados.google_id || "",      // google_id
       "",                         // permissoes
       0,                          // aprovador
-      1,                          // cadastro_pendente
       dados.foto || "",           // foto
-      dados.google_id || "",      // google_id
-      "",                         // telefone
-      "",                         // matricula
-      dados.empresa || "",        // empresa
-      "",                         // observacoes
+      1,                          // cadastro_pendente
       now,                        // criado_em
+      dados.empresa || "",        // empresa
       now                         // atualizado_em
     ];
 
@@ -721,14 +753,13 @@ app.get("/auth/google/callback", (req, res, next) => {
     req.session.unidade = user.unidade || "";
     req.session.empresa = user.empresa || "";
     req.session.permissoes = user.permissoes || "";
+    req.session.aprovador = user.aprovador || "0";
 
     return res.redirect("/portal");
   })(req, res, next);
 });
 
-// ================== CADASTRO / LOGIN LOCAL ANTIGOS ==================
-// Mantidos só para não quebrar se você ainda usar em algum ponto.
-// Se não usar mais login local, depois podemos remover.
+// ================== LOGIN LOCAL LEGADO ==================
 
 app.post("/cadastro", async (req, res) => {
   const { nome, email, senha } = req.body;
@@ -824,6 +855,7 @@ app.get("/api/me", (req, res) => {
       unidade: req.session.unidade || "",
       empresa: req.session.empresa || "",
       permissoes: req.session.permissoes || "",
+      aprovador: req.session.aprovador || "0",
     });
   }
 
@@ -833,6 +865,197 @@ app.get("/api/me", (req, res) => {
 
   return res.status(401).json({ erro: "Não autenticado" });
 });
+
+// ================== APROVAÇÕES / GESTÃO USUÁRIOS ==================
+
+app.get("/aprovacoes", requireAprovador, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "aprovacoes.html"));
+});
+
+app.get("/api/usuarios", requireAprovador, async (req, res) => {
+  try {
+    const usuarios = await getUsuariosCadastroSheet();
+
+    const ordenados = usuarios.sort((a, b) => {
+      const aNome = cadastroNormalize(a.nome).toLowerCase();
+      const bNome = cadastroNormalize(b.nome).toLowerCase();
+      return aNome.localeCompare(bNome, "pt-BR");
+    });
+
+    return res.json(ordenados);
+  } catch (err) {
+    console.error("Erro ao listar usuários:", err);
+    return res.status(500).json({ erro: "Erro ao listar usuários" });
+  }
+});
+
+app.get("/api/usuarios/pendentes", requireAprovador, async (req, res) => {
+  try {
+    const usuarios = await getUsuariosCadastroSheet();
+
+    const pendentes = usuarios.filter((u) => {
+      const status = cadastroNormalizeLower(u.status);
+      const cadastroPendente = cadastroNormalize(u.cadastro_pendente);
+      return status === "pendente" || cadastroPendente === "1";
+    });
+
+    return res.json(pendentes);
+  } catch (err) {
+    console.error("Erro ao listar pendentes:", err);
+    return res.status(500).json({ erro: "Erro ao listar pendentes" });
+  }
+});
+
+app.post("/api/usuarios/aprovar/:id", requireAprovador, async (req, res) => {
+  try {
+    const id = String(req.params.id || "").trim();
+    if (!id) {
+      return res.status(400).json({ erro: "ID inválido." });
+    }
+
+    const { sheets, rows, headers } = await getUsuariosSheetRaw();
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Planilha vazia." });
+    }
+
+    const idCol = findHeaderIndex(headers, "id");
+    const statusCol = findHeaderIndex(headers, "status");
+    const cadastroPendenteCol = findHeaderIndex(headers, "cadastro_pendente");
+    const atualizadoCol = findHeaderIndex(headers, "atualizado_em");
+
+    if (idCol === -1 || statusCol === -1 || cadastroPendenteCol === -1) {
+      return res.status(500).json({
+        erro: "Cabeçalhos obrigatórios não encontrados na planilha.",
+      });
+    }
+
+    const rowIndex = rows.findIndex((row, idx) => {
+      if (idx === 0) return false;
+      return cadastroNormalize(row[idCol]) === id;
+    });
+
+    if (rowIndex === -1) {
+      return res.status(404).json({ erro: "Usuário não encontrado." });
+    }
+
+    const sheetRowNumber = rowIndex + 1;
+    const updates = [
+      {
+        range: `usuarios!${columnToLetter(statusCol + 1)}${sheetRowNumber}`,
+        values: [["ativo"]],
+      },
+      {
+        range: `usuarios!${columnToLetter(cadastroPendenteCol + 1)}${sheetRowNumber}`,
+        values: [["0"]],
+      },
+    ];
+
+    if (atualizadoCol !== -1) {
+      updates.push({
+        range: `usuarios!${columnToLetter(atualizadoCol + 1)}${sheetRowNumber}`,
+        values: [[new Date().toISOString()]],
+      });
+    }
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: CADASTRO_SHEET_ID,
+      resource: {
+        valueInputOption: "USER_ENTERED",
+        data: updates,
+      },
+    });
+
+    return res.json({ sucesso: true });
+  } catch (err) {
+    console.error("Erro ao aprovar usuário:", err);
+    return res.status(500).json({ erro: "Erro ao aprovar usuário" });
+  }
+});
+
+app.put("/api/usuarios/:id", requireAprovador, async (req, res) => {
+  try {
+    const id = String(req.params.id || "").trim();
+    const dados = req.body || {};
+
+    if (!id) {
+      return res.status(400).json({ erro: "ID inválido." });
+    }
+
+    const { sheets, rows, headers } = await getUsuariosSheetRaw();
+
+    if (!rows.length) {
+      return res.status(404).json({ erro: "Planilha vazia." });
+    }
+
+    const idCol = findHeaderIndex(headers, "id");
+    if (idCol === -1) {
+      return res.status(500).json({ erro: "Coluna id não encontrada." });
+    }
+
+    const rowIndex = rows.findIndex((row, idx) => {
+      if (idx === 0) return false;
+      return cadastroNormalize(row[idCol]) === id;
+    });
+
+    if (rowIndex === -1) {
+      return res.status(404).json({ erro: "Usuário não encontrado." });
+    }
+
+    const sheetRowNumber = rowIndex + 1;
+
+    const editableFields = [
+      "cargo",
+      "nivel_acesso",
+      "area",
+      "unidade",
+      "empresa",
+      "status",
+      "aprovador",
+      "permissoes",
+      "cadastro_pendente",
+    ];
+
+    const updates = [];
+
+    editableFields.forEach((field) => {
+      const col = findHeaderIndex(headers, field);
+      if (col !== -1 && Object.prototype.hasOwnProperty.call(dados, field)) {
+        updates.push({
+          range: `usuarios!${columnToLetter(col + 1)}${sheetRowNumber}`,
+          values: [[dados[field] ?? ""]],
+        });
+      }
+    });
+
+    const atualizadoCol = findHeaderIndex(headers, "atualizado_em");
+    if (atualizadoCol !== -1) {
+      updates.push({
+        range: `usuarios!${columnToLetter(atualizadoCol + 1)}${sheetRowNumber}`,
+        values: [[new Date().toISOString()]],
+      });
+    }
+
+    if (!updates.length) {
+      return res.status(400).json({ erro: "Nenhum campo válido para atualizar." });
+    }
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: CADASTRO_SHEET_ID,
+      resource: {
+        valueInputOption: "USER_ENTERED",
+        data: updates,
+      },
+    });
+
+    return res.json({ sucesso: true });
+  } catch (err) {
+    console.error("Erro ao atualizar usuário:", err);
+    return res.status(500).json({ erro: "Erro ao atualizar usuário" });
+  }
+});
+
+// ================== GOOGLE SHEETS DASHBOARD AV ==================
 
 // ================== GOOGLE SHEETS DASHBOARD AV ==================
 

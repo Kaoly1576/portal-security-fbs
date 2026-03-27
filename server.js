@@ -1916,7 +1916,6 @@ app.get("/desligados", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "desligados.html"));
 });
 
-// COLOQUE AQUI O ID DA PLANILHA DE DESLIGADOS
 const DESLIGADOS_SPREADSHEET_ID = "14U1f4ZdLKMWvARdkqmCxp4SOLuTdDjpA68UJsNwpXGY";
 const DESLIGADOS_RANGE = "'Desligados'!A1:Z200000";
 
@@ -1943,7 +1942,10 @@ function dNormalize(value) {
 }
 
 function dNormalizeLower(value) {
-  return dNormalize(value).toLowerCase();
+  return dNormalize(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 function parseDateBRDesligados(value) {
@@ -2001,6 +2003,9 @@ async function carregarDesligadosRaw() {
     obj._data = parseDateBRDesligados(obj[DESLIGADOS_COLUMNS.data]);
     obj._mesRef = obj._data
       ? `${obj._data.getFullYear()}-${String(obj._data.getMonth() + 1).padStart(2, "0")}`
+      : "";
+    obj._diaRef = obj._data
+      ? String(obj._data.getDate()).padStart(2, "0")
       : "";
 
     return obj;
@@ -2206,9 +2211,12 @@ app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
       empresas,
       unidades,
       taxaBloqueio,
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+      ultimaAtualizacao: new Date(
+        Date.now() - new Date().getTimezoneOffset() * 60000
+      ).toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       }),
     });
   } catch (error) {
@@ -2229,6 +2237,16 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const unidadeMap = groupCount(filtrados, DESLIGADOS_COLUMNS.unidade);
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
+
+    const dayMap = {};
+    filtrados.forEach((row) => {
+      if (!row._diaRef) return;
+      dayMap[row._diaRef] = (dayMap[row._diaRef] || 0) + 1;
+    });
+
+    const diaLabels = Array.from({ length: 31 }, (_, i) =>
+      String(i + 1).padStart(2, "0")
+    );
 
     const monthMap = {};
     filtrados.forEach((row) => {
@@ -2275,10 +2293,17 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
       unidade: unidadeMap,
       empresa: empresaMap,
       motivo: motivoMap,
+
+      porDia: {
+        labels: diaLabels,
+        values: diaLabels.map((label) => dayMap[label] || 0),
+      },
+
       porMes: {
         labels: monthLabels,
         values: monthLabels.map((label) => monthMap[label]),
       },
+
       tabelaUnidade: Object.entries(tabelaUnidade)
         .sort((a, b) => b[1].total - a[1].total)
         .slice(0, 50)
@@ -2288,6 +2313,7 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
           enviados: info.enviados,
           bloqueados: info.bloqueados,
         })),
+
       tabelaEmpresa: Object.entries(tabelaEmpresa)
         .sort((a, b) => b[1].total - a[1].total)
         .slice(0, 50)

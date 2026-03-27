@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DESLIGADOS - Dashboard</title>
-
+  <title>Desligados - Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <link rel="stylesheet" href="/desligados.css" />
 </head>
 <body>
@@ -32,7 +30,7 @@
         <h2>Dashboard de Desligados</h2>
         <p>
           Monitoramento de desligamentos, envio ao condomínio, bloqueio efetivado,
-          empresa, cargo, motivo e controle interno.
+          empresa, cargo, unidade, motivo e controle interno.
         </p>
       </div>
 
@@ -56,57 +54,57 @@
 
         <div class="field">
           <label>Unidade</label>
-          <div class="multi-select" id="multiUnidade">
-            <div class="multi-select-trigger" id="triggerUnidade">Todas</div>
-            <div class="multi-select-menu" id="menuUnidade"></div>
+          <div class="multi-select" id="multiUnidades">
+            <button type="button" class="multi-trigger" id="triggerUnidades">Todas</button>
+            <div class="multi-menu" id="menuUnidades"></div>
           </div>
         </div>
 
         <div class="field">
           <label>Empresa</label>
-          <div class="multi-select" id="multiEmpresa">
-            <div class="multi-select-trigger" id="triggerEmpresa">Todas</div>
-            <div class="multi-select-menu" id="menuEmpresa"></div>
+          <div class="multi-select" id="multiEmpresas">
+            <button type="button" class="multi-trigger" id="triggerEmpresas">Todas</button>
+            <div class="multi-menu" id="menuEmpresas"></div>
           </div>
         </div>
 
         <div class="field">
           <label>Cargo</label>
-          <div class="multi-select" id="multiCargo">
-            <div class="multi-select-trigger" id="triggerCargo">Todos</div>
-            <div class="multi-select-menu" id="menuCargo"></div>
+          <div class="multi-select" id="multiCargos">
+            <button type="button" class="multi-trigger" id="triggerCargos">Todos</button>
+            <div class="multi-menu" id="menuCargos"></div>
           </div>
         </div>
 
         <div class="field">
-          <label>Produto enviado ao condomínio</label>
-          <div class="multi-select" id="multiEnviado">
-            <div class="multi-select-trigger" id="triggerEnviado">Todos</div>
-            <div class="multi-select-menu" id="menuEnviado"></div>
+          <label>Enviado ao condomínio</label>
+          <div class="multi-select" id="multiEnviados">
+            <button type="button" class="multi-trigger" id="triggerEnviados">Todos</button>
+            <div class="multi-menu" id="menuEnviados"></div>
           </div>
         </div>
 
         <div class="field">
           <label>Bloqueio efetivado</label>
-          <div class="multi-select" id="multiBloqueio">
-            <div class="multi-select-trigger" id="triggerBloqueio">Todos</div>
-            <div class="multi-select-menu" id="menuBloqueio"></div>
+          <div class="multi-select" id="multiBloqueios">
+            <button type="button" class="multi-trigger" id="triggerBloqueios">Todos</button>
+            <div class="multi-menu" id="menuBloqueios"></div>
           </div>
         </div>
 
         <div class="field">
           <label>Motivo</label>
-          <div class="multi-select" id="multiMotivo">
-            <div class="multi-select-trigger" id="triggerMotivo">Todos</div>
-            <div class="multi-select-menu" id="menuMotivo"></div>
+          <div class="multi-select" id="multiMotivos">
+            <button type="button" class="multi-trigger" id="triggerMotivos">Todos</button>
+            <div class="multi-menu" id="menuMotivos"></div>
           </div>
         </div>
 
         <div class="field">
-          <label>Status / Controle interno</label>
-          <div class="multi-select" id="multiControle">
-            <div class="multi-select-trigger" id="triggerControle">Todos</div>
-            <div class="multi-select-menu" id="menuControle"></div>
+          <label>Controle interno</label>
+          <div class="multi-select" id="multiControles">
+            <button type="button" class="multi-trigger" id="triggerControles">Todos</button>
+            <div class="multi-menu" id="menuControles"></div>
           </div>
         </div>
 
@@ -116,35 +114,40 @@
         </div>
 
         <div class="field btn-field">
-          <button class="btn-primary" id="btnLimpar" type="button">Limpar filtros</button>
+          <button class="btn-primary" id="btnLimpar">Limpar filtros</button>
         </div>
       </div>
     </section>
 
-    <section class="cards-grid cards-grid-5">
+    <section class="cards-grid">
       <div class="info-card">
-        <div class="info-label">TOTAL DESLIGADOS</div>
+        <div class="info-label">Total desligados</div>
         <div class="info-value orange" id="totalDesligados">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">BLOQUEADOS</div>
+        <div class="info-label">Enviados condomínio</div>
+        <div class="info-value blue" id="totalEnviados">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Bloqueados</div>
         <div class="info-value green" id="totalBloqueados">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">PENDENTES</div>
+        <div class="info-label">Pendentes</div>
         <div class="info-value red" id="totalPendentes">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">SURPLUS</div>
-        <div class="info-value purple" id="totalSurplus">0</div>
+        <div class="info-label">Empresas</div>
+        <div class="info-value purple" id="totalEmpresas">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">% BLOQUEIO</div>
-        <div class="info-value orange" id="taxaBloqueio">0%</div>
+        <div class="info-label">% bloqueio</div>
+        <div class="info-value orange" id="percentualBloqueio">0%</div>
       </div>
     </section>
 
@@ -152,14 +155,14 @@
       <div class="panel-card">
         <div class="panel-title">Envio ao Condomínio</div>
         <div class="chart-wrap">
-          <canvas id="chartEnviado"></canvas>
+          <canvas id="chartEnviados"></canvas>
         </div>
       </div>
 
       <div class="panel-card">
         <div class="panel-title">Bloqueio Efetivado</div>
         <div class="chart-wrap">
-          <canvas id="chartBloqueio"></canvas>
+          <canvas id="chartBloqueios"></canvas>
         </div>
       </div>
 
@@ -180,16 +183,16 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">Desligados por Dia</div>
+        <div class="panel-title">Desligados por Mês</div>
         <div class="chart-wrap large">
-          <canvas id="chartDia"></canvas>
+          <canvas id="chartMes"></canvas>
         </div>
       </div>
     </section>
 
     <section class="panel-card">
       <div class="panel-title">Motivo de Desligamento</div>
-      <div class="chart-wrap xl">
+      <div class="chart-wrap large">
         <canvas id="chartMotivo"></canvas>
       </div>
     </section>
@@ -234,25 +237,36 @@
       <div class="panel-title">Detalhamento dos desligados</div>
       <div class="table-wrap big-table" id="tableWrap"></div>
       <div class="pager">
-        <button class="btn-secondary" id="btnPrev" type="button">Anterior</button>
-        <button class="btn-secondary" id="btnNext" type="button">Próxima</button>
+        <button class="btn-secondary" id="btnPrev">Anterior</button>
+        <button class="btn-secondary" id="btnNext">Próxima</button>
       </div>
     </section>
   </div>
 
   <script>
-    Chart.register(ChartDataLabels);
-
-    let chartEnviado = null;
-    let chartBloqueio = null;
+    let chartEnviados = null;
+    let chartBloqueios = null;
     let chartUnidade = null;
     let chartEmpresa = null;
-    let chartDia = null;
+    let chartMes = null;
     let chartMotivo = null;
 
     let currentPage = 1;
     let totalPages = 1;
-    let searchDebounce = null;
+
+    const headersDetalhe = [
+      "UNIDADE",
+      "DATA",
+      "Nome",
+      "CPF",
+      "EMPRESA",
+      "CARGO",
+      "Enviado Condominio para Bloqueio",
+      "Bloqueio Efetivado",
+      "Motivo de desligamento",
+      "Controle interno",
+      "detalhe"
+    ];
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -264,185 +278,146 @@
     }
 
     function formatNumber(value) {
-      return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
+      return new Intl.NumberFormat("pt-BR").format(value || 0);
     }
 
     function formatPercent(value) {
       return `${Number(value || 0).toFixed(2)}%`;
     }
 
-    function ajustarHorarioMais3(valor) {
-      if (!valor) return "--:--";
-      const match = String(valor).match(/^(\d{2}):(\d{2})$/);
-      if (!match) return valor;
+    function createMultiSelect(menuId, triggerId, values, emptyLabel) {
+      const menu = document.getElementById(menuId);
+      const trigger = document.getElementById(triggerId);
 
-      let hora = Number(match[1]);
-      const minuto = match[2];
-      hora = (hora + 3) % 24;
+      menu.innerHTML = `
+        <div class="multi-actions">
+          <button type="button" data-action="all">Todos</button>
+          <button type="button" data-action="clear">Limpar</button>
+        </div>
+      `;
 
-      return `${String(hora).padStart(2, "0")}:${minuto}`;
+      values.forEach((value) => {
+        const label = document.createElement("label");
+        label.className = "multi-option";
+        label.innerHTML = `
+          <input type="checkbox" value="${escapeHtml(value)}" />
+          <span>${escapeHtml(value)}</span>
+        `;
+        menu.appendChild(label);
+      });
+
+      function updateTrigger() {
+        const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+        if (!checked.length) {
+          trigger.textContent = emptyLabel;
+        } else if (checked.length === 1) {
+          trigger.textContent = checked[0];
+        } else {
+          trigger.textContent = `${checked.length} selecionados`;
+        }
+      }
+
+      trigger.addEventListener("click", () => {
+        document.querySelectorAll(".multi-select").forEach((wrap) => {
+          if (wrap.id !== trigger.closest(".multi-select").id) {
+            wrap.classList.remove("open");
+          }
+        });
+        trigger.closest(".multi-select").classList.toggle("open");
+      });
+
+      menu.addEventListener("click", (e) => {
+        const action = e.target.dataset.action;
+
+        if (action === "all") {
+          menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = true;
+          });
+          updateTrigger();
+          loadAll(1);
+          return;
+        }
+
+        if (action === "clear") {
+          menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = false;
+          });
+          updateTrigger();
+          loadAll(1);
+          return;
+        }
+
+        if (e.target.matches('input[type="checkbox"]')) {
+          updateTrigger();
+          loadAll(1);
+        }
+      });
+
+      updateTrigger();
     }
 
-    function setUltimaAtualizacao(value) {
-      document.getElementById("ultimaAtualizacao").textContent = ajustarHorarioMais3(value || "--:--");
-    }
-
-    function getSelectedValues(menuId) {
+    function getMultiValues(menuId) {
       return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
-        .map(i => i.value);
+        .map((el) => el.value)
+        .join("|");
     }
+
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".multi-select").forEach((wrap) => {
+        if (!wrap.contains(e.target)) {
+          wrap.classList.remove("open");
+        }
+      });
+    });
 
     function getFilters() {
       return new URLSearchParams({
         dataInicio: document.getElementById("filtroDataInicio").value || "",
         dataFim: document.getElementById("filtroDataFim").value || "",
-        unidades: getSelectedValues("menuUnidade").join("|"),
-        empresas: getSelectedValues("menuEmpresa").join("|"),
-        cargos: getSelectedValues("menuCargo").join("|"),
-        enviados: getSelectedValues("menuEnviado").join("|"),
-        bloqueios: getSelectedValues("menuBloqueio").join("|"),
-        motivos: getSelectedValues("menuMotivo").join("|"),
-        controles: getSelectedValues("menuControle").join("|"),
+        unidades: getMultiValues("menuUnidades"),
+        empresas: getMultiValues("menuEmpresas"),
+        cargos: getMultiValues("menuCargos"),
+        enviados: getMultiValues("menuEnviados"),
+        bloqueios: getMultiValues("menuBloqueios"),
+        motivos: getMultiValues("menuMotivos"),
+        controles: getMultiValues("menuControles"),
         busca: document.getElementById("filtroBusca").value || "",
       });
     }
 
-    async function fetchJson(url) {
-      const response = await fetch(url, {
-        method: "GET",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: {
-          "Accept": "application/json"
-        }
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => "");
-        throw new Error(`Erro ${response.status} em ${url}${text ? " - " + text : ""}`);
-      }
-
-      return response.json();
-    }
-
-    function buildMultiSelect(containerId, triggerId, menuId, values, placeholder) {
-      const container = document.getElementById(containerId);
-      const trigger = document.getElementById(triggerId);
-      const menu = document.getElementById(menuId);
-
-      menu.innerHTML = `
-        <div class="multi-actions">
-          <button type="button" class="select-all">Todos</button>
-          <button type="button" class="clear-all">Limpar</button>
-        </div>
-      `;
-
-      values.forEach(value => {
-        const safe = escapeHtml(value);
-        const label = document.createElement("label");
-        label.className = "multi-option";
-        label.innerHTML = `<input type="checkbox" value="${safe}"><span>${safe}</span>`;
-        menu.appendChild(label);
-      });
-
-      function updateTriggerText() {
-        const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
-
-        if (selected.length === 0) {
-          trigger.textContent = placeholder;
-        } else if (selected.length === 1) {
-          trigger.textContent = selected[0];
-        } else {
-          trigger.textContent = `${selected.length} selecionados`;
-        }
-      }
-
-      trigger.onclick = () => {
-        document.querySelectorAll(".multi-select").forEach(el => {
-          if (el !== container) el.classList.remove("open");
-        });
-        container.classList.toggle("open");
-      };
-
-      menu.querySelector(".select-all").onclick = () => {
-        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
-        updateTriggerText();
-        loadAll(1);
-      };
-
-      menu.querySelector(".clear-all").onclick = () => {
-        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
-        updateTriggerText();
-        loadAll(1);
-      };
-
-      menu.querySelectorAll('input[type="checkbox"]').forEach(input => {
-        input.addEventListener("change", () => {
-          updateTriggerText();
-          loadAll(1);
-        });
-      });
-
-      updateTriggerText();
-    }
-
-    document.addEventListener("click", (e) => {
-      document.querySelectorAll(".multi-select").forEach(container => {
-        if (!container.contains(e.target)) {
-          container.classList.remove("open");
-        }
-      });
-    });
-
     function destroyCharts() {
-      if (chartEnviado) chartEnviado.destroy();
-      if (chartBloqueio) chartBloqueio.destroy();
+      if (chartEnviados) chartEnviados.destroy();
+      if (chartBloqueios) chartBloqueios.destroy();
       if (chartUnidade) chartUnidade.destroy();
       if (chartEmpresa) chartEmpresa.destroy();
-      if (chartDia) chartDia.destroy();
+      if (chartMes) chartMes.destroy();
       if (chartMotivo) chartMotivo.destroy();
 
-      chartEnviado = null;
-      chartBloqueio = null;
+      chartEnviados = null;
+      chartBloqueios = null;
       chartUnidade = null;
       chartEmpresa = null;
-      chartDia = null;
+      chartMes = null;
       chartMotivo = null;
     }
 
-    function baseChartOptions(horizontal = false) {
+    function makeChartOptions(horizontal = false) {
       return {
         indexAxis: horizontal ? "y" : "x",
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: {
-              color: "#ffffff",
-              font: { size: 10 },
-              boxWidth: 10
-            }
-          },
-          datalabels: {
-            color: "#ffffff",
-            anchor: horizontal ? "end" : "end",
-            align: horizontal ? "right" : "top",
-            offset: 4,
-            clamp: true,
-            font: {
-              weight: "700",
-              size: 10
-            },
-            formatter: (value) => value > 0 ? formatNumber(value) : ""
+            labels: { color: "#fff" }
           }
         },
         scales: {
           x: {
-            ticks: { color: "#d1d5db", font: { size: 9 } },
+            ticks: { color: "#d1d5db" },
             grid: { color: "rgba(255,255,255,0.06)" }
           },
           y: {
-            ticks: { color: "#d1d5db", font: { size: 9 } },
+            ticks: { color: "#d1d5db" },
             grid: { color: "rgba(255,255,255,0.06)" },
             beginAtZero: true
           }
@@ -450,338 +425,223 @@
       };
     }
 
-    function doughnutOptions() {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "58%",
-        plugins: {
-          legend: {
-            position: "top",
-            labels: {
-              color: "#ffffff",
-              font: { size: 10 },
-              boxWidth: 10
-            }
-          },
-          datalabels: {
-            color: "#ffffff",
-            font: {
-              weight: "700",
-              size: 10
-            },
-            formatter: (value) => value > 0 ? formatNumber(value) : ""
-          }
-        }
-      };
-    }
-
     async function loadFiltros() {
-      try {
-        const data = await fetchJson("/api/desligados-filtros");
+      const res = await fetch("/api/desligados-filtros", { credentials: "same-origin" });
+      const data = await res.json();
 
-        buildMultiSelect("multiUnidade", "triggerUnidade", "menuUnidade", data.unidades || [], "Todas");
-        buildMultiSelect("multiEmpresa", "triggerEmpresa", "menuEmpresa", data.empresas || [], "Todas");
-        buildMultiSelect("multiCargo", "triggerCargo", "menuCargo", data.cargos || [], "Todos");
-        buildMultiSelect("multiEnviado", "triggerEnviado", "menuEnviado", data.enviados || [], "Todos");
-        buildMultiSelect("multiBloqueio", "triggerBloqueio", "menuBloqueio", data.bloqueios || [], "Todos");
-        buildMultiSelect("multiMotivo", "triggerMotivo", "menuMotivo", data.motivos || [], "Todos");
-        buildMultiSelect("multiControle", "triggerControle", "menuControle", data.controles || [], "Todos");
-      } catch (error) {
-        console.error("Erro ao carregar filtros:", error);
-      }
+      createMultiSelect("menuUnidades", "triggerUnidades", data.unidades || [], "Todas");
+      createMultiSelect("menuEmpresas", "triggerEmpresas", data.empresas || [], "Todas");
+      createMultiSelect("menuCargos", "triggerCargos", data.cargos || [], "Todos");
+      createMultiSelect("menuEnviados", "triggerEnviados", data.enviados || [], "Todos");
+      createMultiSelect("menuBloqueios", "triggerBloqueios", data.bloqueios || [], "Todos");
+      createMultiSelect("menuMotivos", "triggerMotivos", data.motivos || [], "Todos");
+      createMultiSelect("menuControles", "triggerControles", data.controles || [], "Todos");
     }
 
     async function loadResumo() {
-      try {
-        const qs = getFilters().toString();
-        const data = await fetchJson(`/api/desligados-resumo?${qs}`);
+      const qs = getFilters().toString();
+      const res = await fetch(`/api/desligados-resumo?${qs}`, { credentials: "same-origin" });
+      const data = await res.json();
 
-        document.getElementById("totalDesligados").textContent = formatNumber(data.total);
-        document.getElementById("totalBloqueados").textContent = formatNumber(data.bloqueadosSim);
-        document.getElementById("totalPendentes").textContent = formatNumber(data.pendentes);
-
-        // surplus vindo por heurística simples do motivo, se não vier do backend
-        document.getElementById("totalSurplus").textContent = formatNumber(0);
-
-        document.getElementById("taxaBloqueio").textContent = formatPercent(data.taxaBloqueio);
-        setUltimaAtualizacao(data.ultimaAtualizacao);
-      } catch (error) {
-        console.error("Erro ao carregar resumo:", error);
-      }
+      document.getElementById("totalDesligados").textContent = formatNumber(data.total);
+      document.getElementById("totalEnviados").textContent = formatNumber(data.enviadosSim);
+      document.getElementById("totalBloqueados").textContent = formatNumber(data.bloqueadosSim);
+      document.getElementById("totalPendentes").textContent = formatNumber(data.pendentes);
+      document.getElementById("totalEmpresas").textContent = formatNumber(data.empresas);
+      document.getElementById("percentualBloqueio").textContent = formatPercent(data.taxaBloqueio);
+      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
     }
 
     async function loadGraficos() {
-      try {
-        const qs = getFilters().toString();
-        const data = await fetchJson(`/api/desligados-graficos?${qs}`);
+      const qs = getFilters().toString();
+      const res = await fetch(`/api/desligados-graficos?${qs}`, { credentials: "same-origin" });
+      const data = await res.json();
 
-        destroyCharts();
+      destroyCharts();
 
-        chartEnviado = new Chart(document.getElementById("chartEnviado"), {
-          type: "doughnut",
-          data: {
-            labels: Object.keys(data.enviados || {}),
-            datasets: [{
-              data: Object.values(data.enviados || {}),
-              backgroundColor: ["#ff7a1a", "#475569", "#94a3b8", "#1e293b"],
-              borderWidth: 0
-            }]
-          },
-          options: doughnutOptions()
-        });
+      chartEnviados = new Chart(document.getElementById("chartEnviados"), {
+        type: "doughnut",
+        data: {
+          labels: Object.keys(data.enviados || {}),
+          datasets: [{
+            data: Object.values(data.enviados || {}),
+            backgroundColor: ["#ff7a1a", "#22c55e", "#64748b", "#ef4444"],
+            borderWidth: 0
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#fff" } } } }
+      });
 
-        chartBloqueio = new Chart(document.getElementById("chartBloqueio"), {
-          type: "doughnut",
-          data: {
-            labels: Object.keys(data.bloqueio || {}),
-            datasets: [{
-              data: Object.values(data.bloqueio || {}),
-              backgroundColor: ["#22c55e", "#475569", "#94a3b8", "#1e293b"],
-              borderWidth: 0
-            }]
-          },
-          options: doughnutOptions()
-        });
+      chartBloqueios = new Chart(document.getElementById("chartBloqueios"), {
+        type: "doughnut",
+        data: {
+          labels: Object.keys(data.bloqueio || {}),
+          datasets: [{
+            data: Object.values(data.bloqueio || {}),
+            backgroundColor: ["#22c55e", "#ef4444", "#64748b", "#ff7a1a"],
+            borderWidth: 0
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#fff" } } } }
+      });
 
-        chartUnidade = new Chart(document.getElementById("chartUnidade"), {
-          type: "bar",
-          data: {
-            labels: Object.keys(data.unidade || {}),
-            datasets: [{
-              label: "Desligados",
-              data: Object.values(data.unidade || {}),
-              backgroundColor: "#ff7a1a",
-              borderRadius: 8
-            }]
-          },
-          options: baseChartOptions(true)
-        });
+      chartUnidade = new Chart(document.getElementById("chartUnidade"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(data.unidade || {}),
+          datasets: [{
+            label: "Desligados",
+            data: Object.values(data.unidade || {}),
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8
+          }]
+        },
+        options: makeChartOptions()
+      });
 
-        chartEmpresa = new Chart(document.getElementById("chartEmpresa"), {
-          type: "bar",
-          data: {
-            labels: Object.keys(data.empresa || {}),
-            datasets: [{
-              label: "Desligados",
-              data: Object.values(data.empresa || {}),
-              backgroundColor: "#ff7a1a",
-              borderRadius: 8
-            }]
-          },
-          options: baseChartOptions(true)
-        });
+      chartEmpresa = new Chart(document.getElementById("chartEmpresa"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(data.empresa || {}),
+          datasets: [{
+            label: "Desligados",
+            data: Object.values(data.empresa || {}),
+            backgroundColor: "#fb923c",
+            borderRadius: 8
+          }]
+        },
+        options: makeChartOptions(true)
+      });
 
-        let labelsDia = [];
-        let valuesDia = [];
+      chartMes = new Chart(document.getElementById("chartMes"), {
+        type: "line",
+        data: {
+          labels: data.porMes?.labels || [],
+          datasets: [{
+            label: "Desligados",
+            data: data.porMes?.values || [],
+            borderColor: "#ff7a1a",
+            backgroundColor: "rgba(255,122,26,0.15)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+          }]
+        },
+        options: makeChartOptions()
+      });
 
-        if (data.porDia?.labels?.length) {
-          labelsDia = data.porDia.labels.map(d => String(Number(d)));
-          valuesDia = data.porDia.values || [];
-        } else if (data.porMes?.labels?.length) {
-          labelsDia = data.porMes.labels;
-          valuesDia = data.porMes.values || [];
-        } else {
-          labelsDia = Array.from({ length: 31 }, (_, i) => String(i + 1));
-          valuesDia = Array.from({ length: 31 }, () => 0);
-        }
+      chartMotivo = new Chart(document.getElementById("chartMotivo"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(data.motivo || {}),
+          datasets: [{
+            label: "Desligados",
+            data: Object.values(data.motivo || {}),
+            backgroundColor: "#f97316",
+            borderRadius: 8
+          }]
+        },
+        options: makeChartOptions(true)
+      });
 
-        chartDia = new Chart(document.getElementById("chartDia"), {
-          type: "line",
-          data: {
-            labels: labelsDia,
-            datasets: [{
-              label: "Desligados",
-              data: valuesDia,
-              borderColor: "#ff7a1a",
-              backgroundColor: "rgba(255,122,26,0.18)",
-              fill: true,
-              tension: 0.35,
-              pointRadius: 3,
-              pointHoverRadius: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                labels: { color: "#ffffff" }
-              },
-              datalabels: {
-                color: "#ffffff",
-                align: "top",
-                anchor: "end",
-                offset: 4,
-                clamp: true,
-                font: {
-                  weight: "700",
-                  size: 9
-                },
-                formatter: (value) => value > 0 ? formatNumber(value) : ""
-              }
-            },
-            scales: {
-              x: {
-                ticks: { color: "#d1d5db", font: { size: 9 } },
-                grid: { color: "rgba(255,255,255,0.06)" }
-              },
-              y: {
-                ticks: { color: "#d1d5db", font: { size: 9 } },
-                grid: { color: "rgba(255,255,255,0.06)" },
-                beginAtZero: true
-              }
-            }
-          }
-        });
+      document.getElementById("tabelaUnidade").innerHTML = (data.tabelaUnidade || []).map(item => `
+        <tr>
+          <td>${escapeHtml(item.unidade)}</td>
+          <td>${formatNumber(item.total)}</td>
+          <td>${formatNumber(item.enviados)}</td>
+          <td>${formatNumber(item.bloqueados)}</td>
+        </tr>
+      `).join("");
 
-        chartMotivo = new Chart(document.getElementById("chartMotivo"), {
-          type: "bar",
-          data: {
-            labels: Object.keys(data.motivo || {}),
-            datasets: [{
-              label: "Desligados",
-              data: Object.values(data.motivo || {}),
-              backgroundColor: "#ff7a1a",
-              borderRadius: 8
-            }]
-          },
-          options: baseChartOptions(true)
-        });
-
-        const tabelaUnidade = document.getElementById("tabelaUnidade");
-        tabelaUnidade.innerHTML = (data.tabelaUnidade || []).map(item => `
-          <tr>
-            <td>${escapeHtml(item.unidade)}</td>
-            <td>${formatNumber(item.total)}</td>
-            <td class="orange-text">${formatNumber(item.enviados)}</td>
-            <td class="green-text">${formatNumber(item.bloqueados)}</td>
-          </tr>
-        `).join("");
-
-        const tabelaEmpresa = document.getElementById("tabelaEmpresa");
-        tabelaEmpresa.innerHTML = (data.tabelaEmpresa || []).map(item => `
-          <tr>
-            <td>${escapeHtml(item.empresa)}</td>
-            <td>${formatNumber(item.total)}</td>
-            <td class="orange-text">${formatNumber(item.enviados)}</td>
-            <td class="green-text">${formatNumber(item.bloqueados)}</td>
-          </tr>
-        `).join("");
-      } catch (error) {
-        console.error("Erro ao carregar gráficos:", error);
-        destroyCharts();
-      }
+      document.getElementById("tabelaEmpresa").innerHTML = (data.tabelaEmpresa || []).map(item => `
+        <tr>
+          <td>${escapeHtml(item.empresa)}</td>
+          <td>${formatNumber(item.total)}</td>
+          <td>${formatNumber(item.enviados)}</td>
+          <td>${formatNumber(item.bloqueados)}</td>
+        </tr>
+      `).join("");
     }
 
     async function loadDetalhes(page = 1) {
-      try {
-        currentPage = page;
-        const qs = getFilters();
-        qs.set("page", currentPage);
-        qs.set("limit", 50);
+      currentPage = page;
+      const qs = getFilters();
+      qs.set("page", currentPage);
+      qs.set("limit", 50);
 
-        const data = await fetchJson(`/api/desligados-detalhes?${qs.toString()}`);
-        totalPages = Number(data.totalPages || 1);
+      const res = await fetch(`/api/desligados-detalhes?${qs.toString()}`, {
+        credentials: "same-origin"
+      });
 
-        const headers = [
-          "UNIDADE",
-          "DATA",
-          "Nome",
-          "CPF",
-          "EMPRESA",
-          "CARGO",
-          "Enviado Condominio para Bloqueio",
-          "Bloqueio Efetivado",
-          "Motivo de desligamento",
-          "Controle interno",
-          "detalhe"
-        ];
+      const data = await res.json();
+      totalPages = data.totalPages || 1;
 
-        let html = "<table><thead><tr>";
-        headers.forEach(h => {
-          html += `<th>${escapeHtml(h)}</th>`;
+      let html = "<table><thead><tr>";
+      headersDetalhe.forEach(h => {
+        html += `<th>${escapeHtml(h)}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
+      (data.rows || []).forEach(row => {
+        html += "<tr>";
+        headersDetalhe.forEach(h => {
+          html += `<td>${escapeHtml(row[h] || "")}</td>`;
         });
-        html += "</tr></thead><tbody>";
+        html += "</tr>";
+      });
 
-        (data.rows || []).forEach(row => {
-          html += "<tr>";
-          headers.forEach(h => {
-            html += `<td>${escapeHtml(row[h] || "")}</td>`;
-          });
-          html += "</tr>";
-        });
-
-        html += "</tbody></table>";
-        document.getElementById("tableWrap").innerHTML = html;
-      } catch (error) {
-        console.error("Erro ao carregar detalhes:", error);
-        document.getElementById("tableWrap").innerHTML = `
-          <div style="padding:16px; color:#fca5a5;">
-            Não foi possível carregar o detalhamento dos desligados.
-          </div>
-        `;
-      }
+      html += "</tbody></table>";
+      document.getElementById("tableWrap").innerHTML = html;
     }
 
     async function loadAll(page = 1) {
-      await Promise.all([
-        loadResumo(),
-        loadGraficos(),
-        loadDetalhes(page)
-      ]);
+      await loadResumo();
+      await loadGraficos();
+      await loadDetalhes(page);
     }
 
-    function clearFilters() {
+    [
+      "filtroDataInicio",
+      "filtroDataFim",
+      "filtroBusca"
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener("input", () => loadAll(1));
+      el.addEventListener("change", () => loadAll(1));
+    });
+
+    document.getElementById("btnLimpar").addEventListener("click", () => {
       document.getElementById("filtroDataInicio").value = "";
       document.getElementById("filtroDataFim").value = "";
       document.getElementById("filtroBusca").value = "";
 
-      document.querySelectorAll('.multi-select-menu input[type="checkbox"]').forEach(input => {
+      document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach((input) => {
         input.checked = false;
       });
 
-      document.getElementById("triggerUnidade").textContent = "Todas";
-      document.getElementById("triggerEmpresa").textContent = "Todas";
-      document.getElementById("triggerCargo").textContent = "Todos";
-      document.getElementById("triggerEnviado").textContent = "Todos";
-      document.getElementById("triggerBloqueio").textContent = "Todos";
-      document.getElementById("triggerMotivo").textContent = "Todos";
-      document.getElementById("triggerControle").textContent = "Todos";
+      document.getElementById("triggerUnidades").textContent = "Todas";
+      document.getElementById("triggerEmpresas").textContent = "Todas";
+      document.getElementById("triggerCargos").textContent = "Todos";
+      document.getElementById("triggerEnviados").textContent = "Todos";
+      document.getElementById("triggerBloqueios").textContent = "Todos";
+      document.getElementById("triggerMotivos").textContent = "Todos";
+      document.getElementById("triggerControles").textContent = "Todos";
 
       loadAll(1);
-    }
+    });
 
-    function bindEvents() {
-      ["filtroDataInicio", "filtroDataFim"].forEach(id => {
-        document.getElementById(id).addEventListener("change", () => loadAll(1));
-      });
+    document.getElementById("btnPrev").addEventListener("click", () => {
+      if (currentPage > 1) loadDetalhes(currentPage - 1);
+    });
 
-      document.getElementById("filtroBusca").addEventListener("input", () => {
-        clearTimeout(searchDebounce);
-        searchDebounce = setTimeout(() => loadAll(1), 350);
-      });
+    document.getElementById("btnNext").addEventListener("click", () => {
+      if (currentPage < totalPages) loadDetalhes(currentPage + 1);
+    });
 
-      document.getElementById("btnLimpar").addEventListener("click", clearFilters);
-
-      document.getElementById("btnPrev").addEventListener("click", () => {
-        if (currentPage > 1) {
-          loadDetalhes(currentPage - 1);
-        }
-      });
-
-      document.getElementById("btnNext").addEventListener("click", () => {
-        if (currentPage < totalPages) {
-          loadDetalhes(currentPage + 1);
-        }
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      bindEvents();
+    (async function init() {
       await loadFiltros();
       await loadAll(1);
-    });
+    })();
   </script>
 </body>
 </html>

@@ -1596,12 +1596,12 @@ function filtrarAccessData(data, query) {
   const dataFim = accessNormalize(query.dataFim);
   const liberacaoInicio = accessNormalize(query.liberacaoInicio);
   const liberacaoFim = accessNormalize(query.liberacaoFim);
-  const estado = accessNormalize(query.estado);
-  const cidade = accessNormalize(query.cidade);
-  const operacao = accessNormalize(query.operacao);
-  const tipoLiberacao = accessNormalize(query.tipoLiberacao);
-  const veiculo = accessNormalize(query.veiculo);
-  const status = accessNormalize(query.status);
+ const estados = accessParseMultiValue(query.estado);
+const cidades = accessParseMultiValue(query.cidade);
+const operacoes = accessParseMultiValue(query.operacao);
+const tiposLiberacao = accessParseMultiValue(query.tipoLiberacao);
+const veiculos = accessParseMultiValue(query.veiculo);
+const statusList = accessParseMultiValue(query.status);
   const busca = accessNormalizeLower(query.busca);
 
   return data.filter((row) => {
@@ -1616,14 +1616,12 @@ function filtrarAccessData(data, query) {
     const okLiberacaoFim =
       !liberacaoFim || (rowLiberacao && formatInputDate(rowLiberacao) <= liberacaoFim);
 
-    const okEstado = !estado || accessNormalize(row[ACCESS_COLUMNS.estado]) === estado;
-    const okCidade = !cidade || accessNormalize(row[ACCESS_COLUMNS.cidade]) === cidade;
-    const okOperacao = !operacao || accessNormalize(row[ACCESS_COLUMNS.operacao]) === operacao;
-    const okTipo =
-      !tipoLiberacao ||
-      accessNormalize(row[ACCESS_COLUMNS.tipoLiberacao]) === tipoLiberacao;
-    const okVeiculo = !veiculo || accessNormalize(row[ACCESS_COLUMNS.veiculo]) === veiculo;
-    const okStatus = !status || accessNormalize(row[ACCESS_COLUMNS.status]) === status;
+    const okEstado = accessMatchesMulti(row[ACCESS_COLUMNS.estado], estados);
+const okCidade = accessMatchesMulti(row[ACCESS_COLUMNS.cidade], cidades);
+const okOperacao = accessMatchesMulti(row[ACCESS_COLUMNS.operacao], operacoes);
+const okTipo = accessMatchesMulti(row[ACCESS_COLUMNS.tipoLiberacao], tiposLiberacao);
+const okVeiculo = accessMatchesMulti(row[ACCESS_COLUMNS.veiculo], veiculos);
+const okStatus = accessMatchesMulti(row[ACCESS_COLUMNS.status], statusList);
 
     const searchable = [
       row[ACCESS_COLUMNS.nome],

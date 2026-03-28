@@ -2242,7 +2242,7 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     // SOMENTE registros cujo Controle interno = Security
     const securityRows = filtrados.filter((row) => {
       const controle = dNormalizeLower(row[DESLIGADOS_COLUMNS.controle]);
-      return controle === "security";
+      return controle.includes("security");
     });
 
     // Top motivos Security = agrupa pelo motivo de desligamento

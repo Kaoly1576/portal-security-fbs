@@ -626,62 +626,66 @@
         options: makeChartOptions(true)
       });
 
-      const controleEntries = Object.entries(data.porControle || {})
-        .filter(([label, value]) => label && Number(value) > 0)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 12);
+      const topSecurityLabels = (data.topMotivosSecurity?.labels || []).map((label) =>
+  label.length > 36 ? label.slice(0, 36) + "..." : label
+);
 
-      chartControle = new Chart(document.getElementById("chartControle"), {
-        type: "bar",
-        data: {
-          labels: controleEntries.map(([label]) => label),
-          datasets: [{
-            label: "Motivos de Security",
-            data: controleEntries.map(([, value]) => value),
-            backgroundColor: "#f97316",
-            borderRadius: 8,
-            barPercentage: 0.7,
-            categoryPercentage: 0.8
-          }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              labels: {
-                color: "#fff",
-                boxWidth: 10,
-                font: { size: 10 }
-              }
-            },
-            datalabels: {
-              color: "#fff",
-              anchor: "end",
-              align: "right",
-              offset: 4,
-              clamp: true,
-              font: {
-                weight: "700",
-                size: 10
-              },
-              formatter: (value) => value > 0 ? formatNumber(value) : ""
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#d1d5db", font: { size: 9 } },
-              grid: { color: "rgba(255,255,255,0.06)" },
-              beginAtZero: true
-            },
-            y: {
-              ticks: { color: "#d1d5db", font: { size: 9 } },
-              grid: { color: "rgba(255,255,255,0.03)" }
-            }
-          }
+const topSecurityValues = data.topMotivosSecurity?.values || [];
+
+chartControle = new Chart(document.getElementById("chartControle"), {
+  type: "bar",
+  data: {
+    labels: topSecurityLabels,
+    datasets: [{
+      label: "Top Motivos Security",
+      data: topSecurityValues,
+      backgroundColor: "#f97316",
+      borderRadius: 8,
+      barPercentage: 0.72,
+      categoryPercentage: 0.82
+    }]
+  },
+  options: {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: "#fff",
+          boxWidth: 10,
+          font: { size: 10 }
         }
-      });
+      },
+      datalabels: {
+        color: "#fff",
+        anchor: "end",
+        align: "right",
+        offset: 4,
+        clamp: true,
+        font: {
+          weight: "700",
+          size: 10
+        },
+        formatter: (value) => value > 0 ? formatNumber(value) : ""
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#d1d5db", font: { size: 9 } },
+        grid: { color: "rgba(255,255,255,0.06)" },
+        beginAtZero: true
+      },
+      y: {
+        ticks: {
+          color: "#d1d5db",
+          font: { size: 9 }
+        },
+        grid: { color: "rgba(255,255,255,0.03)" }
+      }
+    }
+  }
+});
 
       document.getElementById("tabelaUnidade").innerHTML = (data.tabelaUnidade || []).map(item => `
         <tr>

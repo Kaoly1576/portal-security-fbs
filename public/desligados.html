@@ -30,8 +30,8 @@
       <div>
         <h2>Dashboard de Desligados</h2>
         <p>
-          Monitoramento de desligamentos, envio ao condomínio, bloqueio efetivado,
-          empresa, cargo, unidade, motivo e controle interno.
+          Monitoramento de desligamentos, bloqueio efetivado, empresa, cargo,
+          unidade, motivo e controle interno.
         </p>
       </div>
 
@@ -147,6 +147,14 @@
       </div>
     </section>
 
+    <section class="charts-grid">
+      <div class="panel-card">
+        <div class="panel-title">Envio ao Condomínio</div>
+        <div class="chart-wrap">
+          <canvas id="chartEnviados"></canvas>
+        </div>
+      </div>
+
       <div class="panel-card">
         <div class="panel-title">Bloqueio Efetivado</div>
         <div class="chart-wrap">
@@ -185,10 +193,12 @@
       </div>
     </section>
 
-    <div class="card">
-  <h3>Motivos de Security</h3>
-  <canvas id="chartControle"></canvas>
-</div>
+    <section class="panel-card">
+      <div class="panel-title">Motivos de Security</div>
+      <div class="chart-wrap xlarge">
+        <canvas id="chartControle"></canvas>
+      </div>
+    </section>
 
     <section class="tables-grid">
       <div class="panel-card">
@@ -245,6 +255,7 @@
     let chartEmpresa = null;
     let chartMes = null;
     let chartMotivo = null;
+    let chartControle = null;
 
     let currentPage = 1;
     let totalPages = 1;
@@ -389,6 +400,7 @@
       if (chartEmpresa) chartEmpresa.destroy();
       if (chartMes) chartMes.destroy();
       if (chartMotivo) chartMotivo.destroy();
+      if (chartControle) chartControle.destroy();
 
       chartEnviados = null;
       chartBloqueios = null;
@@ -396,6 +408,7 @@
       chartEmpresa = null;
       chartMes = null;
       chartMotivo = null;
+      chartControle = null;
     }
 
     function makeChartOptions(horizontal = false) {
@@ -606,6 +619,20 @@
           datasets: [{
             label: "Motivos de desligamento",
             data: Object.values(data.motivo || {}),
+            backgroundColor: "#f97316",
+            borderRadius: 8
+          }]
+        },
+        options: makeChartOptions(true)
+      });
+
+      chartControle = new Chart(document.getElementById("chartControle"), {
+        type: "bar",
+        data: {
+          labels: Object.keys(data.porControle || {}),
+          datasets: [{
+            label: "Motivos de Security",
+            data: Object.values(data.porControle || {}),
             backgroundColor: "#f97316",
             borderRadius: 8
           }]

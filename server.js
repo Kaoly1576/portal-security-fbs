@@ -2239,24 +2239,31 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
 
-    // Motivos de Security: só linhas em que Controle interno = Security
+    // SOMENTE registros cujo Controle interno = Security
     const securityRows = filtrados.filter((row) => {
       const controle = dNormalizeLower(row[DESLIGADOS_COLUMNS.controle]);
       return controle === "security";
     });
 
-    const porControleSecurity = {};
+    // Top motivos Security = agrupa pelo motivo de desligamento
+    const topMotivosSecurityMap = {};
     securityRows.forEach((row) => {
       const motivo = dNormalize(row[DESLIGADOS_COLUMNS.motivo]);
       const motivoLower = dNormalizeLower(motivo);
 
       if (!motivo) return;
       if (motivoLower === "null") return;
-      if (motivoLower === "sem valor") return;
       if (motivoLower === "undefined") return;
+      if (motivoLower === "sem valor") return;
+      if (motivoLower === "-") return;
 
-      porControleSecurity[motivo] = (porControleSecurity[motivo] || 0) + 1;
+      topMotivosSecurityMap[motivo] =
+        (topMotivosSecurityMap[motivo] || 0) + 1;
     });
+
+    const topMotivosSecurity = Object.entries(topMotivosSecurityMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12);
 
     const dayMap = {};
     filtrados.forEach((row) => {
@@ -2313,7 +2320,12 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
       unidade: unidadeMap,
       empresa: empresaMap,
       motivo: motivoMap,
-      porControle: porControleSecurity,
+
+      // gráfico "Motivos de Security"
+      topMotivosSecurity: {
+        labels: topMotivosSecurity.map(([nome]) => nome),
+        values: topMotivosSecurity.map(([, total]) => total),
+      },
 
       porDia: {
         labels: diaLabels,
@@ -2344,46 +2356,6 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
           enviados: info.enviados,
           bloqueados: info.bloqueados,
         })),
-    });
-  } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
-  }
-});
-
-app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
-  try {
-    const dados = await carregarDesligadosComCache();
-    const filtrados = filtrarDesligados(dados, req.query);
-
-    const page = Math.max(Number(req.query.page || 1), 1);
-    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
-
-    const start = (page - 1) * limit;
-    const end = start + limit;
-
-    const rows = filtrados.slice(start, end).map((row) => ({
-      [DESLIGADOS_COLUMNS.unidade]: row[DESLIGADOS_COLUMNS.unidade] || "",
-      [DESLIGADOS_COLUMNS.data]: row[DESLIGADOS_COLUMNS.data] || "",
-      [DESLIGADOS_COLUMNS.nome]: row[DESLIGADOS_COLUMNS.nome] || "",
-      [DESLIGADOS_COLUMNS.cpf]: row[DESLIGADOS_COLUMNS.cpf] || "",
-      [DESLIGADOS_COLUMNS.empresa]: row[DESLIGADOS_COLUMNS.empresa] || "",
-      [DESLIGADOS_COLUMNS.cargo]: row[DESLIGADOS_COLUMNS.cargo] || "",
-      [DESLIGADOS_COLUMNS.enviado]: row[DESLIGADOS_COLUMNS.enviado] || "",
-      [DESLIGADOS_COLUMNS.bloqueio]: row[DESLIGADOS_COLUMNS.bloqueio] || "",
-      [DESLIGADOS_COLUMNS.motivo]: row[DESLIGADOS_COLUMNS.motivo] || "",
-      [DESLIGADOS_COLUMNS.controle]: row[DESLIGADOS_COLUMNS.controle] || "",
-      detalhe: row[DESLIGADOS_COLUMNS.detalhe] || "",
-    }));
-
-    return res.json({
-      total: filtrados.length,
-      page,
-      limit,
-      totalPages: Math.ceil(filtrados.length / limit),
-      rows,
     });
   } catch (error) {
     return res.status(500).json({

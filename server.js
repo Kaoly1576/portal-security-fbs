@@ -2290,12 +2290,12 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     });
 
     return res.json({
-      enviados: enviadosMap,
-      bloqueio: bloqueioMap,
-      unidade: unidadeMap,
-      empresa: empresaMap,
-      motivo: motivoMap,
-      controle: controleMap,
+  enviados: enviadosMap,
+  bloqueio: bloqueioMap,
+  unidade: unidadeMap,
+  empresa: empresaMap,
+  motivo: motivoMap,
+  porControle: controleMap,
 
       porDia: {
         labels: diaLabels,

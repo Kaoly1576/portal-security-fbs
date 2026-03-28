@@ -194,7 +194,7 @@
     </section>
 
     <section class="panel-card">
-      <div class="panel-title">Motivos de Security</div>
+      <div class="panel-title">Top Motivos Security</div>
       <div class="chart-wrap xlarge">
         <canvas id="chartControle"></canvas>
       </div>
@@ -627,65 +627,65 @@
       });
 
       const topSecurityLabels = (data.topMotivosSecurity?.labels || []).map((label) =>
-  label.length > 36 ? label.slice(0, 36) + "..." : label
-);
+        label.length > 36 ? label.slice(0, 36) + "..." : label
+      );
 
-const topSecurityValues = data.topMotivosSecurity?.values || [];
+      const topSecurityValues = data.topMotivosSecurity?.values || [];
 
-chartControle = new Chart(document.getElementById("chartControle"), {
-  type: "bar",
-  data: {
-    labels: topSecurityLabels,
-    datasets: [{
-      label: "Top Motivos Security",
-      data: topSecurityValues,
-      backgroundColor: "#f97316",
-      borderRadius: 8,
-      barPercentage: 0.72,
-      categoryPercentage: 0.82
-    }]
-  },
-  options: {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: {
-          color: "#fff",
-          boxWidth: 10,
-          font: { size: 10 }
+      chartControle = new Chart(document.getElementById("chartControle"), {
+        type: "bar",
+        data: {
+          labels: topSecurityLabels,
+          datasets: [{
+            label: "Top Motivos Security",
+            data: topSecurityValues,
+            backgroundColor: "#f97316",
+            borderRadius: 8,
+            barPercentage: 0.72,
+            categoryPercentage: 0.82
+          }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: "#fff",
+                boxWidth: 10,
+                font: { size: 10 }
+              }
+            },
+            datalabels: {
+              color: "#fff",
+              anchor: "end",
+              align: "right",
+              offset: 4,
+              clamp: true,
+              font: {
+                weight: "700",
+                size: 10
+              },
+              formatter: (value) => value > 0 ? formatNumber(value) : ""
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#d1d5db", font: { size: 9 } },
+              grid: { color: "rgba(255,255,255,0.06)" },
+              beginAtZero: true
+            },
+            y: {
+              ticks: {
+                color: "#d1d5db",
+                font: { size: 9 }
+              },
+              grid: { color: "rgba(255,255,255,0.03)" }
+            }
+          }
         }
-      },
-      datalabels: {
-        color: "#fff",
-        anchor: "end",
-        align: "right",
-        offset: 4,
-        clamp: true,
-        font: {
-          weight: "700",
-          size: 10
-        },
-        formatter: (value) => value > 0 ? formatNumber(value) : ""
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: "#d1d5db", font: { size: 9 } },
-        grid: { color: "rgba(255,255,255,0.06)" },
-        beginAtZero: true
-      },
-      y: {
-        ticks: {
-          color: "#d1d5db",
-          font: { size: 9 }
-        },
-        grid: { color: "rgba(255,255,255,0.03)" }
-      }
-    }
-  }
-});
+      });
 
       document.getElementById("tabelaUnidade").innerHTML = (data.tabelaUnidade || []).map(item => `
         <tr>

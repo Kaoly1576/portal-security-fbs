@@ -2203,6 +2203,9 @@ app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
     ).size;
     const taxaBloqueio = total ? (bloqueadosSim / total) * 100 : 0;
 
+    const agora = new Date();
+    agora.setHours(agora.getHours() - 3);
+
     return res.json({
       total,
       enviadosSim,
@@ -2211,9 +2214,7 @@ app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
       empresas,
       unidades,
       taxaBloqueio,
-      ultimaAtualizacao: new Date(
-        Date.now() - new Date().getTimezoneOffset() * 60000
-      ).toLocaleTimeString("pt-BR", {
+      ultimaAtualizacao: agora.toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
@@ -2237,6 +2238,7 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const unidadeMap = groupCount(filtrados, DESLIGADOS_COLUMNS.unidade);
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
+    const controleMap = groupCount(filtrados, DESLIGADOS_COLUMNS.controle);
 
     const dayMap = {};
     filtrados.forEach((row) => {
@@ -2293,6 +2295,7 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
       unidade: unidadeMap,
       empresa: empresaMap,
       motivo: motivoMap,
+      controle: controleMap,
 
       porDia: {
         labels: diaLabels,

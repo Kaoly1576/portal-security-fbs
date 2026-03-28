@@ -2238,7 +2238,25 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const unidadeMap = groupCount(filtrados, DESLIGADOS_COLUMNS.unidade);
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
-    const controleMap = groupCount(filtrados, DESLIGADOS_COLUMNS.controle);
+
+    // Motivos de Security: só linhas em que Controle interno = Security
+    const securityRows = filtrados.filter((row) => {
+      const controle = dNormalizeLower(row[DESLIGADOS_COLUMNS.controle]);
+      return controle === "security";
+    });
+
+    const porControleSecurity = {};
+    securityRows.forEach((row) => {
+      const motivo = dNormalize(row[DESLIGADOS_COLUMNS.motivo]);
+      const motivoLower = dNormalizeLower(motivo);
+
+      if (!motivo) return;
+      if (motivoLower === "null") return;
+      if (motivoLower === "sem valor") return;
+      if (motivoLower === "undefined") return;
+
+      porControleSecurity[motivo] = (porControleSecurity[motivo] || 0) + 1;
+    });
 
     const dayMap = {};
     filtrados.forEach((row) => {
@@ -2290,12 +2308,12 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     });
 
     return res.json({
-  enviados: enviadosMap,
-  bloqueio: bloqueioMap,
-  unidade: unidadeMap,
-  empresa: empresaMap,
-  motivo: motivoMap,
-  porControle: controleMap,
+      enviados: enviadosMap,
+      bloqueio: bloqueioMap,
+      unidade: unidadeMap,
+      empresa: empresaMap,
+      motivo: motivoMap,
+      porControle: porControleSecurity,
 
       porDia: {
         labels: diaLabels,

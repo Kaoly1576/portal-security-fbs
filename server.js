@@ -1959,10 +1959,7 @@ function parseDateBRDesligados(value) {
   const month = Number(match[2]);
   let year = Number(match[3]);
 
-  if (year < 1000) {
-    year += 2000;
-  }
-
+  if (year < 1000) year += 2000;
   if (!day || !month || !year) return null;
 
   return new Date(year, month - 1, day);
@@ -1993,7 +1990,7 @@ async function carregarDesligadosRaw() {
   const headers = values[0].map((h) => dNormalize(h));
   const linhas = values.slice(1);
 
-  const rows = linhas.map((linha) => {
+  return linhas.map((linha) => {
     const obj = {};
 
     headers.forEach((header, index) => {
@@ -2010,8 +2007,6 @@ async function carregarDesligadosRaw() {
 
     return obj;
   });
-
-  return rows;
 }
 
 async function carregarDesligadosComCache() {
@@ -2021,13 +2016,12 @@ async function carregarDesligadosComCache() {
     return desligadosCache;
   }
 
-  const data = await carregarDesligadosRaw();
-  desligadosCache = data;
+  desligadosCache = await carregarDesligadosRaw();
   desligadosCacheTime = now;
 
-  console.log("DESLIGADOS cache atualizado:", data.length);
+  console.log("DESLIGADOS cache atualizado:", desligadosCache.length);
 
-  return data;
+  return desligadosCache;
 }
 
 function uniqueValues(data, column) {
@@ -2239,26 +2233,23 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
 
-    // SOMENTE registros cujo Controle interno = Security
-    const securityRows = filtrados.filter((row) => {
-      const controle = dNormalizeLower(row[DESLIGADOS_COLUMNS.controle]);
-      return controle.includes("security");
-    });
-
-    // Top motivos Security = agrupa pelo motivo de desligamento
+    // Top motivos Security = coluna Controle interno
     const topMotivosSecurityMap = {};
-    securityRows.forEach((row) => {
-      const motivo = dNormalize(row[DESLIGADOS_COLUMNS.motivo]);
-      const motivoLower = dNormalizeLower(motivo);
 
-      if (!motivo) return;
-      if (motivoLower === "null") return;
-      if (motivoLower === "undefined") return;
-      if (motivoLower === "sem valor") return;
-      if (motivoLower === "-") return;
+    filtrados.forEach((row) => {
+      const controle = dNormalize(row[DESLIGADOS_COLUMNS.controle]);
+      const controleLower = dNormalizeLower(controle);
 
-      topMotivosSecurityMap[motivo] =
-        (topMotivosSecurityMap[motivo] || 0) + 1;
+      if (!controle) return;
+      if (controleLower === "null") return;
+      if (controleLower === "undefined") return;
+      if (controleLower === "sem valor") return;
+      if (controleLower === "-") return;
+      if (controleLower === "security") return;
+      if (controleLower === "controle interno") return;
+
+      topMotivosSecurityMap[controle] =
+        (topMotivosSecurityMap[controle] || 0) + 1;
     });
 
     const topMotivosSecurity = Object.entries(topMotivosSecurityMap)
@@ -2321,7 +2312,6 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
       empresa: empresaMap,
       motivo: motivoMap,
 
-      // gráfico "Motivos de Security"
       topMotivosSecurity: {
         labels: topMotivosSecurity.map(([nome]) => nome),
         values: topMotivosSecurity.map(([, total]) => total),
@@ -2356,6 +2346,46 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
           enviados: info.enviados,
           bloqueados: info.bloqueados,
         })),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarDesligadosComCache();
+    const filtrados = filtrarDesligados(dados, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    const rows = filtrados.slice(start, end).map((row) => ({
+      [DESLIGADOS_COLUMNS.unidade]: row[DESLIGADOS_COLUMNS.unidade] || "",
+      [DESLIGADOS_COLUMNS.data]: row[DESLIGADOS_COLUMNS.data] || "",
+      [DESLIGADOS_COLUMNS.nome]: row[DESLIGADOS_COLUMNS.nome] || "",
+      [DESLIGADOS_COLUMNS.cpf]: row[DESLIGADOS_COLUMNS.cpf] || "",
+      [DESLIGADOS_COLUMNS.empresa]: row[DESLIGADOS_COLUMNS.empresa] || "",
+      [DESLIGADOS_COLUMNS.cargo]: row[DESLIGADOS_COLUMNS.cargo] || "",
+      [DESLIGADOS_COLUMNS.enviado]: row[DESLIGADOS_COLUMNS.enviado] || "",
+      [DESLIGADOS_COLUMNS.bloqueio]: row[DESLIGADOS_COLUMNS.bloqueio] || "",
+      [DESLIGADOS_COLUMNS.motivo]: row[DESLIGADOS_COLUMNS.motivo] || "",
+      [DESLIGADOS_COLUMNS.controle]: row[DESLIGADOS_COLUMNS.controle] || "",
+      detalhe: row[DESLIGADOS_COLUMNS.detalhe] || "",
+    }));
+
+    return res.json({
+      total: filtrados.length,
+      page,
+      limit,
+      totalPages: Math.ceil(filtrados.length / limit),
+      rows,
     });
   } catch (error) {
     return res.status(500).json({

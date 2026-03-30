@@ -3431,7 +3431,7 @@ async function loadRondasRaw() {
     {
       // se o nome real da aba for outro, ajuste aqui
       aba: "Ronda Estoque",
-      range: "'Ronda Estoque'!B:F",
+      range: "'Ronda Estoque RK'!B:F",
       mapper: mapEstoqueRow,
     },
   ];

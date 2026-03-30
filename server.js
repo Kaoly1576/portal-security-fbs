@@ -3272,137 +3272,174 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
 });
 
 
+// ================== RONDAS DASHBOARD ==================
 
-// ============================== // RONDAS - CONFIG// ===============================
-const RONDAS_SHEET_ID = '1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU';
+app.get("/rondas", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "rondas.html"));
+});
 
-function normalizeText(value) {
-  return String(value || '').trim();
+const RONDAS_SHEET_ID = "1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU";
+
+let rondasCache = null;
+let rondasCacheTime = 0;
+const RONDAS_CACHE_TTL = 5 * 60 * 1000;
+
+function rondaNorm(value) {
+  return String(value || "").trim();
 }
 
-function parseBrDate(value) {
+function rondaNormUpper(value) {
+  return rondaNorm(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+}
+
+function rondaNormLower(value) {
+  return rondaNorm(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function rondaParseDate(value) {
   if (!value) return null;
   const raw = String(value).trim();
 
-  let m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  let m = raw.match(
+    /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
+  );
   if (m) {
-    const [, dd, mm, yyyy, hh = '00', mi = '00', ss = '00'] = m;
+    const [, dd, mm, yyyy, hh = "00", mi = "00", ss = "00"] = m;
     const d = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`);
-    return isNaN(d.getTime()) ? null : d;
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 
   m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m) {
     const d = new Date(`${raw}T00:00:00`);
-    return isNaN(d.getTime()) ? null : d;
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 
   const fallback = new Date(raw);
-  return isNaN(fallback.getTime()) ? null : fallback;
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 
-function formatDateBR(date) {
-  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('pt-BR');
+function rondaFormatDateBR(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
-function safeUpper(v) {
-  return normalizeText(v).toUpperCase();
+function rondaFormatISO(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-function includesText(source, term) {
-  return safeUpper(source).includes(safeUpper(term));
-}
-
-function splitMulti(value) {
-  return String(value || '')
-    .split('|')
-    .map(v => v.trim())
+function rondaSplitMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => rondaNorm(v))
     .filter(Boolean);
 }
 
-function matchesMulti(fieldValue, selectedValues) {
-  if (!selectedValues || !selectedValues.length) return true;
-  const base = safeUpper(fieldValue);
-  return selectedValues.some(v => base === safeUpper(v));
+function rondaMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(rondaNorm(fieldValue));
 }
 
-function percentChange(current, previous) {
+function rondaIncludesText(source, term) {
+  return rondaNormUpper(source).includes(rondaNormUpper(term));
+}
+
+function rondaSortUnique(arr) {
+  return [...new Set(arr.filter(Boolean))].sort((a, b) =>
+    String(a).localeCompare(String(b), "pt-BR")
+  );
+}
+
+function rondaPercentChange(current, previous) {
   current = Number(current || 0);
   previous = Number(previous || 0);
+
   if (previous === 0 && current === 0) return 0;
   if (previous === 0) return 100;
-  return ((current - previous) / previous) * 100;
-}
 
-function sortAscUnique(arr) {
-  return [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
+  return ((current - previous) / previous) * 100;
 }
 
 function mapRondaGeralRow(row) {
   return {
-    data: normalizeText(row[0]),
-    dataObj: parseBrDate(row[0]),
-    unidade: normalizeText(row[1]),
-    plantao: normalizeText(row[2]),
-    nome: normalizeText(row[3]),
-    acao: normalizeText(row[4]),
-    tipo_ronda: normalizeText(row[5]) || 'Ronda Geral',
-    origem_ronda: 'Ronda Geral'
+    data: rondaNorm(row[0]),
+    dataObj: rondaParseDate(row[0]),
+    unidade: rondaNorm(row[1]),
+    plantao: rondaNorm(row[2]),
+    nome: rondaNorm(row[3]),
+    acao: rondaNorm(row[4]),
+    tipo_ronda: rondaNorm(row[5]) || "Ronda Geral",
+    origem_ronda: "Ronda Geral",
   };
 }
 
 function mapPortasRow(row) {
   return {
-    data: normalizeText(row[0]),
-    dataObj: parseBrDate(row[0]),
-    unidade: normalizeText(row[1]),
-    plantao: normalizeText(row[2]),
-    nome: normalizeText(row[3]),
-    acao: normalizeText(row[4]),
-    tipo_ronda: normalizeText(row[5]) || 'Portas de emergência',
-    origem_ronda: 'Portas de emergência'
+    data: rondaNorm(row[0]),
+    dataObj: rondaParseDate(row[0]),
+    unidade: rondaNorm(row[1]),
+    plantao: rondaNorm(row[2]),
+    nome: rondaNorm(row[3]),
+    acao: rondaNorm(row[4]),
+    tipo_ronda: rondaNorm(row[5]) || "Portas de emergência",
+    origem_ronda: "Portas de emergência",
   };
 }
 
 function mapEstoqueRow(row) {
   return {
-    data: normalizeText(row[0]),
-    dataObj: parseBrDate(row[0]),
-    unidade: normalizeText(row[1]),
-    plantao: normalizeText(row[2]),
-    nome: normalizeText(row[3]),
-    acao: 'Ronda',
-    tipo_ronda: normalizeText(row[4]) || 'Estoque',
-    origem_ronda: 'Ronda Estoque'
+    data: rondaNorm(row[0]),
+    dataObj: rondaParseDate(row[0]),
+    unidade: rondaNorm(row[1]),
+    plantao: rondaNorm(row[2]),
+    nome: rondaNorm(row[3]),
+    acao: "Ronda",
+    tipo_ronda: rondaNorm(row[4]) || "Estoque",
+    origem_ronda: "Ronda Estoque",
   };
 }
 
-async function loadRondasData() {
+async function loadRondasRaw() {
+  const sheets = await conectarSheets();
   const all = [];
 
   const configs = [
     {
-      aba: 'Ronda Geral',
-      range: `'Ronda Geral'!B:G`,
-      mapper: mapRondaGeralRow
+      aba: "Ronda Geral",
+      range: "'Ronda Geral'!B:G",
+      mapper: mapRondaGeralRow,
     },
     {
-      aba: 'Ronda Portas de emergência',
-      range: `'Ronda Portas de emergência'!C:H`,
-      mapper: mapPortasRow
+      aba: "Ronda Portas de emergência",
+      range: "'Ronda Portas de emergência'!C:H",
+      mapper: mapPortasRow,
     },
     {
-      aba: 'Ronda Estoque',
-      range: `'Ronda Estoque'!B:F`,
-      mapper: mapEstoqueRow
-    }
+      // se o nome real da aba for outro, ajuste aqui
+      aba: "Ronda Estoque",
+      range: "'Ronda Estoque'!B:F",
+      mapper: mapEstoqueRow,
+    },
   ];
 
   for (const cfg of configs) {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: RONDAS_SHEET_ID,
-      range: cfg.range
+      range: cfg.range,
     });
 
     const rows = resp?.data?.values || [];
@@ -3411,10 +3448,19 @@ async function loadRondasData() {
     const dataRows = rows.slice(1);
 
     for (const row of dataRows) {
-      if (!row || row.every(cell => !String(cell || '').trim())) continue;
+      if (!row || row.every((cell) => !String(cell || "").trim())) continue;
+
       const record = cfg.mapper(row);
 
-      if (!record.data && !record.unidade && !record.nome && !record.tipo_ronda) continue;
+      if (
+        !record.data &&
+        !record.unidade &&
+        !record.nome &&
+        !record.tipo_ronda
+      ) {
+        continue;
+      }
+
       all.push(record);
     }
   }
@@ -3422,30 +3468,43 @@ async function loadRondasData() {
   return all;
 }
 
+async function loadRondasComCache() {
+  const now = Date.now();
+
+  if (rondasCache && now - rondasCacheTime < RONDAS_CACHE_TTL) {
+    return rondasCache;
+  }
+
+  rondasCache = await loadRondasRaw();
+  rondasCacheTime = now;
+
+  console.log("RONDAS cache atualizado:", rondasCache.length);
+
+  return rondasCache;
+}
+
 function filterRondas(records, query) {
-  const dataInicial = query.dataInicial ? parseBrDate(query.dataInicial) : null;
-  const dataFinal = query.dataFinal ? parseBrDate(query.dataFinal) : null;
+  const dataInicial = rondaNorm(query.dataInicial);
+  const dataFinal = rondaNorm(query.dataFinal);
 
-  const origens = splitMulti(query.origem);
-  const unidades = splitMulti(query.unidade);
-  const plantoes = splitMulti(query.plantao);
-  const tipos = splitMulti(query.tipo);
-  const nomes = splitMulti(query.nome);
-  const busca = normalizeText(query.busca);
+  const origens = rondaSplitMulti(query.origem);
+  const unidades = rondaSplitMulti(query.unidade);
+  const plantoes = rondaSplitMulti(query.plantao);
+  const tipos = rondaSplitMulti(query.tipo);
+  const nomes = rondaSplitMulti(query.nome);
+  const busca = rondaNormLower(query.busca);
 
-  return records.filter(r => {
-    if (dataInicial && r.dataObj && r.dataObj < dataInicial) return false;
-    if (dataFinal && r.dataObj) {
-      const end = new Date(dataFinal);
-      end.setHours(23, 59, 59, 999);
-      if (r.dataObj > end) return false;
-    }
+  return records.filter((r) => {
+    const iso = r.dataObj ? rondaFormatISO(r.dataObj) : "";
 
-    if (!matchesMulti(r.origem_ronda, origens)) return false;
-    if (!matchesMulti(r.unidade, unidades)) return false;
-    if (!matchesMulti(r.plantao, plantoes)) return false;
-    if (!matchesMulti(r.tipo_ronda, tipos)) return false;
-    if (!matchesMulti(r.nome, nomes)) return false;
+    if (dataInicial && (!iso || iso < dataInicial)) return false;
+    if (dataFinal && (!iso || iso > dataFinal)) return false;
+
+    if (!rondaMatchesMulti(r.origem_ronda, origens)) return false;
+    if (!rondaMatchesMulti(r.unidade, unidades)) return false;
+    if (!rondaMatchesMulti(r.plantao, plantoes)) return false;
+    if (!rondaMatchesMulti(r.tipo_ronda, tipos)) return false;
+    if (!rondaMatchesMulti(r.nome, nomes)) return false;
 
     if (busca) {
       const combined = [
@@ -3455,10 +3514,10 @@ function filterRondas(records, query) {
         r.plantao,
         r.nome,
         r.acao,
-        r.tipo_ronda
-      ].join(' | ');
+        r.tipo_ronda,
+      ].join(" ");
 
-      if (!includesText(combined, busca)) return false;
+      if (!rondaIncludesText(combined, busca)) return false;
     }
 
     return true;
@@ -3468,7 +3527,10 @@ function filterRondas(records, query) {
 function buildRondasResumo(filtered) {
   const totalRondas = filtered.length;
 
-  const validDates = filtered.map(r => r.dataObj).filter(Boolean).sort((a, b) => a - b);
+  const validDates = filtered
+    .map((r) => r.dataObj)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
 
   let rondasMesAtual = 0;
   let rondasMesAnterior = 0;
@@ -3482,52 +3544,65 @@ function buildRondasResumo(filtered) {
     const prevMonth = prevRef.getMonth();
     const prevYear = prevRef.getFullYear();
 
-    rondasMesAtual = filtered.filter(r =>
-      r.dataObj &&
-      r.dataObj.getMonth() === currentMonth &&
-      r.dataObj.getFullYear() === currentYear
+    rondasMesAtual = filtered.filter(
+      (r) =>
+        r.dataObj &&
+        r.dataObj.getMonth() === currentMonth &&
+        r.dataObj.getFullYear() === currentYear
     ).length;
 
-    rondasMesAnterior = filtered.filter(r =>
-      r.dataObj &&
-      r.dataObj.getMonth() === prevMonth &&
-      r.dataObj.getFullYear() === prevYear
+    rondasMesAnterior = filtered.filter(
+      (r) =>
+        r.dataObj &&
+        r.dataObj.getMonth() === prevMonth &&
+        r.dataObj.getFullYear() === prevYear
     ).length;
   }
 
-  const colaboradoresUnicos = new Set(filtered.map(r => normalizeText(r.nome)).filter(Boolean)).size;
-  const unidadesUnicas = new Set(filtered.map(r => normalizeText(r.unidade)).filter(Boolean)).size;
+  const colaboradoresUnicos = new Set(
+    filtered.map((r) => rondaNorm(r.nome)).filter(Boolean)
+  ).size;
+
+  const unidadesUnicas = new Set(
+    filtered.map((r) => rondaNorm(r.unidade)).filter(Boolean)
+  ).size;
 
   return {
     totalRondas,
     rondasMesAtual,
     rondasMesAnterior,
-    variacaoMensal: percentChange(rondasMesAtual, rondasMesAnterior),
+    variacaoMensal: rondaPercentChange(rondasMesAtual, rondasMesAnterior),
     colaboradoresUnicos,
-    unidadesUnicas
+    unidadesUnicas,
   };
 }
 
 function buildRondasGraficos(filtered) {
-  const dias = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
-  const porDiaMap = Object.fromEntries(dias.map(d => [d, 0]));
+  const dias = Array.from({ length: 31 }, (_, i) =>
+    String(i + 1).padStart(2, "0")
+  );
+  const porDiaMap = Object.fromEntries(dias.map((d) => [d, 0]));
 
-  filtered.forEach(r => {
+  filtered.forEach((r) => {
     if (!r.dataObj) return;
-    const dia = String(r.dataObj.getDate()).padStart(2, '0');
+    const dia = String(r.dataObj.getDate()).padStart(2, "0");
     porDiaMap[dia] = (porDiaMap[dia] || 0) + 1;
   });
 
   const porDia = {
     labels: dias,
-    valores: dias.map(d => porDiaMap[d] || 0),
-    metas: dias.map(() => 35)
+    valores: dias.map((d) => porDiaMap[d] || 0),
+    metas: dias.map(() => 35),
   };
 
   let mesAtual = 0;
   let mesAnterior = 0;
 
-  const validDates = filtered.map(r => r.dataObj).filter(Boolean).sort((a, b) => a - b);
+  const validDates = filtered
+    .map((r) => r.dataObj)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
   if (validDates.length) {
     const latest = validDates[validDates.length - 1];
     const currMonth = latest.getMonth();
@@ -3537,23 +3612,26 @@ function buildRondasGraficos(filtered) {
     const prevMonth = prevRef.getMonth();
     const prevYear = prevRef.getFullYear();
 
-    mesAtual = filtered.filter(r =>
-      r.dataObj &&
-      r.dataObj.getMonth() === currMonth &&
-      r.dataObj.getFullYear() === currYear
+    mesAtual = filtered.filter(
+      (r) =>
+        r.dataObj &&
+        r.dataObj.getMonth() === currMonth &&
+        r.dataObj.getFullYear() === currYear
     ).length;
 
-    mesAnterior = filtered.filter(r =>
-      r.dataObj &&
-      r.dataObj.getMonth() === prevMonth &&
-      r.dataObj.getFullYear() === prevYear
+    mesAnterior = filtered.filter(
+      (r) =>
+        r.dataObj &&
+        r.dataObj.getMonth() === prevMonth &&
+        r.dataObj.getFullYear() === prevYear
     ).length;
   }
 
   function buildTop(records, key, meta, limit = 10) {
     const map = {};
-    records.forEach(r => {
-      const k = normalizeText(r[key]) || 'NÃO INFORMADO';
+
+    records.forEach((r) => {
+      const k = rondaNorm(r[key]) || "NÃO INFORMADO";
       map[k] = (map[k] || 0) + 1;
     });
 
@@ -3564,7 +3642,7 @@ function buildRondasGraficos(filtered) {
     return {
       labels: entries.map(([k]) => k),
       valores: entries.map(([, v]) => v),
-      metas: entries.map(() => meta)
+      metas: entries.map(() => meta),
     };
   }
 
@@ -3573,21 +3651,21 @@ function buildRondasGraficos(filtered) {
     comparativoMensal: {
       mesAtual,
       mesAnterior,
-      metaMensal: 1000
+      metaMensal: 1000,
     },
-    porUnidade: buildTop(filtered, 'unidade', 150),
-    porPlantao: buildTop(filtered, 'plantao', 200),
-    porTipo: buildTop(filtered, 'tipo_ronda', 300)
+    porUnidade: buildTop(filtered, "unidade", 150),
+    porPlantao: buildTop(filtered, "plantao", 200),
+    porTipo: buildTop(filtered, "tipo_ronda", 300),
   };
 }
 
 function buildRondasFiltros(filteredBase) {
   return {
-    origens: sortAscUnique(filteredBase.map(r => r.origem_ronda)),
-    unidades: sortAscUnique(filteredBase.map(r => r.unidade)),
-    plantoes: sortAscUnique(filteredBase.map(r => r.plantao)),
-    tipos: sortAscUnique(filteredBase.map(r => r.tipo_ronda)),
-    nomes: sortAscUnique(filteredBase.map(r => r.nome))
+    origens: rondaSortUnique(filteredBase.map((r) => r.origem_ronda)),
+    unidades: rondaSortUnique(filteredBase.map((r) => r.unidade)),
+    plantoes: rondaSortUnique(filteredBase.map((r) => r.plantao)),
+    tipos: rondaSortUnique(filteredBase.map((r) => r.tipo_ronda)),
+    nomes: rondaSortUnique(filteredBase.map((r) => r.nome)),
   };
 }
 
@@ -3603,14 +3681,14 @@ function buildRondasDetalhes(filtered, page = 1, limit = 20) {
   const currentPage = Math.min(Math.max(1, page), totalPages);
   const start = (currentPage - 1) * limit;
 
-  const items = sorted.slice(start, start + limit).map(r => ({
-    data: r.dataObj ? formatDateBR(r.dataObj) : r.data,
+  const items = sorted.slice(start, start + limit).map((r) => ({
+    data: r.dataObj ? rondaFormatDateBR(r.dataObj) : r.data,
     origem_ronda: r.origem_ronda,
     unidade: r.unidade,
     plantao: r.plantao,
     nome: r.nome,
     acao: r.acao,
-    tipo_ronda: r.tipo_ronda
+    tipo_ronda: r.tipo_ronda,
   }));
 
   return {
@@ -3618,73 +3696,73 @@ function buildRondasDetalhes(filtered, page = 1, limit = 20) {
     limit,
     total,
     totalPages,
-    items
+    items,
   };
 }
 
-app.get('/api/rondas-debug', async (req, res) => {
+app.get("/api/rondas-debug", requireAuth, async (req, res) => {
   try {
-    const all = await loadRondasData();
+    const all = await loadRondasComCache();
     res.json({
       total: all.length,
-      amostra: all.slice(0, 5)
+      amostra: all.slice(0, 5),
     });
   } catch (error) {
-    console.error('Erro REAL /api/rondas-debug:', error);
+    console.error("Erro /api/rondas-debug:", error);
     res.status(500).json({
-      error: 'Erro no debug de rondas.',
+      error: "Erro no debug de rondas.",
       detalhe: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
   }
 });
 
-app.get('/api/rondas-filtros', async (req, res) => {
+app.get("/api/rondas-filtros", requireAuth, async (req, res) => {
   try {
-    const all = await loadRondasData();
+    const all = await loadRondasComCache();
     const filtered = filterRondas(all, req.query);
     res.json(buildRondasFiltros(filtered));
   } catch (error) {
-    console.error('Erro /api/rondas-filtros:', error);
+    console.error("Erro /api/rondas-filtros:", error);
     res.status(500).json({
-      error: 'Erro ao carregar filtros de rondas.',
-      detalhe: error.message
+      error: "Erro ao carregar filtros de rondas.",
+      detalhe: error.message,
     });
   }
 });
 
-app.get('/api/rondas-resumo', async (req, res) => {
+app.get("/api/rondas-resumo", requireAuth, async (req, res) => {
   try {
-    const all = await loadRondasData();
+    const all = await loadRondasComCache();
     const filtered = filterRondas(all, req.query);
     res.json(buildRondasResumo(filtered));
   } catch (error) {
-    console.error('Erro REAL /api/rondas-resumo:', error);
+    console.error("Erro /api/rondas-resumo:", error);
     res.status(500).json({
-      error: 'Erro ao carregar resumo de rondas.',
+      error: "Erro ao carregar resumo de rondas.",
       detalhe: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
   }
 });
 
-app.get('/api/rondas-graficos', async (req, res) => {
+app.get("/api/rondas-graficos", requireAuth, async (req, res) => {
   try {
-    const all = await loadRondasData();
+    const all = await loadRondasComCache();
     const filtered = filterRondas(all, req.query);
     res.json(buildRondasGraficos(filtered));
   } catch (error) {
-    console.error('Erro /api/rondas-graficos:', error);
+    console.error("Erro /api/rondas-graficos:", error);
     res.status(500).json({
-      error: 'Erro ao carregar gráficos de rondas.',
-      detalhe: error.message
+      error: "Erro ao carregar gráficos de rondas.",
+      detalhe: error.message,
     });
   }
 });
 
-app.get('/api/rondas-detalhes', async (req, res) => {
+app.get("/api/rondas-detalhes", requireAuth, async (req, res) => {
   try {
-    const all = await loadRondasData();
+    const all = await loadRondasComCache();
     const filtered = filterRondas(all, req.query);
 
     const page = Number(req.query.page || 1);
@@ -3692,13 +3770,14 @@ app.get('/api/rondas-detalhes', async (req, res) => {
 
     res.json(buildRondasDetalhes(filtered, page, limit));
   } catch (error) {
-    console.error('Erro /api/rondas-detalhes:', error);
+    console.error("Erro /api/rondas-detalhes:", error);
     res.status(500).json({
-      error: 'Erro ao carregar detalhes de rondas.',
-      detalhe: error.message
+      error: "Erro ao carregar detalhes de rondas.",
+      detalhe: error.message,
     });
   }
 });
+
 
 // ================== SERVIDOR ==================
 

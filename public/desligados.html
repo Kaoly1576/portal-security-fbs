@@ -7,6 +7,43 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <link rel="stylesheet" href="/desligados.css" />
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    .charts-grid.two-top{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .charts-grid.two-mid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .charts-grid.one-full{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    @media (max-width: 1100px){
+      .charts-grid.two-top,
+      .charts-grid.two-mid{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="page-shell">
@@ -147,56 +184,44 @@
       </div>
     </section>
 
-    <section class="charts-grid">
+    <section class="charts-grid two-top">
       <div class="panel-card">
-        <div class="panel-title">Envio ao Condomínio</div>
-        <div class="chart-wrap">
-          <canvas id="chartEnviados"></canvas>
+        <div class="panel-title">Motivo de Desligamento</div>
+        <div class="chart-wrap xlarge">
+          <canvas id="chartMotivo"></canvas>
         </div>
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">Bloqueio Efetivado</div>
-        <div class="chart-wrap">
-          <canvas id="chartBloqueios"></canvas>
-        </div>
-      </div>
-
-      <div class="panel-card">
-        <div class="panel-title">Desligados por Unidade</div>
-        <div class="chart-wrap">
-          <canvas id="chartUnidade"></canvas>
+        <div class="panel-title">Top Motivos Security</div>
+        <div class="chart-wrap xlarge">
+          <canvas id="chartControle"></canvas>
         </div>
       </div>
     </section>
 
-    <section class="charts-grid two-cols">
+    <section class="charts-grid two-mid">
+      <div class="panel-card">
+        <div class="panel-title">Desligados por Unidade</div>
+        <div class="chart-wrap large">
+          <canvas id="chartUnidade"></canvas>
+        </div>
+      </div>
+
       <div class="panel-card">
         <div class="panel-title">Desligados por Empresa</div>
         <div class="chart-wrap large">
           <canvas id="chartEmpresa"></canvas>
         </div>
       </div>
+    </section>
 
+    <section class="charts-grid one-full">
       <div class="panel-card">
         <div class="panel-title">Desligados por Dia</div>
         <div class="chart-wrap large">
           <canvas id="chartMes"></canvas>
         </div>
-      </div>
-    </section>
-
-    <section class="panel-card">
-      <div class="panel-title">Motivo de Desligamento</div>
-      <div class="chart-wrap xlarge">
-        <canvas id="chartMotivo"></canvas>
-      </div>
-    </section>
-
-    <section class="panel-card">
-      <div class="panel-title">Top Motivos Security</div>
-      <div class="chart-wrap xlarge">
-        <canvas id="chartControle"></canvas>
       </div>
     </section>
 
@@ -249,8 +274,6 @@
   <script>
     Chart.register(ChartDataLabels);
 
-    let chartEnviados = null;
-    let chartBloqueios = null;
     let chartUnidade = null;
     let chartEmpresa = null;
     let chartMes = null;
@@ -394,16 +417,12 @@
     }
 
     function destroyCharts() {
-      if (chartEnviados) chartEnviados.destroy();
-      if (chartBloqueios) chartBloqueios.destroy();
       if (chartUnidade) chartUnidade.destroy();
       if (chartEmpresa) chartEmpresa.destroy();
       if (chartMes) chartMes.destroy();
       if (chartMotivo) chartMotivo.destroy();
       if (chartControle) chartControle.destroy();
 
-      chartEnviados = null;
-      chartBloqueios = null;
       chartUnidade = null;
       chartEmpresa = null;
       chartMes = null;
@@ -447,32 +466,6 @@
       };
     }
 
-    function makeDoughnutOptions() {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "58%",
-        plugins: {
-          legend: {
-            position: "top",
-            labels: {
-              color: "#fff",
-              boxWidth: 10,
-              font: { size: 10 }
-            }
-          },
-          datalabels: {
-            color: "#fff",
-            font: {
-              weight: "700",
-              size: 10
-            },
-            formatter: (value) => value > 0 ? formatNumber(value) : ""
-          }
-        }
-      };
-    }
-
     async function loadFiltros() {
       const res = await fetch("/api/desligados-filtros", { credentials: "same-origin" });
       const data = await res.json();
@@ -505,32 +498,6 @@
       const data = await res.json();
 
       destroyCharts();
-
-      chartEnviados = new Chart(document.getElementById("chartEnviados"), {
-        type: "doughnut",
-        data: {
-          labels: Object.keys(data.enviados || {}),
-          datasets: [{
-            data: Object.values(data.enviados || {}),
-            backgroundColor: ["#ff7a1a", "#475569", "#94a3b8", "#1e293b"],
-            borderWidth: 0
-          }]
-        },
-        options: makeDoughnutOptions()
-      });
-
-      chartBloqueios = new Chart(document.getElementById("chartBloqueios"), {
-        type: "doughnut",
-        data: {
-          labels: Object.keys(data.bloqueio || {}),
-          datasets: [{
-            data: Object.values(data.bloqueio || {}),
-            backgroundColor: ["#22c55e", "#ef4444", "#64748b", "#ff7a1a"],
-            borderWidth: 0
-          }]
-        },
-        options: makeDoughnutOptions()
-      });
 
       chartUnidade = new Chart(document.getElementById("chartUnidade"), {
         type: "bar",

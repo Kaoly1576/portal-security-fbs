@@ -1,893 +1,993 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rondas</title>
+  <title>RONDAS</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    :root {
-      --bg: #041325;
-      --card: #142744;
-      --line: rgba(255,255,255,0.08);
-      --text: #ffffff;
-      --muted: #c7d2e0;
-      --orange: #ff7a1a;
-      --blue: #58a6ff;
-      --green: #22c55e;
-      --red: #ef4444;
-      --purple: #8b5cf6;
-      --yellow: #f59e0b;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: linear-gradient(180deg, #03101f 0%, #041325 100%);
-      color: var(--text);
+      font-family: Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, #273246 0%, #101826 40%, #060b14 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 10px;
     }
 
-    .page {
-      max-width: 1500px;
+    .container {
+      width: 100%;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 18px;
     }
 
-    .topbar, .hero, .filters, .panel, .wide-panel, .kpi {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 16px;
+    .topbar, .hero, .filters, .card, .chart-card, .table-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     }
 
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 18px;
-      padding: 14px 16px;
-      flex-wrap: wrap;
+      padding: 12px 18px;
+      margin-bottom: 10px;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
-    .brand-logo {
-      width: 58px;
-      height: 58px;
+    .brand img {
+      width: 40px;
+      height: 40px;
       object-fit: contain;
-      border-radius: 14px;
-      background: #0f2138;
-      padding: 6px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.25);
+      padding: 4px;
     }
 
-    .brand-text h1 {
-      color: var(--orange);
-      font-size: 22px;
-      font-weight: 900;
+    .brand h1 {
+      font-size: 32px;
+      color: #ff7a1a;
+      font-weight: 800;
+      letter-spacing: 0.5px;
     }
 
-    .brand-text p {
+    .brand span {
+      display: block;
       font-size: 12px;
-      color: var(--muted);
+      color: rgba(255,255,255,0.75);
+      margin-top: 2px;
     }
 
-    .btn {
-      background: #163154;
-      border: 1px solid var(--line);
+    .btn-portal {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
       color: #fff;
-      padding: 10px 16px;
+      padding: 12px 18px;
       border-radius: 12px;
       text-decoration: none;
-      font-size: 13px;
       font-weight: 700;
-      cursor: pointer;
+      transition: 0.2s;
     }
 
+    .btn-portal:hover { background: rgba(255,255,255,0.14); }
+
     .hero {
-      padding: 18px 20px;
+      padding: 16px 20px;
+      margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
       gap: 16px;
-      align-items: center;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
     }
 
     .hero h2 {
-      font-size: 20px;
-      margin-bottom: 8px;
+      font-size: 28px;
+      margin-bottom: 6px;
     }
 
     .hero p {
-      color: var(--muted);
       font-size: 13px;
-      line-height: 1.5;
-      max-width: 860px;
+      color: rgba(255,255,255,0.75);
     }
 
-    .hero-right {
+    .updated-box {
       text-align: right;
       min-width: 150px;
     }
 
-    .hero-right .small {
-      color: var(--muted);
+    .updated-box small {
+      display: block;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 4px;
       font-size: 12px;
-      margin-bottom: 6px;
     }
 
-    .hero-right .time {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 22px;
+    .updated-box strong {
+      color: #ff7a1a;
+      font-size: 20px;
     }
 
     .filters {
-      padding: 14px;
-      margin-bottom: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
     }
 
     .filters-grid {
       display: grid;
-      grid-template-columns: repeat(7, minmax(120px, 1fr));
+      grid-template-columns: repeat(6, 1fr);
       gap: 10px;
-      align-items: end;
     }
 
-    .field label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 11px;
-      color: #dfe8f4;
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      position: relative;
+    }
+
+    .filter-group label {
+      font-size: 12px;
       font-weight: 700;
+      color: rgba(255,255,255,0.9);
     }
 
-    .field input,
-    .field select {
-      width: 100%;
-      height: 38px;
-      background: #0a1b32;
-      border: 1px solid var(--line);
+    .filter-group input,
+    .filter-group select,
+    .multi-select-trigger {
+      height: 36px;
       border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #051127;
       color: #fff;
-      padding: 0 10px;
+      padding: 0 12px;
       outline: none;
       font-size: 13px;
     }
 
-    .actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
+    .filter-group input::placeholder { color: rgba(255,255,255,0.45); }
+
+    .search-wide {
+      grid-column: span 2;
     }
 
-    .btn-primary {
-      height: 38px;
+    .btn-clear {
+      height: 36px;
       border: none;
       border-radius: 10px;
-      padding: 0 14px;
-      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
+      background: linear-gradient(90deg, #ff7a1a, #ff4d4d);
       color: #fff;
       font-weight: 800;
+      font-size: 14px;
       cursor: pointer;
-    }
-
-    .btn-ghost {
-      height: 38px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 0 14px;
-      background: #0d213b;
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
+      margin-top: 17px;
     }
 
     .kpis {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .kpi {
-      padding: 14px;
-      min-height: 92px;
-    }
-
-    .kpi-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #dbe4ef;
-      margin-bottom: 10px;
-    }
-
-    .kpi-value {
-      font-size: 24px;
-      font-weight: 900;
-      line-height: 1.1;
-    }
-
-    .orange { color: var(--orange); }
-    .blue { color: var(--blue); }
-    .green { color: var(--green); }
-    .red { color: var(--red); }
-    .purple { color: var(--purple); }
-
-    .grid-top {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
       margin-bottom: 12px;
     }
 
-    .grid-middle {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .grid-bottom {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .panel {
-      padding: 14px;
-      min-height: 250px;
-      overflow: hidden;
-    }
-
-    .panel-title {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 14px;
-      margin-bottom: 12px;
-      text-align: center;
-    }
-
-    .compact-list {
+    .card {
+      padding: 14px 16px;
+      min-height: 88px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      justify-content: center;
     }
 
-    .compact-item {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 56px;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .compact-left {
-      min-width: 0;
-    }
-
-    .compact-name {
+    .card h3 {
       font-size: 12px;
       color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 6px;
-    }
-
-    .compact-value {
-      font-size: 12px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
       font-weight: 800;
-      text-align: right;
-      color: #fff;
     }
 
-    .bar-track {
+    .card .value {
+      font-size: 30px;
+      font-weight: 900;
+      color: #ff7a1a;
+      line-height: 1;
+    }
+
+    .card .sub {
+      font-size: 13px;
+      margin-top: 6px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .card .sub.positive { color: #1ddc7f; }
+    .card .sub.negative { color: #ff5252; }
+
+    .charts-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .charts-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .chart-card, .table-card {
+      padding: 12px 14px 16px;
+      min-height: 360px;
+    }
+
+    .chart-card h3, .table-card h3 {
+      text-align: center;
+      color: #ff7a1a;
+      font-size: 16px;
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+
+    .chart-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      margin-bottom: 8px;
+      color: rgba(255,255,255,0.75);
+    }
+
+    .goal-pill {
+      background: rgba(255,122,26,0.14);
+      border: 1px solid rgba(255,122,26,0.35);
+      color: #ffae6b;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 290px;
+    }
+
+    table {
       width: 100%;
-      height: 9px;
-      background: rgba(255,255,255,0.07);
-      border-radius: 999px;
-      overflow: hidden;
+      border-collapse: collapse;
+      font-size: 12px;
     }
 
-    .bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ff7a1a, #ff9540);
-      border-radius: 999px;
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align: left;
     }
 
-    .chart-box {
-      height: 240px;
+    th {
+      color: #ff7a1a;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: rgba(255,255,255,0.88);
+    }
+
+    .table-scroll {
+      max-height: 300px;
+      overflow: auto;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .pagination button {
+      border: none;
+      background: #ff7a1a;
+      color: #fff;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .pagination button:disabled {
+      background: #667;
+      cursor: not-allowed;
+    }
+
+    .multi-select {
       position: relative;
     }
 
-    .chart-box.line {
-      height: 260px;
+    .multi-select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
     }
 
-    .wide-panel {
-      padding: 14px;
-      margin-bottom: 14px;
-    }
-
-    .detail-wrap {
-      overflow: auto;
-      max-height: 520px;
-      border-radius: 12px;
-    }
-
-    .detail-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px;
-      font-size: 12px;
-    }
-
-    .detail-table th,
-    .detail-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      text-align: left;
+    .multi-select-trigger span {
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: calc(100% - 20px);
     }
 
-    .detail-table th {
-      position: sticky;
-      top: 0;
-      background: #10233f;
-      z-index: 1;
+    .multi-select-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 100%;
+      background: #0b1628;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      z-index: 50;
+      display: none;
+      max-height: 260px;
+      overflow: hidden;
     }
 
-    .pager {
-      margin-top: 12px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      flex-wrap: wrap;
+    .multi-select.open .multi-select-dropdown {
+      display: block;
     }
 
-    .pager-info {
-      margin-right: auto;
-      color: var(--muted);
+    .multi-select-search {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .multi-select-search input {
+      width: 100%;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #051127;
+      color: #fff;
+      padding: 0 10px;
       font-size: 12px;
-      display: flex;
-      align-items: center;
+      outline: none;
     }
 
-    .empty-state {
+    .multi-select-options {
+      max-height: 210px;
+      overflow: auto;
+      padding: 6px;
+    }
+
+    .multi-option {
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      height: 100%;
-      min-height: 120px;
-      font-size: 13px;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .multi-option:hover {
+      background: rgba(255,255,255,0.06);
+    }
+
+    .multi-option input {
+      accent-color: #ff7a1a;
     }
 
     @media (max-width: 1280px) {
-      .filters-grid,
-      .kpis {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .grid-top,
-      .grid-middle,
-      .grid-bottom {
-        grid-template-columns: 1fr;
-      }
+      .filters-grid { grid-template-columns: repeat(3, 1fr); }
+      .kpis { grid-template-columns: repeat(3, 1fr); }
+      .charts-grid-2, .charts-grid-3 { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 768px) {
-      .filters-grid,
-      .kpis {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-right {
-        text-align: left;
-      }
-
-      .kpi-value {
-        font-size: 20px;
-      }
+      .filters-grid { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: 1fr; }
+      .search-wide { grid-column: span 1; }
+      .hero, .topbar { flex-direction: column; align-items: stretch; }
+      .updated-box { text-align: left; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header class="topbar">
+  <div class="container">
+    <div class="topbar">
       <div class="brand">
-        <img src="/images/logo.png" alt="Logo" class="brand-logo" />
-        <div class="brand-text">
-          <h1 id="brandTitle">RONDAS</h1>
-          <p>Dashboard operacional de rondas</p>
+        <img src="/images/logo.png" alt="Logo">
+        <div>
+          <h1>RONDAS</h1>
+          <span>Dashboard de rondas internas e monitoramento operacional</span>
         </div>
       </div>
+      <a class="btn-portal" href="/portal.html">Voltar ao Portal</a>
+    </div>
 
-      <a href="/portal" class="btn">Voltar ao Portal</a>
-    </header>
-
-    <section class="hero">
+    <div class="hero">
       <div>
-        <h2 id="heroTitle">Dashboard de Rondas</h2>
-        <p id="heroDescription">Carregando dados...</p>
+        <h2>Dashboard de Rondas</h2>
+        <p>
+          Monitoramento consolidado das abas Ronda Geral, Portas de Emergência e Estoque,
+          com comparativo mensal, metas genéricas e filtros multiseleção.
+        </p>
       </div>
-
-      <div class="hero-right">
-        <div class="small">Última atualização</div>
-        <div class="time" id="ultimaAtualizacao">--:--</div>
+      <div class="updated-box">
+        <small>Última atualização</small>
+        <strong id="ultimaAtualizacao">--:--</strong>
       </div>
-    </section>
+    </div>
 
-    <section class="filters">
+    <div class="filters">
       <div class="filters-grid">
-        <div class="field">
-          <label>Ano</label>
-          <select id="filtroAno"><option value="">Todos</option></select>
+        <div class="filter-group">
+          <label>Data inicial</label>
+          <input type="date" id="dataInicial">
         </div>
 
-        <div class="field">
-          <label>Mês</label>
-          <select id="filtroMes"><option value="">Todos</option></select>
+        <div class="filter-group">
+          <label>Data final</label>
+          <input type="date" id="dataFinal">
         </div>
 
-        <div class="field">
-          <label>Dia</label>
-          <select id="filtroDia"><option value="">Todos</option></select>
+        <div class="filter-group">
+          <label>Origem da ronda</label>
+          <div class="multi-select" id="msOrigem"></div>
         </div>
 
-        <div class="field">
-          <label>Semana</label>
-          <select id="filtroSemana"><option value="">Todas</option></select>
-        </div>
-
-        <div class="field">
+        <div class="filter-group">
           <label>Unidade</label>
-          <select id="filtroUnidade"><option value="">Todas</option></select>
+          <div class="multi-select" id="msUnidade"></div>
         </div>
 
-        <div class="field">
+        <div class="filter-group">
           <label>Plantão</label>
-          <select id="filtroPlantao"><option value="">Todos</option></select>
+          <div class="multi-select" id="msPlantao"></div>
         </div>
 
-        <div class="field">
+        <div class="filter-group">
+          <label>Tipo de ronda</label>
+          <div class="multi-select" id="msTipo"></div>
+        </div>
+
+        <div class="filter-group">
+          <label>Colaborador</label>
+          <div class="multi-select" id="msNome"></div>
+        </div>
+
+        <div class="filter-group search-wide">
           <label>Busca geral</label>
-          <input type="text" id="filtroBusca" placeholder="Buscar..." />
+          <input type="text" id="busca" placeholder="Buscar por nome, unidade, plantão, tipo...">
+        </div>
+
+        <div class="filter-group">
+          <button class="btn-clear" id="btnLimpar">Limpar filtros</button>
         </div>
       </div>
+    </div>
 
-      <div class="actions">
-        <button class="btn-primary" id="btnAplicar">Aplicar</button>
-        <button class="btn-ghost" id="btnLimpar">Limpar</button>
-      </div>
-    </section>
-
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-title">Total de rondas</div>
-        <div class="kpi-value orange" id="kpiTotal">0</div>
+    <div class="kpis">
+      <div class="card">
+        <h3>Total de Rondas</h3>
+        <div class="value" id="kpiTotal">0</div>
+        <div class="sub" id="subTotal">Meta do mês: 1000</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Unidades</div>
-        <div class="kpi-value blue" id="kpiUnidades">0</div>
+      <div class="card">
+        <h3>Rondas no Mês</h3>
+        <div class="value" id="kpiMes">0</div>
+        <div class="sub" id="subMes">Meta mensal: 1000</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Plantões</div>
-        <div class="kpi-value green" id="kpiPlantoes">0</div>
+      <div class="card">
+        <h3>Mês Anterior</h3>
+        <div class="value" id="kpiMesAnterior">0</div>
+        <div class="sub" id="subMesAnterior">Comparativo base</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Colaboradores</div>
-        <div class="kpi-value purple" id="kpiColaboradores">0</div>
+      <div class="card">
+        <h3>Variação Mensal</h3>
+        <div class="value" id="kpiVariacao">0%</div>
+        <div class="sub" id="subVariacao">vs mês anterior</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title" id="kpiExtraTitle">Ocorrências</div>
-        <div class="kpi-value red" id="kpiExtra">0</div>
+      <div class="card">
+        <h3>Colaboradores</h3>
+        <div class="value" id="kpiColaboradores">0</div>
+        <div class="sub">Agentes únicos</div>
       </div>
-    </section>
 
-    <section class="grid-top">
-      <div class="panel">
-        <div class="panel-title">Rondas por FF</div>
-        <div class="chart-box">
-          <canvas id="chartFF"></canvas>
+      <div class="card">
+        <h3>Unidades</h3>
+        <div class="value" id="kpiUnidades">0</div>
+        <div class="sub">Unidades atendidas</div>
+      </div>
+    </div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <h3>Rondas por Dia</h3>
+        <div class="chart-meta">
+          <span>Comparativo do período filtrado</span>
+          <span class="goal-pill">Meta genérica: 35 / dia</span>
         </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Rondas Realizadas por Plantão</div>
-        <div id="cardPlantao" class="compact-list"></div>
-      </div>
-    </section>
-
-    <section class="grid-middle">
-      <div class="panel">
-        <div class="panel-title">Rondas Realizadas por Dia</div>
-        <div class="chart-box line">
+        <div class="chart-wrap">
           <canvas id="chartDia"></canvas>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">Rondas Realizadas por Colaborador</div>
-        <div id="cardColaborador" class="compact-list"></div>
+      <div class="chart-card">
+        <h3>Comparativo Mensal</h3>
+        <div class="chart-meta">
+          <span>Mês atual x mês anterior</span>
+          <span class="goal-pill">Meta genérica: 1000 / mês</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartComparativo"></canvas>
+        </div>
       </div>
-    </section>
+    </div>
 
-    <section class="grid-bottom">
-      <div class="panel">
-        <div class="panel-title">Rondas Realizadas por Mês</div>
-        <div class="chart-box line">
-          <canvas id="chartMes"></canvas>
+    <div class="charts-grid-3">
+      <div class="chart-card">
+        <h3>Rondas por Unidade</h3>
+        <div class="chart-meta">
+          <span>Top unidades</span>
+          <span class="goal-pill">Meta genérica: 150</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartUnidade"></canvas>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">Resumo da Ronda</div>
-        <div class="chart-box">
-          <canvas id="chartResumo"></canvas>
+      <div class="chart-card">
+        <h3>Rondas por Plantão</h3>
+        <div class="chart-meta">
+          <span>Distribuição operacional</span>
+          <span class="goal-pill">Meta genérica: 200</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartPlantao"></canvas>
         </div>
       </div>
-    </section>
 
-    <section class="wide-panel">
-      <div class="panel-title">Detalhamento</div>
-      <div class="detail-wrap" id="detailWrap"></div>
-      <div class="pager">
-        <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
-        <button class="btn-ghost" id="btnPrev">Anterior</button>
-        <button class="btn-ghost" id="btnNext">Próxima</button>
+      <div class="chart-card">
+        <h3>Tipos de Ronda</h3>
+        <div class="chart-meta">
+          <span>Consolidado das 3 abas</span>
+          <span class="goal-pill">Meta genérica: 300</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartTipo"></canvas>
+        </div>
       </div>
-    </section>
+    </div>
+
+    <div class="table-card">
+      <h3>Detalhamento</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Origem</th>
+              <th>Unidade</th>
+              <th>Plantão</th>
+              <th>Colaborador</th>
+              <th>Ação</th>
+              <th>Tipo</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDetalhes"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button id="btnPrev">Anterior</button>
+        <span id="pageInfo">Página 1</span>
+        <button id="btnNext">Próxima</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    Chart.register(ChartDataLabels);
+    const COLORS = {
+      orange: '#ff7a1a',
+      orangeSoft: 'rgba(255,122,26,0.25)',
+      green: '#1ddc7f',
+      red: '#ff5252',
+      text: '#ffffff',
+      grid: 'rgba(255,255,255,0.08)'
+    };
 
-    let currentPage = 1;
-    let totalPages = 1;
-
-    let chartFFInstance = null;
-    let chartDiaInstance = null;
-    let chartMesInstance = null;
-    let chartResumoInstance = null;
-
-    function esc(v) {
-      return String(v ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function fmt(n) {
-      return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
-    }
-
-    function getTipoFromPath() {
-      const path = window.location.pathname.toLowerCase();
-      if (path.includes("portas-emergencia")) return "portas";
-      if (path.includes("estoque")) return "estoque";
-      return "geral";
-    }
-
-    function getTipoLabel(tipo) {
-      if (tipo === "portas") return "Portas de Emergência";
-      if (tipo === "estoque") return "Ronda Estoque";
-      return "Ronda Geral";
-    }
-
-    function getFiltersQuery(page = 1) {
-      const qs = new URLSearchParams();
-      qs.set("tipo", getTipoFromPath());
-      qs.set("ano", document.getElementById("filtroAno").value || "");
-      qs.set("mes", document.getElementById("filtroMes").value || "");
-      qs.set("dia", document.getElementById("filtroDia").value || "");
-      qs.set("semana", document.getElementById("filtroSemana").value || "");
-      qs.set("unidade", document.getElementById("filtroUnidade").value || "");
-      qs.set("plantao", document.getElementById("filtroPlantao").value || "");
-      qs.set("busca", document.getElementById("filtroBusca").value || "");
-      qs.set("page", page);
-      qs.set("limit", 50);
-      return qs.toString();
-    }
-
-    function fillSelect(id, values, firstLabel) {
-      const el = document.getElementById(id);
-      el.innerHTML = `<option value="">${firstLabel}</option>` +
-        (values || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
-    }
-
-    function renderCompactCard(elId, rows, topN = 10) {
-      const container = document.getElementById(elId);
-      const safeRows = (rows || []).slice(0, topN);
-
-      if (!safeRows.length) {
-        container.innerHTML = `<div class="empty-state">Sem dados</div>`;
-        return;
+    const state = {
+      page: 1,
+      limit: 20,
+      filtros: {
+        dataInicial: '',
+        dataFinal: '',
+        origem: [],
+        unidade: [],
+        plantao: [],
+        tipo: [],
+        nome: [],
+        busca: ''
       }
+    };
 
-      const max = Math.max(...safeRows.map(r => Number(r.total || 0)), 1);
+    const charts = {};
 
-      container.innerHTML = safeRows.map(item => {
-        const total = Number(item.total || 0);
-        return `
-          <div class="compact-item">
-            <div class="compact-left">
-              <div class="compact-name">${esc(item.nome || "-")}</div>
-              <div class="bar-track">
-                <div class="bar-fill" style="width:${(total / max) * 100}%"></div>
-              </div>
-            </div>
-            <div class="compact-value">${fmt(total)}</div>
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString('pt-BR');
+    }
+
+    function formatPercent(value) {
+      const n = Number(value || 0);
+      return `${n.toFixed(1).replace('.', ',')}%`;
+    }
+
+    function getNowTime() {
+      const now = new Date();
+      return now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getFiltersQuery() {
+      const p = new URLSearchParams();
+      if (state.filtros.dataInicial) p.append('dataInicial', state.filtros.dataInicial);
+      if (state.filtros.dataFinal) p.append('dataFinal', state.filtros.dataFinal);
+      if (state.filtros.origem.length) p.append('origem', state.filtros.origem.join('|'));
+      if (state.filtros.unidade.length) p.append('unidade', state.filtros.unidade.join('|'));
+      if (state.filtros.plantao.length) p.append('plantao', state.filtros.plantao.join('|'));
+      if (state.filtros.tipo.length) p.append('tipo', state.filtros.tipo.join('|'));
+      if (state.filtros.nome.length) p.append('nome', state.filtros.nome.join('|'));
+      if (state.filtros.busca) p.append('busca', state.filtros.busca);
+      return p.toString();
+    }
+
+    async function fetchJSON(url) {
+      const resp = await fetch(url, { credentials: 'include' });
+      if (!resp.ok) throw new Error(`Erro ${resp.status}`);
+      return resp.json();
+    }
+
+    function buildMultiSelect(elId, options, selected, onChange, placeholder = 'Todos') {
+      const root = document.getElementById(elId);
+      const selectedText = selected.length ? selected.join(', ') : placeholder;
+
+      root.innerHTML = `
+        <div class="multi-select-trigger">
+          <span>${selectedText}</span>
+          <strong>▼</strong>
+        </div>
+        <div class="multi-select-dropdown">
+          <div class="multi-select-search">
+            <input type="text" placeholder="Buscar...">
           </div>
-        `;
-      }).join("");
+          <div class="multi-select-options">
+            ${options.map(opt => `
+              <label class="multi-option" data-label="${String(opt).toLowerCase()}">
+                <input type="checkbox" value="${String(opt).replace(/"/g, '&quot;')}" ${selected.includes(opt) ? 'checked' : ''}>
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      root.querySelector('.multi-select-trigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.multi-select').forEach(ms => {
+          if (ms !== root) ms.classList.remove('open');
+        });
+        root.classList.toggle('open');
+      });
+
+      const searchInput = root.querySelector('.multi-select-search input');
+      searchInput.addEventListener('input', () => {
+        const val = searchInput.value.trim().toLowerCase();
+        root.querySelectorAll('.multi-option').forEach(item => {
+          item.style.display = item.dataset.label.includes(val) ? 'flex' : 'none';
+        });
+      });
+
+      root.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const values = [...root.querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
+          onChange(values);
+        });
+      });
     }
 
-    function destroyCharts() {
-      if (chartFFInstance) chartFFInstance.destroy();
-      if (chartDiaInstance) chartDiaInstance.destroy();
-      if (chartMesInstance) chartMesInstance.destroy();
-      if (chartResumoInstance) chartResumoInstance.destroy();
-    }
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.multi-select').forEach(ms => ms.classList.remove('open'));
+    });
 
-    function baseLineOptions() {
+    function baseChartOptions(indexAxis = 'x') {
       return {
         responsive: true,
         maintainAspectRatio: false,
+        indexAxis,
         plugins: {
-          legend: { display: false },
-          datalabels: {
-            color: "#ffffff",
-            anchor: "end",
-            align: "top",
-            offset: 2,
-            font: { size: 10, weight: "700" },
-            formatter: (value) => fmt(value)
+          legend: {
+            labels: { color: COLORS.text, font: { family: 'Arial' } }
+          },
+          tooltip: {
+            titleFont: { family: 'Arial' },
+            bodyFont: { family: 'Arial' }
           }
         },
         scales: {
           x: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
-            grid: { display: false }
+            ticks: { color: COLORS.text, font: { family: 'Arial' } },
+            grid: { color: COLORS.grid }
           },
           y: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
-            grid: { color: "rgba(255,255,255,0.05)" },
-            beginAtZero: true
+            ticks: { color: COLORS.text, font: { family: 'Arial' } },
+            grid: { color: COLORS.grid }
           }
         }
       };
     }
 
-    async function loadFilters() {
-      const res = await fetch(`/api/rondas-filtros?tipo=${getTipoFromPath()}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      document.getElementById("brandTitle").textContent = data.titulo || "RONDAS";
-      document.getElementById("heroTitle").textContent = `Dashboard de ${data.titulo || "Rondas"}`;
-      document.getElementById("heroDescription").textContent =
-        `Dashboard no padrão do portal com resumo, gráficos com números e detalhamento da base de ${data.titulo || "Rondas"}.`;
-
-      fillSelect("filtroAno", data.anos || [], "Todos");
-      fillSelect("filtroMes", data.meses || [], "Todos");
-      fillSelect("filtroDia", data.dias || [], "Todos");
-      fillSelect("filtroSemana", data.semanas || [], "Todas");
-      fillSelect("filtroUnidade", data.unidades || [], "Todas");
-      fillSelect("filtroPlantao", data.plantoes || [], "Todos");
+    function destroyChart(id) {
+      if (charts[id]) charts[id].destroy();
     }
 
-    async function loadGraficos() {
-      const res = await fetch(`/api/rondas-graficos?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      destroyCharts();
-
-      const tipo = getTipoFromPath();
-
-      document.getElementById("kpiTotal").textContent = fmt(data.resumo?.total || 0);
-      document.getElementById("kpiUnidades").textContent = fmt(data.resumo?.totalUnidades || 0);
-      document.getElementById("kpiPlantoes").textContent = fmt(data.resumo?.totalPlantoes || 0);
-      document.getElementById("kpiColaboradores").textContent = fmt(data.resumo?.totalColaboradores || 0);
-
-      if (tipo === "portas") {
-        document.getElementById("kpiExtraTitle").textContent = "Lacres rompidos";
-        document.getElementById("kpiExtra").textContent = fmt(data.resumo?.totalLacresRompidos || 0);
-      } else {
-        document.getElementById("kpiExtraTitle").textContent = "Ocorrências";
-        document.getElementById("kpiExtra").textContent = fmt(data.resumo?.totalOcorrencias || 0);
-      }
-
-      renderCompactCard("cardPlantao", data.porPlantao || [], 8);
-      renderCompactCard("cardColaborador", data.porColaborador || [], 16);
-
-      chartFFInstance = new Chart(document.getElementById("chartFF"), {
-        type: "bar",
+    function renderChartDia(data) {
+      destroyChart('chartDia');
+      charts.chartDia = new Chart(document.getElementById('chartDia'), {
+        type: 'bar',
         data: {
-          labels: (data.porFF || []).map(x => x.nome),
-          datasets: [{
-            data: (data.porFF || []).map(x => x.total),
-            backgroundColor: "#ff7a1a",
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            datalabels: {
-              color: "#ffffff",
-              anchor: "end",
-              align: "end",
-              font: { size: 10, weight: "700" },
-              formatter: (value) => fmt(value)
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { display: false }
+          labels: data.labels,
+          datasets: [
+            {
+              label: 'Rondas',
+              data: data.valores,
+              backgroundColor: COLORS.orange
             },
-            y: {
-              ticks: { color: "#cbd5e1", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
+            {
+              label: 'Meta',
+              data: data.metas,
+              type: 'line',
+              borderColor: '#ffd2a8',
+              backgroundColor: '#ffd2a8',
+              tension: 0.2
             }
-          }
+          ]
+        },
+        options: baseChartOptions('x')
+      });
+    }
+
+    function renderChartComparativo(data) {
+      destroyChart('chartComparativo');
+      charts.chartComparativo = new Chart(document.getElementById('chartComparativo'), {
+        type: 'bar',
+        data: {
+          labels: ['Mês anterior', 'Mês atual'],
+          datasets: [
+            {
+              label: 'Rondas',
+              data: [data.mesAnterior, data.mesAtual],
+              backgroundColor: ['rgba(255,122,26,0.55)', COLORS.orange]
+            },
+            {
+              label: 'Meta',
+              data: [data.metaMensal, data.metaMensal],
+              type: 'line',
+              borderColor: '#ffd2a8',
+              backgroundColor: '#ffd2a8',
+              tension: 0
+            }
+          ]
+        },
+        options: baseChartOptions('x')
+      });
+    }
+
+    function renderBarHorizontal(canvasId, label, labels, valores, metas) {
+      destroyChart(canvasId);
+      charts[canvasId] = new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label,
+              data: valores,
+              backgroundColor: COLORS.orange
+            },
+            {
+              label: 'Meta',
+              data: metas,
+              type: 'line',
+              borderColor: '#ffd2a8',
+              backgroundColor: '#ffd2a8',
+              tension: 0
+            }
+          ]
+        },
+        options: baseChartOptions('y')
+      });
+    }
+
+    async function carregarFiltros() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/rondas-filtros?${qs}`);
+
+      buildMultiSelect('msOrigem', data.origens || [], state.filtros.origem, (vals) => {
+        state.filtros.origem = vals;
+        state.page = 1;
+        carregarTudo();
+      });
+
+      buildMultiSelect('msUnidade', data.unidades || [], state.filtros.unidade, (vals) => {
+        state.filtros.unidade = vals;
+        state.page = 1;
+        carregarTudo();
+      });
+
+      buildMultiSelect('msPlantao', data.plantoes || [], state.filtros.plantao, (vals) => {
+        state.filtros.plantao = vals;
+        state.page = 1;
+        carregarTudo();
+      });
+
+      buildMultiSelect('msTipo', data.tipos || [], state.filtros.tipo, (vals) => {
+        state.filtros.tipo = vals;
+        state.page = 1;
+        carregarTudo();
+      });
+
+      buildMultiSelect('msNome', data.nomes || [], state.filtros.nome, (vals) => {
+        state.filtros.nome = vals;
+        state.page = 1;
+        carregarTudo();
+      });
+    }
+
+    async function carregarResumo() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/rondas-resumo?${qs}`);
+
+      document.getElementById('kpiTotal').textContent = formatNumber(data.totalRondas);
+      document.getElementById('kpiMes').textContent = formatNumber(data.rondasMesAtual);
+      document.getElementById('kpiMesAnterior').textContent = formatNumber(data.rondasMesAnterior);
+      document.getElementById('kpiVariacao').textContent = formatPercent(data.variacaoMensal);
+      document.getElementById('kpiColaboradores').textContent = formatNumber(data.colaboradoresUnicos);
+      document.getElementById('kpiUnidades').textContent = formatNumber(data.unidadesUnicas);
+
+      const subVariacao = document.getElementById('subVariacao');
+      subVariacao.textContent = 'vs mês anterior';
+      subVariacao.className = `sub ${data.variacaoMensal >= 0 ? 'positive' : 'negative'}`;
+    }
+
+    async function carregarGraficos() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/rondas-graficos?${qs}`);
+
+      renderChartDia(data.porDia);
+      renderChartComparativo(data.comparativoMensal);
+      renderBarHorizontal(
+        'chartUnidade',
+        'Rondas',
+        data.porUnidade.labels,
+        data.porUnidade.valores,
+        data.porUnidade.metas
+      );
+      renderBarHorizontal(
+        'chartPlantao',
+        'Rondas',
+        data.porPlantao.labels,
+        data.porPlantao.valores,
+        data.porPlantao.metas
+      );
+      renderBarHorizontal(
+        'chartTipo',
+        'Rondas',
+        data.porTipo.labels,
+        data.porTipo.valores,
+        data.porTipo.metas
+      );
+    }
+
+    async function carregarDetalhes() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/rondas-detalhes?${qs}&page=${state.page}&limit=${state.limit}`);
+
+      const tbody = document.getElementById('tbodyDetalhes');
+      tbody.innerHTML = (data.items || []).map(row => `
+        <tr>
+          <td>${row.data || ''}</td>
+          <td>${row.origem_ronda || ''}</td>
+          <td>${row.unidade || ''}</td>
+          <td>${row.plantao || ''}</td>
+          <td>${row.nome || ''}</td>
+          <td>${row.acao || ''}</td>
+          <td>${row.tipo_ronda || ''}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('pageInfo').textContent = `Página ${data.page} de ${data.totalPages}`;
+      document.getElementById('btnPrev').disabled = data.page <= 1;
+      document.getElementById('btnNext').disabled = data.page >= data.totalPages;
+    }
+
+    async function carregarTudo() {
+      document.getElementById('ultimaAtualizacao').textContent = getNowTime();
+      await carregarFiltros();
+      await carregarResumo();
+      await carregarGraficos();
+      await carregarDetalhes();
+    }
+
+    function bindEvents() {
+      document.getElementById('dataInicial').addEventListener('change', (e) => {
+        state.filtros.dataInicial = e.target.value;
+        state.page = 1;
+        carregarTudo();
+      });
+
+      document.getElementById('dataFinal').addEventListener('change', (e) => {
+        state.filtros.dataFinal = e.target.value;
+        state.page = 1;
+        carregarTudo();
+      });
+
+      document.getElementById('busca').addEventListener('input', (e) => {
+        state.filtros.busca = e.target.value.trim();
+        state.page = 1;
+        clearTimeout(window.__buscaTimer);
+        window.__buscaTimer = setTimeout(carregarTudo, 350);
+      });
+
+      document.getElementById('btnLimpar').addEventListener('click', () => {
+        state.page = 1;
+        state.filtros = {
+          dataInicial: '',
+          dataFinal: '',
+          origem: [],
+          unidade: [],
+          plantao: [],
+          tipo: [],
+          nome: [],
+          busca: ''
+        };
+
+        document.getElementById('dataInicial').value = '';
+        document.getElementById('dataFinal').value = '';
+        document.getElementById('busca').value = '';
+        carregarTudo();
+      });
+
+      document.getElementById('btnPrev').addEventListener('click', () => {
+        if (state.page > 1) {
+          state.page--;
+          carregarDetalhes();
         }
       });
 
-      chartDiaInstance = new Chart(document.getElementById("chartDia"), {
-        type: "line",
-        data: {
-          labels: data.porDia?.labels || [],
-          datasets: [{
-            data: data.porDia?.values || [],
-            borderColor: "#58a6ff",
-            backgroundColor: "rgba(88,166,255,0.15)",
-            fill: false,
-            tension: 0.35,
-            pointRadius: 3,
-            pointBackgroundColor: "#58a6ff"
-          }]
-        },
-        options: baseLineOptions()
+      document.getElementById('btnNext').addEventListener('click', () => {
+        state.page++;
+        carregarDetalhes();
       });
-
-      chartMesInstance = new Chart(document.getElementById("chartMes"), {
-        type: "line",
-        data: {
-          labels: data.porMes?.labels || [],
-          datasets: [{
-            data: data.porMes?.values || [],
-            borderColor: "#22c55e",
-            backgroundColor: "rgba(34,197,94,0.15)",
-            fill: false,
-            tension: 0.35,
-            pointRadius: 3,
-            pointBackgroundColor: "#22c55e"
-          }]
-        },
-        options: baseLineOptions()
-      });
-
-      chartResumoInstance = new Chart(document.getElementById("chartResumo"), {
-        type: "doughnut",
-        data: {
-          labels: (data.distribuicao || []).map(x => x.nome),
-          datasets: [{
-            data: (data.distribuicao || []).map(x => x.total),
-            backgroundColor: ["#ff7a1a", "#8b5cf6", "#58a6ff", "#22c55e", "#ef4444"],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: "55%",
-          plugins: {
-            legend: {
-              position: "bottom",
-              labels: { color: "#fff", font: { size: 11 } }
-            },
-            datalabels: {
-              color: "#ffffff",
-              font: { size: 11, weight: "700" },
-              formatter: (value) => fmt(value)
-            }
-          }
-        }
-      });
-
-      document.getElementById("ultimaAtualizacao").textContent =
-        new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     }
 
-    async function loadDetalhes() {
-      const res = await fetch(`/api/rondas-detalhes?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      totalPages = data.totalPages || 1;
-      document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
-
-      let html = `<table class="detail-table"><thead><tr>`;
-      (data.headers || []).forEach((header) => {
-        html += `<th>${esc(header)}</th>`;
-      });
-      html += `</tr></thead><tbody>`;
-
-      (data.rows || []).forEach((row) => {
-        html += `<tr>`;
-        (data.headers || []).forEach((header) => {
-          html += `<td>${esc(row[header] || "")}</td>`;
-        });
-        html += `</tr>`;
-      });
-
-      if (!(data.rows || []).length) {
-        html += `<tr><td colspan="${(data.headers || []).length || 1}" style="text-align:center; color:#c7d2e0;">Sem dados para os filtros aplicados.</td></tr>`;
-      }
-
-      html += `</tbody></table>`;
-      document.getElementById("detailWrap").innerHTML = html;
-    }
-
-    async function loadAll(page = 1) {
-      currentPage = page;
-      await loadGraficos();
-      await loadDetalhes();
-    }
-
-    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
-
-    document.getElementById("btnLimpar").addEventListener("click", () => {
-      document.getElementById("filtroAno").value = "";
-      document.getElementById("filtroMes").value = "";
-      document.getElementById("filtroDia").value = "";
-      document.getElementById("filtroSemana").value = "";
-      document.getElementById("filtroUnidade").value = "";
-      document.getElementById("filtroPlantao").value = "";
-      document.getElementById("filtroBusca").value = "";
-      loadAll(1);
-    });
-
-    document.getElementById("btnPrev").addEventListener("click", () => {
-      if (currentPage > 1) loadAll(currentPage - 1);
-    });
-
-    document.getElementById("btnNext").addEventListener("click", () => {
-      if (currentPage < totalPages) loadAll(currentPage + 1);
-    });
-
-    (async function init() {
-      await loadFilters();
-      await loadAll(1);
-    })();
+    bindEvents();
+    carregarTudo();
   </script>
 </body>
 </html>

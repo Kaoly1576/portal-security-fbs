@@ -3274,22 +3274,7 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
 
 
 // ============================== // RONDAS - CONFIG// ===============================
-
 const RONDAS_SHEET_ID = '1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU';
-
-const RONDAS_ABAS = [
-  { nome: 'Ronda Geral', origem: 'Ronda Geral' },
-  { nome: 'Ronda Portas de emergência', origem: 'Portas de emergência' },
-  { nome: 'Ronda Estoque', origem: 'Ronda Estoque' }
-];
-
-// Se você já tiver auth/sheets no seu projeto, pode remover esta parte
-async function getGoogleSheetsClient() {
-  const auth = new google.auth.GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-  });
-  return google.sheets({ version: 'v4', auth });
-}
 
 function normalizeText(value) {
   return String(value || '').trim();
@@ -3299,7 +3284,6 @@ function parseBrDate(value) {
   if (!value) return null;
   const raw = String(value).trim();
 
-  // dd/mm/yyyy HH:mm:ss
   let m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
   if (m) {
     const [, dd, mm, yyyy, hh = '00', mi = '00', ss = '00'] = m;
@@ -3307,7 +3291,6 @@ function parseBrDate(value) {
     return isNaN(d.getTime()) ? null : d;
   }
 
-  // yyyy-mm-dd
   m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m) {
     const d = new Date(`${raw}T00:00:00`);
@@ -3318,9 +3301,45 @@ function parseBrDate(value) {
   return isNaN(fallback.getTime()) ? null : fallback;
 }
 
+function formatDateBR(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('pt-BR');
+}
+
+function safeUpper(v) {
+  return normalizeText(v).toUpperCase();
+}
+
+function includesText(source, term) {
+  return safeUpper(source).includes(safeUpper(term));
+}
+
+function splitMulti(value) {
+  return String(value || '')
+    .split('|')
+    .map(v => v.trim())
+    .filter(Boolean);
+}
+
+function matchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues || !selectedValues.length) return true;
+  const base = safeUpper(fieldValue);
+  return selectedValues.some(v => base === safeUpper(v));
+}
+
+function percentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+  return ((current - previous) / previous) * 100;
+}
+
+function sortAscUnique(arr) {
+  return [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
+}
+
 function mapRondaGeralRow(row) {
-  // B:G
-  // Data | Unidade | PLANTÃO | Nome | Qual ação vai realizar ? | Tipo de ronda
   return {
     data: normalizeText(row[0]),
     dataObj: parseBrDate(row[0]),
@@ -3334,8 +3353,6 @@ function mapRondaGeralRow(row) {
 }
 
 function mapPortasRow(row) {
-  // C:H
-  // Data | Unidade | Plantão | Nome | Qual ação vai realizar ? | Tipo de ronda
   return {
     data: normalizeText(row[0]),
     dataObj: parseBrDate(row[0]),
@@ -3349,8 +3366,6 @@ function mapPortasRow(row) {
 }
 
 function mapEstoqueRow(row) {
-  // B:F
-  // Data | Unidade | Plantão | Nome | Tipo de ronda
   return {
     data: normalizeText(row[0]),
     dataObj: parseBrDate(row[0]),
@@ -3358,7 +3373,7 @@ function mapEstoqueRow(row) {
     plantao: normalizeText(row[2]),
     nome: normalizeText(row[3]),
     acao: 'Ronda',
-    tipo_ronda: normalizeText(row[4]) || 'Estoque - RK',
+    tipo_ronda: normalizeText(row[4]) || 'Estoque',
     origem_ronda: 'Ronda Estoque'
   };
 }
@@ -3378,7 +3393,6 @@ async function loadRondasData() {
       mapper: mapPortasRow
     },
     {
-      // AJUSTE AQUI SE O NOME REAL DA ABA FOR OUTRO
       aba: 'Ronda Estoque',
       range: `'Ronda Estoque'!B:F`,
       mapper: mapEstoqueRow
@@ -3386,63 +3400,21 @@ async function loadRondasData() {
   ];
 
   for (const cfg of configs) {
-    try {
-      console.log(`[RONDAS] Lendo aba: ${cfg.aba} | range: ${cfg.range}`);
-
-      const resp = await sheets.spreadsheets.values.get({
-        spreadsheetId: RONDAS_SHEET_ID,
-        range: cfg.range
-      });
-
-      const rows = resp?.data?.values || [];
-      console.log(`[RONDAS] ${cfg.aba} -> linhas recebidas: ${rows.length}`);
-
-      if (!rows.length) {
-        console.log(`[RONDAS] ${cfg.aba} sem linhas.`);
-        continue;
-      }
-
-      const dataRows = rows.slice(1);
-
-      for (const row of dataRows) {
-        if (!row || row.every(cell => !String(cell || '').trim())) continue;
-
-        const record = cfg.mapper(row);
-
-        if (!record.data && !record.unidade && !record.nome && !record.tipo_ronda) continue;
-
-        all.push(record);
-      }
-
-      console.log(`[RONDAS] ${cfg.aba} -> acumulado: ${all.length}`);
-    } catch (err) {
-      console.error(`[RONDAS] ERRO na aba ${cfg.aba}:`, err.message);
-      throw new Error(`Falha ao ler aba "${cfg.aba}": ${err.message}`);
-    }
-  }
-
-  console.log(`[RONDAS] TOTAL FINAL: ${all.length}`);
-  return all;
-}
-
-  for (const cfg of configs) {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: RONDAS_SHEET_ID,
       range: cfg.range
     });
 
-    const rows = resp.data.values || [];
+    const rows = resp?.data?.values || [];
     if (!rows.length) continue;
 
     const dataRows = rows.slice(1);
 
     for (const row of dataRows) {
       if (!row || row.every(cell => !String(cell || '').trim())) continue;
-
       const record = cfg.mapper(row);
 
       if (!record.data && !record.unidade && !record.nome && !record.tipo_ronda) continue;
-
       all.push(record);
     }
   }
@@ -3496,10 +3468,7 @@ function filterRondas(records, query) {
 function buildRondasResumo(filtered) {
   const totalRondas = filtered.length;
 
-  const validDates = filtered
-    .map(r => r.dataObj)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
+  const validDates = filtered.map(r => r.dataObj).filter(Boolean).sort((a, b) => a - b);
 
   let rondasMesAtual = 0;
   let rondasMesAnterior = 0;
@@ -3526,13 +3495,8 @@ function buildRondasResumo(filtered) {
     ).length;
   }
 
-  const colaboradoresUnicos = new Set(
-    filtered.map(r => normalizeText(r.nome)).filter(Boolean)
-  ).size;
-
-  const unidadesUnicas = new Set(
-    filtered.map(r => normalizeText(r.unidade)).filter(Boolean)
-  ).size;
+  const colaboradoresUnicos = new Set(filtered.map(r => normalizeText(r.nome)).filter(Boolean)).size;
+  const unidadesUnicas = new Set(filtered.map(r => normalizeText(r.unidade)).filter(Boolean)).size;
 
   return {
     totalRondas,
@@ -3545,7 +3509,6 @@ function buildRondasResumo(filtered) {
 }
 
 function buildRondasGraficos(filtered) {
-  // 1) por dia
   const dias = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
   const porDiaMap = Object.fromEntries(dias.map(d => [d, 0]));
 
@@ -3561,7 +3524,6 @@ function buildRondasGraficos(filtered) {
     metas: dias.map(() => 35)
   };
 
-  // 2) comparativo mensal
   let mesAtual = 0;
   let mesAnterior = 0;
 
@@ -3588,13 +3550,6 @@ function buildRondasGraficos(filtered) {
     ).length;
   }
 
-  const comparativoMensal = {
-    mesAtual,
-    mesAnterior,
-    metaMensal: 1000
-  };
-
-  // helper top N
   function buildTop(records, key, meta, limit = 10) {
     const map = {};
     records.forEach(r => {
@@ -3615,7 +3570,11 @@ function buildRondasGraficos(filtered) {
 
   return {
     porDia,
-    comparativoMensal,
+    comparativoMensal: {
+      mesAtual,
+      mesAnterior,
+      metaMensal: 1000
+    },
     porUnidade: buildTop(filtered, 'unidade', 150),
     porPlantao: buildTop(filtered, 'plantao', 200),
     porTipo: buildTop(filtered, 'tipo_ronda', 300)
@@ -3643,6 +3602,7 @@ function buildRondasDetalhes(filtered, page = 1, limit = 20) {
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const currentPage = Math.min(Math.max(1, page), totalPages);
   const start = (currentPage - 1) * limit;
+
   const items = sorted.slice(start, start + limit).map(r => ({
     data: r.dataObj ? formatDateBR(r.dataObj) : r.data,
     origem_ronda: r.origem_ronda,
@@ -3662,22 +3622,34 @@ function buildRondasDetalhes(filtered, page = 1, limit = 20) {
   };
 }
 
-// ===============================
-// RONDAS - ENDPOINTS
-// ===============================
-
-// se você tiver middleware de autenticação, substitua abaixo:
-// ex: app.get('/api/rondas-filtros', ensureAuthenticated, async (req, res) => { ... });
+app.get('/api/rondas-debug', async (req, res) => {
+  try {
+    const all = await loadRondasData();
+    res.json({
+      total: all.length,
+      amostra: all.slice(0, 5)
+    });
+  } catch (error) {
+    console.error('Erro REAL /api/rondas-debug:', error);
+    res.status(500).json({
+      error: 'Erro no debug de rondas.',
+      detalhe: error.message,
+      stack: error.stack
+    });
+  }
+});
 
 app.get('/api/rondas-filtros', async (req, res) => {
   try {
     const all = await loadRondasData();
     const filtered = filterRondas(all, req.query);
-    const filtros = buildRondasFiltros(filtered);
-    res.json(filtros);
+    res.json(buildRondasFiltros(filtered));
   } catch (error) {
     console.error('Erro /api/rondas-filtros:', error);
-    res.status(500).json({ error: 'Erro ao carregar filtros de rondas.' });
+    res.status(500).json({
+      error: 'Erro ao carregar filtros de rondas.',
+      detalhe: error.message
+    });
   }
 });
 
@@ -3685,8 +3657,7 @@ app.get('/api/rondas-resumo', async (req, res) => {
   try {
     const all = await loadRondasData();
     const filtered = filterRondas(all, req.query);
-    const resumo = buildRondasResumo(filtered);
-    res.json(resumo);
+    res.json(buildRondasResumo(filtered));
   } catch (error) {
     console.error('Erro REAL /api/rondas-resumo:', error);
     res.status(500).json({
@@ -3701,11 +3672,13 @@ app.get('/api/rondas-graficos', async (req, res) => {
   try {
     const all = await loadRondasData();
     const filtered = filterRondas(all, req.query);
-    const graficos = buildRondasGraficos(filtered);
-    res.json(graficos);
+    res.json(buildRondasGraficos(filtered));
   } catch (error) {
     console.error('Erro /api/rondas-graficos:', error);
-    res.status(500).json({ error: 'Erro ao carregar gráficos de rondas.' });
+    res.status(500).json({
+      error: 'Erro ao carregar gráficos de rondas.',
+      detalhe: error.message
+    });
   }
 });
 
@@ -3717,27 +3690,12 @@ app.get('/api/rondas-detalhes', async (req, res) => {
     const page = Number(req.query.page || 1);
     const limit = Number(req.query.limit || 20);
 
-    const detalhes = buildRondasDetalhes(filtered, page, limit);
-    res.json(detalhes);
+    res.json(buildRondasDetalhes(filtered, page, limit));
   } catch (error) {
     console.error('Erro /api/rondas-detalhes:', error);
-    res.status(500).json({ error: 'Erro ao carregar detalhes de rondas.' });
-  }
-});
-
-app.get('/api/rondas-debug', async (req, res) => {
-  try {
-    const all = await loadRondasData();
-    res.json({
-      total: all.length,
-      amostra: all.slice(0, 5)
-    });
-  } catch (error) {
-    console.error('Erro REAL /api/rondas-debug:', error);
     res.status(500).json({
-      error: 'Erro no debug de rondas.',
-      detalhe: error.message,
-      stack: error.stack
+      error: 'Erro ao carregar detalhes de rondas.',
+      detalhe: error.message
     });
   }
 });

@@ -3777,6 +3777,474 @@ app.get("/api/rondas-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== REGISTRO DE LACRES DASHBOARD ==================
+
+app.get("/registro-lacres", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "registro-lacres.html"));
+});
+
+const LACRES_SPREADSHEET_ID = "1kxyx3nSpltdddSQkEGHHjOwcEtHMBd3RuQdk-w9q218";
+// ajuste o nome da aba se necessário
+const LACRES_RANGE = "'Security - Registro de lacres'!A1:R200000";
+
+let lacresCache = null;
+let lacresCacheTime = 0;
+const LACRES_CACHE_TTL = 5 * 60 * 1000;
+
+function lacreNorm(value) {
+  return String(value || "").trim();
+}
+
+function lacreNormLower(value) {
+  return lacreNorm(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function lacreParseDate(value) {
+  const str = lacreNorm(value);
+  if (!str) return null;
+
+  let m = str.match(
+    /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
+  );
+  if (m) {
+    const [, dd, mm, yyyy, hh = "00", mi = "00", ss = "00"] = m;
+    const d = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const d = new Date(`${str}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const fallback = new Date(str);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function lacreFormatISO(date) {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function lacreFormatBR(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function lacreSplitMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => lacreNorm(v))
+    .filter(Boolean);
+}
+
+function lacreMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(lacreNorm(fieldValue));
+}
+
+function lacreUnique(values) {
+  return [...new Set(values.filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
+}
+
+function lacrePercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+  return ((current - previous) / previous) * 100;
+}
+
+function lacreGroupCount(rows, field) {
+  const map = {};
+  rows.forEach((row) => {
+    const key = lacreNorm(row[field]) || "NÃO INFORMADO";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+async function carregarLacresRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: LACRES_SPREADSHEET_ID,
+    range: LACRES_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const headers = values[0].map((h, i) => lacreNorm(h) || `COL_${i + 1}`);
+  const linhas = values.slice(1);
+
+  const rows = linhas
+    .map((linha) => {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = linha[index] ?? "";
+      });
+
+      obj._dataObj = lacreParseDate(obj["DATA"]);
+      obj._isoDate = obj._dataObj ? lacreFormatISO(obj._dataObj) : "";
+      obj._dia = obj._dataObj ? String(obj._dataObj.getDate()).padStart(2, "0") : "";
+      obj._mes = obj._dataObj
+        ? `${obj._dataObj.getFullYear()}-${String(obj._dataObj.getMonth() + 1).padStart(2, "0")}`
+        : "";
+
+      return obj;
+    })
+    .filter((row) => {
+      return (
+        lacreNorm(row["DATA"]) ||
+        lacreNorm(row["UNIDADE"]) ||
+        lacreNorm(row["NOME DO VIGILANTE "]) ||
+        lacreNorm(row["PLACA"])
+      );
+    });
+
+  return rows;
+}
+
+async function carregarLacresComCache() {
+  const now = Date.now();
+
+  if (lacresCache && now - lacresCacheTime < LACRES_CACHE_TTL) {
+    return lacresCache;
+  }
+
+  lacresCache = await carregarLacresRaw();
+  lacresCacheTime = now;
+
+  console.log("LACRES cache atualizado:", lacresCache.length);
+
+  return lacresCache;
+}
+
+function filtrarLacres(rows, query) {
+  const dataInicio = lacreNorm(query.dataInicio);
+  const dataFim = lacreNorm(query.dataFim);
+
+  const unidades = lacreSplitMulti(query.unidade);
+  const tiposCarga = lacreSplitMulti(query.tipoCarga);
+  const origens = lacreSplitMulti(query.origem);
+  const destinos = lacreSplitMulti(query.destino);
+  const vigilantes = lacreSplitMulti(query.vigilante);
+  const motoristas = lacreSplitMulti(query.motorista);
+  const placas = lacreSplitMulti(query.placa);
+  const statusEnvio = lacreSplitMulti(query.statusEnvio);
+  const lacreCorreto = lacreSplitMulti(query.lacreCorreto);
+
+  const busca = lacreNormLower(query.busca);
+
+  return rows.filter((row) => {
+    if (dataInicio && (!row._isoDate || row._isoDate < dataInicio)) return false;
+    if (dataFim && (!row._isoDate || row._isoDate > dataFim)) return false;
+
+    if (!lacreMatchesMulti(row["UNIDADE"], unidades)) return false;
+    if (!lacreMatchesMulti(row["TIPO DE CARGA"], tiposCarga)) return false;
+    if (!lacreMatchesMulti(row["ORIGEM"], origens)) return false;
+    if (!lacreMatchesMulti(row["DESTINO"], destinos)) return false;
+    if (!lacreMatchesMulti(row["NOME DO VIGILANTE "], vigilantes)) return false;
+    if (!lacreMatchesMulti(row["NOME DO MOTORISTA"], motoristas)) return false;
+    if (!lacreMatchesMulti(row["PLACA"], placas)) return false;
+    if (!lacreMatchesMulti(row["STATUS DE ENVIO"], statusEnvio)) return false;
+    if (!lacreMatchesMulti(String(row["O LACRE ESTÁ CORRETO?"]), lacreCorreto)) return false;
+
+    if (busca) {
+      const text = [
+        row["UNIDADE"],
+        row["NOME DO VIGILANTE "],
+        row["TIPO DE CARGA"],
+        row["ORIGEM"],
+        row["NOME DO MOTORISTA"],
+        row["PLACA"],
+        row["N° LACRE BAÚ"],
+        row["N° LACRE LATERAL"],
+        row["DESTINO"],
+        row["STATUS DE ENVIO"],
+        row["O LACRE ESTÁ CORRETO?"],
+        row["CONFIRME O NÚMERO DO LACRE"],
+      ]
+        .map(lacreNormLower)
+        .join(" ");
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+app.get("/api/registro-lacres-filtros", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarLacresComCache();
+
+    return res.json({
+      unidades: lacreUnique(dados.map((r) => lacreNorm(r["UNIDADE"]))),
+      tiposCarga: lacreUnique(dados.map((r) => lacreNorm(r["TIPO DE CARGA"]))),
+      origens: lacreUnique(dados.map((r) => lacreNorm(r["ORIGEM"]))),
+      destinos: lacreUnique(dados.map((r) => lacreNorm(r["DESTINO"]))),
+      vigilantes: lacreUnique(dados.map((r) => lacreNorm(r["NOME DO VIGILANTE "]))),
+      motoristas: lacreUnique(dados.map((r) => lacreNorm(r["NOME DO MOTORISTA"]))),
+      placas: lacreUnique(dados.map((r) => lacreNorm(r["PLACA"]))),
+      statusEnvio: lacreUnique(dados.map((r) => lacreNorm(r["STATUS DE ENVIO"]))),
+      lacreCorreto: lacreUnique(dados.map((r) => lacreNorm(String(r["O LACRE ESTÁ CORRETO?"])))),
+    });
+  } catch (error) {
+    console.error("Erro /api/registro-lacres-filtros:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarLacresComCache();
+    const filtrados = filtrarLacres(dados, req.query);
+
+    const total = filtrados.length;
+
+    const validDates = filtrados
+      .map((r) => r._dataObj)
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+
+    let mesAtual = 0;
+    let mesAnterior = 0;
+
+    if (validDates.length) {
+      const latest = validDates[validDates.length - 1];
+      const currMonth = latest.getMonth();
+      const currYear = latest.getFullYear();
+
+      const prevRef = new Date(currYear, currMonth - 1, 1);
+      const prevMonth = prevRef.getMonth();
+      const prevYear = prevRef.getFullYear();
+
+      mesAtual = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === currMonth &&
+          r._dataObj.getFullYear() === currYear
+      ).length;
+
+      mesAnterior = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === prevMonth &&
+          r._dataObj.getFullYear() === prevYear
+      ).length;
+    }
+
+    const unidades = new Set(
+      filtrados.map((r) => lacreNorm(r["UNIDADE"])).filter(Boolean)
+    ).size;
+
+    const placasUnicas = new Set(
+      filtrados.map((r) => lacreNorm(r["PLACA"])).filter(Boolean)
+    ).size;
+
+    const corretos = filtrados.filter((r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true").length;
+    const incorretos = filtrados.filter((r) => {
+      const v = lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"]));
+      return v && v !== "true";
+    }).length;
+
+    return res.json({
+      total,
+      mesAtual,
+      mesAnterior,
+      variacaoMensal: lacrePercentChange(mesAtual, mesAnterior),
+      unidades,
+      placasUnicas,
+      corretos,
+      incorretos,
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+  } catch (error) {
+    console.error("Erro /api/registro-lacres-resumo:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarLacresComCache();
+    const filtrados = filtrarLacres(dados, req.query);
+
+    function buildTop(field, meta, limit = 10) {
+      const map = lacreGroupCount(filtrados, field);
+      const entries = Object.entries(map)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit);
+
+      return {
+        labels: entries.map(([k]) => k),
+        valores: entries.map(([, v]) => v),
+        metas: entries.map(() => meta),
+      };
+    }
+
+    const dias = Array.from({ length: 31 }, (_, i) =>
+      String(i + 1).padStart(2, "0")
+    );
+    const porDiaMap = Object.fromEntries(dias.map((d) => [d, 0]));
+
+    filtrados.forEach((r) => {
+      if (!r._dia) return;
+      porDiaMap[r._dia] = (porDiaMap[r._dia] || 0) + 1;
+    });
+
+    let mesAtual = 0;
+    let mesAnterior = 0;
+
+    const validDates = filtrados
+      .map((r) => r._dataObj)
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+
+    if (validDates.length) {
+      const latest = validDates[validDates.length - 1];
+      const currMonth = latest.getMonth();
+      const currYear = latest.getFullYear();
+
+      const prevRef = new Date(currYear, currMonth - 1, 1);
+      const prevMonth = prevRef.getMonth();
+      const prevYear = prevRef.getFullYear();
+
+      mesAtual = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === currMonth &&
+          r._dataObj.getFullYear() === currYear
+      ).length;
+
+      mesAnterior = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === prevMonth &&
+          r._dataObj.getFullYear() === prevYear
+      ).length;
+    }
+
+    const corretoMap = {
+      Correto: filtrados.filter((r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true").length,
+      Incorreto: filtrados.filter((r) => {
+        const v = lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"]));
+        return v && v !== "true";
+      }).length,
+      "Sem resposta": filtrados.filter((r) => !lacreNorm(String(r["O LACRE ESTÁ CORRETO?"]))).length,
+    };
+
+    const statusMap = lacreGroupCount(filtrados, "STATUS DE ENVIO");
+
+    return res.json({
+      porUnidade: buildTop("UNIDADE", 100),
+      porTipoCarga: buildTop("TIPO DE CARGA", 100),
+      porOrigem: buildTop("ORIGEM", 100),
+      porDestino: buildTop("DESTINO", 100),
+      porVigilante: buildTop("NOME DO VIGILANTE ", 100),
+      porDia: {
+        labels: dias,
+        valores: dias.map((d) => porDiaMap[d] || 0),
+        metas: dias.map(() => 20),
+      },
+      comparativoMensal: {
+        mesAtual,
+        mesAnterior,
+        metaMensal: 500,
+      },
+      lacreCorreto: {
+        labels: Object.keys(corretoMap),
+        valores: Object.values(corretoMap),
+      },
+      statusEnvio: {
+        labels: Object.keys(statusMap),
+        valores: Object.values(statusMap),
+      },
+    });
+  } catch (error) {
+    console.error("Erro /api/registro-lacres-graficos:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/registro-lacres-detalhes", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarLacresComCache();
+    const filtrados = filtrarLacres(dados, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 200);
+
+    const ordenados = [...filtrados].sort((a, b) => {
+      const ad = a._dataObj ? a._dataObj.getTime() : 0;
+      const bd = b._dataObj ? b._dataObj.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = ordenados.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    const items = ordenados.slice(start, start + limit).map((r) => ({
+      data: r._dataObj ? lacreFormatBR(r._dataObj) : r["DATA"] || "",
+      unidade: r["UNIDADE"] || "",
+      vigilante: r["NOME DO VIGILANTE "] || "",
+      tipoCarga: r["TIPO DE CARGA"] || "",
+      origem: r["ORIGEM"] || "",
+      motorista: r["NOME DO MOTORISTA"] || "",
+      placa: r["PLACA"] || "",
+      lacreBau: r["N° LACRE BAÚ"] || "",
+      lacreLateral: r["N° LACRE LATERAL"] || "",
+      destino: r["DESTINO"] || "",
+      statusEnvio: r["STATUS DE ENVIO"] || "",
+      lacreCorreto: String(r["O LACRE ESTÁ CORRETO?"] || ""),
+      confirmeNumero: r["CONFIRME O NÚMERO DO LACRE"] || "",
+    }));
+
+    return res.json({
+      page: currentPage,
+      limit,
+      total,
+      totalPages,
+      items,
+    });
+  } catch (error) {
+    console.error("Erro /api/registro-lacres-detalhes:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/registro-lacres-debug", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarLacresComCache();
+    return res.json({
+      total: dados.length,
+      amostra: dados.slice(0, 5),
+    });
+  } catch (error) {
+    console.error("Erro /api/registro-lacres-debug:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 
 // ================== SERVIDOR ==================
 

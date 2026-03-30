@@ -3273,6 +3273,456 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
 
 
 
+// ============================== // RONDAS - CONFIG// ===============================
+
+const { google } = require('googleapis');
+
+const RONDAS_SHEET_ID = '1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU';
+
+const RONDAS_ABAS = [
+  { nome: 'Ronda Geral', origem: 'Ronda Geral' },
+  { nome: 'Ronda Portas de emergência', origem: 'Portas de emergência' },
+  { nome: 'Ronda Estoque', origem: 'Ronda Estoque' }
+];
+
+// Se você já tiver auth/sheets no seu projeto, pode remover esta parte
+async function getGoogleSheetsClient() {
+  const auth = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+  });
+  return google.sheets({ version: 'v4', auth });
+}
+
+function normalizeText(value) {
+  return String(value || '').trim();
+}
+
+function parseBrDate(value) {
+  if (!value) return null;
+  const raw = String(value).trim();
+
+  // dd/mm/yyyy
+  const m1 = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m1) {
+    const [, dd, mm, yyyy] = m1;
+    const d = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // yyyy-mm-dd
+  const m2 = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) {
+    const d = new Date(`${raw}T00:00:00`);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const fallback = new Date(raw);
+  return isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function formatDateBR(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('pt-BR');
+}
+
+function monthKey(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+function safeUpper(v) {
+  return normalizeText(v).toUpperCase();
+}
+
+function includesText(source, term) {
+  return safeUpper(source).includes(safeUpper(term));
+}
+
+function splitMulti(value) {
+  return String(value || '')
+    .split('|')
+    .map(v => v.trim())
+    .filter(Boolean);
+}
+
+function matchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues || !selectedValues.length) return true;
+  const base = safeUpper(fieldValue);
+  return selectedValues.some(v => base === safeUpper(v));
+}
+
+function toNumber(n) {
+  const x = Number(n || 0);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function percentChange(current, previous) {
+  current = toNumber(current);
+  previous = toNumber(previous);
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+  return ((current - previous) / previous) * 100;
+}
+
+function sortAscUnique(arr) {
+  return [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
+}
+
+function getPreviousMonthRangeFromFiltered(records) {
+  const dates = records
+    .map(r => r.dataObj)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!dates.length) return null;
+
+  const maxDate = dates[dates.length - 1];
+  const currentMonth = maxDate.getMonth();
+  const currentYear = maxDate.getFullYear();
+
+  const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  return {
+    year: prevMonthDate.getFullYear(),
+    month: prevMonthDate.getMonth()
+  };
+}
+
+function guessMappedRecord(row, origem) {
+  // Estamos lendo B:G => 6 colunas.
+  // Mapeamento assumido:
+  // B = Data
+  // C = Unidade
+  // D = Plantão
+  // E = Nome
+  // F = Ação
+  // G = Tipo
+  // Se a sua planilha estiver em ordem diferente, ajuste aqui apenas.
+
+  const data = normalizeText(row[0]);
+  const unidade = normalizeText(row[1]);
+  const plantao = normalizeText(row[2]);
+  const nome = normalizeText(row[3]);
+  const acao = normalizeText(row[4]);
+  const tipo_ronda = normalizeText(row[5]);
+
+  const dataObj = parseBrDate(data);
+
+  return {
+    data,
+    dataObj,
+    unidade,
+    plantao,
+    nome,
+    acao,
+    tipo_ronda,
+    origem_ronda: origem
+  };
+}
+
+async function loadRondasData() {
+  const sheets = await getGoogleSheetsClient();
+  const all = [];
+
+  for (const aba of RONDAS_ABAS) {
+    const range = `'${aba.nome}'!B:G`;
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: RONDAS_SHEET_ID,
+      range
+    });
+
+    const rows = resp.data.values || [];
+    if (!rows.length) continue;
+
+    // Remove cabeçalho
+    const dataRows = rows.slice(1);
+
+    for (const row of dataRows) {
+      if (!row || row.every(cell => !String(cell || '').trim())) continue;
+      const record = guessMappedRecord(row, aba.origem);
+
+      // evita lixo total
+      if (!record.data && !record.unidade && !record.nome && !record.tipo_ronda) continue;
+
+      all.push(record);
+    }
+  }
+
+  return all;
+}
+
+function filterRondas(records, query) {
+  const dataInicial = query.dataInicial ? parseBrDate(query.dataInicial) : null;
+  const dataFinal = query.dataFinal ? parseBrDate(query.dataFinal) : null;
+
+  const origens = splitMulti(query.origem);
+  const unidades = splitMulti(query.unidade);
+  const plantoes = splitMulti(query.plantao);
+  const tipos = splitMulti(query.tipo);
+  const nomes = splitMulti(query.nome);
+  const busca = normalizeText(query.busca);
+
+  return records.filter(r => {
+    if (dataInicial && r.dataObj && r.dataObj < dataInicial) return false;
+    if (dataFinal && r.dataObj) {
+      const end = new Date(dataFinal);
+      end.setHours(23, 59, 59, 999);
+      if (r.dataObj > end) return false;
+    }
+
+    if (!matchesMulti(r.origem_ronda, origens)) return false;
+    if (!matchesMulti(r.unidade, unidades)) return false;
+    if (!matchesMulti(r.plantao, plantoes)) return false;
+    if (!matchesMulti(r.tipo_ronda, tipos)) return false;
+    if (!matchesMulti(r.nome, nomes)) return false;
+
+    if (busca) {
+      const combined = [
+        r.data,
+        r.origem_ronda,
+        r.unidade,
+        r.plantao,
+        r.nome,
+        r.acao,
+        r.tipo_ronda
+      ].join(' | ');
+
+      if (!includesText(combined, busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function buildRondasResumo(filtered) {
+  const totalRondas = filtered.length;
+
+  const validDates = filtered
+    .map(r => r.dataObj)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  let rondasMesAtual = 0;
+  let rondasMesAnterior = 0;
+
+  if (validDates.length) {
+    const latest = validDates[validDates.length - 1];
+    const currentMonth = latest.getMonth();
+    const currentYear = latest.getFullYear();
+
+    const prevRef = new Date(currentYear, currentMonth - 1, 1);
+    const prevMonth = prevRef.getMonth();
+    const prevYear = prevRef.getFullYear();
+
+    rondasMesAtual = filtered.filter(r =>
+      r.dataObj &&
+      r.dataObj.getMonth() === currentMonth &&
+      r.dataObj.getFullYear() === currentYear
+    ).length;
+
+    rondasMesAnterior = filtered.filter(r =>
+      r.dataObj &&
+      r.dataObj.getMonth() === prevMonth &&
+      r.dataObj.getFullYear() === prevYear
+    ).length;
+  }
+
+  const colaboradoresUnicos = new Set(
+    filtered.map(r => normalizeText(r.nome)).filter(Boolean)
+  ).size;
+
+  const unidadesUnicas = new Set(
+    filtered.map(r => normalizeText(r.unidade)).filter(Boolean)
+  ).size;
+
+  return {
+    totalRondas,
+    rondasMesAtual,
+    rondasMesAnterior,
+    variacaoMensal: percentChange(rondasMesAtual, rondasMesAnterior),
+    colaboradoresUnicos,
+    unidadesUnicas
+  };
+}
+
+function buildRondasGraficos(filtered) {
+  // 1) por dia
+  const dias = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const porDiaMap = Object.fromEntries(dias.map(d => [d, 0]));
+
+  filtered.forEach(r => {
+    if (!r.dataObj) return;
+    const dia = String(r.dataObj.getDate()).padStart(2, '0');
+    porDiaMap[dia] = (porDiaMap[dia] || 0) + 1;
+  });
+
+  const porDia = {
+    labels: dias,
+    valores: dias.map(d => porDiaMap[d] || 0),
+    metas: dias.map(() => 35)
+  };
+
+  // 2) comparativo mensal
+  let mesAtual = 0;
+  let mesAnterior = 0;
+
+  const validDates = filtered.map(r => r.dataObj).filter(Boolean).sort((a, b) => a - b);
+  if (validDates.length) {
+    const latest = validDates[validDates.length - 1];
+    const currMonth = latest.getMonth();
+    const currYear = latest.getFullYear();
+
+    const prevRef = new Date(currYear, currMonth - 1, 1);
+    const prevMonth = prevRef.getMonth();
+    const prevYear = prevRef.getFullYear();
+
+    mesAtual = filtered.filter(r =>
+      r.dataObj &&
+      r.dataObj.getMonth() === currMonth &&
+      r.dataObj.getFullYear() === currYear
+    ).length;
+
+    mesAnterior = filtered.filter(r =>
+      r.dataObj &&
+      r.dataObj.getMonth() === prevMonth &&
+      r.dataObj.getFullYear() === prevYear
+    ).length;
+  }
+
+  const comparativoMensal = {
+    mesAtual,
+    mesAnterior,
+    metaMensal: 1000
+  };
+
+  // helper top N
+  function buildTop(records, key, meta, limit = 10) {
+    const map = {};
+    records.forEach(r => {
+      const k = normalizeText(r[key]) || 'NÃO INFORMADO';
+      map[k] = (map[k] || 0) + 1;
+    });
+
+    const entries = Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit);
+
+    return {
+      labels: entries.map(([k]) => k),
+      valores: entries.map(([, v]) => v),
+      metas: entries.map(() => meta)
+    };
+  }
+
+  return {
+    porDia,
+    comparativoMensal,
+    porUnidade: buildTop(filtered, 'unidade', 150),
+    porPlantao: buildTop(filtered, 'plantao', 200),
+    porTipo: buildTop(filtered, 'tipo_ronda', 300)
+  };
+}
+
+function buildRondasFiltros(filteredBase) {
+  return {
+    origens: sortAscUnique(filteredBase.map(r => r.origem_ronda)),
+    unidades: sortAscUnique(filteredBase.map(r => r.unidade)),
+    plantoes: sortAscUnique(filteredBase.map(r => r.plantao)),
+    tipos: sortAscUnique(filteredBase.map(r => r.tipo_ronda)),
+    nomes: sortAscUnique(filteredBase.map(r => r.nome))
+  };
+}
+
+function buildRondasDetalhes(filtered, page = 1, limit = 20) {
+  const sorted = [...filtered].sort((a, b) => {
+    const ad = a.dataObj ? a.dataObj.getTime() : 0;
+    const bd = b.dataObj ? b.dataObj.getTime() : 0;
+    return bd - ad;
+  });
+
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const start = (currentPage - 1) * limit;
+  const items = sorted.slice(start, start + limit).map(r => ({
+    data: r.dataObj ? formatDateBR(r.dataObj) : r.data,
+    origem_ronda: r.origem_ronda,
+    unidade: r.unidade,
+    plantao: r.plantao,
+    nome: r.nome,
+    acao: r.acao,
+    tipo_ronda: r.tipo_ronda
+  }));
+
+  return {
+    page: currentPage,
+    limit,
+    total,
+    totalPages,
+    items
+  };
+}
+
+// ===============================
+// RONDAS - ENDPOINTS
+// ===============================
+
+// se você tiver middleware de autenticação, substitua abaixo:
+// ex: app.get('/api/rondas-filtros', ensureAuthenticated, async (req, res) => { ... });
+
+app.get('/api/rondas-filtros', async (req, res) => {
+  try {
+    const all = await loadRondasData();
+    const filtered = filterRondas(all, req.query);
+    const filtros = buildRondasFiltros(filtered);
+    res.json(filtros);
+  } catch (error) {
+    console.error('Erro /api/rondas-filtros:', error);
+    res.status(500).json({ error: 'Erro ao carregar filtros de rondas.' });
+  }
+});
+
+app.get('/api/rondas-resumo', async (req, res) => {
+  try {
+    const all = await loadRondasData();
+    const filtered = filterRondas(all, req.query);
+    const resumo = buildRondasResumo(filtered);
+    res.json(resumo);
+  } catch (error) {
+    console.error('Erro /api/rondas-resumo:', error);
+    res.status(500).json({ error: 'Erro ao carregar resumo de rondas.' });
+  }
+});
+
+app.get('/api/rondas-graficos', async (req, res) => {
+  try {
+    const all = await loadRondasData();
+    const filtered = filterRondas(all, req.query);
+    const graficos = buildRondasGraficos(filtered);
+    res.json(graficos);
+  } catch (error) {
+    console.error('Erro /api/rondas-graficos:', error);
+    res.status(500).json({ error: 'Erro ao carregar gráficos de rondas.' });
+  }
+});
+
+app.get('/api/rondas-detalhes', async (req, res) => {
+  try {
+    const all = await loadRondasData();
+    const filtered = filterRondas(all, req.query);
+
+    const page = Number(req.query.page || 1);
+    const limit = Number(req.query.limit || 20);
+
+    const detalhes = buildRondasDetalhes(filtered, page, limit);
+    res.json(detalhes);
+  } catch (error) {
+    console.error('Erro /api/rondas-detalhes:', error);
+    res.status(500).json({ error: 'Erro ao carregar detalhes de rondas.' });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

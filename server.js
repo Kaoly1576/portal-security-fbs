@@ -3405,7 +3405,11 @@ function mapEstoqueRow(row) {
     data: rondaNorm(row[0]),
     dataObj: rondaParseDate(row[0]),
     unidade: rondaNorm(row[1]),
-    plantao:",
+    plantao: rondaNorm(row[2]),
+    nome: rondaNorm(row[3]),
+    acao: "Ronda",
+    tipo_ronda: rondaNorm(row[4]) || "Estoque",
+    origem_ronda: "Ronda Estoque",
   };
 }
 
@@ -3425,8 +3429,8 @@ async function loadRondasRaw() {
       mapper: mapPortasRow,
     },
     {
-      aba: "Ronda Estoque",
-      range: "'Ronda Estoque RK'!B:F",
+      aba: "Ronda estoque RK",
+      range: "'Ronda estoque RK'!B:F",
       mapper: mapEstoqueRow,
     },
   ];
@@ -3452,7 +3456,9 @@ async function loadRondasRaw() {
         !record.unidade &&
         !record.nome &&
         !record.tipo_ronda
-      ) continue;
+      ) {
+        continue;
+      }
 
       all.push(record);
     }

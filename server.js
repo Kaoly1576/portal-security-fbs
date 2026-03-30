@@ -2918,6 +2918,8 @@ app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
 
 // ================== FIRST MILE ACCESS DASHBOARD ==================
 
+// ================== FIRST MILE ACCESS DASHBOARD ==================
+
 app.get("/first-mile-access", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "first-mile-access.html"));
 });
@@ -2933,7 +2935,10 @@ function fmNorm(v) {
 }
 
 function fmNormLower(v) {
-  return fmNorm(v).toLowerCase();
+  return fmNorm(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 function fmParseDate(value) {
@@ -2963,26 +2968,25 @@ function fmFormatISO(date) {
   return `${y}-${m}-${d}`;
 }
 
-function fmMonthLabel(date) {
+function fmMonthLabel(monthIndex) {
   const meses = [
     "janeiro", "fevereiro", "março", "abril", "maio", "junho",
     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
   ];
-  return meses[date.getMonth()];
+  return meses[monthIndex] || "";
 }
 
-function fmFindHeader(headers, possibilities) {
-  for (const possibility of possibilities) {
-    const found = headers.find((h) => fmNormLower(h) === fmNormLower(possibility));
-    if (found) return found;
-  }
+function fmParseMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => fmNorm(v))
+    .filter(Boolean);
+}
 
-  for (const possibility of possibilities) {
-    const found = headers.find((h) => fmNormLower(h).includes(fmNormLower(possibility)));
-    if (found) return found;
-  }
-
-  return null;
+function fmMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(fmNorm(fieldValue));
 }
 
 function fmGroupCount(rows, field, uniqueBy = null) {
@@ -3022,11 +3026,11 @@ function fmApplyFilters(rows, query) {
   const dataFim = fmNorm(query.dataFim);
   const busca = fmNormLower(query.busca);
 
-  const agency = fmNorm(query.agency);
-  const regional = fmNorm(query.regional);
-  const city = fmNorm(query.city);
-  const vehicle = fmNorm(query.vehicle);
-  const monitor = fmNorm(query.monitor);
+  const agencies = fmParseMulti(query.agency);
+  const regionals = fmParseMulti(query.regional);
+  const cities = fmParseMulti(query.city);
+  const vehicles = fmParseMulti(query.vehicle);
+  const monitors = fmParseMulti(query.monitor);
 
   return rows.filter((row) => {
     if (!row._date) return false;
@@ -3035,11 +3039,11 @@ function fmApplyFilters(rows, query) {
     if (dataInicio && iso < dataInicio) return false;
     if (dataFim && iso > dataFim) return false;
 
-    if (agency && fmNorm(row["Agency"]) !== agency) return false;
-    if (regional && fmNorm(row["Regional"]) !== regional) return false;
-    if (city && fmNorm(row["City"]) !== city) return false;
-    if (vehicle && fmNorm(row["Vehicle"]) !== vehicle) return false;
-    if (monitor && fmNorm(row["NOME DO MONITOR"]) !== monitor) return false;
+    if (!fmMatchesMulti(row["Agency"], agencies)) return false;
+    if (!fmMatchesMulti(row["Regional"], regionals)) return false;
+    if (!fmMatchesMulti(row["City"], cities)) return false;
+    if (!fmMatchesMulti(row["Vehicle"], vehicles)) return false;
+    if (!fmMatchesMulti(row["NOME DO MONITOR"], monitors)) return false;
 
     if (busca) {
       const text = [
@@ -3052,6 +3056,7 @@ function fmApplyFilters(rows, query) {
         row["NOME DO MONITOR"],
         row["Status Final"],
         row["Status Validação"],
+        row["Validação Ocorrência"],
         row["Ocorrência Jira"]
       ].map(fmNormLower).join(" ");
 
@@ -3082,7 +3087,13 @@ async function fmAccessLoadRaw() {
     headers.forEach((header, i) => {
       obj[header] = line[i] ?? "";
     });
+
     obj._date = fmParseDate(obj["Data Coleta"]);
+    obj._isoDate = obj._date ? fmFormatISO(obj._date) : "";
+    obj._day = obj._date ? obj._date.getDate() : null;
+    obj._month = obj._date ? obj._date.getMonth() : null;
+    obj._year = obj._date ? obj._date.getFullYear() : null;
+
     return obj;
   }).filter((row) => row._date && fmNorm(row["Route Name"]));
 
@@ -3107,11 +3118,20 @@ app.get("/api/fm-access-filtros", requireAuth, async (req, res) => {
   try {
     const { rows } = await fmAccessLoadWithCache();
 
-    const agencies = [...new Set(rows.map((r) => fmNorm(r["Agency"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    const regionals = [...new Set(rows.map((r) => fmNorm(r["Regional"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    const cities = [...new Set(rows.map((r) => fmNorm(r["City"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    const vehicles = [...new Set(rows.map((r) => fmNorm(r["Vehicle"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    const monitors = [...new Set(rows.map((r) => fmNorm(r["NOME DO MONITOR"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const agencies = [...new Set(rows.map((r) => fmNorm(r["Agency"])).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const regionals = [...new Set(rows.map((r) => fmNorm(r["Regional"])).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const cities = [...new Set(rows.map((r) => fmNorm(r["City"])).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const vehicles = [...new Set(rows.map((r) => fmNorm(r["Vehicle"])).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const monitors = [...new Set(rows.map((r) => fmNorm(r["NOME DO MONITOR"])).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
     return res.json({
       agencies,
@@ -3159,17 +3179,22 @@ app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
 
     const byDay = {};
     filtrados.forEach((row) => {
-      const day = String(row._date.getDate()).padStart(2, "0");
+      if (!row._day) return;
+      const day = String(row._day).padStart(2, "0");
       byDay[day] = (byDay[day] || 0) + 1;
     });
-    const dayLabels = Object.keys(byDay).sort((a, b) => Number(a) - Number(b));
+
+    const dayLabels = Array.from({ length: 31 }, (_, i) =>
+      String(i + 1).padStart(2, "0")
+    );
 
     const byMonth = {};
     filtrados.forEach((row) => {
-      const monthIdx = row._date.getMonth();
-      byMonth[monthIdx] = (byMonth[monthIdx] || 0) + 1;
+      if (row._month === null || row._month === undefined) return;
+      byMonth[row._month] = (byMonth[row._month] || 0) + 1;
     });
-    const monthIndexes = Object.keys(byMonth).map(Number).sort((a, b) => a - b);
+
+    const monthIndexes = Array.from({ length: 12 }, (_, i) => i);
 
     return res.json({
       resumo: {
@@ -3188,11 +3213,11 @@ app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
       distribuicao,
       porDia: {
         labels: dayLabels,
-        values: dayLabels.map((d) => byDay[d]),
+        values: dayLabels.map((d) => byDay[d] || 0),
       },
       porMes: {
-        labels: monthIndexes.map((m) => fmMonthLabel(new Date(2025, m, 1))),
-        values: monthIndexes.map((m) => byMonth[m]),
+        labels: monthIndexes.map((m) => fmMonthLabel(m)),
+        values: monthIndexes.map((m) => byMonth[m] || 0),
       }
     });
   } catch (error) {

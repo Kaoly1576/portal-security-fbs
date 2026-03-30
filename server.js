@@ -3299,17 +3299,17 @@ function parseBrDate(value) {
   if (!value) return null;
   const raw = String(value).trim();
 
-  // dd/mm/yyyy
-  const m1 = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m1) {
-    const [, dd, mm, yyyy] = m1;
-    const d = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+  // dd/mm/yyyy HH:mm:ss
+  let m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (m) {
+    const [, dd, mm, yyyy, hh = '00', mi = '00', ss = '00'] = m;
+    const d = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`);
     return isNaN(d.getTime()) ? null : d;
   }
 
   // yyyy-mm-dd
-  const m2 = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m2) {
+  m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
     const d = new Date(`${raw}T00:00:00`);
     return isNaN(d.getTime()) ? null : d;
   }
@@ -3318,129 +3318,88 @@ function parseBrDate(value) {
   return isNaN(fallback.getTime()) ? null : fallback;
 }
 
-function formatDateBR(date) {
-  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('pt-BR');
-}
-
-function monthKey(date) {
-  if (!(date instanceof Date) || isNaN(date.getTime())) return null;
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
-}
-
-function safeUpper(v) {
-  return normalizeText(v).toUpperCase();
-}
-
-function includesText(source, term) {
-  return safeUpper(source).includes(safeUpper(term));
-}
-
-function splitMulti(value) {
-  return String(value || '')
-    .split('|')
-    .map(v => v.trim())
-    .filter(Boolean);
-}
-
-function matchesMulti(fieldValue, selectedValues) {
-  if (!selectedValues || !selectedValues.length) return true;
-  const base = safeUpper(fieldValue);
-  return selectedValues.some(v => base === safeUpper(v));
-}
-
-function toNumber(n) {
-  const x = Number(n || 0);
-  return Number.isFinite(x) ? x : 0;
-}
-
-function percentChange(current, previous) {
-  current = toNumber(current);
-  previous = toNumber(previous);
-  if (previous === 0 && current === 0) return 0;
-  if (previous === 0) return 100;
-  return ((current - previous) / previous) * 100;
-}
-
-function sortAscUnique(arr) {
-  return [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
-}
-
-function getPreviousMonthRangeFromFiltered(records) {
-  const dates = records
-    .map(r => r.dataObj)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
-
-  if (!dates.length) return null;
-
-  const maxDate = dates[dates.length - 1];
-  const currentMonth = maxDate.getMonth();
-  const currentYear = maxDate.getFullYear();
-
-  const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+function mapRondaGeralRow(row) {
+  // B:G
+  // Data | Unidade | PLANTÃO | Nome | Qual ação vai realizar ? | Tipo de ronda
   return {
-    year: prevMonthDate.getFullYear(),
-    month: prevMonthDate.getMonth()
+    data: normalizeText(row[0]),
+    dataObj: parseBrDate(row[0]),
+    unidade: normalizeText(row[1]),
+    plantao: normalizeText(row[2]),
+    nome: normalizeText(row[3]),
+    acao: normalizeText(row[4]),
+    tipo_ronda: normalizeText(row[5]) || 'Ronda Geral',
+    origem_ronda: 'Ronda Geral'
   };
 }
 
-function guessMappedRecord(row, origem) {
-  // Estamos lendo B:G => 6 colunas.
-  // Mapeamento assumido:
-  // B = Data
-  // C = Unidade
-  // D = Plantão
-  // E = Nome
-  // F = Ação
-  // G = Tipo
-  // Se a sua planilha estiver em ordem diferente, ajuste aqui apenas.
-
-  const data = normalizeText(row[0]);
-  const unidade = normalizeText(row[1]);
-  const plantao = normalizeText(row[2]);
-  const nome = normalizeText(row[3]);
-  const acao = normalizeText(row[4]);
-  const tipo_ronda = normalizeText(row[5]);
-
-  const dataObj = parseBrDate(data);
-
+function mapPortasRow(row) {
+  // C:H
+  // Data | Unidade | Plantão | Nome | Qual ação vai realizar ? | Tipo de ronda
   return {
-    data,
-    dataObj,
-    unidade,
-    plantao,
-    nome,
-    acao,
-    tipo_ronda,
-    origem_ronda: origem
+    data: normalizeText(row[0]),
+    dataObj: parseBrDate(row[0]),
+    unidade: normalizeText(row[1]),
+    plantao: normalizeText(row[2]),
+    nome: normalizeText(row[3]),
+    acao: normalizeText(row[4]),
+    tipo_ronda: normalizeText(row[5]) || 'Portas de emergência',
+    origem_ronda: 'Portas de emergência'
+  };
+}
+
+function mapEstoqueRow(row) {
+  // B:F
+  // Data | Unidade | Plantão | Nome | Tipo de ronda
+  return {
+    data: normalizeText(row[0]),
+    dataObj: parseBrDate(row[0]),
+    unidade: normalizeText(row[1]),
+    plantao: normalizeText(row[2]),
+    nome: normalizeText(row[3]),
+    acao: 'Ronda',
+    tipo_ronda: normalizeText(row[4]) || 'Estoque - RK',
+    origem_ronda: 'Ronda Estoque'
   };
 }
 
 async function loadRondasData() {
-  const sheets = await getGoogleSheetsClient();
   const all = [];
 
-  for (const aba of RONDAS_ABAS) {
-    const range = `'${aba.nome}'!B:G`;
+  const configs = [
+    {
+      aba: 'Ronda Geral',
+      range: `'Ronda Geral'!B:G`,
+      mapper: mapRondaGeralRow
+    },
+    {
+      aba: 'Ronda Portas de emergência',
+      range: `'Ronda Portas de emergência'!C:H`,
+      mapper: mapPortasRow
+    },
+    {
+      aba: 'Ronda Estoque',
+      range: `'Ronda Estoque'!B:F`,
+      mapper: mapEstoqueRow
+    }
+  ];
+
+  for (const cfg of configs) {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: RONDAS_SHEET_ID,
-      range
+      range: cfg.range
     });
 
     const rows = resp.data.values || [];
     if (!rows.length) continue;
 
-    // Remove cabeçalho
     const dataRows = rows.slice(1);
 
     for (const row of dataRows) {
       if (!row || row.every(cell => !String(cell || '').trim())) continue;
-      const record = guessMappedRecord(row, aba.origem);
 
-      // evita lixo total
+      const record = cfg.mapper(row);
+
       if (!record.data && !record.unidade && !record.nome && !record.tipo_ronda) continue;
 
       all.push(record);

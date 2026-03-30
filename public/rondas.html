@@ -658,10 +658,29 @@
     }
 
     async function fetchJSON(url) {
-      const resp = await fetch(url, { credentials: 'include' });
-      if (!resp.ok) throw new Error(`Erro ${resp.status}`);
-      return resp.json();
+  console.log('[RONDAS] fetch ->', url);
+
+  const resp = await fetch(url, {
+    credentials: 'include',
+    headers: {
+      'Accept': 'application/json'
     }
+  });
+
+  const text = await resp.text();
+  console.log('[RONDAS] status ->', resp.status, url);
+  console.log('[RONDAS] body preview ->', text.slice(0, 300));
+
+  if (!resp.ok) {
+    throw new Error(`Erro ${resp.status} ao buscar ${url}: ${text.slice(0, 200)}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`Resposta não é JSON em ${url}: ${text.slice(0, 200)}`);
+  }
+}
 
     function buildMultiSelect(elId, options, selected, onChange, placeholder = 'Todos') {
       const root = document.getElementById(elId);

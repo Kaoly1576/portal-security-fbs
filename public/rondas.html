@@ -877,39 +877,49 @@
     }
 
     async function carregarFiltros() {
-      const qs = getFiltersQuery();
-      const data = await fetchJSON(`/api/rondas-filtros?${qs}`);
+  // importante: carregar opções sempre da base completa
+  const data = await fetchJSON('/api/rondas-filtros');
 
-      buildMultiSelect('msOrigem', data.origens || [], state.filtros.origem, (vals) => {
-        state.filtros.origem = vals;
-        state.page = 1;
-        carregarTudo();
-      });
+  buildMultiSelect('msOrigem', data.origens || [], state.filtros.origem, (vals) => {
+    state.filtros.origem = vals;
+    state.page = 1;
+    carregarResumo();
+    carregarGraficos();
+    carregarDetalhes();
+  });
 
-      buildMultiSelect('msUnidade', data.unidades || [], state.filtros.unidade, (vals) => {
-        state.filtros.unidade = vals;
-        state.page = 1;
-        carregarTudo();
-      });
+  buildMultiSelect('msUnidade', data.unidades || [], state.filtros.unidade, (vals) => {
+    state.filtros.unidade = vals;
+    state.page = 1;
+    carregarResumo();
+    carregarGraficos();
+    carregarDetalhes();
+  });
 
-      buildMultiSelect('msPlantao', data.plantoes || [], state.filtros.plantao, (vals) => {
-        state.filtros.plantao = vals;
-        state.page = 1;
-        carregarTudo();
-      });
+  buildMultiSelect('msPlantao', data.plantoes || [], state.filtros.plantao, (vals) => {
+    state.filtros.plantao = vals;
+    state.page = 1;
+    carregarResumo();
+    carregarGraficos();
+    carregarDetalhes();
+  });
 
-      buildMultiSelect('msTipo', data.tipos || [], state.filtros.tipo, (vals) => {
-        state.filtros.tipo = vals;
-        state.page = 1;
-        carregarTudo();
-      });
+  buildMultiSelect('msTipo', data.tipos || [], state.filtros.tipo, (vals) => {
+    state.filtros.tipo = vals;
+    state.page = 1;
+    carregarResumo();
+    carregarGraficos();
+    carregarDetalhes();
+  });
 
-      buildMultiSelect('msNome', data.nomes || [], state.filtros.nome, (vals) => {
-        state.filtros.nome = vals;
-        state.page = 1;
-        carregarTudo();
-      });
-    }
+  buildMultiSelect('msNome', data.nomes || [], state.filtros.nome, (vals) => {
+    state.filtros.nome = vals;
+    state.page = 1;
+    carregarResumo();
+    carregarGraficos();
+    carregarDetalhes();
+  });
+}
 
     async function carregarResumo() {
       const qs = getFiltersQuery();
@@ -982,12 +992,12 @@
     }
 
     async function carregarTudo() {
-      document.getElementById('ultimaAtualizacao').textContent = getNowTime();
-      await carregarFiltros();
-      await carregarResumo();
-      await carregarGraficos();
-      await carregarDetalhes();
-    }
+  document.getElementById('ultimaAtualizacao').textContent = getNowTime();
+  await carregarFiltros();
+  await carregarResumo();
+  await carregarGraficos();
+  await carregarDetalhes();
+}
 
     function bindEvents() {
       document.getElementById('dataInicial').addEventListener('change', (e) => {

@@ -3785,7 +3785,7 @@ app.get("/registro-lacres", requireAuth, (req, res) => {
 
 const LACRES_SPREADSHEET_ID = "1kxyx3nSpltdddSQkEGHHjOwcEtHMBd3RuQdk-w9q218";
 // ajuste o nome da aba se necessário
-const LACRES_RANGE = "'Security - Registro de lacres'!A1:R200000";
+const LACRES_RANGE = "'Registro de lacres'!A1:R200000";
 
 let lacresCache = null;
 let lacresCacheTime = 0;

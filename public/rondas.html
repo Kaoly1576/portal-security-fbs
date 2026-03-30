@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RONDAS</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: Arial, sans-serif;
-      background:
-        radial-gradient(circle at top left, #273246 0%, #101826 40%, #060b14 100%);
+      background: radial-gradient(circle at top left, #273246 0%, #101826 40%, #060b14 100%);
       color: #fff;
       min-height: 100vh;
       padding: 10px;
@@ -152,7 +153,9 @@
       font-size: 13px;
     }
 
-    .filter-group input::placeholder { color: rgba(255,255,255,0.45); }
+    .filter-group input::placeholder {
+      color: rgba(255,255,255,0.45);
+    }
 
     .search-wide {
       grid-column: span 2;
@@ -518,30 +521,6 @@
       </div>
     </div>
 
-    <div class="charts-grid-2">
-      <div class="chart-card">
-        <h3>Rondas por Dia</h3>
-        <div class="chart-meta">
-          <span>Comparativo do período filtrado</span>
-          <span class="goal-pill">Meta genérica: 35 / dia</span>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="chartDia"></canvas>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <h3>Comparativo Mensal</h3>
-        <div class="chart-meta">
-          <span>Mês atual x mês anterior</span>
-          <span class="goal-pill">Meta genérica: 1000 / mês</span>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="chartComparativo"></canvas>
-        </div>
-      </div>
-    </div>
-
     <div class="charts-grid-3">
       <div class="chart-card">
         <h3>Rondas por Unidade</h3>
@@ -573,6 +552,30 @@
         </div>
         <div class="chart-wrap">
           <canvas id="chartTipo"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <h3>Rondas por Dia</h3>
+        <div class="chart-meta">
+          <span>Comparativo do período filtrado</span>
+          <span class="goal-pill">Meta genérica: 35 / dia</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartDia"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Comparativo Mensal</h3>
+        <div class="chart-meta">
+          <span>Mês atual x mês anterior</span>
+          <span class="goal-pill">Meta genérica: 1000 / mês</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartComparativo"></canvas>
         </div>
       </div>
     </div>
@@ -612,6 +615,8 @@
       text: '#ffffff',
       grid: 'rgba(255,255,255,0.08)'
     };
+
+    Chart.register(ChartDataLabels);
 
     const state = {
       page: 1,
@@ -658,29 +663,23 @@
     }
 
     async function fetchJSON(url) {
-  console.log('[RONDAS] fetch ->', url);
+      const resp = await fetch(url, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      });
 
-  const resp = await fetch(url, {
-    credentials: 'include',
-    headers: {
-      'Accept': 'application/json'
+      const text = await resp.text();
+
+      if (!resp.ok) {
+        throw new Error(`Erro ${resp.status} ao buscar ${url}: ${text.slice(0, 200)}`);
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Resposta não é JSON em ${url}: ${text.slice(0, 200)}`);
+      }
     }
-  });
-
-  const text = await resp.text();
-  console.log('[RONDAS] status ->', resp.status, url);
-  console.log('[RONDAS] body preview ->', text.slice(0, 300));
-
-  if (!resp.ok) {
-    throw new Error(`Erro ${resp.status} ao buscar ${url}: ${text.slice(0, 200)}`);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error(`Resposta não é JSON em ${url}: ${text.slice(0, 200)}`);
-  }
-}
 
     function buildMultiSelect(elId, options, selected, onChange, placeholder = 'Todos') {
       const root = document.getElementById(elId);
@@ -734,11 +733,38 @@
       document.querySelectorAll('.multi-select').forEach(ms => ms.classList.remove('open'));
     });
 
+    function datalabelsOptions(indexAxis = 'x') {
+      return {
+        color: '#ffffff',
+        anchor: indexAxis === 'y' ? 'end' : 'end',
+        align: indexAxis === 'y' ? 'right' : 'top',
+        offset: 4,
+        clamp: true,
+        font: {
+          family: 'Arial',
+          weight: 'bold',
+          size: 11
+        },
+        formatter: (value, context) => {
+          if (context.dataset.label === 'Meta') return null;
+          return Number(value || 0).toLocaleString('pt-BR');
+        }
+      };
+    }
+
     function baseChartOptions(indexAxis = 'x') {
       return {
         responsive: true,
         maintainAspectRatio: false,
         indexAxis,
+        layout: {
+          padding: {
+            top: 24,
+            right: 16,
+            left: 8,
+            bottom: 8
+          }
+        },
         plugins: {
           legend: {
             labels: { color: COLORS.text, font: { family: 'Arial' } }
@@ -746,7 +772,8 @@
           tooltip: {
             titleFont: { family: 'Arial' },
             bodyFont: { family: 'Arial' }
-          }
+          },
+          datalabels: datalabelsOptions(indexAxis)
         },
         scales: {
           x: {
@@ -775,7 +802,8 @@
             {
               label: 'Rondas',
               data: data.valores,
-              backgroundColor: COLORS.orange
+              backgroundColor: COLORS.orange,
+              datalabels: datalabelsOptions('x')
             },
             {
               label: 'Meta',
@@ -783,7 +811,8 @@
               type: 'line',
               borderColor: '#ffd2a8',
               backgroundColor: '#ffd2a8',
-              tension: 0.2
+              tension: 0.2,
+              datalabels: { display: false }
             }
           ]
         },
@@ -801,7 +830,8 @@
             {
               label: 'Rondas',
               data: [data.mesAnterior, data.mesAtual],
-              backgroundColor: ['rgba(255,122,26,0.55)', COLORS.orange]
+              backgroundColor: ['rgba(255,122,26,0.55)', COLORS.orange],
+              datalabels: datalabelsOptions('x')
             },
             {
               label: 'Meta',
@@ -809,7 +839,8 @@
               type: 'line',
               borderColor: '#ffd2a8',
               backgroundColor: '#ffd2a8',
-              tension: 0
+              tension: 0,
+              datalabels: { display: false }
             }
           ]
         },
@@ -827,7 +858,8 @@
             {
               label,
               data: valores,
-              backgroundColor: COLORS.orange
+              backgroundColor: COLORS.orange,
+              datalabels: datalabelsOptions('y')
             },
             {
               label: 'Meta',
@@ -835,7 +867,8 @@
               type: 'line',
               borderColor: '#ffd2a8',
               backgroundColor: '#ffd2a8',
-              tension: 0
+              tension: 0,
+              datalabels: { display: false }
             }
           ]
         },
@@ -898,8 +931,6 @@
       const qs = getFiltersQuery();
       const data = await fetchJSON(`/api/rondas-graficos?${qs}`);
 
-      renderChartDia(data.porDia);
-      renderChartComparativo(data.comparativoMensal);
       renderBarHorizontal(
         'chartUnidade',
         'Rondas',
@@ -907,6 +938,7 @@
         data.porUnidade.valores,
         data.porUnidade.metas
       );
+
       renderBarHorizontal(
         'chartPlantao',
         'Rondas',
@@ -914,6 +946,7 @@
         data.porPlantao.valores,
         data.porPlantao.metas
       );
+
       renderBarHorizontal(
         'chartTipo',
         'Rondas',
@@ -921,6 +954,9 @@
         data.porTipo.valores,
         data.porTipo.metas
       );
+
+      renderChartDia(data.porDia);
+      renderChartComparativo(data.comparativoMensal);
     }
 
     async function carregarDetalhes() {
@@ -1006,25 +1042,23 @@
     }
 
     async function initRondas() {
-  try {
-    console.log('[RONDAS] init iniciado');
-    bindEvents();
-    await carregarTudo();
-    console.log('[RONDAS] init finalizado');
-  } catch (error) {
-    console.error('[RONDAS] erro no init:', error);
+      try {
+        bindEvents();
+        await carregarTudo();
+      } catch (error) {
+        console.error('[RONDAS] erro no init:', error);
 
-    document.getElementById('tbodyDetalhes').innerHTML = `
-      <tr>
-        <td colspan="7" style="color:#ff6b6b;font-weight:bold;">
-          Erro ao carregar dashboard: ${error.message}
-        </td>
-      </tr>
-    `;
-  }
-}
+        document.getElementById('tbodyDetalhes').innerHTML = `
+          <tr>
+            <td colspan="7" style="color:#ff6b6b;font-weight:bold;">
+              Erro ao carregar dashboard: ${error.message}
+            </td>
+          </tr>
+        `;
+      }
+    }
 
-initRondas();
+    initRondas();
   </script>
 </body>
 </html>

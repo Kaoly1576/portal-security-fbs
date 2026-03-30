@@ -3429,9 +3429,8 @@ async function loadRondasRaw() {
       mapper: mapPortasRow,
     },
     {
-      // se o nome real da aba for outro, ajuste aqui
       aba: "Ronda Estoque",
-      range: "'Ronda Estoque RK'!B:F",
+      range: "'Ronda Estoque'!B:F",
       mapper: mapEstoqueRow,
     },
   ];
@@ -3457,9 +3456,7 @@ async function loadRondasRaw() {
         !record.unidade &&
         !record.nome &&
         !record.tipo_ronda
-      ) {
-        continue;
-      }
+      ) continue;
 
       all.push(record);
     }

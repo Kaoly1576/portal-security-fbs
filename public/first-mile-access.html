@@ -9,37 +9,50 @@
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, Helvetica, sans-serif}
+
     :root{
-      --bg:#1b1b1b;
-      --bg-2:#111111;
-      --card:#2b2b2b;
-      --card-2:#1d1d1d;
-      --input:#232323;
-      --th:#2f2f2f;
+      --bg1:#4b5563;
+      --bg2:#111827;
+      --bg3:#050c18;
+      --card:rgba(17,24,39,0.78);
+      --card-2:rgba(10,15,28,0.96);
+      --input:#0b1220;
+      --th:#111c33;
       --line:rgba(255,255,255,0.08);
       --text:#ffffff;
-      --muted:#c4c4c4;
+      --muted:#cbd5e1;
       --orange:#ff7a1a;
+      --orange-2:#ff9540;
       --blue:#58a6ff;
       --green:#22c55e;
       --red:#ef4444;
       --purple:#8b5cf6;
     }
 
-    body{
-      background:
-        linear-gradient(180deg, rgba(27,27,27,0.96) 0%, rgba(17,17,17,0.98) 100%),
-        url("/images/plano de fundo.png") center/cover fixed no-repeat;
-      color:var(--text)
+    html,body{
+      min-height:100%;
+      overflow-x:hidden;
     }
 
-    .page{max-width:1500px;margin:0 auto;padding:18px}
+    body{
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
+        linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 24%, var(--bg3) 52%, var(--bg3) 100%);
+      color:var(--text);
+    }
+
+    .page{
+      max-width:1500px;
+      margin:0 auto;
+      padding:14px;
+    }
 
     .topbar,.hero,.filters,.panel,.wide-panel,.kpi{
-      background:linear-gradient(135deg,var(--card) 0%, var(--card-2) 100%);
+      background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
       border:1px solid var(--line);
       border-radius:16px;
       box-shadow:0 10px 24px rgba(0,0,0,0.28);
+      backdrop-filter: blur(4px);
     }
 
     .topbar{
@@ -47,149 +60,312 @@
       justify-content:space-between;
       align-items:center;
       gap:16px;
-      margin-bottom:18px;
+      margin-bottom:12px;
       padding:14px 16px;
-      flex-wrap:wrap
+      flex-wrap:wrap;
     }
 
-    .brand{display:flex;align-items:center;gap:14px}
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
 
     .brand-logo{
-      width:58px;
-      height:58px;
+      width:44px;
+      height:44px;
       object-fit:contain;
-      border-radius:14px;
-      background:#242424;
+      border-radius:50%;
+      background:#1a120d;
       padding:6px;
-      border:1px solid rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.08);
     }
 
     .brand-text h1{
       color:var(--orange);
-      font-size:22px;
-      font-weight:900
+      font-size:18px;
+      font-weight:900;
+      line-height:1;
     }
 
     .brand-text p{
-      font-size:12px;
-      color:var(--muted)
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
     }
 
     .btn{
-      background:linear-gradient(135deg,#353535 0%, #252525 100%);
+      background:rgba(255,255,255,0.08);
       border:1px solid var(--line);
       color:#fff;
       padding:10px 16px;
       border-radius:12px;
       text-decoration:none;
-      font-size:13px;
-      font-weight:700;
-      cursor:pointer
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition:.2s ease;
+    }
+
+    .btn:hover{
+      background:rgba(255,255,255,0.14);
     }
 
     .hero{
-      padding:18px 20px;
+      padding:16px 18px;
       display:flex;
       justify-content:space-between;
       gap:16px;
       align-items:center;
-      margin-bottom:14px;
-      flex-wrap:wrap
+      margin-bottom:12px;
+      flex-wrap:wrap;
     }
 
-    .hero h2{font-size:20px;margin-bottom:8px}
+    .hero h2{
+      font-size:18px;
+      margin-bottom:6px;
+    }
 
     .hero p{
       color:var(--muted);
-      font-size:13px;
+      font-size:12px;
       line-height:1.5;
-      max-width:860px
+      max-width:860px;
     }
 
-    .hero-right{text-align:right;min-width:150px}
-    .hero-right .small{color:var(--muted);font-size:12px;margin-bottom:6px}
-    .hero-right .time{color:var(--orange);font-weight:900;font-size:22px}
+    .hero-right{
+      text-align:right;
+      min-width:150px;
+    }
 
-    .filters{padding:14px;margin-bottom:14px}
+    .hero-right .small{
+      color:var(--muted);
+      font-size:11px;
+      margin-bottom:6px;
+    }
+
+    .hero-right .time{
+      color:var(--orange);
+      font-weight:900;
+      font-size:22px;
+    }
+
+    .filters{
+      padding:14px;
+      margin-bottom:12px;
+    }
 
     .filters-grid{
       display:grid;
       grid-template-columns:repeat(6,minmax(120px,1fr));
       gap:10px;
-      align-items:end
+      align-items:end;
+    }
+
+    .field{
+      min-width:0;
     }
 
     .field label{
       display:block;
       margin-bottom:6px;
       font-size:11px;
-      color:#d5d5d5;
-      font-weight:700
+      color:#fff;
+      font-weight:700;
     }
 
-    .field input,.field select{
+    .field input{
       width:100%;
-      height:38px;
+      height:40px;
       background:var(--input);
-      border:1px solid #3a3a3a;
+      border:1px solid rgba(255,255,255,0.08);
       border-radius:10px;
       color:#fff;
-      padding:0 10px;
+      padding:0 12px;
       outline:none;
-      font-size:13px
+      font-size:12px;
     }
 
     .field input::placeholder{
-      color:#9f9f9f;
+      color:#94a3b8;
     }
 
-    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .multi-select{
+      position:relative;
+      width:100%;
+    }
+
+    .multi-trigger{
+      width:100%;
+      background:var(--input);
+      border:1px solid rgba(255,255,255,0.08);
+      color:#fff;
+      border-radius:10px;
+      padding:0 34px 0 12px;
+      font-size:12px;
+      height:40px;
+      display:flex;
+      align-items:center;
+      cursor:pointer;
+      position:relative;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .multi-trigger::after{
+      content:"▼";
+      position:absolute;
+      right:12px;
+      font-size:10px;
+      color:#cbd5e1;
+      pointer-events:none;
+    }
+
+    .multi-menu{
+      position:absolute;
+      top:44px;
+      left:0;
+      width:100%;
+      background:var(--input);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px;
+      max-height:220px;
+      overflow-y:auto;
+      display:none;
+      z-index:50;
+      box-shadow:0 10px 24px rgba(0,0,0,0.35);
+      padding:6px;
+    }
+
+    .multi-select.open .multi-menu{
+      display:block;
+    }
+
+    .multi-option{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:12px;
+      color:#fff;
+    }
+
+    .multi-option:hover{
+      background:#1a2942;
+    }
+
+    .multi-option input{
+      width:auto;
+      height:auto;
+      accent-color:var(--orange);
+    }
+
+    .multi-actions{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      padding:6px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      margin-bottom:4px;
+    }
+
+    .multi-actions button{
+      flex:1;
+      background:#1a2942;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      padding:6px 8px;
+      font-size:11px;
+      cursor:pointer;
+    }
+
+    .multi-actions button:hover{
+      background:#243756;
+    }
+
+    .search-span-2{
+      grid-column: span 2;
+    }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
 
     .btn-primary{
-      height:38px;
+      height:40px;
       border:none;
       border-radius:10px;
-      padding:0 14px;
-      background:linear-gradient(90deg,#ff7a1a,#ff4d4f);
+      padding:0 16px;
+      background:linear-gradient(90deg,var(--orange),#ff4d4f);
       color:#fff;
       font-weight:800;
-      cursor:pointer
+      cursor:pointer;
     }
 
     .btn-ghost{
-      height:38px;
+      height:40px;
       border:1px solid var(--line);
       border-radius:10px;
-      padding:0 14px;
+      padding:0 16px;
       background:#242424;
       color:#fff;
       font-weight:700;
-      cursor:pointer
+      cursor:pointer;
     }
 
     .kpis{
       display:grid;
       grid-template-columns:repeat(5,minmax(0,1fr));
       gap:12px;
-      margin-bottom:14px
+      margin-bottom:12px;
     }
 
-    .kpi{padding:14px;min-height:92px}
-    .kpi-title{font-size:11px;text-transform:uppercase;color:#d4d4d4;margin-bottom:10px}
-    .kpi-value{font-size:24px;font-weight:900;line-height:1.1}
-    .orange{color:var(--orange)} .blue{color:var(--blue)} .green{color:var(--green)} .red{color:var(--red)} .purple{color:var(--purple)}
+    .kpi{
+      padding:14px;
+      min-height:92px;
+    }
+
+    .kpi-title{
+      font-size:11px;
+      text-transform:uppercase;
+      color:#fff;
+      margin-bottom:10px;
+      font-weight:800;
+    }
+
+    .kpi-value{
+      font-size:24px;
+      font-weight:900;
+      line-height:1.1;
+    }
+
+    .orange{color:var(--orange)}
+    .blue{color:var(--blue)}
+    .green{color:var(--green)}
+    .red{color:var(--red)}
+    .purple{color:var(--purple)}
 
     .grid-top,.grid-middle,.grid-bottom{
       display:grid;
       grid-template-columns:2fr 1fr;
       gap:12px;
-      margin-bottom:12px
+      margin-bottom:12px;
     }
 
     .panel{
       padding:14px;
       min-height:250px;
-      overflow:hidden
+      overflow:hidden;
     }
 
     .panel-title{
@@ -197,19 +373,25 @@
       font-weight:900;
       font-size:14px;
       margin-bottom:12px;
-      text-align:center
+      text-align:center;
     }
 
-    .compact-list{display:flex;flex-direction:column;gap:10px}
+    .compact-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
 
     .compact-item{
       display:grid;
       grid-template-columns:minmax(0,1fr) 56px;
       gap:10px;
-      align-items:center
+      align-items:center;
     }
 
-    .compact-left{min-width:0}
+    .compact-left{
+      min-width:0;
+    }
 
     .compact-name{
       font-size:12px;
@@ -217,14 +399,14 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      margin-bottom:6px
+      margin-bottom:6px;
     }
 
     .compact-value{
       font-size:12px;
       font-weight:800;
       text-align:right;
-      color:#fff
+      color:#fff;
     }
 
     .bar-track{
@@ -232,21 +414,27 @@
       height:9px;
       background:rgba(255,255,255,0.07);
       border-radius:999px;
-      overflow:hidden
+      overflow:hidden;
     }
 
     .bar-fill{
       height:100%;
-      background:linear-gradient(90deg,#ff7a1a,#ff9540);
-      border-radius:999px
+      background:linear-gradient(90deg,var(--orange),var(--orange-2));
+      border-radius:999px;
     }
 
-    .chart-box{height:240px;position:relative}
-    .chart-box.line{height:260px}
+    .chart-box{
+      height:240px;
+      position:relative;
+    }
+
+    .chart-box.line{
+      height:260px;
+    }
 
     .wide-panel{
       padding:14px;
-      margin-bottom:14px
+      margin-bottom:14px;
     }
 
     .detail-wrap{
@@ -261,14 +449,14 @@
       border-collapse:collapse;
       min-width:900px;
       font-size:12px;
-      background:#232323;
+      background:#091322;
     }
 
     .detail-table th,.detail-table td{
       padding:8px 10px;
       border-bottom:1px solid rgba(255,255,255,0.06);
       text-align:left;
-      white-space:nowrap
+      white-space:nowrap;
     }
 
     .detail-table th{
@@ -284,7 +472,7 @@
       display:flex;
       justify-content:flex-end;
       gap:8px;
-      flex-wrap:wrap
+      flex-wrap:wrap;
     }
 
     .pager-info{
@@ -292,7 +480,7 @@
       color:var(--muted);
       font-size:12px;
       display:flex;
-      align-items:center
+      align-items:center;
     }
 
     .empty-state{
@@ -302,18 +490,24 @@
       color:var(--muted);
       height:100%;
       min-height:120px;
-      font-size:13px
+      font-size:13px;
+    }
+
+    canvas{
+      max-width:100% !important;
     }
 
     @media (max-width:1280px){
       .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
       .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
+      .search-span-2{grid-column:span 1}
     }
 
     @media (max-width:768px){
       .filters-grid,.kpis{grid-template-columns:1fr}
       .hero-right{text-align:left}
       .kpi-value{font-size:20px}
+      .topbar,.hero{flex-direction:column;align-items:flex-start}
     }
   </style>
 </head>
@@ -347,34 +541,55 @@
           <label>Data inicial</label>
           <input type="date" id="filtroDataInicio" />
         </div>
+
         <div class="field">
           <label>Data final</label>
           <input type="date" id="filtroDataFim" />
         </div>
+
         <div class="field">
           <label>Agency</label>
-          <select id="filtroAgency"><option value="">Todas</option></select>
+          <div class="multi-select" id="multiAgency">
+            <button type="button" class="multi-trigger" id="triggerAgency">Todas</button>
+            <div class="multi-menu" id="menuAgency"></div>
+          </div>
         </div>
+
         <div class="field">
           <label>Regional</label>
-          <select id="filtroRegional"><option value="">Todas</option></select>
+          <div class="multi-select" id="multiRegional">
+            <button type="button" class="multi-trigger" id="triggerRegional">Todas</button>
+            <div class="multi-menu" id="menuRegional"></div>
+          </div>
         </div>
+
         <div class="field">
           <label>City</label>
-          <select id="filtroCity"><option value="">Todas</option></select>
+          <div class="multi-select" id="multiCity">
+            <button type="button" class="multi-trigger" id="triggerCity">Todas</button>
+            <div class="multi-menu" id="menuCity"></div>
+          </div>
         </div>
+
         <div class="field">
           <label>Vehicle</label>
-          <select id="filtroVehicle"><option value="">Todos</option></select>
+          <div class="multi-select" id="multiVehicle">
+            <button type="button" class="multi-trigger" id="triggerVehicle">Todos</button>
+            <div class="multi-menu" id="menuVehicle"></div>
+          </div>
         </div>
       </div>
 
       <div class="filters-grid" style="margin-top:10px;">
         <div class="field">
           <label>Monitor</label>
-          <select id="filtroMonitor"><option value="">Todos</option></select>
+          <div class="multi-select" id="multiMonitor">
+            <button type="button" class="multi-trigger" id="triggerMonitor">Todos</button>
+            <div class="multi-menu" id="menuMonitor"></div>
+          </div>
         </div>
-        <div class="field" style="grid-column: span 3;">
+
+        <div class="field search-span-2">
           <label>Busca geral</label>
           <input type="text" id="filtroBusca" placeholder="Buscar..." />
         </div>
@@ -496,25 +711,102 @@
       return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
     }
 
+    function createMultiSelect(menuId, triggerId, values, placeholder) {
+      const menu = document.getElementById(menuId);
+      const trigger = document.getElementById(triggerId);
+
+      menu.innerHTML = `
+        <div class="multi-actions">
+          <button type="button" data-action="all">Todos</button>
+          <button type="button" data-action="clear">Limpar</button>
+        </div>
+      `;
+
+      values.forEach((value) => {
+        const safeValue = esc(value);
+        const label = document.createElement("label");
+        label.className = "multi-option";
+        label.innerHTML = `
+          <input type="checkbox" value="${safeValue}" />
+          <span>${safeValue}</span>
+        `;
+        menu.appendChild(label);
+      });
+
+      function updateTrigger() {
+        const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+        if (!checked.length) {
+          trigger.textContent = placeholder;
+        } else if (checked.length === 1) {
+          trigger.textContent = checked[0];
+        } else {
+          trigger.textContent = `${checked.length} selecionados`;
+        }
+      }
+
+      trigger.onclick = () => {
+        document.querySelectorAll(".multi-select").forEach((wrap) => {
+          if (wrap !== trigger.closest(".multi-select")) {
+            wrap.classList.remove("open");
+          }
+        });
+        trigger.closest(".multi-select").classList.toggle("open");
+      };
+
+      menu.addEventListener("click", (e) => {
+        const action = e.target.dataset.action;
+
+        if (action === "all") {
+          menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = true;
+          });
+          updateTrigger();
+          return;
+        }
+
+        if (action === "clear") {
+          menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = false;
+          });
+          updateTrigger();
+          return;
+        }
+
+        if (e.target.matches('input[type="checkbox"]')) {
+          updateTrigger();
+        }
+      });
+
+      updateTrigger();
+    }
+
+    function getMultiValues(menuId) {
+      return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+        .map((el) => el.value)
+        .join("|");
+    }
+
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".multi-select").forEach((wrap) => {
+        if (!wrap.contains(e.target)) {
+          wrap.classList.remove("open");
+        }
+      });
+    });
+
     function getFiltersQuery(page = 1) {
       const qs = new URLSearchParams();
       qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
       qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
-      qs.set("agency", document.getElementById("filtroAgency").value || "");
-      qs.set("regional", document.getElementById("filtroRegional").value || "");
-      qs.set("city", document.getElementById("filtroCity").value || "");
-      qs.set("vehicle", document.getElementById("filtroVehicle").value || "");
-      qs.set("monitor", document.getElementById("filtroMonitor").value || "");
+      qs.set("agency", getMultiValues("menuAgency"));
+      qs.set("regional", getMultiValues("menuRegional"));
+      qs.set("city", getMultiValues("menuCity"));
+      qs.set("vehicle", getMultiValues("menuVehicle"));
+      qs.set("monitor", getMultiValues("menuMonitor"));
       qs.set("busca", document.getElementById("filtroBusca").value || "");
       qs.set("page", page);
       qs.set("limit", 50);
       return qs.toString();
-    }
-
-    function fillSelect(id, values, firstLabel) {
-      const el = document.getElementById(id);
-      el.innerHTML = `<option value="">${firstLabel}</option>` +
-        (values || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
     }
 
     function renderCompactCard(elId, rows, topN = 10) {
@@ -563,7 +855,7 @@
             align: "top",
             offset: 2,
             font: { size: 10, weight: "700" },
-            formatter: (value) => fmt(value)
+            formatter: (value) => value > 0 ? fmt(value) : ""
           }
         },
         scales: {
@@ -584,11 +876,11 @@
       const res = await fetch("/api/fm-access-filtros", { credentials: "same-origin" });
       const data = await res.json();
 
-      fillSelect("filtroAgency", data.agencies || [], "Todas");
-      fillSelect("filtroRegional", data.regionals || [], "Todas");
-      fillSelect("filtroCity", data.cities || [], "Todas");
-      fillSelect("filtroVehicle", data.vehicles || [], "Todos");
-      fillSelect("filtroMonitor", data.monitors || [], "Todos");
+      createMultiSelect("menuAgency", "triggerAgency", data.agencies || [], "Todas");
+      createMultiSelect("menuRegional", "triggerRegional", data.regionals || [], "Todas");
+      createMultiSelect("menuCity", "triggerCity", data.cities || [], "Todas");
+      createMultiSelect("menuVehicle", "triggerVehicle", data.vehicles || [], "Todos");
+      createMultiSelect("menuMonitor", "triggerMonitor", data.monitors || [], "Todos");
     }
 
     async function loadGraficos() {
@@ -617,7 +909,7 @@
           datasets: [{
             data: (data.porAgency || []).map(x => x.total),
             backgroundColor: "#ff7a1a",
-            borderRadius: 6
+            borderRadius: 8
           }]
         },
         options: {
@@ -703,7 +995,7 @@
             datalabels: {
               color: "#ffffff",
               font: { size: 11, weight: "700" },
-              formatter: (value) => fmt(value)
+              formatter: (value) => value > 0 ? fmt(value) : ""
             }
           }
         }
@@ -755,12 +1047,18 @@
     document.getElementById("btnLimpar").addEventListener("click", () => {
       document.getElementById("filtroDataInicio").value = "";
       document.getElementById("filtroDataFim").value = "";
-      document.getElementById("filtroAgency").value = "";
-      document.getElementById("filtroRegional").value = "";
-      document.getElementById("filtroCity").value = "";
-      document.getElementById("filtroVehicle").value = "";
-      document.getElementById("filtroMonitor").value = "";
       document.getElementById("filtroBusca").value = "";
+
+      document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach((input) => {
+        input.checked = false;
+      });
+
+      document.getElementById("triggerAgency").textContent = "Todas";
+      document.getElementById("triggerRegional").textContent = "Todas";
+      document.getElementById("triggerCity").textContent = "Todas";
+      document.getElementById("triggerVehicle").textContent = "Todos";
+      document.getElementById("triggerMonitor").textContent = "Todos";
+
       loadAll(1);
     });
 

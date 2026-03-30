@@ -1005,8 +1005,26 @@
       });
     }
 
+    async function initRondas() {
+  try {
+    console.log('[RONDAS] init iniciado');
     bindEvents();
-    carregarTudo();
+    await carregarTudo();
+    console.log('[RONDAS] init finalizado');
+  } catch (error) {
+    console.error('[RONDAS] erro no init:', error);
+
+    document.getElementById('tbodyDetalhes').innerHTML = `
+      <tr>
+        <td colspan="7" style="color:#ff6b6b;font-weight:bold;">
+          Erro ao carregar dashboard: ${error.message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+initRondas();
   </script>
 </body>
 </html>

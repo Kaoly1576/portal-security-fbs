@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REGISTRO DE LACRES</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top left, #273246 0%, #101826 40%, #060b14 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    .container { width: 100%; max-width: 1400px; margin: 0 auto; }
+    .topbar, .hero, .filters, .card, .chart-card, .table-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .topbar {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 18px; margin-bottom:10px;
+    }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand img {
+      width:40px; height:40px; object-fit:contain; border-radius:50%;
+      background: rgba(0,0,0,0.25); padding:4px;
+    }
+    .brand h1 { font-size:30px; color:#ff7a1a; font-weight:800; }
+    .brand span { display:block; font-size:12px; color:rgba(255,255,255,0.75); }
+    .btn-portal {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      color:#fff; padding:12px 18px; border-radius:12px;
+      text-decoration:none; font-weight:700;
+    }
+    .hero {
+      padding:16px 20px; margin-bottom:10px;
+      display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+    }
+    .hero h2 { font-size:28px; margin-bottom:6px; }
+    .hero p { font-size:13px; color:rgba(255,255,255,0.75); }
+    .updated-box { text-align:right; min-width:150px; }
+    .updated-box small { display:block; color:rgba(255,255,255,0.75); margin-bottom:4px; font-size:12px; }
+    .updated-box strong { color:#ff7a1a; font-size:20px; }
+
+    .filters { padding:12px; margin-bottom:10px; }
+    .filters-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+    .filter-group { display:flex; flex-direction:column; gap:5px; position:relative; }
+    .filter-group label { font-size:12px; font-weight:700; color:rgba(255,255,255,0.9); }
+    .filter-group input, .multi-select-trigger {
+      height:36px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);
+      background:#051127; color:#fff; padding:0 12px; outline:none; font-size:13px;
+    }
+    .filter-group input::placeholder { color:rgba(255,255,255,0.45); }
+    .search-wide { grid-column: span 2; }
+    .btn-clear {
+      height:36px; border:none; border-radius:10px;
+      background: linear-gradient(90deg, #ff7a1a, #ff4d4d);
+      color:#fff; font-weight:800; font-size:14px; cursor:pointer; margin-top:17px;
+    }
+
+    .multi-select { position:relative; }
+    .multi-select-trigger {
+      display:flex; align-items:center; justify-content:space-between;
+      cursor:pointer; user-select:none;
+    }
+    .multi-select-trigger span {
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 20px);
+    }
+    .multi-select-dropdown {
+      position:absolute; top:calc(100% + 6px); left:0; width:100%;
+      background:#0b1628; border:1px solid rgba(255,255,255,0.10);
+      border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.35);
+      z-index:50; display:none; max-height:260px; overflow:hidden;
+    }
+    .multi-select.open .multi-select-dropdown { display:block; }
+    .multi-select-search { padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .multi-select-search input {
+      width:100%; height:32px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);
+      background:#051127; color:#fff; padding:0 10px; font-size:12px; outline:none;
+    }
+    .multi-select-options { max-height:210px; overflow:auto; padding:6px; }
+    .multi-option {
+      display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px;
+      cursor:pointer; font-size:12px; color:#fff;
+    }
+    .multi-option:hover { background:rgba(255,255,255,0.06); }
+    .multi-option input { accent-color:#ff7a1a; }
+
+    .kpis {
+      display:grid; grid-template-columns:repeat(6,1fr);
+      gap:10px; margin-bottom:12px;
+    }
+    .card {
+      padding:14px 16px; min-height:88px;
+      display:flex; flex-direction:column; justify-content:center;
+    }
+    .card h3 {
+      font-size:12px; color:#fff; margin-bottom:8px;
+      text-transform:uppercase; font-weight:800;
+    }
+    .card .value {
+      font-size:30px; font-weight:900; color:#ff7a1a; line-height:1;
+    }
+    .card .sub { font-size:13px; margin-top:6px; color:rgba(255,255,255,0.7); }
+    .card .sub.positive { color:#1ddc7f; }
+    .card .sub.negative { color:#ff5252; }
+
+    .charts-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+    .charts-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    .chart-card, .table-card { padding:12px 14px 16px; min-height:360px; }
+    .chart-card h3, .table-card h3 {
+      text-align:center; color:#ff7a1a; font-size:16px; margin-bottom:10px; font-weight:800;
+    }
+    .chart-meta {
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:12px; margin-bottom:8px; color:rgba(255,255,255,0.75);
+    }
+    .goal-pill {
+      background:rgba(255,122,26,0.14);
+      border:1px solid rgba(255,122,26,0.35);
+      color:#ffae6b; padding:5px 9px; border-radius:999px; font-weight:700;
+    }
+    .chart-wrap { position:relative; height:290px; }
+
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th, td {
+      padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left;
+    }
+    th { color:#ff7a1a; font-size:12px; text-transform:uppercase; }
+    td { color:rgba(255,255,255,0.88); }
+    .table-scroll { max-height:300px; overflow:auto; }
+    .pagination {
+      display:flex; justify-content:flex-end; align-items:center;
+      gap:8px; margin-top:10px; font-size:12px;
+    }
+    .pagination button {
+      border:none; background:#ff7a1a; color:#fff;
+      font-weight:700; padding:8px 12px; border-radius:8px; cursor:pointer;
+    }
+    .pagination button:disabled { background:#667; cursor:not-allowed; }
+
+    @media (max-width: 1280px) {
+      .filters-grid { grid-template-columns:repeat(3,1fr); }
+      .kpis { grid-template-columns:repeat(3,1fr); }
+      .charts-grid-2, .charts-grid-3 { grid-template-columns:1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .filters-grid { grid-template-columns:1fr; }
+      .kpis { grid-template-columns:1fr; }
+      .search-wide { grid-column: span 1; }
+      .hero, .topbar { flex-direction:column; align-items:stretch; }
+      .updated-box { text-align:left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <img src="/images/logo.png" alt="Logo">
+        <div>
+          <h1>LACRES</h1>
+          <span>Dashboard de registro de lacres e conferência operacional</span>
+        </div>
+      </div>
+      <a class="btn-portal" href="/portal.html">Voltar ao Portal</a>
+    </div>
+
+    <div class="hero">
+      <div>
+        <h2>Dashboard de Registro de Lacres</h2>
+        <p>Monitoramento consolidado dos registros de lacres, conferência, envio e destino.</p>
+      </div>
+      <div class="updated-box">
+        <small>Última atualização</small>
+        <strong id="ultimaAtualizacao">--:--</strong>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Data inicial</label>
+          <input type="date" id="dataInicial">
+        </div>
+        <div class="filter-group">
+          <label>Data final</label>
+          <input type="date" id="dataFinal">
+        </div>
+        <div class="filter-group">
+          <label>Unidade</label>
+          <div class="multi-select" id="msUnidade"></div>
+        </div>
+        <div class="filter-group">
+          <label>Tipo de carga</label>
+          <div class="multi-select" id="msTipoCarga"></div>
+        </div>
+        <div class="filter-group">
+          <label>Origem</label>
+          <div class="multi-select" id="msOrigem"></div>
+        </div>
+        <div class="filter-group">
+          <label>Destino</label>
+          <div class="multi-select" id="msDestino"></div>
+        </div>
+        <div class="filter-group">
+          <label>Vigilante</label>
+          <div class="multi-select" id="msVigilante"></div>
+        </div>
+        <div class="filter-group">
+          <label>Motorista</label>
+          <div class="multi-select" id="msMotorista"></div>
+        </div>
+        <div class="filter-group">
+          <label>Placa</label>
+          <div class="multi-select" id="msPlaca"></div>
+        </div>
+        <div class="filter-group">
+          <label>Status de envio</label>
+          <div class="multi-select" id="msStatusEnvio"></div>
+        </div>
+        <div class="filter-group">
+          <label>Lacre correto?</label>
+          <div class="multi-select" id="msLacreCorreto"></div>
+        </div>
+        <div class="filter-group search-wide">
+          <label>Busca geral</label>
+          <input type="text" id="busca" placeholder="Buscar por vigilante, motorista, placa, lacre, origem...">
+        </div>
+        <div class="filter-group">
+          <button class="btn-clear" id="btnLimpar">Limpar filtros</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="card">
+        <h3>Total de Registros</h3>
+        <div class="value" id="kpiTotal">0</div>
+        <div class="sub">Meta do mês: 500</div>
+      </div>
+      <div class="card">
+        <h3>Registros no Mês</h3>
+        <div class="value" id="kpiMes">0</div>
+        <div class="sub">Meta mensal: 500</div>
+      </div>
+      <div class="card">
+        <h3>Mês Anterior</h3>
+        <div class="value" id="kpiMesAnterior">0</div>
+        <div class="sub">Comparativo base</div>
+      </div>
+      <div class="card">
+        <h3>Variação Mensal</h3>
+        <div class="value" id="kpiVariacao">0%</div>
+        <div class="sub" id="subVariacao">vs mês anterior</div>
+      </div>
+      <div class="card">
+        <h3>Unidades</h3>
+        <div class="value" id="kpiUnidades">0</div>
+        <div class="sub">Unidades atendidas</div>
+      </div>
+      <div class="card">
+        <h3>Placas Únicas</h3>
+        <div class="value" id="kpiPlacas">0</div>
+        <div class="sub">Veículos únicos</div>
+      </div>
+    </div>
+
+    <div class="charts-grid-3">
+      <div class="chart-card">
+        <h3>Registros por Unidade</h3>
+        <div class="chart-meta">
+          <span>Top unidades</span>
+          <span class="goal-pill">Meta genérica: 100</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartUnidade"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Registros por Tipo de Carga</h3>
+        <div class="chart-meta">
+          <span>Distribuição por carga</span>
+          <span class="goal-pill">Meta genérica: 100</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartTipoCarga"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Registros por Vigilante</h3>
+        <div class="chart-meta">
+          <span>Top vigilantes</span>
+          <span class="goal-pill">Meta genérica: 100</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartVigilante"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <h3>Registros por Dia</h3>
+        <div class="chart-meta">
+          <span>Distribuição diária</span>
+          <span class="goal-pill">Meta genérica: 20 / dia</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartDia"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Comparativo Mensal</h3>
+        <div class="chart-meta">
+          <span>Mês atual x mês anterior</span>
+          <span class="goal-pill">Meta genérica: 500 / mês</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartComparativo"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <h3>Lacre Correto x Incorreto</h3>
+        <div class="chart-meta">
+          <span>Conferência de lacres</span>
+          <span class="goal-pill">Meta genérica: 100%</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartLacreCorreto"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Status de Envio</h3>
+        <div class="chart-meta">
+          <span>Situação de envio</span>
+          <span class="goal-pill">Meta genérica: 100</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartStatusEnvio"></canvas></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <h3>Detalhamento</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Unidade</th>
+              <th>Vigilante</th>
+              <th>Tipo de Carga</th>
+              <th>Origem</th>
+              <th>Motorista</th>
+              <th>Placa</th>
+              <th>Lacre Baú</th>
+              <th>Lacre Lateral</th>
+              <th>Destino</th>
+              <th>Status Envio</th>
+              <th>Lacre Correto</th>
+              <th>Confirmação</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDetalhes"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button id="btnPrev">Anterior</button>
+        <span id="pageInfo">Página 1</span>
+        <button id="btnNext">Próxima</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = {
+      orange: '#ff7a1a',
+      text: '#ffffff',
+      grid: 'rgba(255,255,255,0.08)'
+    };
+
+    Chart.register(ChartDataLabels);
+
+    const state = {
+      page: 1,
+      limit: 20,
+      filtros: {
+        dataInicio: '',
+        dataFim: '',
+        unidade: [],
+        tipoCarga: [],
+        origem: [],
+        destino: [],
+        vigilante: [],
+        motorista: [],
+        placa: [],
+        statusEnvio: [],
+        lacreCorreto: [],
+        busca: ''
+      }
+    };
+
+    const charts = {};
+
+    function formatNumber(v) {
+      return Number(v || 0).toLocaleString('pt-BR');
+    }
+
+    function formatPercent(v) {
+      return `${Number(v || 0).toFixed(1).replace('.', ',')}%`;
+    }
+
+    function getNowTime() {
+      return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getFiltersQuery() {
+      const p = new URLSearchParams();
+      if (state.filtros.dataInicio) p.append('dataInicio', state.filtros.dataInicio);
+      if (state.filtros.dataFim) p.append('dataFim', state.filtros.dataFim);
+      if (state.filtros.unidade.length) p.append('unidade', state.filtros.unidade.join('|'));
+      if (state.filtros.tipoCarga.length) p.append('tipoCarga', state.filtros.tipoCarga.join('|'));
+      if (state.filtros.origem.length) p.append('origem', state.filtros.origem.join('|'));
+      if (state.filtros.destino.length) p.append('destino', state.filtros.destino.join('|'));
+      if (state.filtros.vigilante.length) p.append('vigilante', state.filtros.vigilante.join('|'));
+      if (state.filtros.motorista.length) p.append('motorista', state.filtros.motorista.join('|'));
+      if (state.filtros.placa.length) p.append('placa', state.filtros.placa.join('|'));
+      if (state.filtros.statusEnvio.length) p.append('statusEnvio', state.filtros.statusEnvio.join('|'));
+      if (state.filtros.lacreCorreto.length) p.append('lacreCorreto', state.filtros.lacreCorreto.join('|'));
+      if (state.filtros.busca) p.append('busca', state.filtros.busca);
+      return p.toString();
+    }
+
+    async function fetchJSON(url) {
+      const resp = await fetch(url, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      });
+      const text = await resp.text();
+
+      if (!resp.ok) {
+        throw new Error(`Erro ${resp.status} ao buscar ${url}: ${text.slice(0, 200)}`);
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Resposta não é JSON em ${url}: ${text.slice(0, 200)}`);
+      }
+    }
+
+    function buildMultiSelect(elId, options, selected, onChange, placeholder = 'Todos') {
+      const root = document.getElementById(elId);
+      const selectedText = selected.length ? selected.join(', ') : placeholder;
+
+      root.innerHTML = `
+        <div class="multi-select-trigger">
+          <span>${selectedText}</span>
+          <strong>▼</strong>
+        </div>
+        <div class="multi-select-dropdown">
+          <div class="multi-select-search">
+            <input type="text" placeholder="Buscar...">
+          </div>
+          <div class="multi-select-options">
+            ${options.map(opt => `
+              <label class="multi-option" data-label="${String(opt).toLowerCase()}">
+                <input type="checkbox" value="${String(opt).replace(/"/g, '&quot;')}" ${selected.includes(opt) ? 'checked' : ''}>
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      root.querySelector('.multi-select-trigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.multi-select').forEach(ms => {
+          if (ms !== root) ms.classList.remove('open');
+        });
+        root.classList.toggle('open');
+      });
+
+      const searchInput = root.querySelector('.multi-select-search input');
+      searchInput.addEventListener('input', () => {
+        const val = searchInput.value.trim().toLowerCase();
+        root.querySelectorAll('.multi-option').forEach(item => {
+          item.style.display = item.dataset.label.includes(val) ? 'flex' : 'none';
+        });
+      });
+
+      root.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const values = [...root.querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
+          onChange(values);
+        });
+      });
+    }
+
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.multi-select').forEach(ms => ms.classList.remove('open'));
+    });
+
+    function datalabelsOptions(indexAxis = 'x') {
+      return {
+        color: '#ffffff',
+        anchor: indexAxis === 'y' ? 'end' : 'end',
+        align: indexAxis === 'y' ? 'right' : 'top',
+        offset: 4,
+        clamp: true,
+        font: { family: 'Arial', weight: 'bold', size: 11 },
+        formatter: (value, context) => {
+          if (context.dataset.label === 'Meta') return null;
+          return Number(value || 0).toLocaleString('pt-BR');
+        }
+      };
+    }
+
+    function baseChartOptions(indexAxis = 'x') {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis,
+        layout: { padding: { top: 24, right: 16, left: 8, bottom: 8 } },
+        plugins: {
+          legend: { labels: { color: COLORS.text, font: { family: 'Arial' } } },
+          tooltip: {
+            titleFont: { family: 'Arial' },
+            bodyFont: { family: 'Arial' }
+          },
+          datalabels: datalabelsOptions(indexAxis)
+        },
+        scales: {
+          x: {
+            ticks: { color: COLORS.text, font: { family: 'Arial' } },
+            grid: { color: COLORS.grid }
+          },
+          y: {
+            ticks: { color: COLORS.text, font: { family: 'Arial' } },
+            grid: { color: COLORS.grid }
+          }
+        }
+      };
+    }
+
+    function destroyChart(id) {
+      if (charts[id]) charts[id].destroy();
+    }
+
+    function renderBarHorizontal(canvasId, label, labels, valores, metas) {
+      destroyChart(canvasId);
+      charts[canvasId] = new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label,
+              data: valores,
+              backgroundColor: COLORS.orange,
+              datalabels: datalabelsOptions('y')
+            },
+            {
+              label: 'Meta',
+              data: metas,
+              type: 'line',
+              borderColor: '#ffd2a8',
+              backgroundColor: '#ffd2a8',
+              tension: 0,
+              datalabels: { display: false }
+            }
+          ]
+        },
+        options: baseChartOptions('y')
+      });
+    }
+
+    function renderChartDia(data) {
+      destroyChart('chartDia');
+      charts.chartDia = new Chart(document.getElementById('chartDia'), {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [
+            {
+              label: 'Registros',
+              data: data.valores,
+              backgroundColor: COLORS.orange,
+              datalabels: datalabelsOptions('x')
+            },
+            {
+              label: 'Meta',
+              data: data.metas,
+              type: 'line',
+              borderColor: '#ffd2a8',
+              backgroundColor: '#ffd2a8',
+              tension: 0.2,
+              datalabels: { display: false }
+            }
+          ]
+        },
+        options: baseChartOptions('x')
+      });
+    }
+
+    function renderChartComparativo(data) {
+      destroyChart('chartComparativo');
+      charts.chartComparativo = new Chart(document.getElementById('chartComparativo'), {
+        type: 'bar',
+        data: {
+          labels: ['Mês anterior', 'Mês atual'],
+          datasets: [
+            {
+              label: 'Registros',
+              data: [data.mesAnterior, data.mesAtual],
+              backgroundColor: ['rgba(255,122,26,0.55)', COLORS.orange],
+              datalabels: datalabelsOptions('x')
+            },
+            {
+              label: 'Meta',
+              data: [data.metaMensal, data.metaMensal],
+              type: 'line',
+              borderColor: '#ffd2a8',
+              backgroundColor: '#ffd2a8',
+              tension: 0,
+              datalabels: { display: false }
+            }
+          ]
+        },
+        options: baseChartOptions('x')
+      });
+    }
+
+    function renderSimpleBar(canvasId, labels, valores, color = COLORS.orange) {
+      destroyChart(canvasId);
+      charts[canvasId] = new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Total',
+              data: valores,
+              backgroundColor: color,
+              datalabels: datalabelsOptions('x')
+            }
+          ]
+        },
+        options: baseChartOptions('x')
+      });
+    }
+
+    async function carregarFiltros() {
+      const data = await fetchJSON('/api/registro-lacres-filtros');
+
+      buildMultiSelect('msUnidade', data.unidades || [], state.filtros.unidade, (vals) => {
+        state.filtros.unidade = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msTipoCarga', data.tiposCarga || [], state.filtros.tipoCarga, (vals) => {
+        state.filtros.tipoCarga = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOrigem', data.origens || [], state.filtros.origem, (vals) => {
+        state.filtros.origem = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msDestino', data.destinos || [], state.filtros.destino, (vals) => {
+        state.filtros.destino = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msVigilante', data.vigilantes || [], state.filtros.vigilante, (vals) => {
+        state.filtros.vigilante = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msMotorista', data.motoristas || [], state.filtros.motorista, (vals) => {
+        state.filtros.motorista = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msPlaca', data.placas || [], state.filtros.placa, (vals) => {
+        state.filtros.placa = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msStatusEnvio', data.statusEnvio || [], state.filtros.statusEnvio, (vals) => {
+        state.filtros.statusEnvio = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msLacreCorreto', data.lacreCorreto || [], state.filtros.lacreCorreto, (vals) => {
+        state.filtros.lacreCorreto = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+    }
+
+    async function carregarResumo() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/registro-lacres-resumo?${qs}`);
+
+      document.getElementById('kpiTotal').textContent = formatNumber(data.total);
+      document.getElementById('kpiMes').textContent = formatNumber(data.mesAtual);
+      document.getElementById('kpiMesAnterior').textContent = formatNumber(data.mesAnterior);
+      document.getElementById('kpiVariacao').textContent = formatPercent(data.variacaoMensal);
+      document.getElementById('kpiUnidades').textContent = formatNumber(data.unidades);
+      document.getElementById('kpiPlacas').textContent = formatNumber(data.placasUnicas);
+
+      const sub = document.getElementById('subVariacao');
+      sub.textContent = 'vs mês anterior';
+      sub.className = `sub ${data.variacaoMensal >= 0 ? 'positive' : 'negative'}`;
+
+      document.getElementById('ultimaAtualizacao').textContent = data.ultimaAtualizacao || getNowTime();
+    }
+
+    async function carregarGraficos() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/registro-lacres-graficos?${qs}`);
+
+      renderBarHorizontal('chartUnidade', 'Registros', data.porUnidade.labels, data.porUnidade.valores, data.porUnidade.metas);
+      renderBarHorizontal('chartTipoCarga', 'Registros', data.porTipoCarga.labels, data.porTipoCarga.valores, data.porTipoCarga.metas);
+      renderBarHorizontal('chartVigilante', 'Registros', data.porVigilante.labels, data.porVigilante.valores, data.porVigilante.metas);
+
+      renderChartDia(data.porDia);
+      renderChartComparativo(data.comparativoMensal);
+
+      renderSimpleBar('chartLacreCorreto', data.lacreCorreto.labels, data.lacreCorreto.valores);
+      renderSimpleBar('chartStatusEnvio', data.statusEnvio.labels, data.statusEnvio.valores);
+    }
+
+    async function carregarDetalhes() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/registro-lacres-detalhes?${qs}&page=${state.page}&limit=${state.limit}`);
+
+      const tbody = document.getElementById('tbodyDetalhes');
+      tbody.innerHTML = (data.items || []).map(row => `
+        <tr>
+          <td>${row.data || ''}</td>
+          <td>${row.unidade || ''}</td>
+          <td>${row.vigilante || ''}</td>
+          <td>${row.tipoCarga || ''}</td>
+          <td>${row.origem || ''}</td>
+          <td>${row.motorista || ''}</td>
+          <td>${row.placa || ''}</td>
+          <td>${row.lacreBau || ''}</td>
+          <td>${row.lacreLateral || ''}</td>
+          <td>${row.destino || ''}</td>
+          <td>${row.statusEnvio || ''}</td>
+          <td>${row.lacreCorreto || ''}</td>
+          <td>${row.confirmeNumero || ''}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('pageInfo').textContent = `Página ${data.page} de ${data.totalPages}`;
+      document.getElementById('btnPrev').disabled = data.page <= 1;
+      document.getElementById('btnNext').disabled = data.page >= data.totalPages;
+    }
+
+    async function carregarTudo() {
+      await carregarFiltros();
+      await carregarResumo();
+      await carregarGraficos();
+      await carregarDetalhes();
+    }
+
+    function bindEvents() {
+      document.getElementById('dataInicial').addEventListener('change', (e) => {
+        state.filtros.dataInicio = e.target.value; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      document.getElementById('dataFinal').addEventListener('change', (e) => {
+        state.filtros.dataFim = e.target.value; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      document.getElementById('busca').addEventListener('input', (e) => {
+        state.filtros.busca = e.target.value.trim();
+        state.page = 1;
+        clearTimeout(window.__buscaTimer);
+        window.__buscaTimer = setTimeout(() => {
+          carregarResumo(); carregarGraficos(); carregarDetalhes();
+        }, 350);
+      });
+
+      document.getElementById('btnLimpar').addEventListener('click', () => {
+        state.page = 1;
+        state.filtros = {
+          dataInicio: '',
+          dataFim: '',
+          unidade: [],
+          tipoCarga: [],
+          origem: [],
+          destino: [],
+          vigilante: [],
+          motorista: [],
+          placa: [],
+          statusEnvio: [],
+          lacreCorreto: [],
+          busca: ''
+        };
+
+        document.getElementById('dataInicial').value = '';
+        document.getElementById('dataFinal').value = '';
+        document.getElementById('busca').value = '';
+        carregarTudo();
+      });
+
+      document.getElementById('btnPrev').addEventListener('click', () => {
+        if (state.page > 1) {
+          state.page--;
+          carregarDetalhes();
+        }
+      });
+
+      document.getElementById('btnNext').addEventListener('click', () => {
+        state.page++;
+        carregarDetalhes();
+      });
+    }
+
+    async function init() {
+      try {
+        bindEvents();
+        await carregarTudo();
+      } catch (error) {
+        console.error('[LACRES] erro no init:', error);
+        document.getElementById('tbodyDetalhes').innerHTML = `
+          <tr>
+            <td colspan="13" style="color:#ff6b6b;font-weight:bold;">
+              Erro ao carregar dashboard: ${error.message}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

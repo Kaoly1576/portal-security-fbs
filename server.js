@@ -3378,11 +3378,52 @@ async function loadRondasData() {
       mapper: mapPortasRow
     },
     {
+      // AJUSTE AQUI SE O NOME REAL DA ABA FOR OUTRO
       aba: 'Ronda Estoque',
       range: `'Ronda Estoque'!B:F`,
       mapper: mapEstoqueRow
     }
   ];
+
+  for (const cfg of configs) {
+    try {
+      console.log(`[RONDAS] Lendo aba: ${cfg.aba} | range: ${cfg.range}`);
+
+      const resp = await sheets.spreadsheets.values.get({
+        spreadsheetId: RONDAS_SHEET_ID,
+        range: cfg.range
+      });
+
+      const rows = resp?.data?.values || [];
+      console.log(`[RONDAS] ${cfg.aba} -> linhas recebidas: ${rows.length}`);
+
+      if (!rows.length) {
+        console.log(`[RONDAS] ${cfg.aba} sem linhas.`);
+        continue;
+      }
+
+      const dataRows = rows.slice(1);
+
+      for (const row of dataRows) {
+        if (!row || row.every(cell => !String(cell || '').trim())) continue;
+
+        const record = cfg.mapper(row);
+
+        if (!record.data && !record.unidade && !record.nome && !record.tipo_ronda) continue;
+
+        all.push(record);
+      }
+
+      console.log(`[RONDAS] ${cfg.aba} -> acumulado: ${all.length}`);
+    } catch (err) {
+      console.error(`[RONDAS] ERRO na aba ${cfg.aba}:`, err.message);
+      throw new Error(`Falha ao ler aba "${cfg.aba}": ${err.message}`);
+    }
+  }
+
+  console.log(`[RONDAS] TOTAL FINAL: ${all.length}`);
+  return all;
+}
 
   for (const cfg of configs) {
     const resp = await sheets.spreadsheets.values.get({
@@ -3647,8 +3688,12 @@ app.get('/api/rondas-resumo', async (req, res) => {
     const resumo = buildRondasResumo(filtered);
     res.json(resumo);
   } catch (error) {
-    console.error('Erro /api/rondas-resumo:', error);
-    res.status(500).json({ error: 'Erro ao carregar resumo de rondas.' });
+    console.error('Erro REAL /api/rondas-resumo:', error);
+    res.status(500).json({
+      error: 'Erro ao carregar resumo de rondas.',
+      detalhe: error.message,
+      stack: error.stack
+    });
   }
 });
 
@@ -3677,6 +3722,23 @@ app.get('/api/rondas-detalhes', async (req, res) => {
   } catch (error) {
     console.error('Erro /api/rondas-detalhes:', error);
     res.status(500).json({ error: 'Erro ao carregar detalhes de rondas.' });
+  }
+});
+
+app.get('/api/rondas-debug', async (req, res) => {
+  try {
+    const all = await loadRondasData();
+    res.json({
+      total: all.length,
+      amostra: all.slice(0, 5)
+    });
+  } catch (error) {
+    console.error('Erro REAL /api/rondas-debug:', error);
+    res.status(500).json({
+      error: 'Erro no debug de rondas.',
+      detalhe: error.message,
+      stack: error.stack
+    });
   }
 });
 

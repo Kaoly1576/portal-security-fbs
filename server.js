@@ -3275,8 +3275,6 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
 
 // ============================== // RONDAS - CONFIG// ===============================
 
-const { google } = require('googleapis');
-
 const RONDAS_SHEET_ID = '1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU';
 
 const RONDAS_ABAS = [

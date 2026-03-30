@@ -1,483 +1,691 @@
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Arial, Helvetica, sans-serif;
-}
-
-html, body{
-  min-height:100%;
-  overflow-x:hidden;
-}
-
-body{
-  background:
-    radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
-    linear-gradient(180deg,#4b5563 0%, #111827 24%, #050c18 52%, #050c18 100%);
-  color:#f8fafc;
-}
-
-.page-shell{
-  max-width:1400px;
-  margin:0 auto;
-  padding:12px 16px 18px;
-}
-
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:14px;
-  margin-bottom:10px;
-  padding:12px 16px;
-  border-radius:16px;
-  background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-  border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 10px 24px rgba(0,0,0,0.22);
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.brand-logo-wrap{
-  width:38px;
-  height:38px;
-  border-radius:50%;
-  background:#1a120d;
-  border:1px solid rgba(255,255,255,0.08);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  flex-shrink:0;
-}
-
-.brand-logo{
-  width:28px;
-  height:28px;
-  object-fit:contain;
-}
-
-.brand-text h1{
-  font-size:18px;
-  line-height:1;
-  color:#ff7a1a;
-  font-weight:800;
-}
-
-.brand-text p{
-  font-size:11px;
-  color:#cbd5e1;
-  margin-top:4px;
-}
-
-.top-actions{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.btn-primary,
-.btn-secondary{
-  height:40px;
-  border:none;
-  border-radius:12px;
-  padding:0 16px;
-  font-size:12px;
-  font-weight:800;
-  cursor:pointer;
-  text-decoration:none;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  transition:.2s ease;
-}
-
-.btn-primary{
-  background:#ff7a1a;
-  color:#fff;
-}
-
-.btn-primary:hover{
-  background:#ff8d36;
-}
-
-.btn-secondary{
-  background:rgba(255,255,255,0.08);
-  color:#fff;
-  border:1px solid rgba(255,255,255,0.10);
-}
-
-.btn-secondary:hover{
-  background:rgba(255,255,255,0.14);
-}
-
-.hero-card{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:16px;
-  margin-bottom:10px;
-  padding:16px 18px;
-  border-radius:16px;
-  background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-  border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 10px 24px rgba(0,0,0,0.20);
-}
-
-.hero-card h2{
-  font-size:18px;
-  margin-bottom:4px;
-  color:#ffffff;
-}
-
-.hero-card p{
-  font-size:12px;
-  color:#cbd5e1;
-}
-
-.hero-right{
-  text-align:right;
-  font-size:11px;
-  color:#cbd5e1;
-  min-width:120px;
-}
-
-.hero-time{
-  color:#ff7a1a;
-  font-size:16px;
-  font-weight:800;
-  margin-top:4px;
-}
-
-.filters-card,
-.panel-card,
-.info-card{
-  background:linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:16px;
-  box-shadow:0 10px 24px rgba(0,0,0,0.20);
-}
-
-.filters-card{
-  padding:14px;
-  margin-bottom:10px;
-}
-
-.filters-grid{
-  display:grid;
-  grid-template-columns:repeat(6, minmax(0,1fr));
-  gap:10px;
-}
-
-.field{
-  display:flex;
-  flex-direction:column;
-  gap:5px;
-  min-width:0;
-}
-
-.field label{
-  font-size:11px;
-  color:#ffffff;
-  font-weight:700;
-}
-
-.field input{
-  width:100%;
-  min-width:0;
-  height:40px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,0.08);
-  background:#0b1220;
-  color:#fff;
-  padding:0 12px;
-  font-size:12px;
-  outline:none;
-}
-
-.field input::placeholder{
-  color:#64748b;
-}
-
-.search-field{
-  grid-column:span 2;
-}
-
-.btn-field{
-  justify-content:flex-end;
-}
-
-.multi-select{
-  position:relative;
-  width:100%;
-}
-
-.multi-trigger{
-  width:100%;
-  background:#0b1220;
-  border:1px solid rgba(255,255,255,0.08);
-  color:#fff;
-  border-radius:10px;
-  padding:0 34px 0 12px;
-  font-size:12px;
-  height:40px;
-  display:flex;
-  align-items:center;
-  cursor:pointer;
-  position:relative;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.multi-trigger::after{
-  content:"▼";
-  position:absolute;
-  right:12px;
-  font-size:10px;
-  color:#cbd5e1;
-  pointer-events:none;
-}
-
-.multi-menu{
-  position:absolute;
-  top:44px;
-  left:0;
-  width:100%;
-  background:#0b1220;
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:12px;
-  max-height:220px;
-  overflow-y:auto;
-  display:none;
-  z-index:50;
-  box-shadow:0 10px 24px rgba(0,0,0,0.35);
-  padding:6px;
-}
-
-.multi-select.open .multi-menu{
-  display:block;
-}
-
-.multi-option{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:12px;
-  color:#fff;
-}
-
-.multi-option:hover{
-  background:#1a2942;
-}
-
-.multi-option input{
-  width:auto;
-  height:auto;
-  accent-color:#ff7a1a;
-}
-
-.multi-actions{
-  display:flex;
-  justify-content:space-between;
-  gap:6px;
-  padding:6px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  margin-bottom:4px;
-}
-
-.multi-actions button{
-  flex:1;
-  background:#1a2942;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  padding:6px 8px;
-  font-size:11px;
-  cursor:pointer;
-}
-
-.multi-actions button:hover{
-  background:#243756;
-}
-
-.cards-grid{
-  display:grid;
-  gap:10px;
-  margin-bottom:10px;
-}
-
-.cards-grid-5{
-  grid-template-columns:repeat(5, minmax(0,1fr));
-}
-
-.info-card{
-  padding:12px 14px;
-}
-
-.info-label{
-  font-size:11px;
-  color:#ffffff;
-  font-weight:800;
-  margin-bottom:8px;
-  text-transform:uppercase;
-}
-
-.info-value{
-  font-size:18px;
-  font-weight:800;
-  line-height:1.1;
-}
-
-.info-value.orange{ color:#ff7a1a; }
-.info-value.green{ color:#22c55e; }
-.info-value.red{ color:#f87171; }
-.info-value.blue{ color:#60a5fa; }
-.info-value.purple{ color:#a78bfa; }
-
-.panel-card{
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  height:100%;
-}
-
-.panel-title{
-  font-size:14px;
-  font-weight:800;
-  color:#ff7a1a;
-  text-align:center;
-  margin-bottom:8px;
-}
-
-.chart-wrap{
-  position:relative;
-  width:100%;
-  height:250px;
-}
-
-.chart-wrap.large{
-  height:280px;
-}
-
-.chart-wrap.xlarge{
-  height:380px;
-}
-
-.charts-grid{
-  display:grid;
-  grid-template-columns:repeat(3, minmax(0,1fr));
-  gap:12px;
-  margin-bottom:12px;
-}
-
-.charts-grid.two-cols{
-  grid-template-columns:repeat(2, minmax(0,1fr));
-}
-
-.tables-grid{
-  display:grid;
-  grid-template-columns:repeat(2, minmax(0,1fr));
-  gap:12px;
-  margin-bottom:12px;
-  align-items:stretch;
-}
-
-.table-wrap{
-  overflow:auto;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,0.06);
-  background:#091322;
-  flex:1;
-}
-
-.big-table{
-  max-height:360px;
-}
-
-table{
-  width:100%;
-  min-width:1000px;
-  border-collapse:collapse;
-}
-
-th, td{
-  padding:8px 10px;
-  font-size:11px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  white-space:nowrap;
-  text-align:left;
-}
-
-th{
-  background:#111c33;
-  color:#fff;
-  position:sticky;
-  top:0;
-  z-index:2;
-}
-
-tr:hover td{
-  background:#13203b;
-}
-
-.orange-text{ color:#ff7a1a; font-weight:700; }
-.green-text{ color:#22c55e; font-weight:700; }
-.red-text{ color:#f87171; font-weight:700; }
-.blue-text{ color:#60a5fa; font-weight:700; }
-
-.pager{
-  display:flex;
-  gap:10px;
-  justify-content:flex-end;
-  margin-top:12px;
-}
-
-canvas{
-  max-width:100% !important;
-}
-
-@media (max-width: 1200px){
-  .filters-grid{
-    grid-template-columns:repeat(3, minmax(0,1fr));
+<style>
+  *{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
   }
 
-  .cards-grid-5{
-    grid-template-columns:repeat(3, minmax(0,1fr));
+  :root{
+    --bg1:#4b5563;
+    --bg2:#111827;
+    --bg3:#050c18;
+    --card:rgba(17,24,39,0.78);
+    --line:rgba(255,255,255,0.08);
+    --input:#0b1220;
+    --th:#111c33;
+    --text:#ffffff;
+    --muted:#cbd5e1;
+    --orange:#ff7a1a;
+    --orange-2:#ff9540;
+    --green:#22c55e;
+    --red:#ef4444;
+    --purple:#8b5cf6;
+    --blue:#58a6ff;
   }
 
-  .charts-grid{
-    grid-template-columns:1fr;
+  html,body{
+    min-height:100%;
+    overflow-x:hidden;
   }
 
-  .charts-grid.two-cols{
-    grid-template-columns:1fr;
+  body{
+    background:
+      radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
+      linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 24%, var(--bg3) 52%, var(--bg3) 100%);
+    color:var(--text);
   }
 
-  .tables-grid{
-    grid-template-columns:1fr;
+  .page-shell{
+    max-width:1500px;
+    margin:0 auto;
+    padding:12px;
   }
-}
 
-@media (max-width: 768px){
   .topbar,
-  .hero-card{
-    flex-direction:column;
+  .hero-card,
+  .filters-card,
+  .panel-card,
+  .info-card{
+    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.28);
+    backdrop-filter:blur(4px);
   }
 
-  .filters-grid,
-  .cards-grid-5{
-    grid-template-columns:1fr;
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    padding:10px 14px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+
+  .brand-logo-wrap{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    background:#1a120d;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+
+  .brand-logo{
+    width:30px;
+    height:30px;
+    object-fit:contain;
+  }
+
+  .brand-text h1{
+    color:var(--orange);
+    font-size:18px;
+    font-weight:900;
+    line-height:1;
+  }
+
+  .brand-text p{
+    color:var(--muted);
+    font-size:10px;
+    margin-top:4px;
+  }
+
+  .btn-secondary{
+    background:rgba(255,255,255,0.08);
+    border:1px solid var(--line);
+    color:#fff;
+    padding:9px 14px;
+    border-radius:10px;
+    text-decoration:none;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+  }
+
+  .hero-card{
+    padding:12px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+
+  .hero-card h2{
+    font-size:16px;
+    margin-bottom:4px;
+  }
+
+  .hero-card p{
+    color:var(--muted);
+    font-size:11px;
+    line-height:1.45;
+  }
+
+  .hero-right{
+    text-align:right;
+    min-width:130px;
+  }
+
+  .hero-right div:first-child{
+    color:var(--muted);
+    font-size:10px;
+  }
+
+  .hero-time{
+    color:var(--orange);
+    font-size:20px;
+    font-weight:900;
+    margin-top:4px;
+  }
+
+  .filters-card{
+    padding:12px;
+    margin-bottom:10px;
+  }
+
+  .filters-grid{
+    display:grid;
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:8px;
+    align-items:end;
+  }
+
+  .field{
+    min-width:0;
+  }
+
+  .field label{
+    display:block;
+    margin-bottom:5px;
+    font-size:10px;
+    color:#fff;
+    font-weight:700;
+  }
+
+  .field input{
+    width:100%;
+    height:36px;
+    background:var(--input);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:9px;
+    color:#fff;
+    padding:0 10px;
+    outline:none;
+    font-size:12px;
+  }
+
+  .field input::placeholder{
+    color:#94a3b8;
   }
 
   .search-field{
-    grid-column:span 1;
+    grid-column:span 2;
   }
-}
+
+  .btn-field{
+    display:flex;
+    align-items:flex-end;
+  }
+
+  .btn-primary{
+    width:100%;
+    height:36px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(90deg,var(--orange),#ff4d4f);
+    color:#fff;
+    font-weight:800;
+    cursor:pointer;
+  }
+
+  .multi-select{
+    position:relative;
+    width:100%;
+  }
+
+  .multi-trigger{
+    width:100%;
+    height:36px;
+    background:var(--input);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:9px;
+    color:#fff;
+    padding:0 30px 0 10px;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    cursor:pointer;
+    position:relative;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .multi-trigger::after{
+    content:"▼";
+    position:absolute;
+    right:10px;
+    font-size:10px;
+    color:#cbd5e1;
+  }
+
+  .multi-menu{
+    position:absolute;
+    top:40px;
+    left:0;
+    width:100%;
+    background:var(--input);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px;
+    max-height:220px;
+    overflow-y:auto;
+    display:none;
+    z-index:100;
+    box-shadow:0 10px 24px rgba(0,0,0,0.35);
+    padding:6px;
+  }
+
+  .multi-select.open .multi-menu{
+    display:block;
+  }
+
+  .multi-actions{
+    display:flex;
+    gap:6px;
+    padding:6px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    margin-bottom:4px;
+  }
+
+  .multi-actions button{
+    flex:1;
+    background:#1a2942;
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:11px;
+    cursor:pointer;
+  }
+
+  .multi-option{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:12px;
+    color:#fff;
+  }
+
+  .multi-option:hover{
+    background:#1a2942;
+  }
+
+  .multi-option input{
+    width:auto;
+    height:auto;
+    accent-color:var(--orange);
+  }
+
+  .cards-grid{
+    display:grid;
+    gap:10px;
+    margin-bottom:10px;
+  }
+
+  .cards-grid-5{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+
+  .info-card{
+    padding:12px 14px;
+    min-height:78px;
+  }
+
+  .info-label{
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    color:#fff;
+    margin-bottom:8px;
+  }
+
+  .info-value{
+    font-size:16px;
+    font-weight:900;
+    line-height:1.1;
+  }
+
+  .orange{color:var(--orange)}
+  .green{color:var(--green)}
+  .red{color:var(--red)}
+  .purple{color:var(--purple)}
+  .blue{color:var(--blue)}
+
+  .charts-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:10px;
+    align-items:stretch;
+  }
+
+  .charts-grid.two-cols{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .tables-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:10px;
+  }
+
+  .panel-card{
+    padding:12px;
+    overflow:hidden;
+  }
+
+  .panel-title{
+    color:var(--orange);
+    font-weight:900;
+    font-size:13px;
+    text-align:center;
+    margin-bottom:10px;
+  }
+
+  .chart-wrap{
+    position:relative;
+    height:180px;
+  }
+
+  .chart-wrap.large{
+    height:220px;
+  }
+
+  .chart-wrap.xlarge{
+    height:320px;
+  }
+
+  .table-wrap{
+    overflow:auto;
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:12px;
+    background:#091322;
+  }
+
+  .big-table{
+    max-height:300px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:720px;
+    font-size:11px;
+    background:#091322;
+  }
+
+  th,td{
+    padding:8px 10px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    text-align:left;
+    white-space:nowrap;
+  }
+
+  th{
+    position:sticky;
+    top:0;
+    background:var(--th);
+    z-index:1;
+    color:#d6d6d6;
+  }
+
+  .orange-text{color:var(--orange);font-weight:700}
+  .green-text{color:var(--green);font-weight:700}
+
+  .pager{
+    margin-top:10px;
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width:1280px){
+    .filters-grid{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+
+    .cards-grid-5{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+
+    .charts-grid{
+      grid-template-columns:1fr;
+    }
+
+    .charts-grid.two-cols,
+    .tables-grid{
+      grid-template-columns:1fr;
+    }
+
+    .search-field{
+      grid-column:span 1;
+    }
+  }
+
+  @media (max-width:768px){
+    .filters-grid,
+    .cards-grid-5{
+      grid-template-columns:1fr;
+    }
+
+    .hero-right{
+      text-align:left;
+    }
+
+    .topbar,
+    .hero-card{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo-wrap">
+          <img src="/images/logo.png" alt="Logo Security" class="brand-logo" />
+        </div>
+        <div class="brand-text">
+          <h1>DESLIGADOS</h1>
+          <p>Dashboard de desligamentos e bloqueios</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <a href="/portal" class="btn-secondary">Voltar ao Portal</a>
+      </div>
+    </header>
+
+    <section class="hero-card">
+      <div>
+        <h2>Dashboard de Desligados</h2>
+        <p>Monitoramento de desligamentos, bloqueio efetivado, empresa, cargo, unidade, motivo e controle interno.</p>
+      </div>
+
+      <div class="hero-right">
+        <div>Última atualização</div>
+        <div id="ultimaAtualizacao" class="hero-time">--:--</div>
+      </div>
+    </section>
+
+    <section class="filters-card">
+      <div class="filters-grid">
+        <div class="field">
+          <label>Data inicial</label>
+          <input type="date" id="filtroDataInicio" />
+        </div>
+
+        <div class="field">
+          <label>Data final</label>
+          <input type="date" id="filtroDataFim" />
+        </div>
+
+        <div class="field">
+          <label>Unidade</label>
+          <div class="multi-select" id="multiUnidades">
+            <button type="button" class="multi-trigger" id="triggerUnidades">Todas</button>
+            <div class="multi-menu" id="menuUnidades"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Empresa</label>
+          <div class="multi-select" id="multiEmpresas">
+            <button type="button" class="multi-trigger" id="triggerEmpresas">Todas</button>
+            <div class="multi-menu" id="menuEmpresas"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Cargo</label>
+          <div class="multi-select" id="multiCargos">
+            <button type="button" class="multi-trigger" id="triggerCargos">Todos</button>
+            <div class="multi-menu" id="menuCargos"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Enviado ao condomínio</label>
+          <div class="multi-select" id="multiEnviados">
+            <button type="button" class="multi-trigger" id="triggerEnviados">Todos</button>
+            <div class="multi-menu" id="menuEnviados"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filters-grid" style="margin-top:8px;">
+        <div class="field">
+          <label>Bloqueio efetivado</label>
+          <div class="multi-select" id="multiBloqueios">
+            <button type="button" class="multi-trigger" id="triggerBloqueios">Todos</button>
+            <div class="multi-menu" id="menuBloqueios"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Motivo</label>
+          <div class="multi-select" id="multiMotivos">
+            <button type="button" class="multi-trigger" id="triggerMotivos">Todos</button>
+            <div class="multi-menu" id="menuMotivos"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Controle interno</label>
+          <div class="multi-select" id="multiControles">
+            <button type="button" class="multi-trigger" id="triggerControles">Todos</button>
+            <div class="multi-menu" id="menuControles"></div>
+          </div>
+        </div>
+
+        <div class="field search-field">
+          <label>Busca geral</label>
+          <input type="text" id="filtroBusca" placeholder="Buscar nome, CPF, empresa, motivo..." />
+        </div>
+
+        <div class="field btn-field">
+          <button class="btn-primary" id="btnLimpar" type="button">Limpar filtros</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards-grid cards-grid-5">
+      <div class="info-card">
+        <div class="info-label">Total desligados</div>
+        <div class="info-value orange" id="totalDesligados">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Bloqueados</div>
+        <div class="info-value green" id="totalBloqueados">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Pendentes</div>
+        <div class="info-value red" id="totalPendentes">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Empresas</div>
+        <div class="info-value purple" id="totalEmpresas">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">% bloqueio</div>
+        <div class="info-value orange" id="percentualBloqueio">0%</div>
+      </div>
+    </section>
+
+    <section class="charts-grid">
+      <div class="panel-card">
+        <div class="panel-title">Motivos de Desligamento</div>
+        <div class="chart-wrap large">
+          <canvas id="chartMotivo"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Top Motivos Security</div>
+        <div class="chart-wrap large">
+          <canvas id="chartControle"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Desligados por Unidade</div>
+        <div class="chart-wrap large">
+          <canvas id="chartUnidade"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="charts-grid two-cols">
+      <div class="panel-card">
+        <div class="panel-title">Desligados por Empresa</div>
+        <div class="chart-wrap large">
+          <canvas id="chartEmpresa"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Desligados por Dia</div>
+        <div class="chart-wrap large">
+          <canvas id="chartMes"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="tables-grid">
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Unidade</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Unidade</th>
+                <th>Total</th>
+                <th>Enviados</th>
+                <th>Bloqueados</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaUnidade"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Empresa</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Total</th>
+                <th>Enviados</th>
+                <th>Bloqueados</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaEmpresa"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-title">Detalhamento dos desligados</div>
+      <div class="table-wrap big-table" id="tableWrap"></div>
+      <div class="pager">
+        <button class="btn-secondary" id="btnPrev" type="button">Anterior</button>
+        <button class="btn-secondary" id="btnNext" type="button">Próxima</button>
+      </div>
+    </section>
+  </div>

@@ -4266,6 +4266,445 @@ app.get("/api/registro-lacres-debug", requireAuth, async (req, res) => {
   }
 });
 
+// ================== MATRIZ DE CONSEQUÊNCIA DASHBOARD ==================
+
+app.get("/matriz-consequencia", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "matriz-consequencia.html"));
+});
+
+const MATRIZ_SPREADSHEET_ID = "15rRuS64cGBK1GOiuZwisnApORwQJoav4VB4I7Yq5ihA";
+const MATRIZ_RANGE = "'Historico'!A1:M200000";
+
+let matrizCache = null;
+let matrizCacheTime = 0;
+const MATRIZ_CACHE_TTL = 5 * 60 * 1000;
+
+function mcNorm(value) {
+  return String(value || "").trim();
+}
+
+function mcNormLower(value) {
+  return mcNorm(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function mcParseDate(value) {
+  const str = mcNorm(value);
+  if (!str) return null;
+
+  let m = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (m) {
+    const [, dd, mm, yyyy] = m;
+    const d = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const d = new Date(`${str}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const fallback = new Date(str);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function mcFormatISO(date) {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function mcFormatBR(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function mcSplitMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => mcNorm(v))
+    .filter(Boolean);
+}
+
+function mcMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(mcNorm(fieldValue));
+}
+
+function mcUnique(values) {
+  return [...new Set(values.filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
+}
+
+function mcPercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+  return ((current - previous) / previous) * 100;
+}
+
+function mcGroupCount(rows, field) {
+  const map = {};
+  rows.forEach((row) => {
+    const key = mcNorm(row[field]) || "NÃO INFORMADO";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+async function carregarMatrizRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: MATRIZ_SPREADSHEET_ID,
+    range: MATRIZ_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const headers = values[0].map((h, i) => mcNorm(h) || `COL_${i + 1}`);
+  const linhas = values.slice(1);
+
+  return linhas
+    .map((linha) => {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = linha[index] ?? "";
+      });
+
+      obj._dataObj = mcParseDate(obj["Data da ocorrência"]);
+      obj._conclusaoObj = mcParseDate(obj["Data Conclusão"]);
+      obj._isoDate = obj._dataObj ? mcFormatISO(obj._dataObj) : "";
+      obj._dia = obj._dataObj ? String(obj._dataObj.getDate()).padStart(2, "0") : "";
+      obj._mesRef = obj._dataObj
+        ? `${obj._dataObj.getFullYear()}-${String(obj._dataObj.getMonth() + 1).padStart(2, "0")}`
+        : "";
+
+      return obj;
+    })
+    .filter((row) =>
+      mcNorm(row["Data da ocorrência"]) ||
+      mcNorm(row["Colaborador"]) ||
+      mcNorm(row["CPF"]) ||
+      mcNorm(row["Filial"]) ||
+      mcNorm(row["Violação"])
+    );
+}
+
+async function carregarMatrizComCache() {
+  const now = Date.now();
+
+  if (matrizCache && now - matrizCacheTime < MATRIZ_CACHE_TTL) {
+    return matrizCache;
+  }
+
+  matrizCache = await carregarMatrizRaw();
+  matrizCacheTime = now;
+
+  console.log("MATRIZ cache atualizado:", matrizCache.length);
+
+  return matrizCache;
+}
+
+function filtrarMatriz(rows, query) {
+  const dataInicio = mcNorm(query.dataInicio);
+  const dataFim = mcNorm(query.dataFim);
+
+  const filiais = mcSplitMulti(query.filial);
+  const violacoes = mcSplitMulti(query.violacao);
+  const descricoes = mcSplitMulti(query.descricao);
+  const reincidencias = mcSplitMulti(query.reincidencia);
+  const consequencias = mcSplitMulti(query.consequencia);
+  const statusList = mcSplitMulti(query.status);
+  const colaboradores = mcSplitMulti(query.colaborador);
+
+  const busca = mcNormLower(query.busca);
+
+  return rows.filter((row) => {
+    if (dataInicio && (!row._isoDate || row._isoDate < dataInicio)) return false;
+    if (dataFim && (!row._isoDate || row._isoDate > dataFim)) return false;
+
+    if (!mcMatchesMulti(row["Filial"], filiais)) return false;
+    if (!mcMatchesMulti(row["Violação"], violacoes)) return false;
+    if (!mcMatchesMulti(row["Descrição da Violação"], descricoes)) return false;
+    if (!mcMatchesMulti(row["Reincidencia"], reincidencias)) return false;
+    if (!mcMatchesMulti(row["Consequencia"], consequencias)) return false;
+    if (!mcMatchesMulti(row["Status"], statusList)) return false;
+    if (!mcMatchesMulti(row["Colaborador"], colaboradores)) return false;
+
+    if (busca) {
+      const text = [
+        row["Colaborador"],
+        row["CPF"],
+        row["Filial"],
+        row["Violação"],
+        row["Descrição da Violação"],
+        row["Provas e comprovações"],
+        row["Reincidencia"],
+        row["Consequencia"],
+        row["Status"],
+      ].map(mcNormLower).join(" ");
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+app.get("/api/matriz-consequencia-filtros", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarMatrizComCache();
+
+    return res.json({
+      filiais: mcUnique(dados.map((r) => mcNorm(r["Filial"]))),
+      violacoes: mcUnique(dados.map((r) => mcNorm(r["Violação"]))),
+      descricoes: mcUnique(dados.map((r) => mcNorm(r["Descrição da Violação"]))),
+      reincidencias: mcUnique(dados.map((r) => mcNorm(r["Reincidencia"]))),
+      consequencias: mcUnique(dados.map((r) => mcNorm(r["Consequencia"]))),
+      status: mcUnique(dados.map((r) => mcNorm(r["Status"]))),
+      colaboradores: mcUnique(dados.map((r) => mcNorm(r["Colaborador"]))),
+    });
+  } catch (error) {
+    console.error("Erro /api/matriz-consequencia-filtros:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/matriz-consequencia-resumo", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarMatrizComCache();
+    const filtrados = filtrarMatriz(dados, req.query);
+
+    const total = filtrados.length;
+
+    const validDates = filtrados
+      .map((r) => r._dataObj)
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+
+    let mesAtual = 0;
+    let mesAnterior = 0;
+
+    if (validDates.length) {
+      const latest = validDates[validDates.length - 1];
+      const currMonth = latest.getMonth();
+      const currYear = latest.getFullYear();
+
+      const prevRef = new Date(currYear, currMonth - 1, 1);
+      const prevMonth = prevRef.getMonth();
+      const prevYear = prevRef.getFullYear();
+
+      mesAtual = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === currMonth &&
+          r._dataObj.getFullYear() === currYear
+      ).length;
+
+      mesAnterior = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === prevMonth &&
+          r._dataObj.getFullYear() === prevYear
+      ).length;
+    }
+
+    const reincidentes = filtrados.filter((r) => {
+      const v = mcNormLower(r["Reincidencia"]);
+      return v === "sim" || v === "true";
+    }).length;
+
+    const concluidos = filtrados.filter((r) => {
+      const v = mcNormLower(r["Status"]);
+      return v.includes("conclu");
+    }).length;
+
+    return res.json({
+      total,
+      mesAtual,
+      mesAnterior,
+      variacaoMensal: mcPercentChange(mesAtual, mesAnterior),
+      reincidentes,
+      concluidos,
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }),
+    });
+  } catch (error) {
+    console.error("Erro /api/matriz-consequencia-resumo:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/matriz-consequencia-graficos", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarMatrizComCache();
+    const filtrados = filtrarMatriz(dados, req.query);
+
+    function buildTop(field, limit = 10) {
+      const map = mcGroupCount(filtrados, field);
+      const entries = Object.entries(map)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit);
+
+      return {
+        labels: entries.map(([k]) => k),
+        valores: entries.map(([, v]) => v),
+      };
+    }
+
+    const dias = Array.from({ length: 31 }, (_, i) =>
+      String(i + 1).padStart(2, "0")
+    );
+    const porDiaMap = Object.fromEntries(dias.map((d) => [d, 0]));
+
+    filtrados.forEach((r) => {
+      if (!r._dia) return;
+      porDiaMap[r._dia] = (porDiaMap[r._dia] || 0) + 1;
+    });
+
+    let mesAtual = 0;
+    let mesAnterior = 0;
+
+    const validDates = filtrados
+      .map((r) => r._dataObj)
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+
+    if (validDates.length) {
+      const latest = validDates[validDates.length - 1];
+      const currMonth = latest.getMonth();
+      const currYear = latest.getFullYear();
+
+      const prevRef = new Date(currYear, currMonth - 1, 1);
+      const prevMonth = prevRef.getMonth();
+      const prevYear = prevRef.getFullYear();
+
+      mesAtual = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === currMonth &&
+          r._dataObj.getFullYear() === currYear
+      ).length;
+
+      mesAnterior = filtrados.filter(
+        (r) =>
+          r._dataObj &&
+          r._dataObj.getMonth() === prevMonth &&
+          r._dataObj.getFullYear() === prevYear
+      ).length;
+    }
+
+    const reincidenciaMap = {
+      Sim: filtrados.filter((r) => {
+        const v = mcNormLower(r["Reincidencia"]);
+        return v === "sim" || v === "true";
+      }).length,
+      Não: filtrados.filter((r) => {
+        const v = mcNormLower(r["Reincidencia"]);
+        return v === "nao" || v === "não" || v === "false";
+      }).length,
+      "Sem resposta": filtrados.filter((r) => !mcNorm(r["Reincidencia"])).length,
+    };
+
+    return res.json({
+      porFilial: buildTop("Filial"),
+      porViolacao: buildTop("Violação"),
+      porConsequencia: buildTop("Consequencia"),
+      porStatus: buildTop("Status"),
+      porDia: {
+        labels: dias,
+        valores: dias.map((d) => porDiaMap[d] || 0),
+      },
+      comparativoMensal: {
+        mesAtual,
+        mesAnterior,
+      },
+      reincidencia: {
+        labels: Object.keys(reincidenciaMap),
+        valores: Object.values(reincidenciaMap),
+      },
+    });
+  } catch (error) {
+    console.error("Erro /api/matriz-consequencia-graficos:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/matriz-consequencia-detalhes", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarMatrizComCache();
+    const filtrados = filtrarMatriz(dados, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 200);
+
+    const ordenados = [...filtrados].sort((a, b) => {
+      const ad = a._dataObj ? a._dataObj.getTime() : 0;
+      const bd = b._dataObj ? b._dataObj.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = ordenados.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    const items = ordenados.slice(start, start + limit).map((r) => ({
+      dataOcorrencia: r._dataObj ? mcFormatBR(r._dataObj) : r["Data da ocorrência"] || "",
+      colaborador: r["Colaborador"] || "",
+      cpf: r["CPF"] || "",
+      filial: r["Filial"] || "",
+      violacao: r["Violação"] || "",
+      descricao: r["Descrição da Violação"] || "",
+      reincidencia: r["Reincidencia"] || "",
+      consequencia: r["Consequencia"] || "",
+      status: r["Status"] || "",
+      dataConclusao: r._conclusaoObj ? mcFormatBR(r._conclusaoObj) : r["Data Conclusão"] || "",
+    }));
+
+    return res.json({
+      page: currentPage,
+      limit,
+      total,
+      totalPages,
+      items,
+    });
+  } catch (error) {
+    console.error("Erro /api/matriz-consequencia-detalhes:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/matriz-consequencia-debug", requireAuth, async (req, res) => {
+  try {
+    const dados = await carregarMatrizComCache();
+    return res.json({
+      total: dados.length,
+      amostra: dados.slice(0, 5),
+    });
+  } catch (error) {
+    console.error("Erro /api/matriz-consequencia-debug:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 
 // ================== SERVIDOR ==================
 

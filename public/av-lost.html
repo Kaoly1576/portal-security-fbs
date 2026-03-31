@@ -782,14 +782,23 @@
     let chartResumoRapido;
     let chartDia;
 
-    const DATE_COLUMN = "DATA";
-    const COLABORADOR_COLUMN = "PROBLEM SOLVER LP";
-    const UNIDADE_COLUMN = "Unidade";
-    const STATUS_COLUMN = "STATUS RETORNO";
-    const QTD_COLUMN = "QUANTIDADE ENCONTRADA";
-    const AV_COLUMN = "AV - LOST";
-    const USD_COLUMN = "US$ ENCONTRADO";
-    const BRL_COLUMN = "R$ ENCONTRADO";
+    const DATE_COLUMN_CANDIDATES = ["DATA", "Data"];
+    const COLABORADOR_COLUMN_CANDIDATES = ["PROBLEM SOLVER LP", "Problem Solver LP", "COLABORADOR", "Colaborador"];
+    const UNIDADE_COLUMN_CANDIDATES = ["UNIDADE", "Unidade", "unidade"];
+    const STATUS_COLUMN_CANDIDATES = ["STATUS RETORNO", "Status retorno", "STATUS"];
+    const QTD_COLUMN_CANDIDATES = ["QUANTIDADE ENCONTRADA", "Quantidade Encontrada"];
+    const AV_COLUMN_CANDIDATES = ["AV - LOST", "AV LOST", "AV"];
+    const USD_COLUMN_CANDIDATES = ["US$ ENCONTRADO", "US$ Encontrado"];
+    const BRL_COLUMN_CANDIDATES = ["R$ ENCONTRADO", "R$ Encontrado"];
+
+    let DATE_COLUMN = "DATA";
+    let COLABORADOR_COLUMN = "PROBLEM SOLVER LP";
+    let UNIDADE_COLUMN = "UNIDADE";
+    let STATUS_COLUMN = "STATUS RETORNO";
+    let QTD_COLUMN = "QUANTIDADE ENCONTRADA";
+    let AV_COLUMN = "AV - LOST";
+    let USD_COLUMN = "US$ ENCONTRADO";
+    let BRL_COLUMN = "R$ ENCONTRADO";
 
     const monthNames = {
       1: "Janeiro",
@@ -821,6 +830,22 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    function resolveColumn(candidates) {
+      for (const candidate of candidates) {
+        const found = headers.find(h => normalizeText(h) === normalizeText(candidate));
+        if (found) return found;
+      }
+      for (const candidate of candidates) {
+        const found = headers.find(h => normalizeText(h).includes(normalizeText(candidate)));
+        if (found) return found;
+      }
+      return candidates[0];
+    }
+
+    function getCell(row, columnName) {
+      return row?.[columnName] ?? "";
     }
 
     function parseMoney(value) {
@@ -1022,15 +1047,15 @@
       );
 
       const unidades = [...new Set(
-        rawData.map(r => normalizeValue(r[UNIDADE_COLUMN])).filter(Boolean)
+        rawData.map(r => normalizeValue(getCell(r, UNIDADE_COLUMN))).filter(Boolean)
       )].sort((a,b) => a.localeCompare(b, "pt-BR"));
 
       const colaboradores = [...new Set(
-        rawData.map(r => normalizeValue(r[COLABORADOR_COLUMN])).filter(Boolean)
+        rawData.map(r => normalizeValue(getCell(r, COLABORADOR_COLUMN))).filter(Boolean)
       )].sort((a,b) => a.localeCompare(b, "pt-BR"));
 
       const status = [...new Set(
-        rawData.map(r => normalizeValue(r[STATUS_COLUMN])).filter(Boolean)
+        rawData.map(r => normalizeValue(getCell(r, STATUS_COLUMN))).filter(Boolean)
       )].sort((a,b) => a.localeCompare(b, "pt-BR"));
 
       buildMultiSelect("multiAno", "triggerAno", "menuAno", years, "Todos");
@@ -1077,9 +1102,9 @@
 
         const anoOk = anos.length === 0 || anos.includes(String(row._year));
         const mesOk = meses.length === 0 || meses.includes(monthNames[row._month]);
-        const unidadeOk = unidades.length === 0 || unidades.includes(normalizeValue(row[UNIDADE_COLUMN]));
-        const colaboradorOk = colaboradores.length === 0 || colaboradores.includes(normalizeValue(row[COLABORADOR_COLUMN]));
-        const statusOk = status.length === 0 || status.includes(normalizeValue(row[STATUS_COLUMN]));
+        const unidadeOk = unidades.length === 0 || unidades.includes(normalizeValue(getCell(row, UNIDADE_COLUMN)));
+        const colaboradorOk = colaboradores.length === 0 || colaboradores.includes(normalizeValue(getCell(row, COLABORADOR_COLUMN)));
+        const statusOk = status.length === 0 || status.includes(normalizeValue(getCell(row, STATUS_COLUMN)));
         const semanaOk = semanas.length === 0 || semanas.includes(String(row._week));
         const diaOk = dias.length === 0 || dias.includes(String(row._day));
 
@@ -1103,7 +1128,7 @@
     }
 
     function sumByRows(rows, key, parser = parseNumeric) {
-      return rows.reduce((sum, row) => sum + parser(row[key]), 0);
+      return rows.reduce((sum, row) => sum + parser(getCell(row, key)), 0);
     }
 
     function getSelectedReferenceMonth() {
@@ -1161,9 +1186,9 @@
           !search ||
           headers.some(header => !header.startsWith("_") && normalizeText(row[header]).includes(search));
 
-        const unidadeOk = selectedUnidades.length === 0 || selectedUnidades.includes(normalizeValue(row[UNIDADE_COLUMN]));
-        const colaboradorOk = selectedColaboradores.length === 0 || selectedColaboradores.includes(normalizeValue(row[COLABORADOR_COLUMN]));
-        const statusOk = selectedStatus.length === 0 || selectedStatus.includes(normalizeValue(row[STATUS_COLUMN]));
+        const unidadeOk = selectedUnidades.length === 0 || selectedUnidades.includes(normalizeValue(getCell(row, UNIDADE_COLUMN)));
+        const colaboradorOk = selectedColaboradores.length === 0 || selectedColaboradores.includes(normalizeValue(getCell(row, COLABORADOR_COLUMN)));
+        const statusOk = selectedStatus.length === 0 || selectedStatus.includes(normalizeValue(getCell(row, STATUS_COLUMN)));
         const semanaOk = selectedSemanas.length === 0 || selectedSemanas.includes(String(row._week));
         const diaOk = selectedDias.length === 0 || selectedDias.includes(String(row._day));
 
@@ -1324,11 +1349,11 @@
       const qtdMap = {};
 
       filteredData.forEach(row => {
-        const unidade = normalizeValue(row[UNIDADE_COLUMN]) || "Sem valor";
-        const colaborador = normalizeValue(row[COLABORADOR_COLUMN]) || "Sem valor";
-        const status = normalizeValue(row[STATUS_COLUMN]) || "Sem valor";
-        const av = parseNumeric(row[AV_COLUMN]);
-        const qtd = parseNumeric(row[QTD_COLUMN]);
+        const unidade = normalizeValue(getCell(row, UNIDADE_COLUMN)) || "Sem valor";
+        const colaborador = normalizeValue(getCell(row, COLABORADOR_COLUMN)) || "Sem valor";
+        const status = normalizeValue(getCell(row, STATUS_COLUMN)) || "Sem valor";
+        const av = parseNumeric(getCell(row, AV_COLUMN));
+        const qtd = parseNumeric(getCell(row, QTD_COLUMN));
 
         unidadeMap[unidade] = (unidadeMap[unidade] || 0) + av;
         colaboradorMap[colaborador] = (colaboradorMap[colaborador] || 0) + av;
@@ -1477,10 +1502,10 @@
       ];
 
       const resumoRapidoValues = [
-        new Set(filteredData.map(row => normalizeValue(row[AV_COLUMN])).filter(Boolean)).size,
-        new Set(filteredData.map(row => normalizeValue(row[STATUS_COLUMN] + "|" + row[UNIDADE_COLUMN] + "|" + row[COLABORADOR_COLUMN])).filter(Boolean)).size,
-        new Set(filteredData.map(row => normalizeValue(row[UNIDADE_COLUMN])).filter(Boolean)).size,
-        new Set(filteredData.map(row => normalizeValue(row[STATUS_COLUMN])).filter(Boolean)).size
+        new Set(filteredData.map(row => normalizeValue(getCell(row, AV_COLUMN))).filter(Boolean)).size,
+        new Set(filteredData.map(row => normalizeValue(getCell(row, STATUS_COLUMN) + "|" + getCell(row, UNIDADE_COLUMN) + "|" + getCell(row, COLABORADOR_COLUMN))).filter(Boolean)).size,
+        new Set(filteredData.map(row => normalizeValue(getCell(row, UNIDADE_COLUMN))).filter(Boolean)).size,
+        new Set(filteredData.map(row => normalizeValue(getCell(row, STATUS_COLUMN))).filter(Boolean)).size
       ];
 
       chartResumoRapido = new Chart(document.getElementById("chartResumoRapido"), {
@@ -1518,7 +1543,7 @@
         if (chartYear && chartMonth) {
           if (row._year !== chartYear || row._month !== chartMonth) return;
         }
-        byDay[row._day] = (byDay[row._day] || 0) + parseNumeric(row[AV_COLUMN]);
+        byDay[row._day] = (byDay[row._day] || 0) + parseNumeric(getCell(row, AV_COLUMN));
       });
 
       chartDia = new Chart(document.getElementById("chartDia"), {
@@ -1663,8 +1688,20 @@
 
         rawData = Array.isArray(data) ? data : [];
 
+        rawData = rawData.map(row => ({ ...row }));
+        headers = [...new Set(rawData.flatMap(row => Object.keys(row)))];
+
+        DATE_COLUMN = resolveColumn(DATE_COLUMN_CANDIDATES);
+        COLABORADOR_COLUMN = resolveColumn(COLABORADOR_COLUMN_CANDIDATES);
+        UNIDADE_COLUMN = resolveColumn(UNIDADE_COLUMN_CANDIDATES);
+        STATUS_COLUMN = resolveColumn(STATUS_COLUMN_CANDIDATES);
+        QTD_COLUMN = resolveColumn(QTD_COLUMN_CANDIDATES);
+        AV_COLUMN = resolveColumn(AV_COLUMN_CANDIDATES);
+        USD_COLUMN = resolveColumn(USD_COLUMN_CANDIDATES);
+        BRL_COLUMN = resolveColumn(BRL_COLUMN_CANDIDATES);
+
         rawData = rawData.map(row => {
-          const dt = parseDateBR(row[DATE_COLUMN]);
+          const dt = parseDateBR(getCell(row, DATE_COLUMN));
           return {
             ...row,
             _date: dt,
@@ -1674,8 +1711,6 @@
             _week: dt ? getWeekNumber(dt) : ""
           };
         });
-
-        headers = [...new Set(rawData.flatMap(row => Object.keys(row)))];
 
         buildFilters();
         setDefaultDates();

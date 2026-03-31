@@ -72,16 +72,14 @@
       min-width:0;
     }
 
-    .hero-icon{
+    .hero-logo{
       width:34px;
       height:34px;
       border-radius:50%;
       background:#1c140d;
       border:1px solid rgba(255,122,26,0.20);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:16px;
+      object-fit:contain;
+      padding:4px;
       flex-shrink:0;
     }
 
@@ -559,7 +557,7 @@
   <div class="page">
     <section class="hero">
       <div class="hero-left">
-        <div class="hero-icon">🛡️</div>
+        <img src="/images/logo.png" alt="Logo" class="hero-logo" />
         <div class="hero-title-wrap">
           <div class="hero-title">AV LOST</div>
           <div class="hero-subtitle">Dashboard operacional com indicadores e comparativo mensal</div>
@@ -677,7 +675,7 @@
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-label">AV Encontrado</div>
+        <div class="kpi-label">QUANTIDADE DE ITENS EM AV</div>
         <div class="kpi-value" id="kpiAv">0</div>
         <div class="kpi-sub" id="kpiAvSub">Sem comparativo</div>
       </div>
@@ -1204,7 +1202,7 @@
 
     function updateKpis() {
       const totalRegistros = filteredData.length;
-      const totalAv = sumByRows(filteredData, AV_COLUMN, parseNumeric);
+      const totalAv = sumByRows(filteredData, QTD_COLUMN, parseNumeric);
       const totalUsd = sumByRows(filteredData, USD_COLUMN, parseMoney);
       const totalBrl = sumByRows(filteredData, BRL_COLUMN, parseMoney);
 
@@ -1227,8 +1225,8 @@
 
       const registrosVar = getVariation(currentRows.length, previousRows.length);
       const avVar = getVariation(
-        sumByRows(currentRows, AV_COLUMN, parseNumeric),
-        sumByRows(previousRows, AV_COLUMN, parseNumeric)
+        sumByRows(currentRows, QTD_COLUMN, parseNumeric),
+        sumByRows(previousRows, QTD_COLUMN, parseNumeric)
       );
       const usdVar = getVariation(
         sumByRows(currentRows, USD_COLUMN, parseMoney),

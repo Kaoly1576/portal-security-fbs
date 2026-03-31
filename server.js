@@ -2233,23 +2233,32 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
 
-    // Top motivos Security = coluna Motivo de desligamento,
-// mas somente quando o motivo contiver "Security"
+    // Top motivos Security:
+// filtra apenas os registros cujo Motivo de desligamento seja SECURITY
+// e então agrupa pelos valores de Controle interno
 const topMotivosSecurityMap = {};
 
 filtrados.forEach((row) => {
   const motivo = dNormalize(row[DESLIGADOS_COLUMNS.motivo]);
   const motivoLower = dNormalizeLower(motivo);
 
-  if (!motivo) return;
-  if (motivoLower === "null") return;
-  if (motivoLower === "undefined") return;
-  if (motivoLower === "sem valor") return;
-  if (motivoLower === "-") return;
-  if (!motivoLower.includes("security")) return;
+  // só entra se o motivo de desligamento for SECURITY
+  if (motivoLower !== "security") return;
 
-  topMotivosSecurityMap[motivo] =
-    (topMotivosSecurityMap[motivo] || 0) + 1;
+  const controle = dNormalize(row[DESLIGADOS_COLUMNS.controle]);
+  const controleLower = dNormalizeLower(controle);
+
+  // ignora lixo / vazios
+  if (!controle) return;
+  if (controleLower === "null") return;
+  if (controleLower === "undefined") return;
+  if (controleLower === "sem valor") return;
+  if (controleLower === "-") return;
+  if (controleLower === "controle interno") return;
+  if (controleLower === "security") return;
+
+  topMotivosSecurityMap[controle] =
+    (topMotivosSecurityMap[controle] || 0) + 1;
 });
 
 const topMotivosSecurity = Object.entries(topMotivosSecurityMap)

@@ -4705,6 +4705,579 @@ app.get("/api/matriz-consequencia-debug", requireAuth, async (req, res) => {
   }
 });
 
+// ================== HC & ONBOARDING DASHBOARD ==================
+
+app.get("/hc-onboarding", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "hc-onboarding.html"));
+});
+
+const HC_ONBOARDING_SPREADSHEET_ID = "1_1w_up0cxnqVZklpJV1cQRx6B5ptqQuGeWhWPpmNqfY";
+const HC_ADMISSOES_RANGE = "'Admissões'!A1:Z200000";
+const HC_ONBOARDING_RANGE = "'Onboarding'!A1:Z200000";
+
+let hcOnboardingCache = null;
+let hcOnboardingCacheTime = 0;
+const HC_ONBOARDING_CACHE_TTL = 5 * 60 * 1000;
+
+function hcoNorm(value) {
+  return String(value || "").trim();
+}
+
+function hcoNormLower(value) {
+  return hcoNorm(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function hcoParseDate(value) {
+  const str = hcoNorm(value);
+  if (!str) return null;
+
+  let m = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (m) {
+    const [, dd, mm, yyyy, hh = "00", mi = "00", ss = "00"] = m;
+    const d = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const d = new Date(`${str}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const fallback = new Date(str);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function hcoFormatISO(date) {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function hcoFormatBR(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function hcoSplitMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => hcoNorm(v))
+    .filter(Boolean);
+}
+
+function hcoMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(hcoNorm(fieldValue));
+}
+
+function hcoUnique(values) {
+  return [...new Set(values.filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "pt-BR")
+  );
+}
+
+function hcoPercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+  return ((current - previous) / previous) * 100;
+}
+
+function hcoGroupCount(rows, field) {
+  const map = {};
+  rows.forEach((row) => {
+    const key = hcoNorm(row[field]) || "NÃO INFORMADO";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+function hcoFindHeader(headers, possibilities) {
+  for (const p of possibilities) {
+    const exact = headers.find((h) => hcoNormLower(h) === hcoNormLower(p));
+    if (exact) return exact;
+  }
+  for (const p of possibilities) {
+    const partial = headers.find((h) => hcoNormLower(h).includes(hcoNormLower(p)));
+    if (partial) return partial;
+  }
+  return null;
+}
+
+async function carregarAdmissoesRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: HC_ONBOARDING_SPREADSHEET_ID,
+    range: HC_ADMISSOES_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const headers = values[0].map((h, i) => hcoNorm(h) || `COL_${i + 1}`);
+
+  const headerMap = {
+    empresa: hcoFindHeader(headers, ["Empresa"]),
+    colaborador: hcoFindHeader(headers, ["Colaborador(a)", "Colaborador", "Nome"]),
+    data: hcoFindHeader(headers, ["Data Admissão", "Data Admissao"]),
+    cargo: hcoFindHeader(headers, ["Cargo"]),
+    unidade: hcoFindHeader(headers, ["Unidade"]),
+  };
+
+  return values.slice(1).map((line) => {
+    const raw = {};
+    headers.forEach((header, i) => {
+      raw[header] = line[i] ?? "";
+    });
+
+    const data = headerMap.data ? raw[headerMap.data] || "" : "";
+    const dataObj = hcoParseDate(data);
+
+    return {
+      origem: "Admissões",
+      EMPRESA: headerMap.empresa ? raw[headerMap.empresa] || "" : "",
+      COLABORADOR: headerMap.colaborador ? raw[headerMap.colaborador] || "" : "",
+      DATA: data,
+      CARGO: headerMap.cargo ? raw[headerMap.cargo] || "" : "",
+      UNIDADE: headerMap.unidade ? raw[headerMap.unidade] || "" : "",
+      _date: dataObj,
+      _isoDate: dataObj ? hcoFormatISO(dataObj) : "",
+      _day: dataObj ? String(dataObj.getDate()).padStart(2, "0") : "",
+      _month: dataObj ? dataObj.getMonth() : null,
+      _year: dataObj ? dataObj.getFullYear() : null,
+    };
+  }).filter((row) =>
+    hcoNorm(row.COLABORADOR) ||
+    hcoNorm(row.DATA) ||
+    hcoNorm(row.UNIDADE) ||
+    hcoNorm(row.EMPRESA)
+  );
+}
+
+async function carregarOnboardingRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: HC_ONBOARDING_SPREADSHEET_ID,
+    range: HC_ONBOARDING_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const headers = values[0].map((h, i) => hcoNorm(h) || `COL_${i + 1}`);
+
+  const headerMap = {
+    data: hcoFindHeader(headers, ["DATA", "Data"]),
+    unidade: hcoFindHeader(headers, ["01. UNIDADE", "UNIDADE"]),
+    nome: hcoFindHeader(headers, ["02. NOME COMPLETO", "NOME COMPLETO"]),
+    cpf: hcoFindHeader(headers, ["03. CPF", "CPF"]),
+    turno: hcoFindHeader(headers, ["04. TURNO", "TURNO"]),
+    cargo: hcoFindHeader(headers, ["05. CARGO", "CARGO"]),
+    empresa: hcoFindHeader(headers, ["06. EMPRESA", "EMPRESA"]),
+    treinamento: hcoFindHeader(headers, ["07. TREINAMENTO", "TREINAMENTO"]),
+    concorda: hcoFindHeader(headers, ["09. VOCÊ CONCORDA", "VOCÊ CONCORDA", "CONCORDA"]),
+    instrutor: hcoFindHeader(headers, ["10. INSTRUTOR", "INSTRUTOR"]),
+  };
+
+  return values.slice(1).map((line) => {
+    const raw = {};
+    headers.forEach((header, i) => {
+      raw[header] = line[i] ?? "";
+    });
+
+    const data = headerMap.data ? raw[headerMap.data] || "" : "";
+    const dataObj = hcoParseDate(data);
+
+    return {
+      origem: "Onboarding",
+      DATA: data,
+      UNIDADE: headerMap.unidade ? raw[headerMap.unidade] || "" : "",
+      COLABORADOR: headerMap.nome ? raw[headerMap.nome] || "" : "",
+      CPF: headerMap.cpf ? raw[headerMap.cpf] || "" : "",
+      TURNO: headerMap.turno ? raw[headerMap.turno] || "" : "",
+      CARGO: headerMap.cargo ? raw[headerMap.cargo] || "" : "",
+      EMPRESA: headerMap.empresa ? raw[headerMap.empresa] || "" : "",
+      TREINAMENTO: headerMap.treinamento ? raw[headerMap.treinamento] || "" : "",
+      CONCORDA: headerMap.concorda ? raw[headerMap.concorda] || "" : "",
+      INSTRUTOR: headerMap.instrutor ? raw[headerMap.instrutor] || "" : "",
+      _date: dataObj,
+      _isoDate: dataObj ? hcoFormatISO(dataObj) : "",
+      _day: dataObj ? String(dataObj.getDate()).padStart(2, "0") : "",
+      _month: dataObj ? dataObj.getMonth() : null,
+      _year: dataObj ? dataObj.getFullYear() : null,
+    };
+  }).filter((row) =>
+    hcoNorm(row.COLABORADOR) ||
+    hcoNorm(row.DATA) ||
+    hcoNorm(row.UNIDADE)
+  );
+}
+
+async function carregarHcOnboardingComCache() {
+  const now = Date.now();
+
+  if (hcOnboardingCache && now - hcOnboardingCacheTime < HC_ONBOARDING_CACHE_TTL) {
+    return hcOnboardingCache;
+  }
+
+  const admissoes = await carregarAdmissoesRaw();
+  const onboarding = await carregarOnboardingRaw();
+
+  hcOnboardingCache = { admissoes, onboarding };
+  hcOnboardingCacheTime = now;
+
+  console.log("HC & ONBOARDING cache atualizado:", {
+    admissoes: admissoes.length,
+    onboarding: onboarding.length,
+  });
+
+  return hcOnboardingCache;
+}
+
+function filtrarAdmissoes(rows, query) {
+  const dataInicio = hcoNorm(query.dataInicio);
+  const dataFim = hcoNorm(query.dataFim);
+  const empresas = hcoSplitMulti(query.admEmpresa);
+  const unidades = hcoSplitMulti(query.admUnidade);
+  const cargos = hcoSplitMulti(query.admCargo);
+  const colaboradores = hcoSplitMulti(query.admColaborador);
+  const busca = hcoNormLower(query.admBusca);
+
+  return rows.filter((row) => {
+    if (dataInicio && (!row._isoDate || row._isoDate < dataInicio)) return false;
+    if (dataFim && (!row._isoDate || row._isoDate > dataFim)) return false;
+
+    if (!hcoMatchesMulti(row.EMPRESA, empresas)) return false;
+    if (!hcoMatchesMulti(row.UNIDADE, unidades)) return false;
+    if (!hcoMatchesMulti(row.CARGO, cargos)) return false;
+    if (!hcoMatchesMulti(row.COLABORADOR, colaboradores)) return false;
+
+    if (busca) {
+      const text = [
+        row.EMPRESA,
+        row.COLABORADOR,
+        row.CARGO,
+        row.UNIDADE,
+      ].map(hcoNormLower).join(" ");
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function filtrarOnboarding(rows, query) {
+  const dataInicio = hcoNorm(query.dataInicio);
+  const dataFim = hcoNorm(query.dataFim);
+
+  const unidades = hcoSplitMulti(query.onbUnidade);
+  const cargos = hcoSplitMulti(query.onbCargo);
+  const empresas = hcoSplitMulti(query.onbEmpresa);
+  const treinamentos = hcoSplitMulti(query.onbTreinamento);
+  const concordas = hcoSplitMulti(query.onbConcorda);
+  const instrutores = hcoSplitMulti(query.onbInstrutor);
+  const colaboradores = hcoSplitMulti(query.onbColaborador);
+  const busca = hcoNormLower(query.onbBusca);
+
+  return rows.filter((row) => {
+    if (dataInicio && (!row._isoDate || row._isoDate < dataInicio)) return false;
+    if (dataFim && (!row._isoDate || row._isoDate > dataFim)) return false;
+
+    if (!hcoMatchesMulti(row.UNIDADE, unidades)) return false;
+    if (!hcoMatchesMulti(row.CARGO, cargos)) return false;
+    if (!hcoMatchesMulti(row.EMPRESA, empresas)) return false;
+    if (!hcoMatchesMulti(row.TREINAMENTO, treinamentos)) return false;
+    if (!hcoMatchesMulti(row.CONCORDA, concordas)) return false;
+    if (!hcoMatchesMulti(row.INSTRUTOR, instrutores)) return false;
+    if (!hcoMatchesMulti(row.COLABORADOR, colaboradores)) return false;
+
+    if (busca) {
+      const text = [
+        row.UNIDADE,
+        row.COLABORADOR,
+        row.CPF,
+        row.TURNO,
+        row.CARGO,
+        row.EMPRESA,
+        row.TREINAMENTO,
+        row.CONCORDA,
+        row.INSTRUTOR,
+      ].map(hcoNormLower).join(" ");
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+app.get("/api/hc-onboarding-filtros", requireAuth, async (req, res) => {
+  try {
+    const { admissoes, onboarding } = await carregarHcOnboardingComCache();
+
+    return res.json({
+      admissoes: {
+        empresas: hcoUnique(admissoes.map((r) => hcoNorm(r.EMPRESA))),
+        unidades: hcoUnique(admissoes.map((r) => hcoNorm(r.UNIDADE))),
+        cargos: hcoUnique(admissoes.map((r) => hcoNorm(r.CARGO))),
+        colaboradores: hcoUnique(admissoes.map((r) => hcoNorm(r.COLABORADOR))),
+      },
+      onboarding: {
+        unidades: hcoUnique(onboarding.map((r) => hcoNorm(r.UNIDADE))),
+        cargos: hcoUnique(onboarding.map((r) => hcoNorm(r.CARGO))),
+        empresas: hcoUnique(onboarding.map((r) => hcoNorm(r.EMPRESA))),
+        treinamentos: hcoUnique(onboarding.map((r) => hcoNorm(r.TREINAMENTO))),
+        concordas: hcoUnique(onboarding.map((r) => hcoNorm(r.CONCORDA))),
+        instrutores: hcoUnique(onboarding.map((r) => hcoNorm(r.INSTRUTOR))),
+        colaboradores: hcoUnique(onboarding.map((r) => hcoNorm(r.COLABORADOR))),
+      }
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-onboarding-filtros:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/hc-onboarding-resumo", requireAuth, async (req, res) => {
+  try {
+    const { admissoes, onboarding } = await carregarHcOnboardingComCache();
+    const admFiltrados = filtrarAdmissoes(admissoes, req.query);
+    const onbFiltrados = filtrarOnboarding(onboarding, req.query);
+
+    function calcResumo(rows, extra = {}) {
+      const total = rows.length;
+      const validDates = rows.map((r) => r._date).filter(Boolean).sort((a, b) => a - b);
+
+      let mesAtual = 0;
+      let mesAnterior = 0;
+
+      if (validDates.length) {
+        const latest = validDates[validDates.length - 1];
+        const currMonth = latest.getMonth();
+        const currYear = latest.getFullYear();
+
+        const prevRef = new Date(currYear, currMonth - 1, 1);
+        const prevMonth = prevRef.getMonth();
+        const prevYear = prevRef.getFullYear();
+
+        mesAtual = rows.filter(
+          (r) => r._date && r._date.getMonth() === currMonth && r._date.getFullYear() === currYear
+        ).length;
+
+        mesAnterior = rows.filter(
+          (r) => r._date && r._date.getMonth() === prevMonth && r._date.getFullYear() === prevYear
+        ).length;
+      }
+
+      return {
+        total,
+        mesAtual,
+        mesAnterior,
+        variacaoMensal: hcoPercentChange(mesAtual, mesAnterior),
+        ...extra,
+      };
+    }
+
+    const admEmpresas = new Set(admFiltrados.map((r) => hcoNorm(r.EMPRESA)).filter(Boolean)).size;
+    const admUnidades = new Set(admFiltrados.map((r) => hcoNorm(r.UNIDADE)).filter(Boolean)).size;
+
+    const onbInstrutores = new Set(onbFiltrados.map((r) => hcoNorm(r.INSTRUTOR)).filter(Boolean)).size;
+    const onbConcordam = onbFiltrados.filter((r) => hcoNormLower(r.CONCORDA) === "sim").length;
+
+    return res.json({
+      admissoes: calcResumo(admFiltrados, {
+        empresas: admEmpresas,
+        unidades: admUnidades,
+      }),
+      onboarding: calcResumo(onbFiltrados, {
+        instrutores: onbInstrutores,
+        concordam: onbConcordam,
+      }),
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-onboarding-resumo:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/hc-onboarding-graficos", requireAuth, async (req, res) => {
+  try {
+    const { admissoes, onboarding } = await carregarHcOnboardingComCache();
+    const admFiltrados = filtrarAdmissoes(admissoes, req.query);
+    const onbFiltrados = filtrarOnboarding(onboarding, req.query);
+
+    function buildTop(rows, field, limit = 10) {
+      const map = hcoGroupCount(rows, field);
+      const entries = Object.entries(map)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit);
+
+      return {
+        labels: entries.map(([k]) => k),
+        valores: entries.map(([, v]) => v),
+      };
+    }
+
+    const dias = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+
+    const admPorDiaMap = Object.fromEntries(dias.map((d) => [d, 0]));
+    admFiltrados.forEach((r) => {
+      if (r._day) admPorDiaMap[r._day] = (admPorDiaMap[r._day] || 0) + 1;
+    });
+
+    const onbPorDiaMap = Object.fromEntries(dias.map((d) => [d, 0]));
+    onbFiltrados.forEach((r) => {
+      if (r._day) onbPorDiaMap[r._day] = (onbPorDiaMap[r._day] || 0) + 1;
+    });
+
+    const onbConcordaMap = {
+      Sim: onbFiltrados.filter((r) => hcoNormLower(r.CONCORDA) === "sim").length,
+      Não: onbFiltrados.filter((r) => {
+        const v = hcoNormLower(r.CONCORDA);
+        return v === "nao" || v === "não";
+      }).length,
+      "Sem resposta": onbFiltrados.filter((r) => !hcoNorm(r.CONCORDA)).length,
+    };
+
+    return res.json({
+      admissoes: {
+        porEmpresa: buildTop(admFiltrados, "EMPRESA"),
+        porUnidade: buildTop(admFiltrados, "UNIDADE"),
+        porCargo: buildTop(admFiltrados, "CARGO"),
+        porDia: {
+          labels: dias,
+          valores: dias.map((d) => admPorDiaMap[d] || 0),
+        },
+      },
+      onboarding: {
+        porUnidade: buildTop(onbFiltrados, "UNIDADE"),
+        porCargo: buildTop(onbFiltrados, "CARGO"),
+        porInstrutor: buildTop(onbFiltrados, "INSTRUTOR"),
+        porTreinamento: buildTop(onbFiltrados, "TREINAMENTO"),
+        concordancia: {
+          labels: Object.keys(onbConcordaMap),
+          valores: Object.values(onbConcordaMap),
+        },
+        porDia: {
+          labels: dias,
+          valores: dias.map((d) => onbPorDiaMap[d] || 0),
+        },
+      }
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-onboarding-graficos:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/hc-onboarding-detalhes", requireAuth, async (req, res) => {
+  try {
+    const { admissoes, onboarding } = await carregarHcOnboardingComCache();
+    const admFiltrados = filtrarAdmissoes(admissoes, req.query);
+    const onbFiltrados = filtrarOnboarding(onboarding, req.query);
+
+    const admPage = Math.max(Number(req.query.admPage || 1), 1);
+    const onbPage = Math.max(Number(req.query.onbPage || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 15), 1), 100);
+
+    const admOrdenados = [...admFiltrados].sort((a, b) => {
+      const ad = a._date ? a._date.getTime() : 0;
+      const bd = b._date ? b._date.getTime() : 0;
+      return bd - ad;
+    });
+
+    const onbOrdenados = [...onbFiltrados].sort((a, b) => {
+      const ad = a._date ? a._date.getTime() : 0;
+      const bd = b._date ? b._date.getTime() : 0;
+      return bd - ad;
+    });
+
+    const admTotalPages = Math.max(1, Math.ceil(admOrdenados.length / limit));
+    const onbTotalPages = Math.max(1, Math.ceil(onbOrdenados.length / limit));
+
+    const admCurrentPage = Math.min(admPage, admTotalPages);
+    const onbCurrentPage = Math.min(onbPage, onbTotalPages);
+
+    const admItems = admOrdenados.slice((admCurrentPage - 1) * limit, admCurrentPage * limit).map((r) => ({
+      empresa: r.EMPRESA || "",
+      colaborador: r.COLABORADOR || "",
+      dataAdmissao: r._date ? hcoFormatBR(r._date) : r.DATA || "",
+      cargo: r.CARGO || "",
+      unidade: r.UNIDADE || "",
+    }));
+
+    const onbItems = onbOrdenados.slice((onbCurrentPage - 1) * limit, onbCurrentPage * limit).map((r) => ({
+      data: r._date ? hcoFormatBR(r._date) : r.DATA || "",
+      unidade: r.UNIDADE || "",
+      colaborador: r.COLABORADOR || "",
+      cpf: r.CPF || "",
+      turno: r.TURNO || "",
+      cargo: r.CARGO || "",
+      empresa: r.EMPRESA || "",
+      treinamento: r.TREINAMENTO || "",
+      concorda: r.CONCORDA || "",
+      instrutor: r.INSTRUTOR || "",
+    }));
+
+    return res.json({
+      admissoes: {
+        page: admCurrentPage,
+        totalPages: admTotalPages,
+        total: admOrdenados.length,
+        items: admItems,
+      },
+      onboarding: {
+        page: onbCurrentPage,
+        totalPages: onbTotalPages,
+        total: onbOrdenados.length,
+        items: onbItems,
+      },
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-onboarding-detalhes:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/hc-onboarding-debug", requireAuth, async (req, res) => {
+  try {
+    const data = await carregarHcOnboardingComCache();
+    return res.json({
+      admissoes: {
+        total: data.admissoes.length,
+        amostra: data.admissoes.slice(0, 3),
+      },
+      onboarding: {
+        total: data.onboarding.length,
+        amostra: data.onboarding.slice(0, 3),
+      }
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-onboarding-debug:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 
 // ================== SERVIDOR ==================
 

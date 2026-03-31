@@ -94,7 +94,7 @@
     .multi-option input { accent-color:#ff7a1a; }
 
     .kpis {
-      display:grid; grid-template-columns:repeat(6,1fr);
+      display:grid; grid-template-columns:repeat(4,1fr);
       gap:10px; margin-bottom:12px;
     }
     .card {
@@ -122,11 +122,6 @@
       display:flex; justify-content:space-between; align-items:center;
       font-size:12px; margin-bottom:8px; color:rgba(255,255,255,0.75);
     }
-    .goal-pill {
-      background:rgba(255,122,26,0.14);
-      border:1px solid rgba(255,122,26,0.35);
-      color:#ffae6b; padding:5px 9px; border-radius:999px; font-weight:700;
-    }
     .chart-wrap { position:relative; height:290px; }
 
     table { width:100%; border-collapse:collapse; font-size:12px; }
@@ -148,7 +143,7 @@
 
     @media (max-width: 1280px) {
       .filters-grid { grid-template-columns:repeat(3,1fr); }
-      .kpis { grid-template-columns:repeat(3,1fr); }
+      .kpis { grid-template-columns:repeat(2,1fr); }
       .charts-grid-2, .charts-grid-3 { grid-template-columns:1fr; }
     }
 
@@ -245,12 +240,12 @@
       <div class="card">
         <h3>Total de Registros</h3>
         <div class="value" id="kpiTotal">0</div>
-        <div class="sub">Meta do mês: 500</div>
+        <div class="sub">Total consolidado</div>
       </div>
       <div class="card">
         <h3>Registros no Mês</h3>
         <div class="value" id="kpiMes">0</div>
-        <div class="sub">Meta mensal: 500</div>
+        <div class="sub">Mês atual</div>
       </div>
       <div class="card">
         <h3>Mês Anterior</h3>
@@ -262,16 +257,6 @@
         <div class="value" id="kpiVariacao">0%</div>
         <div class="sub" id="subVariacao">vs mês anterior</div>
       </div>
-      <div class="card">
-        <h3>Unidades</h3>
-        <div class="value" id="kpiUnidades">0</div>
-        <div class="sub">Unidades atendidas</div>
-      </div>
-      <div class="card">
-        <h3>Placas Únicas</h3>
-        <div class="value" id="kpiPlacas">0</div>
-        <div class="sub">Veículos únicos</div>
-      </div>
     </div>
 
     <div class="charts-grid-3">
@@ -279,7 +264,7 @@
         <h3>Registros por Unidade</h3>
         <div class="chart-meta">
           <span>Top unidades</span>
-          <span class="goal-pill">Meta genérica: 100</span>
+          <span></span>
         </div>
         <div class="chart-wrap"><canvas id="chartUnidade"></canvas></div>
       </div>
@@ -287,7 +272,7 @@
         <h3>Registros por Tipo de Carga</h3>
         <div class="chart-meta">
           <span>Distribuição por carga</span>
-          <span class="goal-pill">Meta genérica: 100</span>
+          <span></span>
         </div>
         <div class="chart-wrap"><canvas id="chartTipoCarga"></canvas></div>
       </div>
@@ -295,7 +280,7 @@
         <h3>Registros por Vigilante</h3>
         <div class="chart-meta">
           <span>Top vigilantes</span>
-          <span class="goal-pill">Meta genérica: 100</span>
+          <span></span>
         </div>
         <div class="chart-wrap"><canvas id="chartVigilante"></canvas></div>
       </div>
@@ -305,8 +290,8 @@
       <div class="chart-card">
         <h3>Registros por Dia</h3>
         <div class="chart-meta">
-          <span>Distribuição diária</span>
-          <span class="goal-pill">Meta genérica: 20 / dia</span>
+          <span>Distribuição diária de 01 a 31</span>
+          <span></span>
         </div>
         <div class="chart-wrap"><canvas id="chartDia"></canvas></div>
       </div>
@@ -314,7 +299,7 @@
         <h3>Comparativo Mensal</h3>
         <div class="chart-meta">
           <span>Mês atual x mês anterior</span>
-          <span class="goal-pill">Meta genérica: 500 / mês</span>
+          <span></span>
         </div>
         <div class="chart-wrap"><canvas id="chartComparativo"></canvas></div>
       </div>
@@ -325,7 +310,7 @@
         <h3>Lacre Correto x Incorreto</h3>
         <div class="chart-meta">
           <span>Conferência de lacres</span>
-          <span class="goal-pill">Meta genérica: 100%</span>
+          <span></span>
         </div>
         <div class="chart-wrap"><canvas id="chartLacreCorreto"></canvas></div>
       </div>
@@ -333,7 +318,7 @@
         <h3>Status de Envio</h3>
         <div class="chart-meta">
           <span>Situação de envio</span>
-          <span class="goal-pill">Meta genérica: 100</span>
+          <span></span>
         </div>
         <div class="chart-wrap"><canvas id="chartStatusEnvio"></canvas></div>
       </div>
@@ -508,10 +493,7 @@
         offset: 4,
         clamp: true,
         font: { family: 'Arial', weight: 'bold', size: 11 },
-        formatter: (value, context) => {
-          if (context.dataset.label === 'Meta') return null;
-          return Number(value || 0).toLocaleString('pt-BR');
-        }
+        formatter: (value) => Number(value || 0).toLocaleString('pt-BR')
       };
     }
 
@@ -522,7 +504,9 @@
         indexAxis,
         layout: { padding: { top: 24, right: 16, left: 8, bottom: 8 } },
         plugins: {
-          legend: { labels: { color: COLORS.text, font: { family: 'Arial' } } },
+          legend: {
+            labels: { color: COLORS.text, font: { family: 'Arial' } }
+          },
           tooltip: {
             titleFont: { family: 'Arial' },
             bodyFont: { family: 'Arial' }
@@ -546,7 +530,7 @@
       if (charts[id]) charts[id].destroy();
     }
 
-    function renderBarHorizontal(canvasId, label, labels, valores, metas) {
+    function renderBarHorizontal(canvasId, label, labels, valores) {
       destroyChart(canvasId);
       charts[canvasId] = new Chart(document.getElementById(canvasId), {
         type: 'bar',
@@ -558,15 +542,6 @@
               data: valores,
               backgroundColor: COLORS.orange,
               datalabels: datalabelsOptions('y')
-            },
-            {
-              label: 'Meta',
-              data: metas,
-              type: 'line',
-              borderColor: '#ffd2a8',
-              backgroundColor: '#ffd2a8',
-              tension: 0,
-              datalabels: { display: false }
             }
           ]
         },
@@ -586,15 +561,6 @@
               data: data.valores,
               backgroundColor: COLORS.orange,
               datalabels: datalabelsOptions('x')
-            },
-            {
-              label: 'Meta',
-              data: data.metas,
-              type: 'line',
-              borderColor: '#ffd2a8',
-              backgroundColor: '#ffd2a8',
-              tension: 0.2,
-              datalabels: { display: false }
             }
           ]
         },
@@ -614,15 +580,6 @@
               data: [data.mesAnterior, data.mesAtual],
               backgroundColor: ['rgba(255,122,26,0.55)', COLORS.orange],
               datalabels: datalabelsOptions('x')
-            },
-            {
-              label: 'Meta',
-              data: [data.metaMensal, data.metaMensal],
-              type: 'line',
-              borderColor: '#ffd2a8',
-              backgroundColor: '#ffd2a8',
-              tension: 0,
-              datalabels: { display: false }
             }
           ]
         },
@@ -697,8 +654,6 @@
       document.getElementById('kpiMes').textContent = formatNumber(data.mesAtual);
       document.getElementById('kpiMesAnterior').textContent = formatNumber(data.mesAnterior);
       document.getElementById('kpiVariacao').textContent = formatPercent(data.variacaoMensal);
-      document.getElementById('kpiUnidades').textContent = formatNumber(data.unidades);
-      document.getElementById('kpiPlacas').textContent = formatNumber(data.placasUnicas);
 
       const sub = document.getElementById('subVariacao');
       sub.textContent = 'vs mês anterior';
@@ -711,9 +666,9 @@
       const qs = getFiltersQuery();
       const data = await fetchJSON(`/api/registro-lacres-graficos?${qs}`);
 
-      renderBarHorizontal('chartUnidade', 'Registros', data.porUnidade.labels, data.porUnidade.valores, data.porUnidade.metas);
-      renderBarHorizontal('chartTipoCarga', 'Registros', data.porTipoCarga.labels, data.porTipoCarga.valores, data.porTipoCarga.metas);
-      renderBarHorizontal('chartVigilante', 'Registros', data.porVigilante.labels, data.porVigilante.valores, data.porVigilante.metas);
+      renderBarHorizontal('chartUnidade', 'Registros', data.porUnidade.labels, data.porUnidade.valores);
+      renderBarHorizontal('chartTipoCarga', 'Registros', data.porTipoCarga.labels, data.porTipoCarga.valores);
+      renderBarHorizontal('chartVigilante', 'Registros', data.porVigilante.labels, data.porVigilante.valores);
 
       renderChartDia(data.porDia);
       renderChartComparativo(data.comparativoMensal);
@@ -759,11 +714,15 @@
 
     function bindEvents() {
       document.getElementById('dataInicial').addEventListener('change', (e) => {
-        state.filtros.dataInicio = e.target.value; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+        state.filtros.dataInicio = e.target.value;
+        state.page = 1;
+        carregarResumo(); carregarGraficos(); carregarDetalhes();
       });
 
       document.getElementById('dataFinal').addEventListener('change', (e) => {
-        state.filtros.dataFim = e.target.value; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+        state.filtros.dataFim = e.target.value;
+        state.page = 1;
+        carregarResumo(); carregarGraficos(); carregarDetalhes();
       });
 
       document.getElementById('busca').addEventListener('input', (e) => {

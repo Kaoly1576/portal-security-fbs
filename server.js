@@ -2233,28 +2233,28 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
 
-    // Top motivos Security = coluna Controle interno
-    const topMotivosSecurityMap = {};
+    // Top motivos Security = coluna Motivo de desligamento,
+// mas somente quando o motivo contiver "Security"
+const topMotivosSecurityMap = {};
 
-    filtrados.forEach((row) => {
-      const controle = dNormalize(row[DESLIGADOS_COLUMNS.controle]);
-      const controleLower = dNormalizeLower(controle);
+filtrados.forEach((row) => {
+  const motivo = dNormalize(row[DESLIGADOS_COLUMNS.motivo]);
+  const motivoLower = dNormalizeLower(motivo);
 
-      if (!controle) return;
-      if (controleLower === "null") return;
-      if (controleLower === "undefined") return;
-      if (controleLower === "sem valor") return;
-      if (controleLower === "-") return;
-      if (controleLower === "security") return;
-      if (controleLower === "controle interno") return;
+  if (!motivo) return;
+  if (motivoLower === "null") return;
+  if (motivoLower === "undefined") return;
+  if (motivoLower === "sem valor") return;
+  if (motivoLower === "-") return;
+  if (!motivoLower.includes("security")) return;
 
-      topMotivosSecurityMap[controle] =
-        (topMotivosSecurityMap[controle] || 0) + 1;
-    });
+  topMotivosSecurityMap[motivo] =
+    (topMotivosSecurityMap[motivo] || 0) + 1;
+});
 
-    const topMotivosSecurity = Object.entries(topMotivosSecurityMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12);
+const topMotivosSecurity = Object.entries(topMotivosSecurityMap)
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 12);
 
     const dayMap = {};
     filtrados.forEach((row) => {

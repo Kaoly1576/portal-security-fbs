@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HC & ONBOARDING</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top left, #273246 0%, #101826 40%, #060b14 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 10px;
+    }
+    .container { width: 100%; max-width: 1440px; margin: 0 auto; }
+    .topbar, .hero, .filters, .card, .chart-card, .table-card, .section-title-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .topbar {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 18px; margin-bottom:10px;
+    }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand img {
+      width:40px; height:40px; object-fit:contain; border-radius:50%;
+      background: rgba(0,0,0,0.25); padding:4px;
+    }
+    .brand h1 { font-size:30px; color:#ff7a1a; font-weight:800; }
+    .brand span { display:block; font-size:12px; color:rgba(255,255,255,0.75); }
+    .btn-portal {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      color:#fff; padding:12px 18px; border-radius:12px;
+      text-decoration:none; font-weight:700;
+    }
+    .hero {
+      padding:16px 20px; margin-bottom:10px;
+      display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+    }
+    .hero h2 { font-size:28px; margin-bottom:6px; }
+    .hero p { font-size:13px; color:rgba(255,255,255,0.75); }
+    .updated-box { text-align:right; min-width:150px; }
+    .updated-box small { display:block; color:rgba(255,255,255,0.75); margin-bottom:4px; font-size:12px; }
+    .updated-box strong { color:#ff7a1a; font-size:20px; }
+
+    .filters { padding:12px; margin-bottom:12px; }
+    .filters-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+    .filter-group { display:flex; flex-direction:column; gap:5px; position:relative; }
+    .filter-group label { font-size:12px; font-weight:700; color:rgba(255,255,255,0.9); }
+    .filter-group input, .multi-select-trigger {
+      height:36px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);
+      background:#051127; color:#fff; padding:0 12px; outline:none; font-size:13px;
+    }
+    .filter-group input::placeholder { color:rgba(255,255,255,0.45); }
+    .search-wide { grid-column: span 2; }
+    .btn-clear {
+      height:36px; border:none; border-radius:10px;
+      background: linear-gradient(90deg, #ff7a1a, #ff4d4d);
+      color:#fff; font-weight:800; font-size:14px; cursor:pointer; margin-top:17px;
+    }
+
+    .multi-select { position:relative; }
+    .multi-select-trigger {
+      display:flex; align-items:center; justify-content:space-between;
+      cursor:pointer; user-select:none;
+    }
+    .multi-select-trigger span {
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 20px);
+    }
+    .multi-select-dropdown {
+      position:absolute; top:calc(100% + 6px); left:0; width:100%;
+      background:#0b1628; border:1px solid rgba(255,255,255,0.10);
+      border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.35);
+      z-index:50; display:none; max-height:260px; overflow:hidden;
+    }
+    .multi-select.open .multi-select-dropdown { display:block; }
+    .multi-select-search { padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .multi-select-search input {
+      width:100%; height:32px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);
+      background:#051127; color:#fff; padding:0 10px; font-size:12px; outline:none;
+    }
+    .multi-select-options { max-height:210px; overflow:auto; padding:6px; }
+    .multi-option {
+      display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px;
+      cursor:pointer; font-size:12px; color:#fff;
+    }
+    .multi-option:hover { background:rgba(255,255,255,0.06); }
+    .multi-option input { accent-color:#ff7a1a; }
+
+    .section-title-card {
+      padding: 12px 16px;
+      margin: 12px 0 10px;
+    }
+    .section-title-card h3 {
+      color: #ff7a1a;
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .section-title-card p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+    }
+
+    .kpis {
+      display:grid; grid-template-columns:repeat(5,1fr);
+      gap:10px; margin-bottom:12px;
+    }
+    .card {
+      padding:14px 16px; min-height:88px;
+      display:flex; flex-direction:column; justify-content:center;
+    }
+    .card h3 {
+      font-size:12px; color:#fff; margin-bottom:8px;
+      text-transform:uppercase; font-weight:800;
+    }
+    .card .value {
+      font-size:30px; font-weight:900; color:#ff7a1a; line-height:1;
+    }
+    .card .sub { font-size:13px; margin-top:6px; color:rgba(255,255,255,0.7); }
+    .card .sub.positive { color:#1ddc7f; }
+    .card .sub.negative { color:#ff5252; }
+
+    .charts-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+    .charts-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    .chart-card, .table-card { padding:12px 14px 16px; min-height:360px; }
+    .chart-card h3, .table-card h3 {
+      text-align:center; color:#ff7a1a; font-size:16px; margin-bottom:10px; font-weight:800;
+    }
+    .chart-meta {
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:12px; margin-bottom:8px; color:rgba(255,255,255,0.75);
+    }
+    .chart-wrap { position:relative; height:290px; }
+
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th, td {
+      padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left;
+    }
+    th { color:#ff7a1a; font-size:12px; text-transform:uppercase; }
+    td { color:rgba(255,255,255,0.88); }
+    .table-scroll { max-height:300px; overflow:auto; }
+
+    .pagination {
+      display:flex; justify-content:flex-end; align-items:center;
+      gap:8px; margin-top:10px; font-size:12px;
+    }
+    .pagination button {
+      border:none; background:#ff7a1a; color:#fff;
+      font-weight:700; padding:8px 12px; border-radius:8px; cursor:pointer;
+    }
+    .pagination button:disabled { background:#667; cursor:not-allowed; }
+
+    @media (max-width: 1280px) {
+      .filters-grid { grid-template-columns:repeat(3,1fr); }
+      .kpis { grid-template-columns:repeat(2,1fr); }
+      .charts-grid-2, .charts-grid-3 { grid-template-columns:1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .filters-grid { grid-template-columns:1fr; }
+      .kpis { grid-template-columns:1fr; }
+      .search-wide { grid-column: span 1; }
+      .hero, .topbar { flex-direction:column; align-items:stretch; }
+      .updated-box { text-align:left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <img src="/images/logo.png" alt="Logo">
+        <div>
+          <h1>HC & ONBOARDING</h1>
+          <span>Dashboard consolidado de admissões e onboarding</span>
+        </div>
+      </div>
+      <a class="btn-portal" href="/portal.html">Voltar ao Portal</a>
+    </div>
+
+    <div class="hero">
+      <div>
+        <h2>Dashboard de HC & Onboarding</h2>
+        <p>Monitoramento das admissões e do onboarding em um único painel, com seções separadas.</p>
+      </div>
+      <div class="updated-box">
+        <small>Última atualização</small>
+        <strong id="ultimaAtualizacao">--:--</strong>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Data inicial</label>
+          <input type="date" id="dataInicial">
+        </div>
+        <div class="filter-group">
+          <label>Data final</label>
+          <input type="date" id="dataFinal">
+        </div>
+
+        <div class="filter-group">
+          <label>Adm. Empresa</label>
+          <div class="multi-select" id="msAdmEmpresa"></div>
+        </div>
+        <div class="filter-group">
+          <label>Adm. Unidade</label>
+          <div class="multi-select" id="msAdmUnidade"></div>
+        </div>
+        <div class="filter-group">
+          <label>Adm. Cargo</label>
+          <div class="multi-select" id="msAdmCargo"></div>
+        </div>
+        <div class="filter-group">
+          <label>Adm. Colaborador</label>
+          <div class="multi-select" id="msAdmColaborador"></div>
+        </div>
+
+        <div class="filter-group">
+          <label>Onb. Unidade</label>
+          <div class="multi-select" id="msOnbUnidade"></div>
+        </div>
+        <div class="filter-group">
+          <label>Onb. Cargo</label>
+          <div class="multi-select" id="msOnbCargo"></div>
+        </div>
+        <div class="filter-group">
+          <label>Onb. Empresa</label>
+          <div class="multi-select" id="msOnbEmpresa"></div>
+        </div>
+        <div class="filter-group">
+          <label>Treinamento</label>
+          <div class="multi-select" id="msOnbTreinamento"></div>
+        </div>
+        <div class="filter-group">
+          <label>Concorda?</label>
+          <div class="multi-select" id="msOnbConcorda"></div>
+        </div>
+        <div class="filter-group">
+          <label>Instrutor</label>
+          <div class="multi-select" id="msOnbInstrutor"></div>
+        </div>
+        <div class="filter-group">
+          <label>Onb. Colaborador</label>
+          <div class="multi-select" id="msOnbColaborador"></div>
+        </div>
+
+        <div class="filter-group search-wide">
+          <label>Busca Admissões</label>
+          <input type="text" id="admBusca" placeholder="Buscar em admissões...">
+        </div>
+        <div class="filter-group search-wide">
+          <label>Busca Onboarding</label>
+          <input type="text" id="onbBusca" placeholder="Buscar em onboarding...">
+        </div>
+        <div class="filter-group">
+          <button class="btn-clear" id="btnLimpar">Limpar filtros</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title-card">
+      <h3>ADMISSÕES</h3>
+      <p>Indicadores e distribuição dos dados da aba Admissões.</p>
+    </div>
+
+    <div class="kpis">
+      <div class="card">
+        <h3>Total de Admissões</h3>
+        <div class="value" id="admTotal">0</div>
+        <div class="sub">Total consolidado</div>
+      </div>
+      <div class="card">
+        <h3>No Mês</h3>
+        <div class="value" id="admMes">0</div>
+        <div class="sub">Mês atual</div>
+      </div>
+      <div class="card">
+        <h3>Mês Anterior</h3>
+        <div class="value" id="admMesAnterior">0</div>
+        <div class="sub">Comparativo base</div>
+      </div>
+      <div class="card">
+        <h3>Variação Mensal</h3>
+        <div class="value" id="admVariacao">0%</div>
+        <div class="sub" id="admSubVariacao">vs mês anterior</div>
+      </div>
+      <div class="card">
+        <h3>Empresas</h3>
+        <div class="value" id="admEmpresas">0</div>
+        <div class="sub">Empresas distintas</div>
+      </div>
+    </div>
+
+    <div class="charts-grid-3">
+      <div class="chart-card">
+        <h3>Admissões por Empresa</h3>
+        <div class="chart-meta"><span>Top empresas</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartAdmEmpresa"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Admissões por Unidade</h3>
+        <div class="chart-meta"><span>Top unidades</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartAdmUnidade"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Admissões por Cargo</h3>
+        <div class="chart-meta"><span>Top cargos</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartAdmCargo"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-grid-2">
+      <div class="chart-card">
+        <h3>Admissões por Dia</h3>
+        <div class="chart-meta"><span>Distribuição diária de 01 a 31</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartAdmDia"></canvas></div>
+      </div>
+      <div class="table-card">
+        <h3>Detalhamento - Admissões</h3>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Colaborador</th>
+                <th>Data Admissão</th>
+                <th>Cargo</th>
+                <th>Unidade</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAdmissoes"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <button id="btnAdmPrev">Anterior</button>
+          <span id="admPageInfo">Página 1</span>
+          <button id="btnAdmNext">Próxima</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title-card">
+      <h3>ONBOARDING</h3>
+      <p>Indicadores e distribuição dos dados da aba Onboarding.</p>
+    </div>
+
+    <div class="kpis">
+      <div class="card">
+        <h3>Total Onboarding</h3>
+        <div class="value" id="onbTotal">0</div>
+        <div class="sub">Total consolidado</div>
+      </div>
+      <div class="card">
+        <h3>No Mês</h3>
+        <div class="value" id="onbMes">0</div>
+        <div class="sub">Mês atual</div>
+      </div>
+      <div class="card">
+        <h3>Mês Anterior</h3>
+        <div class="value" id="onbMesAnterior">0</div>
+        <div class="sub">Comparativo base</div>
+      </div>
+      <div class="card">
+        <h3>Variação Mensal</h3>
+        <div class="value" id="onbVariacao">0%</div>
+        <div class="sub" id="onbSubVariacao">vs mês anterior</div>
+      </div>
+      <div class="card">
+        <h3>Concordam</h3>
+        <div class="value" id="onbConcordam">0</div>
+        <div class="sub">Resposta “Sim”</div>
+      </div>
+    </div>
+
+    <div class="charts-grid-3">
+      <div class="chart-card">
+        <h3>Onboarding por Unidade</h3>
+        <div class="chart-meta"><span>Top unidades</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartOnbUnidade"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Onboarding por Cargo</h3>
+        <div class="chart-meta"><span>Top cargos</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartOnbCargo"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Onboarding por Instrutor</h3>
+        <div class="chart-meta"><span>Top instrutores</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartOnbInstrutor"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-grid-3">
+      <div class="chart-card">
+        <h3>Onboarding por Treinamento</h3>
+        <div class="chart-meta"><span>Tipos de treinamento</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartOnbTreinamento"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Onboarding por Dia</h3>
+        <div class="chart-meta"><span>Distribuição diária de 01 a 31</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartOnbDia"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Concordância</h3>
+        <div class="chart-meta"><span>Sim x Não</span><span></span></div>
+        <div class="chart-wrap"><canvas id="chartOnbConcorda"></canvas></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <h3>Detalhamento - Onboarding</h3>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Unidade</th>
+              <th>Colaborador</th>
+              <th>CPF</th>
+              <th>Turno</th>
+              <th>Cargo</th>
+              <th>Empresa</th>
+              <th>Treinamento</th>
+              <th>Concorda</th>
+              <th>Instrutor</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyOnboarding"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button id="btnOnbPrev">Anterior</button>
+        <span id="onbPageInfo">Página 1</span>
+        <button id="btnOnbNext">Próxima</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const COLORS = {
+      orange: '#ff7a1a',
+      text: '#ffffff',
+      grid: 'rgba(255,255,255,0.08)'
+    };
+
+    Chart.register(ChartDataLabels);
+
+    const state = {
+      admPage: 1,
+      onbPage: 1,
+      limit: 15,
+      filtros: {
+        dataInicio: '',
+        dataFim: '',
+        admEmpresa: [],
+        admUnidade: [],
+        admCargo: [],
+        admColaborador: [],
+        onbUnidade: [],
+        onbCargo: [],
+        onbEmpresa: [],
+        onbTreinamento: [],
+        onbConcorda: [],
+        onbInstrutor: [],
+        onbColaborador: [],
+        admBusca: '',
+        onbBusca: ''
+      }
+    };
+
+    const charts = {};
+
+    function formatNumber(v) {
+      return Number(v || 0).toLocaleString('pt-BR');
+    }
+
+    function formatPercent(v) {
+      return `${Number(v || 0).toFixed(1).replace('.', ',')}%`;
+    }
+
+    function getFiltersQuery() {
+      const p = new URLSearchParams();
+      Object.entries(state.filtros).forEach(([key, value]) => {
+        if (Array.isArray(value) && value.length) p.append(key, value.join('|'));
+        else if (!Array.isArray(value) && value) p.append(key, value);
+      });
+      p.append('admPage', state.admPage);
+      p.append('onbPage', state.onbPage);
+      p.append('limit', state.limit);
+      return p.toString();
+    }
+
+    async function fetchJSON(url) {
+      const resp = await fetch(url, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      });
+      const text = await resp.text();
+
+      if (!resp.ok) {
+        throw new Error(`Erro ${resp.status} ao buscar ${url}: ${text.slice(0, 200)}`);
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Resposta não é JSON em ${url}: ${text.slice(0, 200)}`);
+      }
+    }
+
+    function buildMultiSelect(elId, options, selected, onChange, placeholder = 'Todos') {
+      const root = document.getElementById(elId);
+      const selectedText = selected.length ? selected.join(', ') : placeholder;
+
+      root.innerHTML = `
+        <div class="multi-select-trigger">
+          <span>${selectedText}</span>
+          <strong>▼</strong>
+        </div>
+        <div class="multi-select-dropdown">
+          <div class="multi-select-search">
+            <input type="text" placeholder="Buscar...">
+          </div>
+          <div class="multi-select-options">
+            ${options.map(opt => `
+              <label class="multi-option" data-label="${String(opt).toLowerCase()}">
+                <input type="checkbox" value="${String(opt).replace(/"/g, '&quot;')}" ${selected.includes(opt) ? 'checked' : ''}>
+                <span>${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      root.querySelector('.multi-select-trigger').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.multi-select').forEach(ms => {
+          if (ms !== root) ms.classList.remove('open');
+        });
+        root.classList.toggle('open');
+      });
+
+      const searchInput = root.querySelector('.multi-select-search input');
+      searchInput.addEventListener('input', () => {
+        const val = searchInput.value.trim().toLowerCase();
+        root.querySelectorAll('.multi-option').forEach(item => {
+          item.style.display = item.dataset.label.includes(val) ? 'flex' : 'none';
+        });
+      });
+
+      root.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const values = [...root.querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
+          onChange(values);
+        });
+      });
+    }
+
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.multi-select').forEach(ms => ms.classList.remove('open'));
+    });
+
+    function datalabelsOptions(indexAxis = 'x') {
+      return {
+        color: '#ffffff',
+        anchor: indexAxis === 'y' ? 'end' : 'end',
+        align: indexAxis === 'y' ? 'right' : 'top',
+        offset: 4,
+        clamp: true,
+        font: { family: 'Arial', weight: 'bold', size: 11 },
+        formatter: (value) => Number(value || 0).toLocaleString('pt-BR')
+      };
+    }
+
+    function baseChartOptions(indexAxis = 'x') {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis,
+        layout: { padding: { top: 24, right: 16, left: 8, bottom: 8 } },
+        plugins: {
+          legend: { labels: { color: COLORS.text, font: { family: 'Arial' } } },
+          tooltip: {
+            titleFont: { family: 'Arial' },
+            bodyFont: { family: 'Arial' }
+          },
+          datalabels: datalabelsOptions(indexAxis)
+        },
+        scales: {
+          x: {
+            ticks: { color: COLORS.text, font: { family: 'Arial' } },
+            grid: { color: COLORS.grid }
+          },
+          y: {
+            ticks: { color: COLORS.text, font: { family: 'Arial' } },
+            grid: { color: COLORS.grid }
+          }
+        }
+      };
+    }
+
+    function destroyChart(id) {
+      if (charts[id]) charts[id].destroy();
+    }
+
+    function renderBarHorizontal(canvasId, label, labels, valores) {
+      destroyChart(canvasId);
+      charts[canvasId] = new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label, data: valores, backgroundColor: COLORS.orange, datalabels: datalabelsOptions('y') }]
+        },
+        options: baseChartOptions('y')
+      });
+    }
+
+    function renderBar(canvasId, label, labels, valores) {
+      destroyChart(canvasId);
+      charts[canvasId] = new Chart(document.getElementById(canvasId), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label, data: valores, backgroundColor: COLORS.orange, datalabels: datalabelsOptions('x') }]
+        },
+        options: baseChartOptions('x')
+      });
+    }
+
+    async function carregarFiltros() {
+      const data = await fetchJSON('/api/hc-onboarding-filtros');
+
+      buildMultiSelect('msAdmEmpresa', data.admissoes.empresas || [], state.filtros.admEmpresa, (vals) => {
+        state.filtros.admEmpresa = vals; state.admPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msAdmUnidade', data.admissoes.unidades || [], state.filtros.admUnidade, (vals) => {
+        state.filtros.admUnidade = vals; state.admPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msAdmCargo', data.admissoes.cargos || [], state.filtros.admCargo, (vals) => {
+        state.filtros.admCargo = vals; state.admPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msAdmColaborador', data.admissoes.colaboradores || [], state.filtros.admColaborador, (vals) => {
+        state.filtros.admColaborador = vals; state.admPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOnbUnidade', data.onboarding.unidades || [], state.filtros.onbUnidade, (vals) => {
+        state.filtros.onbUnidade = vals; state.onbPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOnbCargo', data.onboarding.cargos || [], state.filtros.onbCargo, (vals) => {
+        state.filtros.onbCargo = vals; state.onbPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOnbEmpresa', data.onboarding.empresas || [], state.filtros.onbEmpresa, (vals) => {
+        state.filtros.onbEmpresa = vals; state.onbPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOnbTreinamento', data.onboarding.treinamentos || [], state.filtros.onbTreinamento, (vals) => {
+        state.filtros.onbTreinamento = vals; state.onbPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOnbConcorda', data.onboarding.concordas || [], state.filtros.onbConcorda, (vals) => {
+        state.filtros.onbConcorda = vals; state.onbPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOnbInstrutor', data.onboarding.instrutores || [], state.filtros.onbInstrutor, (vals) => {
+        state.filtros.onbInstrutor = vals; state.onbPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      buildMultiSelect('msOnbColaborador', data.onboarding.colaboradores || [], state.filtros.onbColaborador, (vals) => {
+        state.filtros.onbColaborador = vals; state.onbPage = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+    }
+
+    async function carregarResumo() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/hc-onboarding-resumo?${qs}`);
+
+      document.getElementById('admTotal').textContent = formatNumber(data.admissoes.total);
+      document.getElementById('admMes').textContent = formatNumber(data.admissoes.mesAtual);
+      document.getElementById('admMesAnterior').textContent = formatNumber(data.admissoes.mesAnterior);
+      document.getElementById('admVariacao').textContent = formatPercent(data.admissoes.variacaoMensal);
+      document.getElementById('admEmpresas').textContent = formatNumber(data.admissoes.empresas);
+
+      const admSub = document.getElementById('admSubVariacao');
+      admSub.textContent = 'vs mês anterior';
+      admSub.className = `sub ${data.admissoes.variacaoMensal >= 0 ? 'positive' : 'negative'}`;
+
+      document.getElementById('onbTotal').textContent = formatNumber(data.onboarding.total);
+      document.getElementById('onbMes').textContent = formatNumber(data.onboarding.mesAtual);
+      document.getElementById('onbMesAnterior').textContent = formatNumber(data.onboarding.mesAnterior);
+      document.getElementById('onbVariacao').textContent = formatPercent(data.onboarding.variacaoMensal);
+      document.getElementById('onbConcordam').textContent = formatNumber(data.onboarding.concordam);
+
+      const onbSub = document.getElementById('onbSubVariacao');
+      onbSub.textContent = 'vs mês anterior';
+      onbSub.className = `sub ${data.onboarding.variacaoMensal >= 0 ? 'positive' : 'negative'}`;
+
+      document.getElementById('ultimaAtualizacao').textContent = data.ultimaAtualizacao || '--:--';
+    }
+
+    async function carregarGraficos() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/hc-onboarding-graficos?${qs}`);
+
+      renderBarHorizontal('chartAdmEmpresa', 'Admissões', data.admissoes.porEmpresa.labels, data.admissoes.porEmpresa.valores);
+      renderBarHorizontal('chartAdmUnidade', 'Admissões', data.admissoes.porUnidade.labels, data.admissoes.porUnidade.valores);
+      renderBarHorizontal('chartAdmCargo', 'Admissões', data.admissoes.porCargo.labels, data.admissoes.porCargo.valores);
+      renderBar('chartAdmDia', 'Admissões', data.admissoes.porDia.labels, data.admissoes.porDia.valores);
+
+      renderBarHorizontal('chartOnbUnidade', 'Onboarding', data.onboarding.porUnidade.labels, data.onboarding.porUnidade.valores);
+      renderBarHorizontal('chartOnbCargo', 'Onboarding', data.onboarding.porCargo.labels, data.onboarding.porCargo.valores);
+      renderBarHorizontal('chartOnbInstrutor', 'Onboarding', data.onboarding.porInstrutor.labels, data.onboarding.porInstrutor.valores);
+      renderBarHorizontal('chartOnbTreinamento', 'Onboarding', data.onboarding.porTreinamento.labels, data.onboarding.porTreinamento.valores);
+      renderBar('chartOnbDia', 'Onboarding', data.onboarding.porDia.labels, data.onboarding.porDia.valores);
+      renderBar('chartOnbConcorda', 'Onboarding', data.onboarding.concordancia.labels, data.onboarding.concordancia.valores);
+    }
+
+    async function carregarDetalhes() {
+      const qs = getFiltersQuery();
+      const data = await fetchJSON(`/api/hc-onboarding-detalhes?${qs}`);
+
+      const admTbody = document.getElementById('tbodyAdmissoes');
+      admTbody.innerHTML = (data.admissoes.items || []).map(row => `
+        <tr>
+          <td>${row.empresa || ''}</td>
+          <td>${row.colaborador || ''}</td>
+          <td>${row.dataAdmissao || ''}</td>
+          <td>${row.cargo || ''}</td>
+          <td>${row.unidade || ''}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('admPageInfo').textContent = `Página ${data.admissoes.page} de ${data.admissoes.totalPages}`;
+
+      const onbTbody = document.getElementById('tbodyOnboarding');
+      onbTbody.innerHTML = (data.onboarding.items || []).map(row => `
+        <tr>
+          <td>${row.data || ''}</td>
+          <td>${row.unidade || ''}</td>
+          <td>${row.colaborador || ''}</td>
+          <td>${row.cpf || ''}</td>
+          <td>${row.turno || ''}</td>
+          <td>${row.cargo || ''}</td>
+          <td>${row.empresa || ''}</td>
+          <td>${row.treinamento || ''}</td>
+          <td>${row.concorda || ''}</td>
+          <td>${row.instrutor || ''}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('onbPageInfo').textContent = `Página ${data.onboarding.page} de ${data.onboarding.totalPages}`;
+
+      document.getElementById('btnAdmPrev').disabled = data.admissoes.page <= 1;
+      document.getElementById('btnAdmNext').disabled = data.admissoes.page >= data.admissoes.totalPages;
+      document.getElementById('btnOnbPrev').disabled = data.onboarding.page <= 1;
+      document.getElementById('btnOnbNext').disabled = data.onboarding.page >= data.onboarding.totalPages;
+    }
+
+    async function carregarTudo() {
+      await carregarFiltros();
+      await carregarResumo();
+      await carregarGraficos();
+      await carregarDetalhes();
+    }
+
+    function bindEvents() {
+      document.getElementById('dataInicial').addEventListener('change', (e) => {
+        state.filtros.dataInicio = e.target.value;
+        state.admPage = 1; state.onbPage = 1;
+        carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      document.getElementById('dataFinal').addEventListener('change', (e) => {
+        state.filtros.dataFim = e.target.value;
+        state.admPage = 1; state.onbPage = 1;
+        carregarResumo(); carregarGraficos(); carregarDetalhes();
+      });
+
+      document.getElementById('admBusca').addEventListener('input', (e) => {
+        state.filtros.admBusca = e.target.value.trim();
+        state.admPage = 1;
+        clearTimeout(window.__admBuscaTimer);
+        window.__admBuscaTimer = setTimeout(() => {
+          carregarResumo(); carregarGraficos(); carregarDetalhes();
+        }, 350);
+      });
+
+      document.getElementById('onbBusca').addEventListener('input', (e) => {
+        state.filtros.onbBusca = e.target.value.trim();
+        state.onbPage = 1;
+        clearTimeout(window.__onbBuscaTimer);
+        window.__onbBuscaTimer = setTimeout(() => {
+          carregarResumo(); carregarGraficos(); carregarDetalhes();
+        }, 350);
+      });
+
+      document.getElementById('btnLimpar').addEventListener('click', () => {
+        state.admPage = 1;
+        state.onbPage = 1;
+        state.filtros = {
+          dataInicio: '',
+          dataFim: '',
+          admEmpresa: [],
+          admUnidade: [],
+          admCargo: [],
+          admColaborador: [],
+          onbUnidade: [],
+          onbCargo: [],
+          onbEmpresa: [],
+          onbTreinamento: [],
+          onbConcorda: [],
+          onbInstrutor: [],
+          onbColaborador: [],
+          admBusca: '',
+          onbBusca: ''
+        };
+
+        document.getElementById('dataInicial').value = '';
+        document.getElementById('dataFinal').value = '';
+        document.getElementById('admBusca').value = '';
+        document.getElementById('onbBusca').value = '';
+        carregarTudo();
+      });
+
+      document.getElementById('btnAdmPrev').addEventListener('click', () => {
+        if (state.admPage > 1) {
+          state.admPage--;
+          carregarDetalhes();
+        }
+      });
+
+      document.getElementById('btnAdmNext').addEventListener('click', () => {
+        state.admPage++;
+        carregarDetalhes();
+      });
+
+      document.getElementById('btnOnbPrev').addEventListener('click', () => {
+        if (state.onbPage > 1) {
+          state.onbPage--;
+          carregarDetalhes();
+        }
+      });
+
+      document.getElementById('btnOnbNext').addEventListener('click', () => {
+        state.onbPage++;
+        carregarDetalhes();
+      });
+    }
+
+    async function init() {
+      try {
+        bindEvents();
+        await carregarTudo();
+      } catch (error) {
+        console.error('[HC & ONBOARDING] erro no init:', error);
+        document.getElementById('tbodyAdmissoes').innerHTML = `
+          <tr><td colspan="5" style="color:#ff6b6b;font-weight:bold;">Erro ao carregar admissões: ${error.message}</td></tr>
+        `;
+        document.getElementById('tbodyOnboarding').innerHTML = `
+          <tr><td colspan="10" style="color:#ff6b6b;font-weight:bold;">Erro ao carregar onboarding: ${error.message}</td></tr>
+        `;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

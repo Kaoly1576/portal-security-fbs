@@ -4016,6 +4016,7 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
 
     const total = filtrados.length;
 
+    // base para descobrir o mês atual a partir do filtro aplicado
     const validDates = filtrados
       .map((r) => r._dataObj)
       .filter(Boolean)
@@ -4033,6 +4034,7 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
       const prevMonth = prevRef.getMonth();
       const prevYear = prevRef.getFullYear();
 
+      // mês atual: respeita todos os filtros
       mesAtual = filtrados.filter(
         (r) =>
           r._dataObj &&
@@ -4040,7 +4042,14 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
           r._dataObj.getFullYear() === currYear
       ).length;
 
-      mesAnterior = filtrados.filter(
+      // mês anterior: ignora apenas o filtro de data, mas respeita os demais
+      const querySemData = { ...req.query };
+      delete querySemData.dataInicio;
+      delete querySemData.dataFim;
+
+      const baseComparativo = filtrarLacres(dados, querySemData);
+
+      mesAnterior = baseComparativo.filter(
         (r) =>
           r._dataObj &&
           r._dataObj.getMonth() === prevMonth &&
@@ -4048,15 +4057,10 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
       ).length;
     }
 
-    const unidades = new Set(
-      filtrados.map((r) => lacreNorm(r["UNIDADE"])).filter(Boolean)
-    ).size;
+    const corretos = filtrados.filter(
+      (r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true"
+    ).length;
 
-    const placasUnicas = new Set(
-      filtrados.map((r) => lacreNorm(r["PLACA"])).filter(Boolean)
-    ).size;
-
-    const corretos = filtrados.filter((r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true").length;
     const incorretos = filtrados.filter((r) => {
       const v = lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"]));
       return v && v !== "true";
@@ -4067,13 +4071,13 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
       mesAtual,
       mesAnterior,
       variacaoMensal: lacrePercentChange(mesAtual, mesAnterior),
-      unidades,
-      placasUnicas,
       corretos,
       incorretos,
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       }),
     });
   } catch (error) {
@@ -4087,7 +4091,7 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
     const dados = await carregarLacresComCache();
     const filtrados = filtrarLacres(dados, req.query);
 
-    function buildTop(field, meta, limit = 10) {
+    function buildTop(field, limit = 10) {
       const map = lacreGroupCount(filtrados, field);
       const entries = Object.entries(map)
         .sort((a, b) => b[1] - a[1])
@@ -4096,10 +4100,10 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
       return {
         labels: entries.map(([k]) => k),
         valores: entries.map(([, v]) => v),
-        metas: entries.map(() => meta),
       };
     }
 
+    // por dia sempre de 01 a 31
     const dias = Array.from({ length: 31 }, (_, i) =>
       String(i + 1).padStart(2, "0")
     );
@@ -4127,6 +4131,7 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
       const prevMonth = prevRef.getMonth();
       const prevYear = prevRef.getFullYear();
 
+      // mês atual respeita os filtros completos
       mesAtual = filtrados.filter(
         (r) =>
           r._dataObj &&
@@ -4134,7 +4139,14 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
           r._dataObj.getFullYear() === currYear
       ).length;
 
-      mesAnterior = filtrados.filter(
+      // mês anterior ignora apenas dataInicio/dataFim
+      const querySemData = { ...req.query };
+      delete querySemData.dataInicio;
+      delete querySemData.dataFim;
+
+      const baseComparativo = filtrarLacres(dados, querySemData);
+
+      mesAnterior = baseComparativo.filter(
         (r) =>
           r._dataObj &&
           r._dataObj.getMonth() === prevMonth &&
@@ -4143,31 +4155,31 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
     }
 
     const corretoMap = {
-      Correto: filtrados.filter((r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true").length,
+      Correto: filtrados.filter(
+        (r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true"
+      ).length,
       Incorreto: filtrados.filter((r) => {
         const v = lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"]));
         return v && v !== "true";
       }).length,
-      "Sem resposta": filtrados.filter((r) => !lacreNorm(String(r["O LACRE ESTÁ CORRETO?"]))).length,
+      "Sem resposta": filtrados.filter(
+        (r) => !lacreNorm(String(r["O LACRE ESTÁ CORRETO?"]))
+      ).length,
     };
 
     const statusMap = lacreGroupCount(filtrados, "STATUS DE ENVIO");
 
     return res.json({
-      porUnidade: buildTop("UNIDADE", 100),
-      porTipoCarga: buildTop("TIPO DE CARGA", 100),
-      porOrigem: buildTop("ORIGEM", 100),
-      porDestino: buildTop("DESTINO", 100),
-      porVigilante: buildTop("NOME DO VIGILANTE ", 100),
+      porUnidade: buildTop("UNIDADE"),
+      porTipoCarga: buildTop("TIPO DE CARGA"),
+      porVigilante: buildTop("NOME DO VIGILANTE "),
       porDia: {
         labels: dias,
         valores: dias.map((d) => porDiaMap[d] || 0),
-        metas: dias.map(() => 20),
       },
       comparativoMensal: {
         mesAtual,
         mesAnterior,
-        metaMensal: 500,
       },
       lacreCorreto: {
         labels: Object.keys(corretoMap),

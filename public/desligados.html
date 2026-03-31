@@ -271,6 +271,93 @@
     </section>
   </div>
 
+  <style>
+  *{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+  }
+
+  .charts-grid.two-top{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:12px;
+  }
+
+  .charts-grid.two-mid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:12px;
+  }
+
+  .charts-grid.one-full{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:12px;
+    margin-bottom:12px;
+  }
+
+  /* ===== CORREÇÃO DO DROPDOWN DOS FILTROS ===== */
+  .filters-card,
+  .filters-grid,
+  .field,
+  .multi-select{
+    position: relative;
+  }
+
+  .filters-card{
+    z-index: 50;
+    overflow: visible;
+  }
+
+  .filters-grid{
+    z-index: 51;
+    overflow: visible;
+  }
+
+  .field{
+    z-index: 52;
+    overflow: visible;
+  }
+
+  .multi-select{
+    z-index: 53;
+  }
+
+  .multi-select.open{
+    z-index: 9999;
+  }
+
+  .multi-menu{
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 10000;
+  }
+
+  .panel-card,
+  .charts-grid,
+  .table-wrap,
+  .chart-wrap,
+  canvas{
+    position: relative;
+    z-index: 1;
+  }
+  /* ===== FIM DA CORREÇÃO ===== */
+
+  @media (max-width: 1100px){
+    .charts-grid.two-top,
+    .charts-grid.two-mid{
+      grid-template-columns:1fr;
+    }
+  }
+    
+</style>
+
   <script>
     Chart.register(ChartDataLabels);
 

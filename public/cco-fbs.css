@@ -1,419 +1,684 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-html, body {
-  min-height: 100%;
-}
-
-body {
-  background: #031326;
-  color: #fff;
-}
-
-.page-shell {
-  width: 100%;
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 18px;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.brand-logo-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #162742, #0e1d35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
-  flex-shrink: 0;
-}
-
-.brand-logo {
-  width: 54px;
-  height: 54px;
-  object-fit: contain;
-}
-
-.brand-text h1 {
-  color: #ff7a1a;
-  font-size: 28px;
-  font-weight: 900;
-  margin-bottom: 4px;
-}
-
-.brand-text p {
-  color: #dbe4f0;
-  font-size: 15px;
-}
-
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.btn-secondary,
-.btn-primary {
-  border: none;
-  border-radius: 12px;
-  padding: 12px 18px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-secondary {
-  background: #142742;
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.btn-primary {
-  background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
-  color: #fff;
-}
-
-.hero-card,
-.filters-card,
-.info-card,
-.panel-card {
-  background: linear-gradient(135deg, #182947, #12233d);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.22);
-}
-
-.hero-card {
-  padding: 22px;
-  margin-bottom: 18px;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-
-.hero-card h2 {
-  font-size: 22px;
-  margin-bottom: 8px;
-}
-
-.hero-card p {
-  color: #d2dae6;
-  max-width: 920px;
-  line-height: 1.5;
-}
-
-.hero-right {
-  text-align: right;
-  color: #cfd8e3;
-  min-width: 160px;
-}
-
-.hero-time {
-  color: #ff7a1a;
-  font-size: 30px;
-  font-weight: 900;
-  margin-top: 8px;
-}
-
-.filters-card {
-  padding: 18px;
-  margin-bottom: 18px;
-}
-
-.filters-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.field label {
-  color: #d7deea;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.field input,
-.multi-trigger {
-  width: 100%;
-  height: 42px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: #091a31;
-  color: #fff;
-  border-radius: 12px;
-  padding: 0 12px;
-  font-size: 14px;
-  outline: none;
-}
-
-.search-field {
-  grid-column: span 2;
-}
-
-.btn-field {
-  display: flex;
-  justify-content: flex-end;
-  align-items: end;
-}
-
-.multi-select {
-  position: relative;
-}
-
-.multi-trigger {
-  text-align: left;
-  cursor: pointer;
-}
-
-.multi-menu {
-  position: absolute;
-  top: 46px;
-  left: 0;
-  width: 100%;
-  background: #091a31;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px;
-  padding: 8px;
-  display: none;
-  z-index: 30;
-  max-height: 260px;
-  overflow-y: auto;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.25);
-}
-
-.multi-select.open .multi-menu {
-  display: block;
-}
-
-.multi-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.multi-actions button {
-  flex: 1;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 10px;
-  background: #142742;
-  color: #fff;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.multi-option {
-  display: flex;
-  gap: 8px;
-  padding: 8px 6px;
-  font-size: 13px;
-  color: #fff;
-  align-items: center;
-}
-
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.info-card {
-  padding: 18px;
-}
-
-.info-label {
-  color: #d2dae6;
-  font-size: 13px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-}
-
-.info-value {
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1.1;
-}
-
-.info-value.smallish {
-  font-size: 20px;
-}
-
-.orange { color: #ff7a1a; }
-.green { color: #22c55e; }
-.red { color: #ef4444; }
-.blue { color: #3b82f6; }
-.purple { color: #8b5cf6; }
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.charts-grid.two-cols {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.panel-card {
-  padding: 16px;
-}
-
-.panel-title {
-  font-size: 18px;
-  font-weight: 800;
-  margin-bottom: 12px;
-}
-
-.chart-wrap {
-  position: relative;
-  width: 100%;
-  height: 280px;
-}
-
-.chart-wrap.large {
-  height: 360px;
-}
-
-.tables-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.table-wrap {
-  overflow: auto;
-  max-height: 420px;
-  border-radius: 14px;
-}
-
-.big-table {
-  max-height: 540px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 900px;
-}
-
-th,
-td {
-  padding: 10px 12px;
-  text-align: left;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 13px;
-}
-
-th {
-  background: #0d1e36;
-  position: sticky;
-  top: 0;
-}
-
-.pager {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-@media (max-width: 1200px) {
-  .filters-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .cards-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .charts-grid,
-  .charts-grid.two-cols,
-  .tables-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .search-field {
-    grid-column: span 3;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-shell {
-    padding: 14px;
-  }
-
-  .topbar,
-  .hero-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .filters-grid,
-  .cards-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .search-field {
-    grid-column: span 1;
-  }
-
-  .hero-right {
-    text-align: left;
-  }
-
-  .hero-time {
-    font-size: 24px;
-  }
-
-  .info-value {
-    font-size: 28px;
-  }
-
-  .brand-text h1 {
-    font-size: 24px;
-  }
-
-  .panel-title {
-    font-size: 16px;
-  }
-
-  table {
-    min-width: 700px;
-  }
-}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCO FBS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
+      background: #031326;
+      color: #fff;
+    }
+
+    .page-shell {
+      width: 100%;
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo-wrap {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #162742, #0e1d35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+      flex-shrink: 0;
+    }
+
+    .brand-logo {
+      width: 54px;
+      height: 54px;
+      object-fit: contain;
+    }
+
+    .brand-text h1 {
+      color: #ff7a1a;
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .brand-text p {
+      color: #dbe4f0;
+      font-size: 15px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-secondary,
+    .btn-primary {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-secondary {
+      background: #142742;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
+      color: #fff;
+    }
+
+    .hero-card,
+    .filters-card,
+    .info-card,
+    .panel-card {
+      background: linear-gradient(135deg, #182947, #12233d);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.22);
+    }
+
+    .hero-card {
+      padding: 22px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .hero-card h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .hero-card p {
+      color: #d2dae6;
+      max-width: 920px;
+      line-height: 1.5;
+    }
+
+    .hero-right {
+      text-align: right;
+      color: #cfd8e3;
+      min-width: 160px;
+    }
+
+    .hero-time {
+      color: #ff7a1a;
+      font-size: 30px;
+      font-weight: 900;
+      margin-top: 8px;
+    }
+
+    .filters-card {
+      padding: 18px;
+      margin-bottom: 18px;
+      position: relative;
+      z-index: 30;
+      overflow: visible;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      position: relative;
+      z-index: 31;
+      overflow: visible;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+      position: relative;
+      z-index: 32;
+      overflow: visible;
+    }
+
+    .field label {
+      color: #d7deea;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .field input,
+    .multi-trigger {
+      width: 100%;
+      height: 42px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #091a31;
+      color: #fff;
+      border-radius: 12px;
+      padding: 0 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search-field {
+      grid-column: span 2;
+    }
+
+    .btn-field {
+      display: flex;
+      justify-content: flex-end;
+      align-items: end;
+    }
+
+    .multi-select {
+      position: relative;
+      z-index: 33;
+    }
+
+    .multi-select.open {
+      z-index: 9999;
+    }
+
+    .multi-trigger {
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .multi-menu {
+      position: absolute;
+      top: 46px;
+      left: 0;
+      width: 100%;
+      background: #091a31;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 8px;
+      display: none;
+      z-index: 10000;
+      max-height: 260px;
+      overflow-y: auto;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+    }
+
+    .multi-select.open .multi-menu {
+      display: block;
+    }
+
+    .multi-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .multi-actions button {
+      flex: 1;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #142742;
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .multi-option {
+      display: flex;
+      gap: 8px;
+      padding: 8px 6px;
+      font-size: 13px;
+      color: #fff;
+      align-items: center;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .info-card {
+      padding: 18px;
+    }
+
+    .info-label {
+      color: #d2dae6;
+      font-size: 13px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .info-value {
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .info-value.smallish {
+      font-size: 20px;
+    }
+
+    .orange { color: #ff7a1a; }
+    .green { color: #22c55e; }
+    .red { color: #ef4444; }
+    .blue { color: #3b82f6; }
+    .purple { color: #8b5cf6; }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .charts-grid.two-cols {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .panel-card {
+      padding: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #ff7a1a;
+    }
+
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      z-index: 1;
+    }
+
+    .chart-wrap.large {
+      height: 360px;
+    }
+
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 420px;
+      border-radius: 14px;
+    }
+
+    .big-table {
+      max-height: 540px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+    }
+
+    th {
+      background: #0d1e36;
+      position: sticky;
+      top: 0;
+    }
+
+    .pager {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 1200px) {
+      .filters-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .charts-grid,
+      .charts-grid.two-cols,
+      .tables-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-field {
+        grid-column: span 3;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .page-shell {
+        padding: 14px;
+      }
+
+      .topbar,
+      .hero-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .filters-grid,
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-field {
+        grid-column: span 1;
+      }
+
+      .hero-right {
+        text-align: left;
+      }
+
+      .hero-time {
+        font-size: 24px;
+      }
+
+      .info-value {
+        font-size: 28px;
+      }
+
+      .brand-text h1 {
+        font-size: 24px;
+      }
+
+      .panel-title {
+        font-size: 16px;
+      }
+
+      table {
+        min-width: 700px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-logo-wrap">
+          <img src="/images/logo.png" alt="Logo" class="brand-logo">
+        </div>
+        <div class="brand-text">
+          <h1>CCO FBS</h1>
+          <p>Dashboard operacional de solicitações de imagens</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <a href="/portal.html" class="btn-secondary">Voltar ao Portal</a>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div>
+        <h2>Dashboard CCO FBS</h2>
+        <p>
+          Monitoramento consolidado das solicitações de imagens, com filtros multiseleção,
+          indicadores operacionais, gráficos com rótulos e detalhamento.
+        </p>
+      </div>
+
+      <div class="hero-right">
+        Última atualização
+        <div class="hero-time" id="ultimaAtualizacao">--:--</div>
+      </div>
+    </div>
+
+    <div class="filters-card">
+      <div class="filters-grid">
+        <div class="field">
+          <label>Data inicial</label>
+          <input type="date" id="dataInicial">
+        </div>
+
+        <div class="field">
+          <label>Data final</label>
+          <input type="date" id="dataFinal">
+        </div>
+
+        <div class="field">
+          <label>Ano</label>
+          <div class="multi-select" id="multiAno">
+            <button type="button" class="multi-trigger" id="triggerAno">Todos</button>
+            <div class="multi-menu" id="menuAno"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Mês</label>
+          <div class="multi-select" id="multiMes">
+            <button type="button" class="multi-trigger" id="triggerMes">Todos</button>
+            <div class="multi-menu" id="menuMes"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Unidade</label>
+          <div class="multi-select" id="multiUnidade">
+            <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
+            <div class="multi-menu" id="menuUnidade"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Solicitante</label>
+          <div class="multi-select" id="multiSolicitante">
+            <button type="button" class="multi-trigger" id="triggerSolicitante">Todos</button>
+            <div class="multi-menu" id="menuSolicitante"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <div class="multi-select" id="multiStatus">
+            <button type="button" class="multi-trigger" id="triggerStatus">Todos</button>
+            <div class="multi-menu" id="menuStatus"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Turno</label>
+          <div class="multi-select" id="multiTurno">
+            <button type="button" class="multi-trigger" id="triggerTurno">Todos</button>
+            <div class="multi-menu" id="menuTurno"></div>
+          </div>
+        </div>
+
+        <div class="field search-field">
+          <label>Busca geral</label>
+          <input type="text" id="buscaGeral" placeholder="Buscar por solicitante, unidade, ocorrência...">
+        </div>
+
+        <div class="field btn-field">
+          <button class="btn-primary" id="btnLimparFiltros">Limpar filtros</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="info-card">
+        <div class="info-label">Total de Solicitações</div>
+        <div class="info-value orange" id="kpiTotal">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Concluídas</div>
+        <div class="info-value green" id="kpiConcluidas">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Pendentes</div>
+        <div class="info-value red" id="kpiPendentes">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Unidades</div>
+        <div class="info-value blue" id="kpiUnidades">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Solicitantes</div>
+        <div class="info-value purple" id="kpiSolicitantes">0</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="panel-card">
+        <div class="panel-title">Solicitações por Unidade</div>
+        <div class="chart-wrap">
+          <canvas id="chartUnidade"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Solicitações por Status</div>
+        <div class="chart-wrap">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Solicitações por Solicitante</div>
+        <div class="chart-wrap">
+          <canvas id="chartSolicitante"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-grid two-cols">
+      <div class="panel-card">
+        <div class="panel-title">Solicitações por Dia</div>
+        <div class="chart-wrap large">
+          <canvas id="chartDia"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Solicitações por Mês</div>
+        <div class="chart-wrap large">
+          <canvas id="chartMes"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="tables-grid">
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Unidade</div>
+        <div class="table-wrap">
+          <table id="tabelaResumoUnidade">
+            <thead>
+              <tr>
+                <th>Unidade</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Solicitante</div>
+        <div class="table-wrap">
+          <table id="tabelaResumoSolicitante">
+            <thead>
+              <tr>
+                <th>Solicitante</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-title">Detalhamento</div>
+      <div class="table-wrap big-table">
+        <table id="tabelaDetalhes">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Unidade</th>
+              <th>Solicitante</th>
+              <th>Status</th>
+              <th>Turno</th>
+              <th>Descrição</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button class="btn-secondary" id="btnAnterior">Anterior</button>
+        <button class="btn-secondary" id="btnProximo">Próximo</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MANTENHA AQUI O SEU SCRIPT ATUAL DO CCO -->
+  <!-- Se quiser, no próximo passo eu já te devolvo esse HTML com o JS encaixado também. -->
+
+</body>
+</html>

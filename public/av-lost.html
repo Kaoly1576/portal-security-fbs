@@ -1234,17 +1234,25 @@
     function updateKpis() {
   const totalRegistros = filteredData.length;
   const totalQtdEncontrada = sumByRows(filteredData, QTD_COLUMN, parseNumeric);
+  const totalItensAv = sumByRows(filteredData, AV_COLUMN, parseNumeric);
   const totalUsd = sumByRows(filteredData, USD_COLUMN, parseMoney);
   const totalBrl = sumByRows(filteredData, BRL_COLUMN, parseMoney);
 
   document.getElementById("kpiRegistros").textContent = formatNumber(totalRegistros);
   document.getElementById("kpiQtdEncontrada").textContent = formatNumber(totalQtdEncontrada);
+  document.getElementById("kpiAv").textContent = formatNumber(totalItensAv);
   document.getElementById("kpiUsd").textContent = formatUsd(totalUsd);
   document.getElementById("kpiBrl").textContent = formatBrl(totalBrl);
 
   const ref = getSelectedReferenceMonth();
   if (!ref) {
-    ["kpiRegistrosSub","kpiQtdEncontradaSub","kpiUsdSub","kpiBrlSub"].forEach(id => {
+    [
+      "kpiRegistrosSub",
+      "kpiQtdEncontradaSub",
+      "kpiAvSub",
+      "kpiUsdSub",
+      "kpiBrlSub"
+    ].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = "Sem comparativo";
     });
@@ -1256,14 +1264,22 @@
   const previousRows = getRowsForMonthComparison(prev.year, prev.month);
 
   const registrosVar = getVariation(currentRows.length, previousRows.length);
+
   const qtdVar = getVariation(
     sumByRows(currentRows, QTD_COLUMN, parseNumeric),
     sumByRows(previousRows, QTD_COLUMN, parseNumeric)
   );
+
+  const avVar = getVariation(
+    sumByRows(currentRows, AV_COLUMN, parseNumeric),
+    sumByRows(previousRows, AV_COLUMN, parseNumeric)
+  );
+
   const usdVar = getVariation(
     sumByRows(currentRows, USD_COLUMN, parseMoney),
     sumByRows(previousRows, USD_COLUMN, parseMoney)
   );
+
   const brlVar = getVariation(
     sumByRows(currentRows, BRL_COLUMN, parseMoney),
     sumByRows(previousRows, BRL_COLUMN, parseMoney)
@@ -1271,6 +1287,7 @@
 
   setVariationText("kpiRegistrosSub", registrosVar);
   setVariationText("kpiQtdEncontradaSub", qtdVar);
+  setVariationText("kpiAvSub", avVar);
   setVariationText("kpiUsdSub", usdVar);
   setVariationText("kpiBrlSub", brlVar);
 }

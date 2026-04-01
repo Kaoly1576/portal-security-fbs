@@ -1232,47 +1232,48 @@
     }
 
     function updateKpis() {
-      const totalRegistros = filteredData.length;
-      const totalAv = sumByRows(filteredData, QTD_COLUMN, parseNumeric);
-      const totalUsd = sumByRows(filteredData, USD_COLUMN, parseMoney);
-      const totalBrl = sumByRows(filteredData, BRL_COLUMN, parseMoney);
+  const totalRegistros = filteredData.length;
+  const totalQtdEncontrada = sumByRows(filteredData, QTD_COLUMN, parseNumeric);
+  const totalUsd = sumByRows(filteredData, USD_COLUMN, parseMoney);
+  const totalBrl = sumByRows(filteredData, BRL_COLUMN, parseMoney);
 
-      document.getElementById("kpiRegistros").textContent = formatNumber(totalRegistros);
-      document.getElementById("kpiAv").textContent = formatNumber(totalAv);
-      document.getElementById("kpiUsd").textContent = formatUsd(totalUsd);
-      document.getElementById("kpiBrl").textContent = formatBrl(totalBrl);
+  document.getElementById("kpiRegistros").textContent = formatNumber(totalRegistros);
+  document.getElementById("kpiQtdEncontrada").textContent = formatNumber(totalQtdEncontrada);
+  document.getElementById("kpiUsd").textContent = formatUsd(totalUsd);
+  document.getElementById("kpiBrl").textContent = formatBrl(totalBrl);
 
-      const ref = getSelectedReferenceMonth();
-      if (!ref) {
-        ["kpiRegistrosSub","kpiAvSub","kpiUsdSub","kpiBrlSub"].forEach(id => {
-          document.getElementById(id).textContent = "Sem comparativo";
-        });
-        return;
-      }
+  const ref = getSelectedReferenceMonth();
+  if (!ref) {
+    ["kpiRegistrosSub","kpiQtdEncontradaSub","kpiUsdSub","kpiBrlSub"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = "Sem comparativo";
+    });
+    return;
+  }
 
-      const prev = getPreviousMonthRef(ref.year, ref.month);
-      const currentRows = getRowsForMonthComparison(ref.year, ref.month);
-      const previousRows = getRowsForMonthComparison(prev.year, prev.month);
+  const prev = getPreviousMonthRef(ref.year, ref.month);
+  const currentRows = getRowsForMonthComparison(ref.year, ref.month);
+  const previousRows = getRowsForMonthComparison(prev.year, prev.month);
 
-      const registrosVar = getVariation(currentRows.length, previousRows.length);
-      const avVar = getVariation(
-        sumByRows(currentRows, QTD_COLUMN, parseNumeric),
-        sumByRows(previousRows, QTD_COLUMN, parseNumeric)
-      );
-      const usdVar = getVariation(
-        sumByRows(currentRows, USD_COLUMN, parseMoney),
-        sumByRows(previousRows, USD_COLUMN, parseMoney)
-      );
-      const brlVar = getVariation(
-        sumByRows(currentRows, BRL_COLUMN, parseMoney),
-        sumByRows(previousRows, BRL_COLUMN, parseMoney)
-      );
+  const registrosVar = getVariation(currentRows.length, previousRows.length);
+  const qtdVar = getVariation(
+    sumByRows(currentRows, QTD_COLUMN, parseNumeric),
+    sumByRows(previousRows, QTD_COLUMN, parseNumeric)
+  );
+  const usdVar = getVariation(
+    sumByRows(currentRows, USD_COLUMN, parseMoney),
+    sumByRows(previousRows, USD_COLUMN, parseMoney)
+  );
+  const brlVar = getVariation(
+    sumByRows(currentRows, BRL_COLUMN, parseMoney),
+    sumByRows(previousRows, BRL_COLUMN, parseMoney)
+  );
 
-      setVariationText("kpiRegistrosSub", registrosVar);
-      setVariationText("kpiAvSub", avVar);
-      setVariationText("kpiUsdSub", usdVar);
-      setVariationText("kpiBrlSub", brlVar);
-    }
+  setVariationText("kpiRegistrosSub", registrosVar);
+  setVariationText("kpiQtdEncontradaSub", qtdVar);
+  setVariationText("kpiUsdSub", usdVar);
+  setVariationText("kpiBrlSub", brlVar);
+}
 
     function destroyCharts() {
       [chartUnidade, chartColaborador, chartStatus, chartResumoUnidade, chartResumoStatus, chartValidacao, chartResumoRapido, chartDia]

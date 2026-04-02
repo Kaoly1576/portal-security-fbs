@@ -279,6 +279,11 @@
       font-weight: 700;
     }
 
+    .multi-options {
+      max-height: 210px;
+      overflow: auto;
+    }
+
     .multi-option {
       display: flex;
       gap: 8px;
@@ -515,7 +520,7 @@
     </div>
 
     <div class="filters-card">
-      <div class="filters-grid">
+      <div class="filters-grid" id="filtersGrid">
         <div class="field">
           <label>Data inicial</label>
           <input type="date" id="dataInicial">
@@ -526,73 +531,9 @@
           <input type="date" id="dataFinal">
         </div>
 
-        <div class="field">
-          <label>Ano</label>
-          <div class="multi-select" id="multiAno">
-            <button type="button" class="multi-trigger" id="triggerAno">Todos</button>
-            <div class="multi-menu" id="menuAno"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Mês</label>
-          <div class="multi-select" id="multiMes">
-            <button type="button" class="multi-trigger" id="triggerMes">Todos</button>
-            <div class="multi-menu" id="menuMes"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Unidade</label>
-          <div class="multi-select" id="multiUnidade">
-            <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
-            <div class="multi-menu" id="menuUnidade"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Solicitante</label>
-          <div class="multi-select" id="multiSolicitante">
-            <button type="button" class="multi-trigger" id="triggerSolicitante">Todos</button>
-            <div class="multi-menu" id="menuSolicitante"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Status</label>
-          <div class="multi-select" id="multiStatus">
-            <button type="button" class="multi-trigger" id="triggerStatus">Todos</button>
-            <div class="multi-menu" id="menuStatus"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Responsável pelo caso</label>
-          <div class="multi-select" id="multiResponsavel">
-            <button type="button" class="multi-trigger" id="triggerResponsavel">Todos</button>
-            <div class="multi-menu" id="menuResponsavel"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Tipo de solicitação</label>
-          <div class="multi-select" id="multiTipo">
-            <button type="button" class="multi-trigger" id="triggerTipo">Todos</button>
-            <div class="multi-menu" id="menuTipo"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Turno</label>
-          <div class="multi-select" id="multiTurno">
-            <button type="button" class="multi-trigger" id="triggerTurno">Todos</button>
-            <div class="multi-menu" id="menuTurno"></div>
-          </div>
-        </div>
-
         <div class="field search-field">
           <label>Busca geral</label>
-          <input type="text" id="buscaGeral" placeholder="Buscar por solicitante, unidade, ocorrência, local...">
+          <input type="text" id="buscaGeral" placeholder="Buscar por qualquer coluna...">
         </div>
 
         <div class="field btn-field">
@@ -608,45 +549,61 @@
       </div>
 
       <div class="info-card">
-        <div class="info-label">Concluídas</div>
-        <div class="info-value green" id="kpiConcluidas">0</div>
-      </div>
-
-      <div class="info-card">
-        <div class="info-label">Pendentes</div>
-        <div class="info-value red" id="kpiPendentes">0</div>
-      </div>
-
-      <div class="info-card">
         <div class="info-label">Unidades</div>
         <div class="info-value blue" id="kpiUnidades">0</div>
       </div>
 
       <div class="info-card">
-        <div class="info-label">Solicitantes</div>
-        <div class="info-value purple" id="kpiSolicitantes">0</div>
+        <div class="info-label">Ocorrências</div>
+        <div class="info-value green" id="kpiOcorrencias">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Status Dominante</div>
+        <div class="info-value smallish orange" id="kpiStatusDominante">-</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">Solicitante Líder</div>
+        <div class="info-value smallish purple" id="kpiSolicitanteLider">-</div>
       </div>
     </div>
 
     <div class="charts-grid">
       <div class="panel-card">
-        <div class="panel-title">Solicitações por Unidade</div>
+        <div class="panel-title">Tipos de Solicitação</div>
         <div class="chart-wrap">
+          <canvas id="chartTipo"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Ocorrências</div>
+        <div class="chart-wrap">
+          <canvas id="chartOcorrencia"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Solicitantes</div>
+        <div class="chart-wrap">
+          <canvas id="chartSolicitante"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-grid two-cols">
+      <div class="panel-card">
+        <div class="panel-title">Solicitações por Unidade</div>
+        <div class="chart-wrap large">
           <canvas id="chartUnidade"></canvas>
         </div>
       </div>
 
       <div class="panel-card">
         <div class="panel-title">Solicitações por Status</div>
-        <div class="chart-wrap">
+        <div class="chart-wrap large">
           <canvas id="chartStatus"></canvas>
-        </div>
-      </div>
-
-      <div class="panel-card">
-        <div class="panel-title">Solicitações por Solicitante</div>
-        <div class="chart-wrap">
-          <canvas id="chartSolicitante"></canvas>
         </div>
       </div>
     </div>
@@ -660,9 +617,41 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">Solicitações por Mês</div>
+        <div class="panel-title">Setores</div>
         <div class="chart-wrap large">
-          <canvas id="chartMes"></canvas>
+          <canvas id="chartSetor"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="tables-grid">
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Tipo</div>
+        <div class="table-wrap">
+          <table id="tabelaResumoTipo">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Ocorrência</div>
+        <div class="table-wrap">
+          <table id="tabelaResumoOcorrencia">
+            <thead>
+              <tr>
+                <th>Ocorrência</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -684,12 +673,12 @@
       </div>
 
       <div class="panel-card">
-        <div class="panel-title">Resumo por Solicitante</div>
+        <div class="panel-title">Resumo por Status</div>
         <div class="table-wrap">
-          <table id="tabelaResumoSolicitante">
+          <table id="tabelaResumoStatus">
             <thead>
               <tr>
-                <th>Solicitante</th>
+                <th>Status</th>
                 <th>Total</th>
               </tr>
             </thead>
@@ -703,19 +692,7 @@
       <div class="panel-title">Detalhamento</div>
       <div class="table-wrap big-table">
         <table id="tabelaDetalhes">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Unidade</th>
-              <th>Solicitante</th>
-              <th>Status</th>
-              <th>Tipo</th>
-              <th>Responsável</th>
-              <th>Local</th>
-              <th>Ocorrência</th>
-              <th>SLA</th>
-            </tr>
-          </thead>
+          <thead></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -745,42 +722,33 @@
 
     const state = {
       page: 1,
-      limit: 20,
-      filtros: {
-        dataInicial: "",
-        dataFinal: "",
-        ano: [],
-        mes: [],
-        unidade: [],
-        solicitante: [],
-        status: [],
-        responsavel: [],
-        tipo: [],
-        turno: [],
-        busca: ""
-      }
+      limit: 50,
+      filtrosMeta: [],
+      filtrosSelecionados: {},
+      dataInicial: "",
+      dataFinal: "",
+      busca: ""
     };
 
     const charts = {};
-    let filtrosCarregados = false;
 
     function formatNumber(v) {
       return Number(v || 0).toLocaleString("pt-BR");
     }
 
-    function getFiltersQuery() {
+    function buildQuery() {
       const p = new URLSearchParams();
-      if (state.filtros.dataInicial) p.append("dataInicial", state.filtros.dataInicial);
-      if (state.filtros.dataFinal) p.append("dataFinal", state.filtros.dataFinal);
-      if (state.filtros.ano.length) p.append("ano", state.filtros.ano.join("|"));
-      if (state.filtros.mes.length) p.append("mes", state.filtros.mes.join("|"));
-      if (state.filtros.unidade.length) p.append("unidade", state.filtros.unidade.join("|"));
-      if (state.filtros.solicitante.length) p.append("solicitante", state.filtros.solicitante.join("|"));
-      if (state.filtros.status.length) p.append("status", state.filtros.status.join("|"));
-      if (state.filtros.responsavel.length) p.append("responsavel", state.filtros.responsavel.join("|"));
-      if (state.filtros.tipo.length) p.append("tipo", state.filtros.tipo.join("|"));
-      if (state.filtros.turno.length) p.append("turno", state.filtros.turno.join("|"));
-      if (state.filtros.busca) p.append("busca", state.filtros.busca);
+
+      if (state.dataInicial) p.append("dataInicio", state.dataInicial);
+      if (state.dataFinal) p.append("dataFim", state.dataFinal);
+      if (state.busca) p.append("busca", state.busca);
+
+      Object.entries(state.filtrosSelecionados).forEach(([key, values]) => {
+        if (values && values.length) {
+          p.append(`f_${key}`, values.join("|"));
+        }
+      });
+
       return p.toString();
     }
 
@@ -798,48 +766,59 @@
 
       try {
         return JSON.parse(text);
-      } catch (e) {
-        throw new Error(`Resposta não JSON em ${url}: ${text.slice(0, 200)}`);
+      } catch {
+        throw new Error(`Resposta inválida em ${url}: ${text.slice(0, 200)}`);
       }
     }
 
-    function buildMultiSelect(rootId, triggerId, menuId, options, selected, onChange, placeholder = "Todos") {
-      const root = document.getElementById(rootId);
-      const trigger = document.getElementById(triggerId);
-      const menu = document.getElementById(menuId);
-
-      const selectedText = selected.length ? selected.join(", ") : placeholder;
-      trigger.textContent = selectedText;
-
-      menu.innerHTML = `
-        <div class="multi-search">
-          <input type="text" placeholder="Buscar..." />
-        </div>
-        <div class="multi-actions">
-          <button type="button" class="btn-all">Todos</button>
-          <button type="button" class="btn-clear">Limpar</button>
-        </div>
-        <div class="multi-options">
-          ${options.map(opt => `
-            <label class="multi-option" data-label="${String(opt).toLowerCase()}">
-              <input type="checkbox" value="${String(opt).replace(/"/g, "&quot;")}" ${selected.includes(opt) ? "checked" : ""}>
-              <span>${opt}</span>
-            </label>
-          `).join("")}
+    function createMultiSelect(field) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "field";
+      wrapper.innerHTML = `
+        <label>${field.label}</label>
+        <div class="multi-select" id="multi_${field.key}">
+          <button type="button" class="multi-trigger" id="trigger_${field.key}">Todos</button>
+          <div class="multi-menu" id="menu_${field.key}">
+            <div class="multi-search">
+              <input type="text" placeholder="Buscar..." />
+            </div>
+            <div class="multi-actions">
+              <button type="button" class="btn-all">Todos</button>
+              <button type="button" class="btn-clear">Limpar</button>
+            </div>
+            <div class="multi-options">
+              ${field.values.map(v => `
+                <label class="multi-option" data-label="${String(v).toLowerCase()}">
+                  <input type="checkbox" value="${String(v).replace(/"/g, "&quot;")}">
+                  <span>${v}</span>
+                </label>
+              `).join("")}
+            </div>
+          </div>
         </div>
       `;
 
+      const root = wrapper.querySelector(".multi-select");
+      const trigger = wrapper.querySelector(".multi-trigger");
+      const menu = wrapper.querySelector(".multi-menu");
+      const search = wrapper.querySelector(".multi-search input");
+
+      function updateTrigger() {
+        const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+        state.filtrosSelecionados[field.key] = selected;
+        trigger.textContent = selected.length ? (selected.length === 1 ? selected[0] : `${selected.length} selecionados`) : "Todos";
+      }
+
       trigger.onclick = (e) => {
         e.stopPropagation();
-        document.querySelectorAll(".multi-select").forEach(ms => {
-          if (ms !== root) ms.classList.remove("open");
+        document.querySelectorAll(".multi-select").forEach(el => {
+          if (el !== root) el.classList.remove("open");
         });
         root.classList.toggle("open");
       };
 
-      const searchInput = menu.querySelector(".multi-search input");
-      searchInput.addEventListener("input", () => {
-        const val = searchInput.value.trim().toLowerCase();
+      search.addEventListener("input", () => {
+        const val = search.value.trim().toLowerCase();
         menu.querySelectorAll(".multi-option").forEach(item => {
           item.style.display = item.dataset.label.includes(val) ? "flex" : "none";
         });
@@ -850,26 +829,33 @@
           const row = cb.closest(".multi-option");
           if (!row || row.style.display !== "none") cb.checked = true;
         });
-        const vals = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
-        onChange(vals);
+        updateTrigger();
+        reloadAll();
       };
 
       menu.querySelector(".btn-clear").onclick = () => {
         menu.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        onChange([]);
+        updateTrigger();
+        reloadAll();
       };
 
       menu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         cb.addEventListener("change", () => {
-          const vals = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
-          onChange(vals);
+          updateTrigger();
+          reloadAll();
         });
       });
+
+      return wrapper;
     }
 
     document.addEventListener("click", () => {
-      document.querySelectorAll(".multi-select").forEach(ms => ms.classList.remove("open"));
+      document.querySelectorAll(".multi-select").forEach(el => el.classList.remove("open"));
     });
+
+    function destroyChart(id) {
+      if (charts[id]) charts[id].destroy();
+    }
 
     function datalabelsOptions(indexAxis = "x") {
       return {
@@ -887,26 +873,20 @@
       };
     }
 
-    function baseChartOptions(indexAxis = "x", showLegend = true) {
+    function baseChartOptions(indexAxis = "x") {
       return {
         responsive: true,
         maintainAspectRatio: false,
         indexAxis,
         layout: {
-          padding: {
-            top: 22,
-            right: 12,
-            left: 8,
-            bottom: 8
-          }
+          padding: { top: 22, right: 12, left: 8, bottom: 8 }
         },
         plugins: {
           legend: {
-            display: showLegend,
+            display: false,
             labels: {
               color: COLORS.text,
-              font: { family: "Arial" },
-              boxWidth: 12
+              font: { family: "Arial" }
             }
           },
           tooltip: {
@@ -928,313 +908,260 @@
       };
     }
 
-    function destroyChart(id) {
-      if (charts[id]) charts[id].destroy();
-    }
-
-    function renderBarHorizontal(canvasId, label, labels, valores, color = COLORS.orange) {
+    function renderBarHorizontal(canvasId, labels, values, color = COLORS.orange) {
       destroyChart(canvasId);
       charts[canvasId] = new Chart(document.getElementById(canvasId), {
         type: "bar",
         data: {
           labels,
           datasets: [{
-            label,
-            data: valores,
+            data: values,
             backgroundColor: color,
             borderRadius: 8,
             datalabels: datalabelsOptions("y")
           }]
         },
-        options: baseChartOptions("y", false)
+        options: baseChartOptions("y")
       });
     }
 
-    function renderBarVertical(canvasId, label, labels, valores, color = COLORS.orange) {
+    function renderBarVertical(canvasId, labels, values, color = COLORS.orange) {
       destroyChart(canvasId);
       charts[canvasId] = new Chart(document.getElementById(canvasId), {
         type: "bar",
         data: {
           labels,
           datasets: [{
-            label,
-            data: valores,
+            data: values,
             backgroundColor: color,
             borderRadius: 8,
             datalabels: datalabelsOptions("x")
           }]
         },
-        options: baseChartOptions("x", false)
+        options: baseChartOptions("x")
+      });
+    }
+
+    function fillSimpleTable(tableId, rows) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      tbody.innerHTML = "";
+
+      if (!rows || !rows.length) {
+        tbody.innerHTML = `<tr><td colspan="2">Sem dados</td></tr>`;
+        return;
+      }
+
+      rows.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.nome || ""}</td>
+          <td>${formatNumber(row.total || 0)}</td>
+        `;
+        tbody.appendChild(tr);
       });
     }
 
     async function carregarFiltros() {
       const data = await fetchJSON("/api/cco-fbs-filtros");
+      state.filtrosMeta = data.filtros || [];
 
-      buildMultiSelect("multiAno", "triggerAno", "menuAno", data.anos || [], state.filtros.ano, (vals) => {
-        state.filtros.ano = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
+      const grid = document.getElementById("filtersGrid");
+      const beforeSearch = grid.querySelector(".search-field");
+
+      state.filtrosMeta.forEach(field => {
+        state.filtrosSelecionados[field.key] = [];
+        const node = createMultiSelect(field);
+        grid.insertBefore(node, beforeSearch);
       });
-
-      buildMultiSelect("multiMes", "triggerMes", "menuMes", data.meses || [], state.filtros.mes, (vals) => {
-        state.filtros.mes = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
-      });
-
-      buildMultiSelect("multiUnidade", "triggerUnidade", "menuUnidade", data.unidades || [], state.filtros.unidade, (vals) => {
-        state.filtros.unidade = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
-      });
-
-      buildMultiSelect("multiSolicitante", "triggerSolicitante", "menuSolicitante", data.solicitantes || [], state.filtros.solicitante, (vals) => {
-        state.filtros.solicitante = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
-      });
-
-      buildMultiSelect("multiStatus", "triggerStatus", "menuStatus", data.status || [], state.filtros.status, (vals) => {
-        state.filtros.status = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
-      });
-
-      buildMultiSelect("multiResponsavel", "triggerResponsavel", "menuResponsavel", data.responsaveis || [], state.filtros.responsavel, (vals) => {
-        state.filtros.responsavel = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
-      });
-
-      buildMultiSelect("multiTipo", "triggerTipo", "menuTipo", data.tipos || [], state.filtros.tipo, (vals) => {
-        state.filtros.tipo = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
-      });
-
-      buildMultiSelect("multiTurno", "triggerTurno", "menuTurno", data.turnos || [], state.filtros.turno, (vals) => {
-        state.filtros.turno = vals;
-        state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
-      });
-
-      filtrosCarregados = true;
     }
 
     async function carregarResumo() {
-      const qs = getFiltersQuery();
+      const qs = buildQuery();
       const data = await fetchJSON(`/api/cco-fbs-resumo?${qs}`);
 
       document.getElementById("kpiTotal").textContent = formatNumber(data.total || 0);
-      document.getElementById("kpiConcluidas").textContent = formatNumber(data.concluidas || 0);
-      document.getElementById("kpiPendentes").textContent = formatNumber(data.pendentes || 0);
-      document.getElementById("kpiUnidades").textContent = formatNumber(data.unidades || 0);
-      document.getElementById("kpiSolicitantes").textContent = formatNumber(data.solicitantes || 0);
+      document.getElementById("kpiUnidades").textContent = formatNumber(data.totalUnidades || 0);
+      document.getElementById("kpiOcorrencias").textContent = formatNumber(data.totalOcorrencias || 0);
+      document.getElementById("kpiStatusDominante").textContent = data.statusDominante || "-";
+      document.getElementById("kpiSolicitanteLider").textContent = data.solicitanteLider || "-";
       document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
     }
 
     async function carregarGraficos() {
-      const qs = getFiltersQuery();
+      const qs = buildQuery();
       const data = await fetchJSON(`/api/cco-fbs-graficos?${qs}`);
 
       renderBarHorizontal(
-        "chartUnidade",
-        "Solicitações",
-        data.porUnidade?.labels || [],
-        data.porUnidade?.valores || []
+        "chartTipo",
+        (data.tableTipo || []).slice(0, 10).map(x => x.nome),
+        (data.tableTipo || []).slice(0, 10).map(x => x.total),
+        COLORS.orange
       );
 
       renderBarHorizontal(
-        "chartStatus",
-        "Solicitações",
-        data.porStatus?.labels || [],
-        data.porStatus?.valores || [],
+        "chartOcorrencia",
+        (data.tableOcorrencia || []).slice(0, 10).map(x => x.nome),
+        (data.tableOcorrencia || []).slice(0, 10).map(x => x.total),
         COLORS.blue
       );
 
       renderBarHorizontal(
         "chartSolicitante",
-        "Solicitações",
-        data.porSolicitante?.labels || [],
-        data.porSolicitante?.valores || [],
+        data.chartSolicitante?.labels || [],
+        data.chartSolicitante?.values || [],
         COLORS.purple
+      );
+
+      renderBarHorizontal(
+        "chartUnidade",
+        (data.tableUnidade || []).slice(0, 10).map(x => x.nome),
+        (data.tableUnidade || []).slice(0, 10).map(x => x.total),
+        COLORS.cyan
+      );
+
+      renderBarHorizontal(
+        "chartStatus",
+        (data.tableStatus || []).slice(0, 10).map(x => x.nome),
+        (data.tableStatus || []).slice(0, 10).map(x => x.total),
+        COLORS.green
       );
 
       renderBarVertical(
         "chartDia",
-        "Solicitações",
         data.porDia?.labels || [],
-        data.porDia?.valores || []
+        data.porDia?.values || [],
+        COLORS.orange
       );
 
-      renderBarVertical(
-        "chartMes",
-        "Solicitações",
-        data.porMes?.labels || [],
-        data.porMes?.valores || [],
-        COLORS.cyan
+      renderBarHorizontal(
+        "chartSetor",
+        (data.tableSetor || []).slice(0, 10).map(x => x.nome),
+        (data.tableSetor || []).slice(0, 10).map(x => x.total),
+        COLORS.yellow
       );
 
-      renderResumoTabela("tabelaResumoUnidade", data.porUnidade?.labels || [], data.porUnidade?.valores || []);
-      renderResumoTabela("tabelaResumoSolicitante", data.porSolicitante?.labels || [], data.porSolicitante?.valores || []);
-    }
-
-    function renderResumoTabela(tableId, labels, valores) {
-      const tbody = document.querySelector(`#${tableId} tbody`);
-      tbody.innerHTML = "";
-
-      if (!labels.length) {
-        tbody.innerHTML = `<tr><td colspan="2">Sem dados</td></tr>`;
-        return;
-      }
-
-      labels.forEach((label, idx) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${label || ""}</td>
-          <td>${formatNumber(valores[idx] || 0)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+      fillSimpleTable("tabelaResumoTipo", data.tableTipo || []);
+      fillSimpleTable("tabelaResumoOcorrencia", data.tableOcorrencia || []);
+      fillSimpleTable("tabelaResumoUnidade", data.tableUnidade || []);
+      fillSimpleTable("tabelaResumoStatus", data.tableStatus || []);
     }
 
     async function carregarDetalhes() {
-      const qs = getFiltersQuery();
+      const qs = buildQuery();
       const data = await fetchJSON(`/api/cco-fbs-detalhes?${qs}&page=${state.page}&limit=${state.limit}`);
 
+      const thead = document.querySelector("#tabelaDetalhes thead");
       const tbody = document.querySelector("#tabelaDetalhes tbody");
+
+      thead.innerHTML = "";
       tbody.innerHTML = "";
 
-      const items = data.items || [];
+      const headers = data.headers || [];
+      const rows = data.rows || [];
 
-      if (!items.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="9" class="empty-state">Nenhum registro encontrado.</td>
-          </tr>
-        `;
+      if (!headers.length) {
+        thead.innerHTML = "<tr><th>Sem colunas</th></tr>";
+        tbody.innerHTML = `<tr><td class="empty-state">Sem dados.</td></tr>`;
         return;
       }
 
-      items.forEach(item => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${item.data || ""}</td>
-          <td>${item.unidade || ""}</td>
-          <td>${item.solicitante || ""}</td>
-          <td>${item.status || ""}</td>
-          <td>${item.tipo || ""}</td>
-          <td>${item.responsavel || ""}</td>
-          <td>${item.local || ""}</td>
-          <td>${item.ocorrencia || ""}</td>
-          <td>${item.sla || ""}</td>
-        `;
-        tbody.appendChild(tr);
+      const headTr = document.createElement("tr");
+      headers.forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        headTr.appendChild(th);
       });
+      thead.appendChild(headTr);
+
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="${headers.length}" class="empty-state">Nenhum registro encontrado.</td></tr>`;
+      } else {
+        rows.forEach(row => {
+          const tr = document.createElement("tr");
+          headers.forEach(h => {
+            const td = document.createElement("td");
+            td.textContent = row[h] || "";
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      }
 
       document.getElementById("btnAnterior").disabled = data.page <= 1;
       document.getElementById("btnProximo").disabled = data.page >= data.totalPages;
     }
 
-    async function carregarTudo() {
-      if (!filtrosCarregados) {
-        await carregarFiltros();
-      }
+    async function reloadAll() {
       await carregarResumo();
       await carregarGraficos();
       await carregarDetalhes();
     }
 
     function bindEvents() {
-      document.getElementById("dataInicial").addEventListener("change", (e) => {
-        state.filtros.dataInicial = e.target.value;
+      document.getElementById("dataInicial").addEventListener("change", async (e) => {
+        state.dataInicial = e.target.value;
         state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
+        await reloadAll();
       });
 
-      document.getElementById("dataFinal").addEventListener("change", (e) => {
-        state.filtros.dataFinal = e.target.value;
+      document.getElementById("dataFinal").addEventListener("change", async (e) => {
+        state.dataFinal = e.target.value;
         state.page = 1;
-        carregarResumo();
-        carregarGraficos();
-        carregarDetalhes();
+        await reloadAll();
       });
 
       document.getElementById("buscaGeral").addEventListener("input", (e) => {
-        state.filtros.busca = e.target.value.trim();
+        state.busca = e.target.value.trim();
         state.page = 1;
         clearTimeout(window.__ccoBuscaTimer);
-        window.__ccoBuscaTimer = setTimeout(() => {
-          carregarResumo();
-          carregarGraficos();
-          carregarDetalhes();
+        window.__ccoBuscaTimer = setTimeout(async () => {
+          await reloadAll();
         }, 350);
       });
 
-      document.getElementById("btnLimparFiltros").addEventListener("click", () => {
+      document.getElementById("btnLimparFiltros").addEventListener("click", async () => {
         state.page = 1;
-        state.filtros = {
-          dataInicial: "",
-          dataFinal: "",
-          ano: [],
-          mes: [],
-          unidade: [],
-          solicitante: [],
-          status: [],
-          responsavel: [],
-          tipo: [],
-          turno: [],
-          busca: ""
-        };
+        state.dataInicial = "";
+        state.dataFinal = "";
+        state.busca = "";
 
         document.getElementById("dataInicial").value = "";
         document.getElementById("dataFinal").value = "";
         document.getElementById("buscaGeral").value = "";
-        filtrosCarregados = false;
-        carregarTudo();
+
+        Object.keys(state.filtrosSelecionados).forEach(key => {
+          state.filtrosSelecionados[key] = [];
+        });
+
+        document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.multi-trigger').forEach(trigger => trigger.textContent = "Todos");
+
+        await reloadAll();
       });
 
-      document.getElementById("btnAnterior").addEventListener("click", () => {
+      document.getElementById("btnAnterior").addEventListener("click", async () => {
         if (state.page > 1) {
           state.page--;
-          carregarDetalhes();
+          await carregarDetalhes();
         }
       });
 
-      document.getElementById("btnProximo").addEventListener("click", () => {
+      document.getElementById("btnProximo").addEventListener("click", async () => {
         state.page++;
-        carregarDetalhes();
+        await carregarDetalhes();
       });
     }
 
     async function initCCO() {
       try {
         bindEvents();
-        await carregarTudo();
+        await carregarFiltros();
+        await reloadAll();
       } catch (error) {
         console.error("[CCO] erro no init:", error);
         document.querySelector("#tabelaDetalhes tbody").innerHTML = `
           <tr>
-            <td colspan="9" class="empty-state">Erro ao carregar dashboard: ${error.message}</td>
+            <td class="empty-state">Erro ao carregar dashboard: ${error.message}</td>
           </tr>
         `;
       }

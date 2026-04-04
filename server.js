@@ -2411,7 +2411,6 @@ app.get("/cco-fbs", requireAuth, (req, res) => {
 });
 
 const CCO_FBS_SPREADSHEET_ID = "122nrPqL6ajMDIMzLZiNwacpCVk9BjpFMM30a0a-t8ws";
-const CCO_FBS_SHEET_NAME = "Solicitações de imagens";
 
 let ccoCache = null;
 let ccoCacheTime = 0;
@@ -2423,10 +2422,7 @@ function ccoNormalize(value) {
 }
 
 function ccoNormalizeLower(value) {
-  return ccoNormalize(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  return ccoNormalize(value).toLowerCase();
 }
 
 function ccoParseDate(value) {
@@ -2461,14 +2457,14 @@ function ccoIsUsefulHeader(header) {
   return h && !/^unnamed/i.test(h);
 }
 
-function ccoIsSecurityHeader(header) {
-  const h = ccoNormalizeLower(header);
-  return /^security\s*\d+$/i.test(h) || /analista security/i.test(h);
-}
-
 function ccoLooksLikeDateHeader(header) {
   const h = ccoNormalizeLower(header);
   return /data|date|dia/.test(h);
+}
+
+function ccoIsSecurityAnalystHeader(header) {
+  const h = ccoNormalizeLower(header);
+  return /^security\s*\d+$/i.test(h) || /analista security/i.test(h);
 }
 
 function ccoFindHeader(headers, possibilities) {
@@ -2476,18 +2472,51 @@ function ccoFindHeader(headers, possibilities) {
     const found = headers.find((h) => ccoNormalizeLower(h) === ccoNormalizeLower(possibility));
     if (found) return found;
   }
-
-  for (const possibility of possibilities) {
-    const found = headers.find((h) => ccoNormalizeLower(h).includes(ccoNormalizeLower(possibility)));
-    if (found) return found;
-  }
-
   return null;
 }
 
 async function ccoGetBestSheetTitle() {
   if (ccoSheetTitle) return ccoSheetTitle;
-  ccoSheetTitle = CCO_FBS_SHEET_NAME;
+
+  const sheets = await conectarSheets();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+  });
+
+  const abas = (meta.data.sheets || []).map((s) => s.properties?.title).filter(Boolean);
+
+  let bestTitle = abas[0] || "Página1";
+  let bestScore = -1;
+
+  for (const title of abas) {
+    try {
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: CCO_FBS_SPREADSHEET_ID,
+        range: `'${title}'!A1:AZ2000`,
+      });
+
+      const values = response.data.values || [];
+      if (!values.length) continue;
+
+      const headers = values[0].map((h) => ccoNormalize(h));
+      const usefulHeaders = headers.filter(
+        (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityAnalystHeader(header)
+      );
+
+      const rowCount = Math.max(values.length - 1, 0);
+      const score = rowCount * 100 + usefulHeaders.length;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestTitle = title;
+      }
+    } catch (e) {
+      console.log("Erro ao avaliar aba CCO:", title, e.message);
+    }
+  }
+
+  ccoSheetTitle = bestTitle;
+  console.log("CCO aba escolhida:", ccoSheetTitle);
   return ccoSheetTitle;
 }
 
@@ -2501,25 +2530,24 @@ async function ccoLoadRaw() {
   });
 
   const values = response.data.values || [];
-
   if (!values.length || values.length < 2) {
     return { headers: [], rows: [], sheetTitle };
   }
 
-  const headers = (values[0] || []).map((h, idx) => {
-    const name = ccoNormalize(h);
-    return name || `COL_${idx + 1}`;
+  const rawHeaders = values[0].map((h, idx) => {
+    const header = ccoNormalize(h);
+    return header || `COL_${idx + 1}`;
   });
 
   const rows = values.slice(1).map((line) => {
     const obj = {};
-    headers.forEach((header, i) => {
+    rawHeaders.forEach((header, i) => {
       obj[header] = line[i] ?? "";
     });
     return obj;
   });
 
-  return { headers, rows, sheetTitle };
+  return { headers: rawHeaders, rows, sheetTitle };
 }
 
 async function ccoLoadWithCache() {
@@ -2531,89 +2559,74 @@ async function ccoLoadWithCache() {
 
   const { headers, rows, sheetTitle } = await ccoLoadRaw();
 
-  const cleanHeaders = headers.filter(
-    (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityHeader(header)
+  const usefulHeaders = headers.filter(
+    (header) => ccoIsUsefulHeader(header) && !ccoIsSecurityAnalystHeader(header)
   );
 
-  const cleanRows = rows
-    .map((row) => {
-      const obj = {};
-      cleanHeaders.forEach((header) => {
-        obj[header] = row[header] ?? "";
-      });
-      return obj;
-    })
-    .filter((row) => cleanHeaders.some((header) => ccoNormalize(row[header])));
-
-  const dateColumns = cleanHeaders.filter((header) => {
+  const detectedDateColumns = usefulHeaders.filter((header) => {
     if (!ccoLooksLikeDateHeader(header)) return false;
-    const sample = cleanRows.find((r) => ccoNormalize(r[header]));
+    const sample = rows.find((r) => ccoNormalize(r[header]));
     return sample ? !!ccoParseDate(sample[header]) : false;
   });
 
-  const primaryDateColumn = dateColumns[0] || null;
+  const primaryDateColumn = detectedDateColumns[0] || null;
 
-  const enrichedRows = cleanRows.map((row) => ({
-    ...row,
-    _primaryDate: primaryDateColumn ? ccoParseDate(row[primaryDateColumn]) : null,
-  }));
+  const enrichedRows = rows
+    .map((row) => {
+      const cleanRow = {};
+      usefulHeaders.forEach((header) => {
+        cleanRow[header] = row[header] ?? "";
+      });
 
-  const categoricalHeaders = cleanHeaders.filter((header) => {
+      cleanRow._primaryDate = primaryDateColumn ? ccoParseDate(cleanRow[primaryDateColumn]) : null;
+      return cleanRow;
+    })
+    .filter((row) => {
+      const filled = usefulHeaders.filter((header) => ccoNormalize(row[header])).length;
+      return filled > 0;
+    });
+
+  const categoricalHeaders = usefulHeaders.filter((header) => {
     const distinct = new Set(
-      enrichedRows
-        .map((r) => ccoNormalize(r[header]))
-        .filter(Boolean)
-        .slice(0, 5000)
+      enrichedRows.map((r) => ccoNormalize(r[header])).filter(Boolean).slice(0, 5000)
     );
     return distinct.size > 1 && distinct.size <= 300;
   });
 
-  const unidadeHeader = ccoFindHeader(cleanHeaders, [
+  const unidadeHeader = ccoFindHeader(usefulHeaders, [
     "ID Unidade",
     "Unidade",
-    "Base",
     "Site",
+    "Base",
     "Operação",
   ]);
 
-  const statusHeader = ccoFindHeader(cleanHeaders, [
+  const statusHeader = ccoFindHeader(usefulHeaders, [
     "Status",
     "Situação",
     "Situacao",
-    "Status da solicitação",
-    "Status das Solicitações",
-  ]);
-
-  const solicitanteHeader = ccoFindHeader(cleanHeaders, [
-    "E-mail do solicitante",
-    "Email do solicitante",
-    "Solicitante",
-    "Nome do solicitante",
-    "Requisitante",
   ]);
 
   ccoCache = {
     sheetTitle,
-    headers: cleanHeaders,
+    headers: usefulHeaders,
     rows: enrichedRows,
     primaryDateColumn,
-    dateColumns,
+    dateColumns: detectedDateColumns,
     categoricalHeaders,
     unidadeHeader,
     statusHeader,
-    solicitanteHeader,
   };
 
   ccoCacheTime = now;
 
   console.log("CCO cache atualizado:", {
-    aba: sheetTitle,
-    totalLinhas: enrichedRows.length,
-    totalColunas: cleanHeaders.length,
-    dataPrincipal: primaryDateColumn,
+    sheetTitle,
+    totalRows: enrichedRows.length,
+    totalHeaders: usefulHeaders.length,
+    primaryDateColumn,
     unidadeHeader,
     statusHeader,
-    solicitanteHeader,
   });
 
   return ccoCache;
@@ -2627,12 +2640,12 @@ function ccoParseMulti(value) {
     .filter(Boolean);
 }
 
-function ccoApplyFilters(rows, query, filterHeaders) {
+function ccoApplyFilters(data, query, allowedHeaders) {
   const dataInicio = ccoNormalize(query.dataInicio);
   const dataFim = ccoNormalize(query.dataFim);
   const busca = ccoNormalizeLower(query.busca);
 
-  return rows.filter((row) => {
+  return data.filter((row) => {
     const dt = row._primaryDate;
 
     const okDataInicio = !dataInicio || (dt && ccoFormatInputDate(dt) >= dataInicio);
@@ -2640,7 +2653,7 @@ function ccoApplyFilters(rows, query, filterHeaders) {
 
     if (!okDataInicio || !okDataFim) return false;
 
-    for (const header of filterHeaders) {
+    for (const header of allowedHeaders) {
       const selected = ccoParseMulti(query[`f_${header}`]);
       if (selected.length && !selected.includes(ccoNormalize(row[header]))) {
         return false;
@@ -2672,6 +2685,7 @@ function ccoGroupCount(data, header) {
 app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
   try {
     const meta = await ccoLoadWithCache();
+
     return res.json({
       ok: true,
       abaUsada: meta.sheetTitle,
@@ -2680,7 +2694,6 @@ app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
       primaryDateColumn: meta.primaryDateColumn,
       unidadeHeader: meta.unidadeHeader,
       statusHeader: meta.statusHeader,
-      solicitanteHeader: meta.solicitanteHeader,
       filtrosDetectados: meta.categoricalHeaders.slice(0, 20),
       primeiraLinha: meta.rows[0] || null,
     });
@@ -2688,7 +2701,6 @@ app.get("/api/cco-fbs-debug", requireAuth, async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: error.message,
-      details: error.response?.data || null,
     });
   }
 });
@@ -2700,9 +2712,8 @@ app.get("/api/cco-fbs-filtros", requireAuth, async (req, res) => {
     const filtros = meta.categoricalHeaders.slice(0, 8).map((header) => ({
       key: header,
       label: header,
-      values: [...new Set(
-        meta.rows.map((r) => ccoNormalize(r[header])).filter(Boolean)
-      )].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      values: [...new Set(meta.rows.map((r) => ccoNormalize(r[header])).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR")),
     }));
 
     return res.json({
@@ -2727,59 +2738,31 @@ app.get("/api/cco-fbs-resumo", requireAuth, async (req, res) => {
     const total = filtrados.length;
 
     const totalUnidades = meta.unidadeHeader
-      ? new Set(
-          filtrados
-            .map((r) => ccoNormalize(r[meta.unidadeHeader]))
-            .filter(Boolean)
-        ).size
+      ? new Set(filtrados.map((r) => ccoNormalize(r[meta.unidadeHeader])).filter(Boolean)).size
       : 0;
 
-    const statusMap = meta.statusHeader
-      ? ccoGroupCount(filtrados, meta.statusHeader)
-      : {};
+    const statusMap = meta.statusHeader ? ccoGroupCount(filtrados, meta.statusHeader) : {};
+
+    const ativos = Object.entries(statusMap)
+      .filter(([key]) => /ativo/i.test(key) && !/inativo/i.test(key))
+      .reduce((acc, [, val]) => acc + val, 0);
+
+    const pendentes = Object.entries(statusMap)
+      .filter(([key]) => /pendente/i.test(key))
+      .reduce((acc, [, val]) => acc + val, 0);
+
+    const inativos = Object.entries(statusMap)
+      .filter(([key]) => /inativo|desligado|bloqueado/i.test(key))
+      .reduce((acc, [, val]) => acc + val, 0);
 
     const topStatus = Object.entries(statusMap).sort((a, b) => b[1] - a[1])[0] || null;
-
-    const headers = meta.headers;
-
-    function findHeader(names) {
-      return headers.find((h) =>
-        names.some((n) => ccoNormalizeLower(h).includes(ccoNormalizeLower(n)))
-      );
-    }
-
-    const ocorrenciaHeader = findHeader(["ocorrencia", "ocorrência"]);
-    const solicitanteHeader = findHeader([
-      "email do solicitante",
-      "e-mail do solicitante",
-      "solicitante",
-      "requisitante"
-    ]);
-
-    const totalOcorrencias = ocorrenciaHeader
-      ? filtrados.filter((row) => ccoNormalize(row[ocorrenciaHeader])).length
-      : 0;
-
-    let solicitanteLider = "-";
-    if (solicitanteHeader) {
-      const solicitanteMap = ccoGroupCount(
-        filtrados.filter((row) => ccoNormalize(row[solicitanteHeader])),
-        solicitanteHeader
-      );
-
-      const topSolicitante =
-        Object.entries(solicitanteMap).sort((a, b) => b[1] - a[1])[0] || null;
-
-      if (topSolicitante) {
-        solicitanteLider = `${topSolicitante[0]} (${topSolicitante[1]})`;
-      }
-    }
 
     return res.json({
       total,
       totalUnidades,
-      totalOcorrencias,
-      solicitanteLider,
+      ativos,
+      pendentes,
+      inativos,
       statusDominante: topStatus ? `${topStatus[0]} (${topStatus[1]})` : "-",
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
         hour: "2-digit",
@@ -2800,84 +2783,58 @@ app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
     const filterHeaders = meta.categoricalHeaders.slice(0, 8);
     const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
 
-    const headers = meta.headers;
+    const chartHeaders = meta.categoricalHeaders.slice(0, 4);
 
-    function findHeader(names) {
-      return headers.find((h) =>
-        names.some((n) => ccoNormalizeLower(h).includes(ccoNormalizeLower(n)))
-      );
-    }
-
-    const tipoHeader = findHeader(["tipo de solicitacao", "tipo de solicitação", "tipo"]);
-    const ocorrenciaHeader = findHeader(["ocorrencia", "ocorrência"]);
-    const unidadeHeader = findHeader(["unidade", "site", "base"]);
-    const setorHeader = findHeader(["setor"]);
-    const statusHeader = findHeader(["status"]);
-    const solicitanteHeader = findHeader([
-      "email do solicitante",
-      "e-mail do solicitante",
-      "solicitante",
-      "requisitante"
-    ]);
-
-    function buildTable(header, onlyFilled = false) {
-      if (!header) return [];
-
-      let base = filtrados;
-      if (onlyFilled) {
-        base = filtrados.filter((row) => ccoNormalize(row[header]));
-      }
-
-      return Object.entries(ccoGroupCount(base, header))
+    const charts = chartHeaders.map((header) => {
+      const grouped = ccoGroupCount(filtrados, header);
+      const ordered = Object.entries(grouped)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 50)
-        .map(([nome, total]) => ({ nome, total }));
-    }
+        .slice(0, 15);
 
-    const tableTipo = buildTable(tipoHeader, true);
-    const tableOcorrencia = buildTable(ocorrenciaHeader, true);
-    const tableUnidade = buildTable(unidadeHeader, true);
-    const tableSetor = buildTable(setorHeader, true);
-    const tableStatus = buildTable(statusHeader, true);
-
-    const solicitanteGrouped = solicitanteHeader
-      ? Object.entries(
-          ccoGroupCount(
-            filtrados.filter((row) => ccoNormalize(row[solicitanteHeader])),
-            solicitanteHeader
-          )
-        )
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 15)
-      : [];
-
-    const chartSolicitante = {
-      labels: solicitanteGrouped.map((x) => x[0]),
-      values: solicitanteGrouped.map((x) => x[1]),
-    };
+      return {
+        header,
+        labels: ordered.map((x) => x[0]),
+        values: ordered.map((x) => x[1]),
+      };
+    });
 
     const byDay = {};
     filtrados.forEach((row) => {
       if (!row._primaryDate) return;
-
-      const d = row._primaryDate;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const key = row._primaryDate.toLocaleDateString("pt-BR");
       byDay[key] = (byDay[key] || 0) + 1;
     });
 
-    const dayLabels = Object.keys(byDay).sort((a, b) => a.localeCompare(b));
+    const dayLabels = Object.keys(byDay).sort((a, b) => {
+      const da = ccoParseDate(a);
+      const db = ccoParseDate(b);
+      if (!da || !db) return 0;
+      return da - db;
+    });
+
+    const tableAHeader = chartHeaders[0] || meta.headers[0];
+    const tableBHeader = chartHeaders[1] || meta.headers[1] || meta.headers[0];
+
+    const tableA = Object.entries(ccoGroupCount(filtrados, tableAHeader))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .map(([nome, total]) => ({ nome, total }));
+
+    const tableB = Object.entries(ccoGroupCount(filtrados, tableBHeader))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .map(([nome, total]) => ({ nome, total }));
 
     return res.json({
-      tableTipo,
-      tableOcorrencia,
-      tableUnidade,
-      tableSetor,
-      tableStatus,
-      chartSolicitante,
+      charts,
       porDia: {
         labels: dayLabels,
-        values: dayLabels.map((d) => byDay[d]),
+        values: dayLabels.map((label) => byDay[label]),
       },
+      tableAHeader,
+      tableBHeader,
+      tableA,
+      tableB,
     });
   } catch (error) {
     return res.status(500).json({
@@ -2894,23 +2851,23 @@ app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
     const filtrados = ccoApplyFilters(meta.rows, req.query, filterHeaders);
 
     const page = Math.max(Number(req.query.page || 1), 1);
-    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 500);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
 
     const start = (page - 1) * limit;
     const end = start + limit;
 
-    const preferredHeaders = meta.headers.filter((header) => !ccoIsSecurityHeader(header));
+    const safeHeaders = meta.headers.filter((header) => !ccoIsSecurityAnalystHeader(header));
 
     const rows = filtrados.slice(start, end).map((row) => {
       const obj = {};
-      preferredHeaders.forEach((header) => {
+      safeHeaders.forEach((header) => {
         obj[header] = row[header] || "";
       });
       return obj;
     });
 
     return res.json({
-      headers: preferredHeaders,
+      headers: safeHeaders,
       total: filtrados.length,
       page,
       limit,
@@ -2922,361 +2879,6 @@ app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
       ok: false,
       message: error.message,
     });
-  }
-});
-
-// ================== FIRST MILE ACCESS DASHBOARD ==================
-
-// ================== FIRST MILE ACCESS DASHBOARD ==================
-
-app.get("/first-mile-access", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "first-mile-access.html"));
-});
-
-const FM_ACCESS_SPREADSHEET_ID = "1kxePCOZeaVh48C7tP7Ua_iUpYg7EJttRvC7VAkEfQBo";
-
-let fmAccessCache = null;
-let fmAccessCacheTime = 0;
-const FM_ACCESS_CACHE_TTL = 5 * 60 * 1000;
-
-function fmNorm(v) {
-  return String(v || "").trim();
-}
-
-function fmNormLower(v) {
-  return fmNorm(v)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function fmParseDate(value) {
-  const str = fmNorm(value);
-  if (!str) return null;
-
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [day, month, year] = datePart.split("/").map(Number);
-    return new Date(year, month - 1, day);
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [year, month, day] = datePart.split("-").map(Number);
-    return new Date(year, month - 1, day);
-  }
-
-  return null;
-}
-
-function fmFormatISO(date) {
-  if (!date) return "";
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function fmMonthLabel(monthIndex) {
-  const meses = [
-    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
-    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
-  ];
-  return meses[monthIndex] || "";
-}
-
-function fmParseMulti(value) {
-  if (!value) return [];
-  return String(value)
-    .split("|")
-    .map((v) => fmNorm(v))
-    .filter(Boolean);
-}
-
-function fmMatchesMulti(fieldValue, selectedValues) {
-  if (!selectedValues.length) return true;
-  return selectedValues.includes(fmNorm(fieldValue));
-}
-
-function fmGroupCount(rows, field, uniqueBy = null) {
-  const map = {};
-
-  rows.forEach((row) => {
-    const key = fmNorm(row[field]) || "Sem valor";
-
-    if (!uniqueBy) {
-      map[key] = (map[key] || 0) + 1;
-      return;
-    }
-
-    if (!map[key]) map[key] = new Set();
-    const uniq = fmNorm(row[uniqueBy]);
-    if (uniq) map[key].add(uniq);
-  });
-
-  if (!uniqueBy) return map;
-
-  const normalized = {};
-  Object.keys(map).forEach((k) => {
-    normalized[k] = map[k].size;
-  });
-  return normalized;
-}
-
-function fmToTopList(mapObj, limit = 10) {
-  return Object.entries(mapObj)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([nome, total]) => ({ nome, total }));
-}
-
-function fmApplyFilters(rows, query) {
-  const dataInicio = fmNorm(query.dataInicio);
-  const dataFim = fmNorm(query.dataFim);
-  const busca = fmNormLower(query.busca);
-
-  const agencies = fmParseMulti(query.agency);
-  const regionals = fmParseMulti(query.regional);
-  const cities = fmParseMulti(query.city);
-  const vehicles = fmParseMulti(query.vehicle);
-  const monitors = fmParseMulti(query.monitor);
-
-  return rows.filter((row) => {
-    if (!row._date) return false;
-
-    const iso = fmFormatISO(row._date);
-    if (dataInicio && iso < dataInicio) return false;
-    if (dataFim && iso > dataFim) return false;
-
-    if (!fmMatchesMulti(row["Agency"], agencies)) return false;
-    if (!fmMatchesMulti(row["Regional"], regionals)) return false;
-    if (!fmMatchesMulti(row["City"], cities)) return false;
-    if (!fmMatchesMulti(row["Vehicle"], vehicles)) return false;
-    if (!fmMatchesMulti(row["NOME DO MONITOR"], monitors)) return false;
-
-    if (busca) {
-      const text = [
-        row["Agency"],
-        row["Regional"],
-        row["Route Name"],
-        row["Shop Name"],
-        row["City"],
-        row["Driver Name"],
-        row["NOME DO MONITOR"],
-        row["Status Final"],
-        row["Status Validação"],
-        row["Validação Ocorrência"],
-        row["Ocorrência Jira"]
-      ].map(fmNormLower).join(" ");
-
-      if (!text.includes(busca)) return false;
-    }
-
-    return true;
-  });
-}
-
-async function fmAccessLoadRaw() {
-  const sheets = await conectarSheets();
-
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: FM_ACCESS_SPREADSHEET_ID,
-    range: "'Painel Operacional'!A1:AZ200000",
-  });
-
-  const values = response.data.values || [];
-  if (!values.length || values.length < 2) {
-    return { headers: [], rows: [] };
-  }
-
-  const headers = values[0].map((h, idx) => fmNorm(h) || `COL_${idx + 1}`);
-
-  const rows = values.slice(1).map((line) => {
-    const obj = {};
-    headers.forEach((header, i) => {
-      obj[header] = line[i] ?? "";
-    });
-
-    obj._date = fmParseDate(obj["Data Coleta"]);
-    obj._isoDate = obj._date ? fmFormatISO(obj._date) : "";
-    obj._day = obj._date ? obj._date.getDate() : null;
-    obj._month = obj._date ? obj._date.getMonth() : null;
-    obj._year = obj._date ? obj._date.getFullYear() : null;
-
-    return obj;
-  }).filter((row) => row._date && fmNorm(row["Route Name"]));
-
-  return { headers, rows };
-}
-
-async function fmAccessLoadWithCache() {
-  const now = Date.now();
-
-  if (fmAccessCache && now - fmAccessCacheTime < FM_ACCESS_CACHE_TTL) {
-    return fmAccessCache;
-  }
-
-  const data = await fmAccessLoadRaw();
-  fmAccessCache = data;
-  fmAccessCacheTime = now;
-
-  return data;
-}
-
-app.get("/api/fm-access-filtros", requireAuth, async (req, res) => {
-  try {
-    const { rows } = await fmAccessLoadWithCache();
-
-    const agencies = [...new Set(rows.map((r) => fmNorm(r["Agency"])).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-    const regionals = [...new Set(rows.map((r) => fmNorm(r["Regional"])).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-    const cities = [...new Set(rows.map((r) => fmNorm(r["City"])).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-    const vehicles = [...new Set(rows.map((r) => fmNorm(r["Vehicle"])).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-    const monitors = [...new Set(rows.map((r) => fmNorm(r["NOME DO MONITOR"])).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-    return res.json({
-      agencies,
-      regionals,
-      cities,
-      vehicles,
-      monitors,
-    });
-  } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
-  }
-});
-
-app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
-  try {
-    const { rows } = await fmAccessLoadWithCache();
-    const filtrados = fmApplyFilters(rows, req.query);
-
-    const totalRotas = new Set(filtrados.map((r) => fmNorm(r["Route Name"])).filter(Boolean)).size;
-    const totalSellers = new Set(filtrados.map((r) => fmNorm(r["Shop ID"])).filter(Boolean)).size;
-    const totalCities = new Set(filtrados.map((r) => fmNorm(r["City"])).filter(Boolean)).size;
-    const totalDrivers = new Set(filtrados.map((r) => fmNorm(r["Driver Name"])).filter(Boolean)).size;
-    const totalOcorrencias = filtrados.filter((r) => {
-      const v = fmNormLower(r["Ocorrência Jira"]);
-      return v && v !== "ok" && v !== "sem ocorrência";
-    }).length;
-
-    const porAgency = fmToTopList(fmGroupCount(filtrados, "Agency", "Route Name"), 10);
-    const porRegional = fmToTopList(fmGroupCount(filtrados, "Regional", "Route Name"), 10);
-    const porStatusFinal = fmToTopList(fmGroupCount(filtrados, "Status Final", "Route Name"), 10);
-    const porVehicle = fmToTopList(fmGroupCount(filtrados, "Vehicle", "Route Name"), 10);
-    const porMonitor = fmToTopList(fmGroupCount(filtrados, "NOME DO MONITOR", "Route Name"), 10);
-    const porCity = fmToTopList(fmGroupCount(filtrados, "City", "Route Name"), 12);
-
-    const distribuicao = [
-      {
-        nome: "Validado",
-        total: filtrados.filter((r) => fmNormLower(r["Validação Ocorrência"]) === "validado").length
-      },
-      {
-        nome: "Divergente",
-        total: filtrados.filter((r) => fmNormLower(r["Validação Ocorrência"]) === "divergente").length
-      }
-    ];
-
-    const byDay = {};
-    filtrados.forEach((row) => {
-      if (!row._day) return;
-      const day = String(row._day).padStart(2, "0");
-      byDay[day] = (byDay[day] || 0) + 1;
-    });
-
-    const dayLabels = Array.from({ length: 31 }, (_, i) =>
-      String(i + 1).padStart(2, "0")
-    );
-
-    const byMonth = {};
-    filtrados.forEach((row) => {
-      if (row._month === null || row._month === undefined) return;
-      byMonth[row._month] = (byMonth[row._month] || 0) + 1;
-    });
-
-    const monthIndexes = Array.from({ length: 12 }, (_, i) => i);
-
-    return res.json({
-      resumo: {
-        totalRotas,
-        totalSellers,
-        totalCities,
-        totalDrivers,
-        totalOcorrencias
-      },
-      porAgency,
-      porRegional,
-      porStatusFinal,
-      porVehicle,
-      porMonitor,
-      porCity,
-      distribuicao,
-      porDia: {
-        labels: dayLabels,
-        values: dayLabels.map((d) => byDay[d] || 0),
-      },
-      porMes: {
-        labels: monthIndexes.map((m) => fmMonthLabel(m)),
-        values: monthIndexes.map((m) => byMonth[m] || 0),
-      }
-    });
-  } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
-  }
-});
-
-app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
-  try {
-    const { rows } = await fmAccessLoadWithCache();
-    const filtrados = fmApplyFilters(rows, req.query);
-
-    const page = Math.max(Number(req.query.page || 1), 1);
-    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
-
-    const start = (page - 1) * limit;
-    const end = start + limit;
-
-    const headers = [
-      "Data Coleta",
-      "Agency",
-      "Regional",
-      "Route Name",
-      "City",
-      "Vehicle",
-      "Driver Name",
-      "NOME DO MONITOR",
-      "Status Validação",
-      "Ocorrência Jira",
-      "Status Final"
-    ];
-
-    const pageRows = filtrados.slice(start, end).map((row) => {
-      const obj = {};
-      headers.forEach((h) => {
-        obj[h] = row[h] || "";
-      });
-      return obj;
-    });
-
-    return res.json({
-      headers,
-      rows: pageRows,
-      total: filtrados.length,
-      page,
-      limit,
-      totalPages: Math.ceil(filtrados.length / limit),
-    });
-  } catch (error) {
-    return res.status(500).json({ ok: false, message: error.message });
   }
 });
 

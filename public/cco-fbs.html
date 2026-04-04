@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CCO FBS</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
   <style>
     * {
@@ -15,28 +17,52 @@
     }
 
     :root {
-      --bg: #041325;
-      --card: #142744;
-      --card-2: #11233c;
-      --line: rgba(255,255,255,0.08);
+      --bg-1: #273246;
+      --bg-2: #101826;
+      --bg-3: #060b14;
+      --panel: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      --panel-strong: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+      --border: rgba(255,255,255,0.08);
       --text: #ffffff;
-      --muted: #c7d2e0;
+      --muted: rgba(255,255,255,0.72);
+      --grid: rgba(255,255,255,0.08);
+      --input: #051127;
       --orange: #ff7a1a;
-      --blue: #58a6ff;
-      --green: #22c55e;
-      --red: #ef4444;
+      --orange-2: #ff9a3d;
+      --red: #ff5252;
+      --green: #1ddc7f;
+      --blue: #60a5fa;
       --purple: #8b5cf6;
+      --cyan: #22d3ee;
+      --yellow: #f59e0b;
+      --shadow: 0 10px 28px rgba(0,0,0,0.26);
+    }
+
+    html, body {
+      min-height: 100%;
     }
 
     body {
-      background: linear-gradient(180deg, #03101f 0%, #041325 100%);
+      background: radial-gradient(circle at top left, var(--bg-1) 0%, var(--bg-2) 40%, var(--bg-3) 100%);
       color: var(--text);
+      padding: 10px;
     }
 
     .page {
       max-width: 1500px;
       margin: 0 auto;
-      padding: 18px;
+    }
+
+    .topbar,
+    .hero,
+    .filters,
+    .kpi,
+    .panel,
+    .wide-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
     }
 
     .topbar {
@@ -44,41 +70,51 @@
       justify-content: space-between;
       align-items: center;
       gap: 16px;
-      margin-bottom: 18px;
+      padding: 12px 18px;
+      margin-bottom: 10px;
       flex-wrap: wrap;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-logo-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
     .brand-logo {
-      width: 58px;
-      height: 58px;
+      width: 30px;
+      height: 30px;
       object-fit: contain;
-      border-radius: 14px;
-      background: #0f2138;
-      padding: 6px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     }
 
     .brand-text h1 {
       color: var(--orange);
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 900;
       margin-bottom: 2px;
+      line-height: 1.1;
     }
 
     .brand-text p {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
     }
 
     .btn {
-      background: #163154;
-      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
       color: #fff;
       padding: 10px 16px;
       border-radius: 12px;
@@ -86,30 +122,36 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: .2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255,255,255,0.12);
     }
 
     .hero {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 20px;
+      padding: 18px 20px;
       display: flex;
       justify-content: space-between;
       gap: 16px;
       align-items: flex-start;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
     .hero h2 {
-      font-size: 20px;
-      margin-bottom: 8px;
+      font-size: 22px;
+      margin-bottom: 6px;
     }
 
     .hero p {
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.5;
+      max-width: 980px;
     }
 
     .hero-right {
@@ -130,22 +172,28 @@
     }
 
     .filters {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px;
-      margin-bottom: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 20;
+      overflow: visible;
     }
 
     .filters-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 12px;
       align-items: end;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 21;
+      overflow: visible;
     }
 
     .field {
       min-width: 0;
+      position: relative;
+      z-index: 22;
     }
 
     .field label {
@@ -158,13 +206,18 @@
 
     .field input {
       width: 100%;
-      height: 42px;
-      background: #0a1b32;
-      border: 1px solid var(--line);
-      border-radius: 12px;
+      height: 38px;
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
       color: #fff;
       padding: 0 12px;
       outline: none;
+      font-size: 13px;
+    }
+
+    .field input::placeholder {
+      color: rgba(255,255,255,0.42);
     }
 
     .field.search-span {
@@ -175,23 +228,29 @@
       display: flex;
       gap: 10px;
       align-items: end;
+      flex-wrap: wrap;
     }
 
     .btn-primary {
-      height: 42px;
+      height: 38px;
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 0 18px;
       background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
       color: #fff;
       font-weight: 800;
       cursor: pointer;
+      transition: .2s ease;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.05);
     }
 
     .btn-ghost {
-      height: 42px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
+      height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
       padding: 0 18px;
       background: #0d213b;
       color: #fff;
@@ -203,19 +262,26 @@
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
-      margin-top: 12px;
+      position: relative;
+      z-index: 22;
+      overflow: visible;
     }
 
     .multi {
       position: relative;
+      z-index: 23;
+    }
+
+    .multi.open {
+      z-index: 9999;
     }
 
     .multi-trigger {
       width: 100%;
-      min-height: 42px;
-      background: #0a1b32;
-      border: 1px solid var(--line);
-      border-radius: 12px;
+      min-height: 38px;
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
       color: #fff;
       padding: 8px 12px;
       text-align: left;
@@ -224,26 +290,27 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
+      font-size: 13px;
     }
 
-    .multi-trigger span {
+    .multi-trigger span.label {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 13px;
+      flex: 1;
     }
 
     .multi-menu {
       position: absolute;
-      top: 46px;
+      top: 42px;
       left: 0;
       width: 100%;
       background: #0c1d34;
-      border: 1px solid var(--line);
-      border-radius: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
       padding: 10px;
       display: none;
-      z-index: 30;
+      z-index: 10000;
       max-height: 260px;
       overflow-y: auto;
       box-shadow: 0 12px 24px rgba(0,0,0,0.28);
@@ -288,24 +355,41 @@
     }
 
     .kpi {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 16px;
+      padding: 14px 16px;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .kpi-title {
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
       color: #dbe4ef;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      font-weight: 800;
     }
 
     .kpi-value {
-      font-size: 22px;
+      font-size: 17px;
       font-weight: 900;
-      line-height: 1.1;
+      line-height: 1.15;
+      word-break: break-word;
     }
+
+    .kpi-value.big {
+      font-size: 20px;
+    }
+
+    .kpi-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 16px;
+    }
+
+    .kpi-sub.positive { color: var(--green); }
+    .kpi-sub.negative { color: var(--red); }
 
     .orange { color: var(--orange); }
     .blue { color: var(--blue); }
@@ -315,7 +399,7 @@
 
     .grid-top {
       display: grid;
-      grid-template-columns: 1.2fr 1.2fr 0.9fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 12px;
       margin-bottom: 14px;
     }
@@ -328,9 +412,6 @@
     }
 
     .panel {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 16px;
       padding: 14px;
       overflow: hidden;
     }
@@ -338,7 +419,7 @@
     .panel-title {
       color: var(--orange);
       font-weight: 900;
-      font-size: 14px;
+      font-size: 16px;
       margin-bottom: 10px;
       text-align: center;
     }
@@ -351,7 +432,7 @@
 
     .mini-table th,
     .mini-table td {
-      padding: 6px 4px;
+      padding: 7px 4px;
       border-bottom: 1px solid rgba(255,255,255,0.05);
       vertical-align: middle;
     }
@@ -360,6 +441,10 @@
       text-align: left;
       color: #fff;
       font-size: 12px;
+      position: sticky;
+      top: 0;
+      background: #132744;
+      z-index: 1;
     }
 
     .mini-table td:last-child,
@@ -384,22 +469,19 @@
     }
 
     .bar-fill.orange {
-      background: #0f2e57;
+      background: linear-gradient(90deg, #ff7a1a, #ff9a3d);
     }
 
     .chart-box {
-      height: 240px;
+      height: 260px;
       position: relative;
     }
 
     .chart-box.line {
-      height: 260px;
+      height: 280px;
     }
 
     .wide-panel {
-      background: linear-gradient(135deg, #1a2f50, #152844);
-      border: 1px solid var(--line);
-      border-radius: 16px;
       padding: 14px;
       margin-bottom: 14px;
     }
@@ -408,6 +490,8 @@
       overflow: auto;
       max-height: 520px;
       border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.08);
     }
 
     .detail-table {
@@ -439,7 +523,13 @@
       gap: 8px;
     }
 
-    @media (max-width: 1200px) {
+    .empty-state {
+      padding: 16px;
+      text-align: center;
+      color: #fff;
+    }
+
+    @media (max-width: 1280px) {
       .filters-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
@@ -474,7 +564,13 @@
       }
 
       .kpi-value {
-        font-size: 20px;
+        font-size: 18px;
+      }
+
+      .topbar,
+      .hero {
+        flex-direction: column;
+        align-items: stretch;
       }
     }
   </style>
@@ -483,7 +579,9 @@
   <div class="page">
     <header class="topbar">
       <div class="brand">
-        <img src="/images/logo.png" alt="Logo" class="brand-logo" />
+        <div class="brand-logo-wrap">
+          <img src="/images/logo.png" alt="Logo" class="brand-logo" />
+        </div>
         <div class="brand-text">
           <h1>CCO FBS</h1>
           <p>Dashboard operacional com filtros multi seleção</p>
@@ -534,32 +632,38 @@
     <section class="kpis">
       <div class="kpi">
         <div class="kpi-title">Total de registros</div>
-        <div class="kpi-value orange" id="kpiTotal">0</div>
+        <div class="kpi-value big orange" id="kpiTotal">0</div>
+        <div class="kpi-sub" id="kpiTotalSub"></div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Mês atual</div>
+        <div class="kpi-value big orange" id="kpiMesAtual">0</div>
+        <div class="kpi-sub">Período atual</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Mês anterior</div>
+        <div class="kpi-value big blue" id="kpiMesAnterior">0</div>
+        <div class="kpi-sub">Comparativo base</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Variação mensal</div>
+        <div class="kpi-value big orange" id="kpiVariacao">0%</div>
+        <div class="kpi-sub" id="kpiVariacaoSub">vs mês anterior</div>
       </div>
 
       <div class="kpi">
         <div class="kpi-title">Total de unidades</div>
-        <div class="kpi-value blue" id="kpiUnidades">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Ativos</div>
-        <div class="kpi-value green" id="kpiAtivos">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Pendentes</div>
-        <div class="kpi-value purple" id="kpiPendentes">0</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Inativos</div>
-        <div class="kpi-value red" id="kpiInativos">0</div>
+        <div class="kpi-value big blue" id="kpiUnidades">0</div>
+        <div class="kpi-sub">Unidades distintas</div>
       </div>
 
       <div class="kpi">
         <div class="kpi-title">Status dominante</div>
         <div class="kpi-value orange" id="kpiDominante">-</div>
+        <div class="kpi-sub" id="kpiDominanteSub"></div>
       </div>
     </section>
 
@@ -634,6 +738,8 @@
   </div>
 
   <script>
+    Chart.register(ChartDataLabels);
+
     let currentPage = 1;
     let totalPages = 1;
     let dynamicFilterKeys = [];
@@ -644,14 +750,14 @@
     let chartDiaInstance = null;
 
     const donutColors = [
-      "#0f2e57",
-      "#415a77",
-      "#778da9",
-      "#adb5bd",
       "#ff7a1a",
-      "#58a6ff",
+      "#f59e0b",
+      "#60a5fa",
       "#8b5cf6",
-      "#22c55e"
+      "#22d3ee",
+      "#22c55e",
+      "#f87171",
+      "#fb7185"
     ];
 
     function esc(v) {
@@ -665,6 +771,14 @@
 
     function fmt(n) {
       return new Intl.NumberFormat("pt-BR").format(n || 0);
+    }
+
+    function fmtPct(v) {
+      return `${Number(v || 0).toFixed(1).replace(".", ",")}%`;
+    }
+
+    function cssSafe(text) {
+      return String(text).replace(/[^a-zA-Z0-9_-]/g, "_");
     }
 
     function getFiltersQuery(page = 1) {
@@ -684,10 +798,6 @@
       });
 
       return qs.toString();
-    }
-
-    function cssSafe(text) {
-      return String(text).replace(/[^a-zA-Z0-9_-]/g, "_");
     }
 
     function updateMultiTrigger(key) {
@@ -750,7 +860,7 @@
       dynamicFilterKeys = (data.filtros || []).map((f) => f.key);
 
       document.getElementById("heroDescription").textContent =
-        `Aba utilizada: ${data.sheetTitle || "N/A"} | Filtros multi seleção e visão operacional da base.`;
+        `Aba utilizada: ${data.sheetTitle || "N/A"} | Filtros multi seleção, comparativo mensal e visão operacional da base.`;
 
       const container = document.getElementById("dynamicFilters");
       container.innerHTML = (data.filtros || []).map(buildMultiFilter).join("");
@@ -806,11 +916,29 @@
 
       document.getElementById("kpiTotal").textContent = fmt(data.total);
       document.getElementById("kpiUnidades").textContent = fmt(data.totalUnidades);
-      document.getElementById("kpiAtivos").textContent = fmt(data.ativos);
-      document.getElementById("kpiPendentes").textContent = fmt(data.pendentes);
-      document.getElementById("kpiInativos").textContent = fmt(data.inativos);
+      document.getElementById("kpiMesAtual").textContent = fmt(data.mesAtual || 0);
+      document.getElementById("kpiMesAnterior").textContent = fmt(data.mesAnterior || 0);
+      document.getElementById("kpiVariacao").textContent = fmtPct(data.variacaoMensal || 0);
       document.getElementById("kpiDominante").textContent = data.statusDominante || "-";
       document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+
+      const totalSub = document.getElementById("kpiTotalSub");
+      const varSub = document.getElementById("kpiVariacaoSub");
+      const dominanteSub = document.getElementById("kpiDominanteSub");
+
+      if ((data.variacaoMensal || 0) >= 0) {
+        totalSub.textContent = "Comparativo mensal ativo";
+        totalSub.className = "kpi-sub positive";
+        varSub.className = "kpi-sub positive";
+      } else {
+        totalSub.textContent = "Comparativo mensal ativo";
+        totalSub.className = "kpi-sub negative";
+        varSub.className = "kpi-sub negative";
+      }
+
+      varSub.textContent = "vs mês anterior";
+      dominanteSub.textContent = data.totalStatusDominante ? `${fmt(data.totalStatusDominante)} registros` : "";
+      dominanteSub.className = "kpi-sub";
     }
 
     function renderMiniTable(elId, rows) {
@@ -837,15 +965,41 @@
       if (chartDiaInstance) chartDiaInstance.destroy();
     }
 
-    function baseChartOptions(horizontal = false) {
+    function datalabelsOptions(indexAxis = "x") {
+      return {
+        color: "#ffffff",
+        anchor: indexAxis === "y" ? "end" : "end",
+        align: indexAxis === "y" ? "right" : "top",
+        offset: 4,
+        clamp: true,
+        font: {
+          family: "Arial",
+          weight: "bold",
+          size: 11
+        },
+        formatter: (value) => Number(value || 0).toLocaleString("pt-BR")
+      };
+    }
+
+    function baseChartOptions(horizontal = false, showLegend = false) {
       return {
         indexAxis: horizontal ? "y" : "x",
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: "#fff", boxWidth: 10, font: { size: 11 } }
-          }
+            display: showLegend,
+            labels: {
+              color: "#fff",
+              boxWidth: 10,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            titleFont: { family: "Arial" },
+            bodyFont: { family: "Arial" }
+          },
+          datalabels: datalabelsOptions(horizontal ? "y" : "x")
         },
         scales: {
           x: {
@@ -892,11 +1046,12 @@
           datasets: [{
             label: "Qtd",
             data: c1.values,
-            backgroundColor: "#0f2e57",
-            borderRadius: 6
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8,
+            datalabels: datalabelsOptions("y")
           }]
         },
-        options: baseChartOptions(true)
+        options: baseChartOptions(true, false)
       });
 
       chart2Instance = new Chart(document.getElementById("chart2"), {
@@ -906,11 +1061,12 @@
           datasets: [{
             label: "Qtd",
             data: c2.values,
-            backgroundColor: "#4b637f",
-            borderRadius: 6
+            backgroundColor: "#60a5fa",
+            borderRadius: 8,
+            datalabels: datalabelsOptions("y")
           }]
         },
-        options: baseChartOptions(true)
+        options: baseChartOptions(true, false)
       });
 
       chartStatusInstance = new Chart(document.getElementById("chartStatus"), {
@@ -926,7 +1082,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: "55%",
+          cutout: "56%",
           plugins: {
             legend: {
               position: "right",
@@ -934,6 +1090,16 @@
                 color: "#fff",
                 boxWidth: 10,
                 font: { size: 10 }
+              }
+            },
+            datalabels: {
+              color: "#fff",
+              font: { weight: "700", size: 10 },
+              formatter: (value, ctx) => {
+                const dataset = ctx.chart.data.datasets[0].data || [];
+                const total = dataset.reduce((s, v) => s + Number(v || 0), 0);
+                const pct = total ? (value / total) * 100 : 0;
+                return pct >= 3 ? `${pct.toFixed(1)}%` : "";
               }
             }
           }
@@ -951,10 +1117,25 @@
             backgroundColor: "rgba(88,166,255,0.15)",
             fill: false,
             tension: 0.35,
-            pointRadius: 3
+            pointRadius: 3,
+            pointHoverRadius: 4
           }]
         },
-        options: baseChartOptions(false)
+        options: {
+          ...baseChartOptions(false, false),
+          plugins: {
+            ...baseChartOptions(false, false).plugins,
+            datalabels: {
+              color: "#fff",
+              align: "top",
+              anchor: "end",
+              offset: 4,
+              clamp: true,
+              font: { weight: "700", size: 9 },
+              formatter: (value) => value > 0 ? fmt(value) : ""
+            }
+          }
+        }
       });
     }
 
@@ -981,7 +1162,7 @@
       });
 
       html += `</tbody></table>`;
-      document.getElementById("detailWrap").innerHTML = html;
+      document.getElementById("detailWrap").innerHTML = html || `<div class="empty-state">Sem dados</div>`;
     }
 
     async function loadAll(page = 1) {

@@ -2403,6 +2403,7 @@ app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
     });
   }
 });
+
 // ================== CCO FBS DASHBOARD ==================
 
 app.get("/cco-fbs", requireAuth, (req, res) => {

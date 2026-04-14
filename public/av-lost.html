@@ -1,376 +1,714 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>AV LOST Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACCESS - Dashboard</title>
 
-<<script>
-Chart.register(ChartDataLabels);
-
-let rawData = [];
-let filteredData = [];
-let charts = [];
-
-const COL = {
-  DATA: "DATA",
-  QTD: "QUANTIDADE ENCONTRADA",
-  AV: "AV - LOST",
-  USD: "US$ ENCONTRADO",
-  BRL: "R$ ENCONTRADO",
-  UNIDADE: "UNIDADE"
-};
-
-/* =========================
-   UTILS
-========================= */
-
-function num(v){
-  return Number(String(v || "")
-    .replace(/\./g,"")
-    .replace(",",".")
-    .replace(/[^\d.-]/g,"")
-  ) || 0;
-}
-
-function parseDate(v){
-  if(!v) return null;
-  const [d,m,y] = v.split("/");
-  return new Date(y, m-1, d);
-}
-
-function formatPct(v){
-  if(!isFinite(v)) return "→ 0%";
-  const arrow = v > 0 ? "↑" : v < 0 ? "↓" : "→";
-  return `${arrow} ${Math.abs(v).toFixed(1)}%`;
-}
-
-/* =========================
-   AGRUPAMENTO MENSAL
-========================= */
-
-function groupByMonth(data){
-  const map = {};
-
-  data.forEach(r=>{
-    if(!r._date) return;
-
-    const y = r._date.getFullYear();
-    const m = r._date.getMonth()+1;
-    const key = `${y}-${m}`;
-
-    if(!map[key]){
-      map[key] = {qtd:0,av:0,usd:0,brl:0,count:0};
-    }
-
-    map[key].qtd += num(r[COL.QTD]);
-    map[key].av += num(r[COL.AV]);
-    map[key].usd += num(r[COL.USD]);
-    map[key].brl += num(r[COL.BRL]);
-    map[key].count += 1;
-  });
-
-  return map;
-}
-
-/* =========================
-   PEGAR ÚLTIMOS MESES
-========================= */
-
-function getLastTwoMonths(data){
-  const months = [...new Set(
-    data
-      .filter(r=>r._date)
-      .map(r=>{
-        return `${r._date.getFullYear()}-${r._date.getMonth()+1}`;
-      })
-  )].sort((a,b)=>{
-    const [ya,ma] = a.split("-").map(Number);
-    const [yb,mb] = b.split("-").map(Number);
-    return new Date(ya,ma-1) - new Date(yb,mb-1);
-  });
-
-  return months.slice(-2);
-}
-
-function variation(current, previous){
-  if(!previous || previous === 0){
-    return current > 0 ? 100 : 0;
-  }
-  return ((current - previous) / previous) * 100;
-}
-
-/* =========================
-   KPI AVANÇADO
-========================= */
-
-function updateKpis(){
-
-  const map = groupByMonth(filteredData);
-  const months = getLastTwoMonths(filteredData);
-
-  const current = map[months[1]] || {};
-  const prev = map[months[0]] || {};
-
-  function set(id, value, varPct){
-    const el = document.getElementById(id);
-    if(!el) return;
-
-    el.innerHTML = `
-      ${value}
-      <div style="font-size:11px;color:#9ca3af;margin-top:4px">
-        ${formatPct(varPct)}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <link rel="stylesheet" href="/access.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo-wrap">
+          <img src="/images/logo.png" alt="Logo Security" class="brand-logo" />
+        </div>
+        <div class="brand-text">
+          <h1>ACCESS</h1>
+          <p>Dashboard de acessos e liberações</p>
+        </div>
       </div>
-    `;
-  }
 
-  set("kpiRegistros",
-    current.count || 0,
-    variation(current.count, prev.count)
-  );
+      <div class="top-actions">
+        <a href="/portal" class="btn-secondary">Voltar ao Portal</a>
+      </div>
+    </header>
 
-  set("kpiQtdEncontrada",
-    current.qtd || 0,
-    variation(current.qtd, prev.qtd)
-  );
+    <section class="hero-card">
+      <div>
+        <h2>Dashboard ACCESS</h2>
+        <p>
+          Monitoramento de acessos com filtros por data, estado, cidade, operação,
+          tipo de liberação, veículo, data de liberação e status.
+        </p>
+      </div>
 
-  set("kpiAv",
-    current.av || 0,
-    variation(current.av, prev.av)
-  );
+      <div class="hero-right">
+        <div>Última atualização</div>
+        <div id="ultimaAtualizacao" class="hero-time">--:--</div>
+      </div>
+    </section>
 
-  set("kpiUsd",
-    (current.usd || 0).toFixed(2),
-    variation(current.usd, prev.usd)
-  );
+    <section class="filters-card">
+      <div class="filters-grid">
+        <div class="field">
+          <label>Data inicial (solicitação)</label>
+          <input type="date" id="filtroDataInicio" />
+        </div>
 
-  set("kpiBrl",
-    (current.brl || 0).toFixed(2),
-    variation(current.brl, prev.brl)
-  );
-}
+        <div class="field">
+          <label>Data final (solicitação)</label>
+          <input type="date" id="filtroDataFim" />
+        </div>
 
-/* =========================
-   GRÁFICOS
-========================= */
+        <div class="field">
+          <label>Data liberação inicial</label>
+          <input type="date" id="filtroLiberacaoInicio" />
+        </div>
 
-function destroyCharts(){
-  charts.forEach(c => c?.destroy());
-  charts = [];
-}
+        <div class="field">
+          <label>Data liberação final</label>
+          <input type="date" id="filtroLiberacaoFim" />
+        </div>
 
-function renderCharts(){
+        <div class="field">
+          <label>Estado</label>
+          <div class="multi-select" id="multiEstado">
+            <div class="multi-select-trigger" id="triggerEstado">Todos</div>
+            <div class="multi-select-menu" id="menuEstado"></div>
+          </div>
+        </div>
 
-  destroyCharts();
+        <div class="field">
+          <label>Cidade</label>
+          <div class="multi-select" id="multiCidade">
+            <div class="multi-select-trigger" id="triggerCidade">Todas</div>
+            <div class="multi-select-menu" id="menuCidade"></div>
+          </div>
+        </div>
 
-  const map = {};
+        <div class="field">
+          <label>Operação</label>
+          <div class="multi-select" id="multiOperacao">
+            <div class="multi-select-trigger" id="triggerOperacao">Todas</div>
+            <div class="multi-select-menu" id="menuOperacao"></div>
+          </div>
+        </div>
 
-  filteredData.forEach(r=>{
-    const u = r[COL.UNIDADE] || "N/A";
-    map[u] = (map[u] || 0) + num(r[COL.AV]);
-  });
+        <div class="field">
+          <label>Tipo de Solicitação</label>
+          <div class="multi-select" id="multiTipoLiberacao">
+            <div class="multi-select-trigger" id="triggerTipoLiberacao">Todos</div>
+            <div class="multi-select-menu" id="menuTipoLiberacao"></div>
+          </div>
+        </div>
 
-  const chart = new Chart(document.getElementById("chartUnidade"),{
-    type:"bar",
-    data:{
-      labels:Object.keys(map),
-      datasets:[{
-        label:"AV Encontrado",
-        data:Object.values(map),
-        backgroundColor:"#ff7a1a",
-        borderRadius:6
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{display:false}
-      }
+        <div class="field">
+          <label>Vai acessar com veículo?</label>
+          <div class="multi-select" id="multiVeiculo">
+            <div class="multi-select-trigger" id="triggerVeiculo">Todos</div>
+            <div class="multi-select-menu" id="menuVeiculo"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <div class="multi-select" id="multiStatus">
+            <div class="multi-select-trigger" id="triggerStatus">Todos</div>
+            <div class="multi-select-menu" id="menuStatus"></div>
+          </div>
+        </div>
+
+        <div class="field search-field">
+          <label>Busca geral</label>
+          <input type="text" id="filtroBusca" placeholder="Buscar nome, CPF, empresa, placa..." />
+        </div>
+
+        <div class="field btn-field">
+          <button class="btn-primary" id="btnLimpar" type="button">Limpar filtros</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards-grid">
+      <div class="info-card">
+        <div class="info-label">TOTAL DE SOLICITAÇÕES</div>
+        <div class="info-value orange" id="totalAcessos">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">APROVADOS</div>
+        <div class="info-value green" id="totalAprovados">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">REPROVADOS</div>
+        <div class="info-value red" id="totalReprovados">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">COM VEÍCULO</div>
+        <div class="info-value blue" id="totalComVeiculo">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">SEM VEÍCULO</div>
+        <div class="info-value purple" id="totalSemVeiculo">0</div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-label">% APROVADOS</div>
+        <div class="info-value orange" id="percentualAprovados">0%</div>
+      </div>
+    </section>
+
+    <section class="charts-grid">
+      <div class="panel-card">
+        <div class="panel-title">Acessos por Operação</div>
+        <div class="chart-wrap">
+          <canvas id="chartEstado"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Acessos por Tipo de Solicitação</div>
+        <div class="chart-wrap">
+          <canvas id="chartTipo"></canvas>
+        </div>
+      </div>
+    </section>
+
+
+    <div class="panel-card">
+        <div class="panel-title">Acessos aprovados por dia</div>
+        <div class="chart-wrap large">
+          <canvas id="chartDia"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="tables-grid">
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Cidade</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cidade</th>
+                <th>Total</th>
+                <th>Aprovados</th>
+                <th>Reprovados</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaCidade"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-title">Resumo por Operação</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Operação</th>
+                <th>Total</th>
+                <th>Aprovados</th>
+                <th>Com veículo</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaOperacao"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-title">Detalhamento dos acessos</div>
+      <div class="table-wrap big-table" id="tableWrap"></div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+        <button class="btn-secondary" id="btnPrev" type="button">Anterior</button>
+        <button class="btn-secondary" id="btnNext" type="button">Próxima</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+
+    let chartEstado = null;
+    let chartTipo = null;
+    let chartOperacao = null;
+    let chartDia = null;
+
+    let currentPage = 1;
+    let totalPages = 1;
+    let searchDebounce = null;
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
-  });
 
-  charts.push(chart);
-}
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
+    }
 
-/* =========================
-   FILTRO
-========================= */
+    function formatPercent(value) {
+      return `${Number(value || 0).toFixed(2)}%`;
+    }
 
-function applyFilters(){
-  filteredData = [...rawData];
-  updateKpis();
-  renderCharts();
-}
+    function setUltimaAtualizacao(value) {
+      document.getElementById("ultimaAtualizacao").textContent = value || "--:--";
+    }
 
-/* =========================
-   LOAD
-========================= */
+    function setResumoVazio() {
+      document.getElementById("totalAcessos").textContent = "0";
+      document.getElementById("totalAprovados").textContent = "0";
+      document.getElementById("totalReprovados").textContent = "0";
+      document.getElementById("totalComVeiculo").textContent = "0";
+      document.getElementById("totalSemVeiculo").textContent = "0";
+      document.getElementById("percentualAprovados").textContent = "0%";
+      setUltimaAtualizacao("--:--");
+    }
 
-async function loadData(){
+    function buildMultiSelect(containerId, triggerId, menuId, values, placeholder) {
+      const container = document.getElementById(containerId);
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
 
-  try{
-    const res = await fetch("/api/dados");
-    rawData = await res.json();
+      menu.innerHTML = `
+        <div class="multi-actions">
+          <button type="button" class="select-all">Todos</button>
+          <button type="button" class="clear-all">Limpar</button>
+        </div>
+      `;
 
-    rawData = rawData.map(r=>{
-      const d = parseDate(r[COL.DATA]);
-      return {...r,_date:d};
+      values.forEach(value => {
+        const safe = escapeHtml(value);
+        const label = document.createElement("label");
+        label.className = "multi-option";
+        label.innerHTML = `<input type="checkbox" value="${safe}"><span>${safe}</span>`;
+        menu.appendChild(label);
+      });
+
+      function updateTriggerText() {
+        const selected = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+
+        if (selected.length === 0) {
+          trigger.textContent = placeholder;
+        } else if (selected.length === 1) {
+          trigger.textContent = selected[0];
+        } else {
+          trigger.textContent = `${selected.length} selecionados`;
+        }
+      }
+
+      trigger.onclick = () => {
+        document.querySelectorAll(".multi-select").forEach(el => {
+          if (el !== container) el.classList.remove("open");
+        });
+        container.classList.toggle("open");
+      };
+
+      menu.querySelector(".select-all").onclick = () => {
+        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+        updateTriggerText();
+        loadAll(1);
+      };
+
+      menu.querySelector(".clear-all").onclick = () => {
+        menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+        updateTriggerText();
+        loadAll(1);
+      };
+
+      menu.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener("change", () => {
+          updateTriggerText();
+          loadAll(1);
+        });
+      });
+
+      updateTriggerText();
+    }
+
+    function getSelectedValues(menuId) {
+      return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+        .map(i => i.value);
+    }
+
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".multi-select").forEach(container => {
+        if (!container.contains(e.target)) {
+          container.classList.remove("open");
+        }
+      });
     });
 
-    filteredData = [...rawData];
-
-    updateKpis();
-    renderCharts();
-
-  }catch(e){
-    console.error("Erro ao carregar dados", e);
-  }
-}
-
-document.getElementById("applyFilters")?.addEventListener("click", applyFilters);
-
-loadData();
-</script>
-  
-let dados = [];
-
-async function carregar() {
-  const res = await fetch("/api/dados");
-  dados = await res.json();
-
-  popularFiltros();
-  atualizar();
-}
-
-function unique(field) {
-  return [...new Set(dados.map(d => d[field]).filter(Boolean))];
-}
-
-function popularFiltros() {
-  preencherSelect("filtroUnidade", unique("Unidade"));
-  preencherSelect("filtroStatus", unique("Status"));
-}
-
-function preencherSelect(id, valores) {
-  const el = document.getElementById(id);
-  valores.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    el.appendChild(opt);
-  });
-}
-
-function getSelecionados(id) {
-  return [...document.getElementById(id).selectedOptions].map(o => o.value);
-}
-
-function filtrar() {
-  let filtrado = [...dados];
-
-  const unidade = getSelecionados("filtroUnidade");
-  const status = getSelecionados("filtroStatus");
-  const busca = document.getElementById("busca").value.toLowerCase();
-
-  if (unidade.length)
-    filtrado = filtrado.filter(d => unidade.includes(d.Unidade));
-
-  if (status.length)
-    filtrado = filtrado.filter(d => status.includes(d.Status));
-
-  if (busca)
-    filtrado = filtrado.filter(d =>
-      JSON.stringify(d).toLowerCase().includes(busca)
-    );
-
-  return filtrado;
-}
-
-function contarPorCampo(lista, campo) {
-  const contagem = {};
-
-  lista.forEach(d => {
-    const val = d[campo] || "N/A";
-    contagem[val] = (contagem[val] || 0) + 1;
-  });
-
-  return Object.entries(contagem)
-    .sort((a, b) => b[1] - a[1]);
-}
-
-function gerarCards(lista) {
-  const dias = Array(31).fill(0);
-
-  lista.forEach(d => {
-    if (d._DATA_OBJ) {
-      const dia = new Date(d._DATA_OBJ).getDate();
-      dias[dia - 1]++;
+    function getFilters() {
+      return new URLSearchParams({
+        dataInicio: document.getElementById("filtroDataInicio").value || "",
+        dataFim: document.getElementById("filtroDataFim").value || "",
+        liberacaoInicio: document.getElementById("filtroLiberacaoInicio").value || "",
+        liberacaoFim: document.getElementById("filtroLiberacaoFim").value || "",
+        estado: getSelectedValues("menuEstado").join("|"),
+        cidade: getSelectedValues("menuCidade").join("|"),
+        operacao: getSelectedValues("menuOperacao").join("|"),
+        tipoLiberacao: getSelectedValues("menuTipoLiberacao").join("|"),
+        veiculo: getSelectedValues("menuVeiculo").join("|"),
+        status: getSelectedValues("menuStatus").join("|"),
+        busca: document.getElementById("filtroBusca").value || "",
+      });
     }
-  });
 
-  const container = document.getElementById("cardsDias");
-  container.innerHTML = "";
+    async function fetchJson(url) {
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
 
-  dias.forEach((qtd, i) => {
-    container.innerHTML += `
-      <div class="card">
-        Dia ${i + 1}<br>
-        <span>${qtd}</span>
-      </div>
-    `;
-  });
-}
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`Erro ${response.status} em ${url}${text ? " - " + text : ""}`);
+      }
 
-let grafico1, grafico2;
+      return response.json();
+    }
 
-function gerarGrafico(id, dados, labelCampo) {
-  const labels = dados.map(d => d[0]);
-  const valores = dados.map(d => d[1]);
+    function destroyCharts() {
+      if (chartEstado) chartEstado.destroy();
+      if (chartTipo) chartTipo.destroy();
+      if (chartOperacao) chartOperacao.destroy();
+      if (chartDia) chartDia.destroy();
 
-  return new Chart(document.getElementById(id), {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: labelCampo,
-        data: valores,
-        backgroundColor: "orange"
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: { ticks: { color: "white" } },
-        y: { ticks: { color: "white" } }
+      chartEstado = null;
+      chartTipo = null;
+      chartOperacao = null;
+      chartDia = null;
+    }
+
+    function baseChartOptions(horizontal = false) {
+      return {
+        indexAxis: horizontal ? "y" : "x",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: "#ffffff",
+              font: { size: 10 },
+              boxWidth: 10
+            }
+          },
+          datalabels: {
+            color: "#ffffff",
+            anchor: horizontal ? "end" : "end",
+            align: horizontal ? "right" : "top",
+            offset: 4,
+            clamp: true,
+            font: {
+              weight: "700",
+              size: 10
+            },
+            formatter: (value) => value > 0 ? formatNumber(value) : ""
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#d1d5db", font: { size: 9 } },
+            grid: { color: "rgba(255,255,255,0.06)" }
+          },
+          y: {
+            ticks: { color: "#d1d5db", font: { size: 9 } },
+            grid: { color: "rgba(255,255,255,0.06)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    async function loadFiltros() {
+      try {
+        const data = await fetchJson("/api/access-filtros");
+
+        buildMultiSelect("multiEstado", "triggerEstado", "menuEstado", data.estados || [], "Todos");
+        buildMultiSelect("multiCidade", "triggerCidade", "menuCidade", data.cidades || [], "Todas");
+        buildMultiSelect("multiOperacao", "triggerOperacao", "menuOperacao", data.operacoes || [], "Todas");
+        buildMultiSelect("multiTipoLiberacao", "triggerTipoLiberacao", "menuTipoLiberacao", data.tiposLiberacao || [], "Todos");
+        buildMultiSelect("multiVeiculo", "triggerVeiculo", "menuVeiculo", data.veiculos || [], "Todos");
+        buildMultiSelect("multiStatus", "triggerStatus", "menuStatus", data.status || [], "Todos");
+      } catch (error) {
+        console.error("Erro ao carregar filtros:", error);
       }
     }
-  });
-}
 
-function atualizar() {
-  const lista = filtrar();
+    async function loadResumo() {
+      try {
+        const qs = getFilters().toString();
+        const data = await fetchJson(`/api/access-resumo?${qs}`);
 
-  gerarCards(lista);
+        document.getElementById("totalAcessos").textContent = formatNumber(data.total);
+        document.getElementById("totalAprovados").textContent = formatNumber(data.aprovados);
+        document.getElementById("totalReprovados").textContent = formatNumber(data.reprovados);
+        document.getElementById("totalComVeiculo").textContent = formatNumber(data.comVeiculo);
+        document.getElementById("totalSemVeiculo").textContent = formatNumber(data.semVeiculo);
+        document.getElementById("percentualAprovados").textContent = formatPercent(data.percentualAprovados);
+        setUltimaAtualizacao(data.ultimaAtualizacao);
+      } catch (error) {
+        console.error("Erro ao carregar resumo:", error);
+        setResumoVazio();
+      }
+    }
 
-  const motivos = contarPorCampo(lista, "Motivo");
-  const unidade = contarPorCampo(lista, "Unidade");
+    async function loadGraficos() {
+      try {
+        const qs = getFilters().toString();
+        const data = await fetchJson(`/api/access-graficos?${qs}`);
 
-  if (grafico1) grafico1.destroy();
-  if (grafico2) grafico2.destroy();
+        destroyCharts();
 
-  grafico1 = gerarGrafico("graficoMotivos", motivos, "Motivos");
-  grafico2 = gerarGrafico("graficoUnidade", unidade, "Unidades");
-}
+        chartEstado = new Chart(document.getElementById("chartEstado"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(data.operacao || {}),
+            datasets: [{
+              label: "Acessos",
+              data: Object.values(data.operacao || {}),
+              backgroundColor: "#ff7a1a",
+              borderRadius: 8
+            }]
+          },
+          options: baseChartOptions(true)
+        });
 
-/* eventos */
-document.querySelectorAll("select, input").forEach(el => {
-  el.addEventListener("change", atualizar);
-  el.addEventListener("keyup", atualizar);
-});
+        chartTipo = new Chart(document.getElementById("chartTipo"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(data.tipoLiberacao || {}),
+            datasets: [{
+              label: "Acessos",
+              data: Object.values(data.tipoLiberacao || {}),
+              backgroundColor: "#ff7a1a",
+              borderRadius: 8
+            }]
+          },
+          options: baseChartOptions(true)
+        });
 
-carregar();
-</script>
+        chartOperacao = new Chart(document.getElementById("chartOperacao"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(data.operacao || {}),
+            datasets: [{
+              label: "Acessos",
+              data: Object.values(data.operacao || {}),
+              backgroundColor: "#ff7a1a",
+              borderRadius: 8
+            }]
+          },
+          options: baseChartOptions(true)
+        });
 
+        const labelsDia = (data.porDia?.labels || []).map(d => String(Number(d)));
+        const valuesDia = data.porDia?.values || [];
+
+        chartDia = new Chart(document.getElementById("chartDia"), {
+          type: "line",
+          data: {
+            labels: labelsDia,
+            datasets: [{
+              label: "Acessos aprovados",
+              data: valuesDia,
+              borderColor: "#60a5fa",
+              backgroundColor: "rgba(96,165,250,0.18)",
+              fill: false,
+              tension: 0.35,
+              pointRadius: 3,
+              pointHoverRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: "#ffffff" }
+              },
+              datalabels: {
+                color: "#ffffff",
+                align: "top",
+                anchor: "end",
+                offset: 4,
+                clamp: true,
+                font: {
+                  weight: "700",
+                  size: 9
+                },
+                formatter: (value) => value > 0 ? formatNumber(value) : ""
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: "#d1d5db", font: { size: 9 } },
+                grid: { color: "rgba(255,255,255,0.06)" }
+              },
+              y: {
+                ticks: { color: "#d1d5db", font: { size: 9 } },
+                grid: { color: "rgba(255,255,255,0.06)" },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        const tabelaCidade = document.getElementById("tabelaCidade");
+        tabelaCidade.innerHTML = (data.tabelaCidade || []).map(item => `
+          <tr>
+            <td>${escapeHtml(item.cidade)}</td>
+            <td>${formatNumber(item.total)}</td>
+            <td class="green-text">${formatNumber(item.aprovados)}</td>
+            <td class="red-text">${formatNumber(item.reprovados)}</td>
+          </tr>
+        `).join("");
+
+        const tabelaOperacao = document.getElementById("tabelaOperacao");
+        tabelaOperacao.innerHTML = (data.tabelaOperacao || []).map(item => `
+          <tr>
+            <td>${escapeHtml(item.operacao)}</td>
+            <td>${formatNumber(item.total)}</td>
+            <td class="green-text">${formatNumber(item.aprovados)}</td>
+            <td class="blue-text">${formatNumber(item.comVeiculo)}</td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        console.error("Erro ao carregar gráficos:", error);
+        destroyCharts();
+        document.getElementById("tabelaCidade").innerHTML = "";
+        document.getElementById("tabelaOperacao").innerHTML = "";
+      }
+    }
+
+    async function loadDetalhes(page = 1) {
+      try {
+        currentPage = page;
+        const qs = getFilters();
+        qs.set("page", currentPage);
+        qs.set("limit", 50);
+
+        const data = await fetchJson(`/api/access-detalhes?${qs.toString()}`);
+        totalPages = Number(data.totalPages || 1);
+
+        const headers = [
+          "ID",
+          "Data",
+          "Data de liberação",
+          "Estado",
+          "Cidade",
+          "Operação",
+          "Tipo de Liberação",
+          "Nome completo:",
+          "Empresa",
+          "Vai acessar com veículo?",
+          "Placa",
+          "Status"
+        ];
+
+        let html = "<table><thead><tr>";
+        headers.forEach(h => {
+          html += `<th>${escapeHtml(h)}</th>`;
+        });
+        html += "</tr></thead><tbody>";
+
+        (data.rows || []).forEach(row => {
+          html += "<tr>";
+          headers.forEach(h => {
+            html += `<td>${escapeHtml(row[h] || "")}</td>`;
+          });
+          html += "</tr>";
+        });
+
+        html += "</tbody></table>";
+        document.getElementById("tableWrap").innerHTML = html;
+      } catch (error) {
+        console.error("Erro ao carregar detalhes:", error);
+        document.getElementById("tableWrap").innerHTML = `
+          <div style="padding:16px; color:#fca5a5;">
+            Não foi possível carregar o detalhamento dos acessos.
+          </div>
+        `;
+      }
+    }
+
+    async function loadAll(page = 1) {
+      await Promise.all([
+        loadResumo(),
+        loadGraficos(),
+        loadDetalhes(page)
+      ]);
+    }
+
+    function clearFilters() {
+      document.getElementById("filtroDataInicio").value = "";
+      document.getElementById("filtroDataFim").value = "";
+      document.getElementById("filtroLiberacaoInicio").value = "";
+      document.getElementById("filtroLiberacaoFim").value = "";
+      document.getElementById("filtroBusca").value = "";
+
+      document.querySelectorAll('.multi-select-menu input[type="checkbox"]').forEach(input => {
+        input.checked = false;
+      });
+
+      document.getElementById("triggerEstado").textContent = "Todos";
+      document.getElementById("triggerCidade").textContent = "Todas";
+      document.getElementById("triggerOperacao").textContent = "Todas";
+      document.getElementById("triggerTipoLiberacao").textContent = "Todos";
+      document.getElementById("triggerVeiculo").textContent = "Todos";
+      document.getElementById("triggerStatus").textContent = "Todos";
+
+      loadAll(1);
+    }
+
+    function bindEvents() {
+      const changeIds = [
+        "filtroDataInicio",
+        "filtroDataFim",
+        "filtroLiberacaoInicio",
+        "filtroLiberacaoFim"
+      ];
+
+      changeIds.forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener("change", () => loadAll(1));
+      });
+
+      const filtroBusca = document.getElementById("filtroBusca");
+      filtroBusca.addEventListener("input", () => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => loadAll(1), 350);
+      });
+
+      document.getElementById("btnLimpar").addEventListener("click", clearFilters);
+
+      document.getElementById("btnPrev").addEventListener("click", () => {
+        if (currentPage > 1) {
+          loadDetalhes(currentPage - 1);
+        }
+      });
+
+      document.getElementById("btnNext").addEventListener("click", () => {
+        if (currentPage < totalPages) {
+          loadDetalhes(currentPage + 1);
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      bindEvents();
+      await loadFiltros();
+      await loadAll(1);
+    });
+  </script>
 </body>
 </html>

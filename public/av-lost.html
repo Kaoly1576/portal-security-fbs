@@ -7,16 +7,18 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
   <style>
-    /* PRESERVANDO TODO O SEU LAYOUT ORIGINAL */
+    /* ============================================================
+       PRESERVANDO INTEGRALMENTE O SEU LAYOUT ORIGINAL (CSS)
+       ============================================================ */
     *{ margin:0; padding:0; box-sizing:border-box; font-family:Arial, Helvetica, sans-serif; }
     :root{
       --bg-1:#0b0f16; --bg-2:#141922; --panel:#1a1f29; --panel-2:#202633;
       --border:rgba(255,255,255,0.10); --text:#f3f4f6; --muted:#9ca3af;
       --orange:#ff7a1a; --orange-strong:#ff5a00; --blue:#60a5fa;
-      --green:#22c55e; --red:#ef4444; --shadow:0 10px 30px rgba(0,0,0,0.28); --radius:14px;
+      --green:#22c55e; --red:#ef4444; --shadow:0 10px 30px rgba(0,0,0,0.28);
+      --radius:14px;
     }
     html, body{
       min-height:100%;
@@ -28,26 +30,35 @@
     .hero{ display:flex; align-items:center; justify-content:space-between; gap:14px; background:linear-gradient(90deg, rgba(255,122,26,0.10), rgba(255,255,255,0.03)); border:1px solid var(--border); border-radius:18px; padding:12px 16px; box-shadow:var(--shadow); margin-bottom:10px; }
     .hero-title{ font-size:22px; font-weight:800; color:var(--orange); line-height:1.1; }
     .panel{ background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); margin-bottom:8px; }
+    .panel-header{ padding:10px 12px 6px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .panel-title{ font-size:18px; font-weight:800; color:#f8fafc; }
+    .panel-body{ padding:10px 12px 12px; }
     .filters-grid{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:8px; margin-bottom:8px; }
+    .field{ display:flex; flex-direction:column; gap:4px; }
     .field label{ font-size:10px; font-weight:700; color:#e5e7eb; }
-    .field input, .multi-select-trigger{ width:100%; height:32px; border-radius:8px; border:1px solid var(--border); background:#191d25; color:#fff; font-size:11px; padding:8px 10px; outline:none; cursor:pointer; }
+    .field input, .multi-select-trigger{ width:100%; height:32px; border-radius:8px; border:1px solid var(--border); background:#191d25; color:#fff; font-size:11px; padding:8px 10px; outline:none; }
     
-    /* ESTILO DOS MULTISELECTS */
-    .multi-select{ position:relative; }
-    .multi-select-menu{ position:absolute; top:36px; left:0; width:100%; background:#171b22; border:1px solid var(--border); border-radius:10px; display:none; z-index:60; padding:6px; max-height: 250px; overflow-y: auto; }
+    /* MULTISELECT ESTILO ORIGINAL */
+    .multi-select{ position:relative; width:100%; }
+    .multi-select-trigger{ display:flex; align-items:center; cursor:pointer; position:relative; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .multi-select-trigger::after{ content:"▼"; position:absolute; right:9px; font-size:9px; color:#d1d5db; }
+    .multi-select-menu{ position:absolute; top:36px; left:0; width:100%; background:#171b22; border:1px solid var(--border); border-radius:10px; box-shadow:0 12px 24px rgba(0,0,0,0.35); display:none; z-index:60; padding:6px; max-height:220px; overflow-y:auto; }
     .multi-select.open .multi-select-menu{ display:block; }
-    .multi-option{ display:flex; align-items:center; gap:7px; padding:7px 8px; font-size:11px; cursor:pointer; }
+    .multi-option{ display:flex; align-items:center; gap:7px; padding:7px 8px; border-radius:7px; font-size:11px; color:#fff; cursor:pointer; }
     .multi-option:hover{ background:#232a35; }
+    .multi-option input{ accent-color:var(--orange); }
 
-    /* KPIs */
+    /* KPI CARDS */
     .kpi-grid{ display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:8px; margin-bottom:8px; }
-    .kpi-card{ background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018)); border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
-    .kpi-value{ font-size:30px; font-weight:900; color:var(--orange); }
+    .kpi-card{ background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018)); border:1px solid var(--border); border-radius:12px; padding:10px 12px; min-width:0; }
+    .kpi-label{ font-size:10px; font-weight:800; color:#d1d5db; text-transform:uppercase; margin-bottom:6px; }
+    .kpi-value{ font-size:34px; font-weight:900; line-height:1; color:var(--orange); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* GRÁFICOS */
+    /* CHARTS */
     .chart-grid-top{ display:grid; grid-template-columns:1.05fr 0.95fr 1.05fr; gap:8px; margin-bottom:8px; }
-    .chart-card{ background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:12px; padding:10px; }
-    .chart-wrap{ height:220px; position:relative; }
+    .chart-card{ background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018)); border:1px solid var(--border); border-radius:12px; padding:10px; }
+    .chart-title{ text-align:center; font-size:13px; font-weight:800; color:var(--orange); margin-bottom:8px; }
+    .chart-wrap{ position:relative; width:100%; height:220px; }
   </style>
 </head>
 <body>
@@ -55,33 +66,45 @@
   <div class="page">
     <section class="hero">
       <div class="hero-left">
-        <div class="hero-title">AV LOST - FBS AUDITORIA</div>
-        <input type="file" id="csvUpload" accept=".csv" style="margin-left: 20px; font-size: 10px;">
+        <div class="hero-title-wrap">
+          <div class="hero-title">AV LOST</div>
+          <div style="font-size:11px; color:#cbd5e1;">Conectado via Google Sheets API</div>
+        </div>
       </div>
-      <div class="top-info">
-        <div id="sheetInfo">Aguardando CSV...</div>
+      <div class="hero-right">
+        <div id="sheetInfo" style="font-size:11px; text-align:right;">Sincronizando dados...</div>
       </div>
     </section>
 
     <section class="panel">
       <div class="panel-body">
         <div class="filters-grid">
-          <div class="field"><label>Unidade</label>
+          <div class="field">
+            <label>Unidade</label>
             <div class="multi-select" id="multiUnidade">
-              <div class="multi-select-trigger" onclick="toggleMenu('menuUnidade')">Todas</div>
+              <div class="multi-select-trigger" id="triggerUnidade">Todas</div>
               <div class="multi-select-menu" id="menuUnidade"></div>
             </div>
           </div>
-          <div class="field"><label>Status</label>
+          <div class="field">
+            <label>Status Retorno</label>
             <div class="multi-select" id="multiStatus">
-              <div class="multi-select-trigger" onclick="toggleMenu('menuStatus')">Todos</div>
+              <div class="multi-select-trigger" id="triggerStatus">Todos</div>
               <div class="multi-select-menu" id="menuStatus"></div>
             </div>
           </div>
-          <div class="field"><label>Colaborador</label>
+          <div class="field">
+            <label>Colaborador</label>
             <div class="multi-select" id="multiColab">
-              <div class="multi-select-trigger" onclick="toggleMenu('menuColab')">Todos</div>
+              <div class="multi-select-trigger" id="triggerColab">Todos</div>
               <div class="multi-select-menu" id="menuColab"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Mês / Ano</label>
+            <div class="multi-select" id="multiMes">
+              <div class="multi-select-trigger" id="triggerMes">Todos</div>
+              <div class="multi-select-menu" id="menuMes"></div>
             </div>
           </div>
         </div>
@@ -89,123 +112,177 @@
     </section>
 
     <section class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-label">ITENS CONTADOS</div><div class="kpi-value" id="kpiRegistros">0</div></div>
-      <div class="kpi-card"><div class="kpi-label">QTD ENCONTRADA</div><div class="kpi-value" id="kpiQtd">0</div></div>
-      <div class="kpi-card"><div class="kpi-label">AV - LOST</div><div class="kpi-value" id="kpiAv">0</div></div>
-      <div class="kpi-card"><div class="kpi-label">VALOR USD</div><div class="kpi-value" id="kpiUsd">$0.00</div></div>
-      <div class="kpi-card"><div class="kpi-label">VALOR BRL</div><div class="kpi-value" id="kpiBrl">R$ 0,00</div></div>
+      <div class="kpi-card">
+        <div class="kpi-label">ITENS CONTADOS</div>
+        <div class="kpi-value" id="kpiRegistros">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">QUANTIDADE ENCONTRADA</div>
+        <div class="kpi-value" id="kpiQtd">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">AV - LOST</div>
+        <div class="kpi-value" id="kpiAv">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">US$ ENCONTRADO</div>
+        <div class="kpi-value" id="kpiUsd">$0.00</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">R$ ENCONTRADO</div>
+        <div class="kpi-value" id="kpiBrl">R$ 0,00</div>
+      </div>
     </section>
 
     <section class="chart-grid-top">
-      <div class="chart-card"><div class="chart-title">Ocorrências por Unidade</div><div class="chart-wrap"><canvas id="chartUnidade"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Status Retorno</div><div class="chart-wrap"><canvas id="chartStatus"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Top Colaboradores</div><div class="chart-wrap"><canvas id="chartColab"></canvas></div></div>
+      <div class="chart-card">
+        <div class="chart-title">Ocorrências por Unidade</div>
+        <div class="chart-wrap"><canvas id="chartUnidade"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Status do Retorno</div>
+        <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Volume por Colaborador</div>
+        <div class="chart-wrap"><canvas id="chartColab"></canvas></div>
+      </div>
     </section>
   </div>
 
   <script>
     Chart.register(ChartDataLabels);
+
     let rawData = [];
     let charts = {};
 
-    document.getElementById('csvUpload').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          rawData = results.data;
-          initDashboard();
-        }
-      });
-    });
-
-    function initDashboard() {
-      setupFilters();
-      updateDashboard();
+    // 1. BUSCAR DADOS DO SEU SERVER.JS
+    async function carregarDados() {
+      try {
+        const res = await fetch('/api/dados');
+        rawData = await res.json();
+        
+        document.getElementById('sheetInfo').innerText = `Linhas carregadas: ${rawData.length}`;
+        
+        inicializarFiltros();
+        atualizarDashboard();
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+        document.getElementById('sheetInfo').innerText = "Erro na conexão.";
+      }
     }
 
-    function parseVal(val) {
-      if(!val) return 0;
-      return parseFloat(val.toString().replace(/[R\$\s\.]/g, '').replace(',', '.')) || 0;
+    // 2. FUNÇÃO PARA LIMPAR VALORES MONETÁRIOS (R$ 27,50 -> 27.50)
+    function parseMoeda(valor) {
+      if (!valor) return 0;
+      let limpo = valor.toString().replace(/[R\$\s\.]/g, '').replace(',', '.');
+      return parseFloat(limpo) || 0;
     }
 
-    function setupFilters() {
-      const units = [...new Set(rawData.map(r => r.UNIDADE))].filter(Boolean);
-      const status = [...new Set(rawData.map(r => r["STATUS RETORNO"]))].filter(Boolean);
-      const colabs = [...new Set(rawData.map(r => r["PROBLEM SOLVER LP"]))].filter(Boolean);
+    // 3. CONFIGURAR OS MENUS DE MULTISELEÇÃO
+    function inicializarFiltros() {
+      const criarMenu = (id, campo, triggerId) => {
+        const uniqueValues = [...new Set(rawData.map(r => r[campo]))].filter(Boolean).sort();
+        const menu = document.getElementById(id);
+        
+        menu.innerHTML = uniqueValues.map(val => `
+          <label class="multi-option">
+            <input type="checkbox" value="${val}" checked onchange="atualizarDashboard()">
+            <span>${val}</span>
+          </label>
+        `).join('');
 
-      fillMenu('menuUnidade', units);
-      fillMenu('menuStatus', status);
-      fillMenu('menuColab', colabs);
+        // Lógica de abrir/fechar original
+        document.getElementById(triggerId).onclick = (e) => {
+          e.stopPropagation();
+          menu.parentElement.classList.toggle('open');
+        };
+      };
+
+      criarMenu('menuUnidade', 'UNIDADE', 'triggerUnidade');
+      criarMenu('menuStatus', 'STATUS RETORNO', 'triggerStatus');
+      criarMenu('menuColab', 'PROBLEM SOLVER LP', 'triggerColab');
+      criarMenu('menuMes', 'MES / ANO', 'triggerMes');
     }
 
-    function fillMenu(id, items) {
-      const menu = document.getElementById(id);
-      menu.innerHTML = items.map(item => `
-        <label class="multi-option">
-          <input type="checkbox" value="${item}" onchange="updateDashboard()" checked> ${item}
-        </label>
-      `).join('');
-    }
+    // Fechar menus ao clicar fora
+    window.onclick = () => document.querySelectorAll('.multi-select').forEach(m => m.classList.remove('open'));
 
-    function toggleMenu(id) {
-      document.getElementById(id).parentElement.classList.toggle('open');
-    }
+    // 4. ATUALIZAR KPIs E GRÁFICOS
+    function atualizarDashboard() {
+      const getSelected = (menuId) => Array.from(document.querySelectorAll(`#${menuId} input:checked`)).map(i => i.value);
+      
+      const selUnits = getSelected('menuUnidade');
+      const selStatus = getSelected('menuStatus');
+      const selColabs = getSelected('menuColab');
+      const selMes = getSelected('menuMes');
 
-    function updateDashboard() {
-      const selUnits = Array.from(document.querySelectorAll('#menuUnidade input:checked')).map(i => i.value);
-      const selStatus = Array.from(document.querySelectorAll('#menuStatus input:checked')).map(i => i.value);
-      const selColabs = Array.from(document.querySelectorAll('#menuColab input:checked')).map(i => i.value);
-
-      const filtered = rawData.filter(r => 
-        selUnits.includes(r.UNIDADE) && 
-        selStatus.includes(r["STATUS RETORNO"]) && 
-        selColabs.includes(r["PROBLEM SOLVER LP"])
+      const filtrados = rawData.filter(r => 
+        selUnits.includes(r['UNIDADE']) &&
+        selStatus.includes(r['STATUS RETORNO']) &&
+        selColabs.includes(r['PROBLEM SOLVER LP']) &&
+        selMes.includes(r['MES / ANO'])
       );
 
-      // Atualiza KPIs
-      document.getElementById('kpiRegistros').innerText = filtered.length;
-      document.getElementById('kpiQtd').innerText = filtered.reduce((a, b) => a + (parseInt(b["QUANTIDADE ENCONTRADA"]) || 0), 0);
-      document.getElementById('kpiAv').innerText = filtered.reduce((a, b) => a + (parseInt(b["AV - LOST"]) || 0), 0);
+      // Atualizar KPIs
+      document.getElementById('kpiRegistros').innerText = filtrados.length;
+      document.getElementById('kpiQtd').innerText = filtrados.reduce((a, b) => a + (parseInt(b['QUANTIDADE ENCONTRADA']) || 0), 0);
+      document.getElementById('kpiAv').innerText = filtrados.reduce((a, b) => a + (parseInt(b['AV - LOST']) || 0), 0);
       
-      const totalBrl = filtered.reduce((a, b) => a + parseVal(b["R$ ENCONTRADO"]), 0);
+      const totalBrl = filtrados.reduce((a, b) => a + parseMoeda(b['R$ ENCONTRADO']), 0);
+      const totalUsd = filtrados.reduce((a, b) => a + parseMoeda(b['US$ ENCONTRADO']), 0);
+      
       document.getElementById('kpiBrl').innerText = totalBrl.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+      document.getElementById('kpiUsd').innerText = totalUsd.toLocaleString('en-US', {style:'currency', currency:'USD'});
 
-      renderCharts(filtered);
+      renderizarGraficos(filtrados);
     }
 
-    function renderCharts(data) {
-      // Unidade Chart
-      const unitData = {};
-      data.forEach(r => unitData[r.UNIDADE] = (unitData[r.UNIDADE] || 0) + 1);
-      createChart('chartUnidade', 'bar', Object.keys(unitData), Object.values(unitData), '#ff7a1a');
+    // 5. RENDERIZAR GRÁFICOS COM RÓTULOS (CONFORME PEDIDO)
+    function renderizarGraficos(dados) {
+      const agrupar = (campo) => {
+        const map = {};
+        dados.forEach(d => map[d[campo]] = (map[d[campo]] || 0) + 1);
+        return map;
+      };
 
-      // Status Chart
-      const statusData = {};
-      data.forEach(r => statusData[r["STATUS RETORNO"]] = (statusData[r["STATUS RETORNO"]] || 0) + 1);
-      createChart('chartStatus', 'doughnut', Object.keys(statusData), Object.values(statusData), ['#ff7a1a', '#60a5fa', '#22c55e']);
-    }
-
-    function createChart(id, type, labels, data, colors) {
-      if(charts[id]) charts[id].destroy();
-      const ctx = document.getElementById(id).getContext('2d');
-      charts[id] = new Chart(ctx, {
-        type: type,
-        data: {
-          labels: labels,
-          datasets: [{ data: data, backgroundColor: colors }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { 
-            datalabels: { color: '#fff', font: { weight: 'bold', size: 10 } },
-            legend: { display: type === 'doughnut', labels: { color: '#fff', font: { size: 10 } } }
+      const plot = (id, type, map, color) => {
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), {
+          type: type,
+          data: {
+            labels: Object.keys(map),
+            datasets: [{ data: Object.values(map), backgroundColor: color, borderRadius: 5 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: type === 'doughnut', labels: { color: '#fff', font: { size: 10 } } },
+              datalabels: {
+                color: '#fff',
+                anchor: 'end',
+                align: 'top',
+                formatter: Math.round,
+                font: { weight: 'bold', size: 11 }
+              }
+            },
+            scales: type === 'bar' ? { y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } } } : {}
           }
-        }
-      });
+        });
+      };
+
+      plot('chartUnidade', 'bar', agrupar('UNIDADE'), '#ff7a1a');
+      plot('chartStatus', 'doughnut', agrupar('STATUS RETORNO'), ['#ff7a1a', '#60a5fa', '#22c55e', '#ef4444']);
+      
+      // Top 5 Colaboradores para não poluir o gráfico
+      const colabMap = agrupar('PROBLEM SOLVER LP');
+      const topColabs = Object.fromEntries(Object.entries(colabMap).sort((a,b) => b[1] - a[1]).slice(0, 5));
+      plot('chartColab', 'bar', topColabs, '#60a5fa');
     }
+
+    // Iniciar
+    carregarDados();
   </script>
 </body>
 </html>

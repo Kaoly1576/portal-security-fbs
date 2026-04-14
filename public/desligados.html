@@ -578,7 +578,12 @@
       document.getElementById("percentualBloqueio").textContent = formatPercent(data.taxaBloqueio);
       document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
     }
-
+    
+function sortObjectDesc(obj) {  
+  return Object.entries(obj || {})  
+    .sort((a, b) => b[1] - a[1]); // ordena pelo valor (decrescente)  
+}
+    
     async function loadGraficos() {
       const qs = getFilters().toString();
       const res = await fetch(`/api/desligados-graficos?${qs}`, { credentials: "same-origin" });

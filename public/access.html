@@ -462,133 +462,114 @@
       }
     }
 
-    async function loadGraficos() {
-      try {
-        const qs = getFilters().toString();
-        const data = await fetchJson(`/api/access-graficos?${qs}`);
-
-        destroyCharts();
-
-        chartEstado = new Chart(document.getElementById("chartEstado"), {
-          type: "bar",
-          data: {
-            labels: Object.keys(data.operacao || {}),
-            datasets: [{
-              label: "Acessos",
-              data: Object.values(data.operacao || {}),
-              backgroundColor: "#ff7a1a",
-              borderRadius: 8
-            }]
-          },
-          options: baseChartOptions(true)
-        });
-
-        chartTipo = new Chart(document.getElementById("chartTipo"), {
-          type: "bar",
-          data: {
-            labels: Object.keys(data.tipoLiberacao || {}),
-            datasets: [{
-              label: "Acessos",
-              data: Object.values(data.tipoLiberacao || {}),
-              backgroundColor: "#ff7a1a",
-              borderRadius: 8
-            }]
-          },
-          options: baseChartOptions(true)
-        });
-
-        chartOperacao = new Chart(document.getElementById("chartOperacao"), {
-          type: "bar",
-          data: {
-            labels: Object.keys(data.operacao || {}),
-            datasets: [{
-              label: "Acessos",
-              data: Object.values(data.operacao || {}),
-              backgroundColor: "#ff7a1a",
-              borderRadius: 8
-            }]
-          },
-          options: baseChartOptions(true)
-        });
-
-        const labelsDia = (data.porDia?.labels || []).map(d => String(Number(d)));
-        const valuesDia = data.porDia?.values || [];
-
-        chartDia = new Chart(document.getElementById("chartDia"), {
-          type: "line",
-          data: {
-            labels: labelsDia,
-            datasets: [{
-              label: "Acessos aprovados",
-              data: valuesDia,
-              borderColor: "#60a5fa",
-              backgroundColor: "rgba(96,165,250,0.18)",
-              fill: false,
-              tension: 0.35,
-              pointRadius: 3,
-              pointHoverRadius: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                labels: { color: "#ffffff" }
-              },
-              datalabels: {
-                color: "#ffffff",
-                align: "top",
-                anchor: "end",
-                offset: 4,
-                clamp: true,
-                font: {
-                  weight: "700",
-                  size: 9
-                },
-                formatter: (value) => value > 0 ? formatNumber(value) : ""
-              }
-            },
-            scales: {
-              x: {
-                ticks: { color: "#d1d5db", font: { size: 9 } },
-                grid: { color: "rgba(255,255,255,0.06)" }
-              },
-              y: {
-                ticks: { color: "#d1d5db", font: { size: 9 } },
-                grid: { color: "rgba(255,255,255,0.06)" },
-                beginAtZero: true
-              }
-            }
-          }
-        });
-
-        const tabelaCidade = document.getElementById("tabelaCidade");
-        tabelaCidade.innerHTML = (data.tabelaCidade || []).map(item => `
-          <tr>
-            <td>${escapeHtml(item.cidade)}</td>
-            <td>${formatNumber(item.total)}</td>
-            <td class="green-text">${formatNumber(item.aprovados)}</td>
-            <td class="red-text">${formatNumber(item.reprovados)}</td>
-          </tr>
-        `).join("");
-
-        const tabelaOperacao = document.getElementById("tabelaOperacao");
-        tabelaOperacao.innerHTML = (data.tabelaOperacao || []).map(item => `
-          <tr>
-            <td>${escapeHtml(item.operacao)}</td>
-            <td>${formatNumber(item.total)}</td>
-            <td class="green-text">${formatNumber(item.aprovados)}</td>
-            <td class="blue-text">${formatNumber(item.comVeiculo)}</td>
-          </tr>
-        `).join("");
-      } catch (error) {
-        console.error("Erro ao carregar gráficos:", error);
-        destroyCharts();
-        document.getElementById("tabelaCidade").innerHTML = "";
-        document.getElementById("tabelaOperacao").innerHTML = "";
-      }
-    }
+    async function loadGraficos() {  
+  try {  
+    const qs = getFilters().toString();  
+    const data = await fetchJson(`/api/access-graficos?${qs}`);  
+  
+    destroyCharts();  
+  
+    // 🔥 FUNÇÃO AUXILIAR PARA ORDENAR EM ORDEM DECRESCENTE  
+    function sortObjectDesc(obj) {  
+      return Object.entries(obj || {})  
+        .sort((a, b) => b[1] - a[1]); // ordena pelo valor (decrescente)  
+    }  
+  
+    // ===============================  
+    // ✅ ACESSOS POR OPERAÇÃO (ORDENADO)  
+    // ===============================  
+    const operacaoSorted = sortObjectDesc(data.operacao);  
+  
+    chartEstado = new Chart(document.getElementById("chartEstado"), {  
+      type: "bar",  
+      data: {  
+        labels: operacaoSorted.map(item => item[0]),  
+        datasets: [{  
+          label: "Acessos",  
+          data: operacaoSorted.map(item => item[1]),  
+          backgroundColor: "#ff7a1a",  
+          borderRadius: 8  
+        }]  
+      },  
+      options: baseChartOptions(true)  
+    });  
+  
+    // ===============================  
+    // ✅ ACESSOS POR TIPO (ORDENADO)  
+    // ===============================  
+    const tipoSorted = sortObjectDesc(data.tipoLiberacao);  
+  
+    chartTipo = new Chart(document.getElementById("chartTipo"), {  
+      type: "bar",  
+      data: {  
+        labels: tipoSorted.map(item => item[0]),  
+        datasets: [{  
+          label: "Acessos",  
+          data: tipoSorted.map(item => item[1]),  
+          backgroundColor: "#ff7a1a",  
+          borderRadius: 8  
+        }]  
+      },  
+      options: baseChartOptions(true)  
+    });  
+  
+    // ===============================  
+    // ✅ GRÁFICO POR DIA (mantido original)  
+    // ===============================  
+    const labelsDia = (data.porDia?.labels || []).map(d => String(Number(d)));  
+    const valuesDia = data.porDia?.values || [];  
+  
+    chartDia = new Chart(document.getElementById("chartDia"), {  
+      type: "line",  
+      data: {  
+        labels: labelsDia,  
+        datasets: [{  
+          label: "Acessos aprovados",  
+          data: valuesDia,  
+          borderColor: "#60a5fa",  
+          backgroundColor: "rgba(96,165,250,0.18)",  
+          fill: false,  
+          tension: 0.35,  
+          pointRadius: 3,  
+          pointHoverRadius: 4  
+        }]  
+      },  
+      options: {  
+        responsive: true,  
+        maintainAspectRatio: false,  
+        plugins: {  
+          legend: { labels: { color: "#ffffff" } },  
+          datalabels: {  
+            color: "#ffffff",  
+            align: "top",  
+            anchor: "end",  
+            offset: 4,  
+            clamp: true,  
+            font: { weight: "700", size: 9 },  
+            formatter: (value) => value > 0 ? formatNumber(value) : ""  
+          }  
+        },  
+        scales: {  
+          x: {  
+            ticks: { color: "#d1d5db", font: { size: 9 } },  
+            grid: { color: "rgba(255,255,255,0.06)" }  
+          },  
+          y: {  
+            ticks: { color: "#d1d5db", font: { size: 9 } },  
+            grid: { color: "rgba(255,255,255,0.06)" },  
+            beginAtZero: true  
+          }  
+        }  
+      }  
+    });  
+  
+  } catch (error) {  
+    console.error("Erro ao carregar gráficos:", error);  
+    destroyCharts();  
+    document.getElementById("tabelaCidade").innerHTML = "";  
+    document.getElementById("tabelaOperacao").innerHTML = "";  
+  }  
+}
 
     async function loadDetalhes(page = 1) {
       try {

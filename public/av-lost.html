@@ -4,102 +4,138 @@
 <meta charset="UTF-8">
 <title>AV LOST Dashboard</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-}
-
-.header {
-  background: linear-gradient(90deg, #1e293b, #0f172a);
-  padding: 20px;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.container {
-  padding: 20px;
-}
-
-/* filtros */
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-select, input {
-  padding: 10px;
-  background: #020617;
-  border: 1px solid #334155;
-  color: white;
-  border-radius: 6px;
-}
-
-/* cards */
-.cards {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.card {
-  background: #1e293b;
-  padding: 10px;
-  text-align: center;
-  border-radius: 8px;
-}
-
-.card span {
-  color: orange;
-  font-size: 18px;
-  font-weight: bold;
-}
-
-/* gráficos */
-.chart-box {
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="header">📊 AV LOST Dashboard</div>
-
-<div class="container">
-
-  <!-- filtros -->
-  <div class="filters">
-    <select id="filtroUnidade" multiple></select>
-    <select id="filtroStatus" multiple></select>
-    <input type="text" id="busca" placeholder="Buscar...">
-  </div>
-
-  <!-- cards por dia -->
-  <div class="cards" id="cardsDias"></div>
-
-  <!-- gráficos -->
-  <div class="chart-box">
-    <canvas id="graficoMotivos"></canvas>
-  </div>
-
-  <div class="chart-box">
-    <canvas id="graficoUnidade"></canvas>
-  </div>
-
-</div>
-
+<!-- TROCA APENAS OS TEXTOS E IDS, TODO RESTO IGUAL -->
 <script>
+Chart.register(ChartDataLabels);
+
+let chartUnidade = null;
+let chartEmpresa = null;
+let chartMes = null;
+let chartMotivo = null;
+let chartStatus = null;
+
+function formatNumber(v){
+  return new Intl.NumberFormat("pt-BR").format(Number(v || 0));
+}
+
+function formatPercent(v){
+  return `${Number(v || 0).toFixed(2)}%`;
+}
+
+/* ================= RESUMO ================= */
+async function loadResumo(){
+  const res = await fetch("/api/av-resumo");
+  const data = await res.json();
+
+  document.getElementById("totalAv").textContent = formatNumber(data.total);
+  document.getElementById("totalEncontrados").textContent = formatNumber(data.encontrados);
+  document.getElementById("totalPendentes").textContent = formatNumber(data.pendentes);
+  document.getElementById("totalUnidades").textContent = formatNumber(data.unidades);
+  document.getElementById("percentualResolvido").textContent = formatPercent(data.percentual);
+}
+
+/* ================= GRÁFICOS ================= */
+function makeChartOptions(horizontal = false){
+  return {
+    indexAxis: horizontal ? "y" : "x",
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{
+      legend:{labels:{color:"#fff"}},
+      datalabels:{
+        color:"#fff",
+        anchor:"end",
+        align:"right",
+        formatter:v=>v>0?formatNumber(v):""
+      }
+    },
+    scales:{
+      x:{ticks:{color:"#ccc"}},
+      y:{ticks:{color:"#ccc"}}
+    }
+  }
+}
+
+async function loadGraficos(){
+  const res = await fetch("/api/av-graficos");
+  const data = await res.json();
+
+  if(chartMotivo) chartMotivo.destroy();
+  if(chartStatus) chartStatus.destroy();
+  if(chartUnidade) chartUnidade.destroy();
+  if(chartEmpresa) chartEmpresa.destroy();
+  if(chartMes) chartMes.destroy();
+
+  chartMotivo = new Chart(document.getElementById("chartMotivo"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.motivo),
+      datasets:[{
+        data:Object.values(data.motivo),
+        backgroundColor:"#ff7a1a"
+      }]
+    },
+    options:makeChartOptions(true)
+  });
+
+  chartStatus = new Chart(document.getElementById("chartControle"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.status),
+      datasets:[{
+        data:Object.values(data.status),
+        backgroundColor:"#fb923c"
+      }]
+    },
+    options:makeChartOptions(true)
+  });
+
+  chartUnidade = new Chart(document.getElementById("chartUnidade"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.unidade),
+      datasets:[{
+        data:Object.values(data.unidade),
+        backgroundColor:"#ff7a1a"
+      }]
+    },
+    options:makeChartOptions(true)
+  });
+
+  chartEmpresa = new Chart(document.getElementById("chartEmpresa"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.empresa),
+      datasets:[{
+        data:Object.values(data.empresa),
+        backgroundColor:"#fb923c"
+      }]
+    },
+    options:makeChartOptions(true)
+  });
+
+  chartMes = new Chart(document.getElementById("chartMes"), {
+    type:"line",
+    data:{
+      labels:data.dias,
+      datasets:[{
+        data:data.valores,
+        borderColor:"#ff7a1a",
+        fill:true
+      }]
+    }
+  });
+}
+
+/* ================= INIT ================= */
+async function init(){
+  await loadResumo();
+  await loadGraficos();
+}
+
+init();
+</script>
+  
 let dados = [];
 
 async function carregar() {

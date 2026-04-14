@@ -4,136 +4,231 @@
 <meta charset="UTF-8">
 <title>AV LOST Dashboard</title>
 
-<!-- TROCA APENAS OS TEXTOS E IDS, TODO RESTO IGUAL -->
-<script>
+<<script>
 Chart.register(ChartDataLabels);
 
-let chartUnidade = null;
-let chartEmpresa = null;
-let chartMes = null;
-let chartMotivo = null;
-let chartStatus = null;
+let rawData = [];
+let filteredData = [];
+let charts = [];
 
-function formatNumber(v){
-  return new Intl.NumberFormat("pt-BR").format(Number(v || 0));
+const COL = {
+  DATA: "DATA",
+  QTD: "QUANTIDADE ENCONTRADA",
+  AV: "AV - LOST",
+  USD: "US$ ENCONTRADO",
+  BRL: "R$ ENCONTRADO",
+  UNIDADE: "UNIDADE"
+};
+
+/* =========================
+   UTILS
+========================= */
+
+function num(v){
+  return Number(String(v || "")
+    .replace(/\./g,"")
+    .replace(",",".")
+    .replace(/[^\d.-]/g,"")
+  ) || 0;
 }
 
-function formatPercent(v){
-  return `${Number(v || 0).toFixed(2)}%`;
+function parseDate(v){
+  if(!v) return null;
+  const [d,m,y] = v.split("/");
+  return new Date(y, m-1, d);
 }
 
-/* ================= RESUMO ================= */
-async function loadResumo(){
-  const res = await fetch("/api/av-resumo");
-  const data = await res.json();
-
-  document.getElementById("totalAv").textContent = formatNumber(data.total);
-  document.getElementById("totalEncontrados").textContent = formatNumber(data.encontrados);
-  document.getElementById("totalPendentes").textContent = formatNumber(data.pendentes);
-  document.getElementById("totalUnidades").textContent = formatNumber(data.unidades);
-  document.getElementById("percentualResolvido").textContent = formatPercent(data.percentual);
+function formatPct(v){
+  if(!isFinite(v)) return "→ 0%";
+  const arrow = v > 0 ? "↑" : v < 0 ? "↓" : "→";
+  return `${arrow} ${Math.abs(v).toFixed(1)}%`;
 }
 
-/* ================= GRÁFICOS ================= */
-function makeChartOptions(horizontal = false){
-  return {
-    indexAxis: horizontal ? "y" : "x",
-    responsive:true,
-    maintainAspectRatio:false,
-    plugins:{
-      legend:{labels:{color:"#fff"}},
-      datalabels:{
-        color:"#fff",
-        anchor:"end",
-        align:"right",
-        formatter:v=>v>0?formatNumber(v):""
-      }
-    },
-    scales:{
-      x:{ticks:{color:"#ccc"}},
-      y:{ticks:{color:"#ccc"}}
+/* =========================
+   AGRUPAMENTO MENSAL
+========================= */
+
+function groupByMonth(data){
+  const map = {};
+
+  data.forEach(r=>{
+    if(!r._date) return;
+
+    const y = r._date.getFullYear();
+    const m = r._date.getMonth()+1;
+    const key = `${y}-${m}`;
+
+    if(!map[key]){
+      map[key] = {qtd:0,av:0,usd:0,brl:0,count:0};
     }
+
+    map[key].qtd += num(r[COL.QTD]);
+    map[key].av += num(r[COL.AV]);
+    map[key].usd += num(r[COL.USD]);
+    map[key].brl += num(r[COL.BRL]);
+    map[key].count += 1;
+  });
+
+  return map;
+}
+
+/* =========================
+   PEGAR ÚLTIMOS MESES
+========================= */
+
+function getLastTwoMonths(data){
+  const months = [...new Set(
+    data
+      .filter(r=>r._date)
+      .map(r=>{
+        return `${r._date.getFullYear()}-${r._date.getMonth()+1}`;
+      })
+  )].sort((a,b)=>{
+    const [ya,ma] = a.split("-").map(Number);
+    const [yb,mb] = b.split("-").map(Number);
+    return new Date(ya,ma-1) - new Date(yb,mb-1);
+  });
+
+  return months.slice(-2);
+}
+
+function variation(current, previous){
+  if(!previous || previous === 0){
+    return current > 0 ? 100 : 0;
+  }
+  return ((current - previous) / previous) * 100;
+}
+
+/* =========================
+   KPI AVANÇADO
+========================= */
+
+function updateKpis(){
+
+  const map = groupByMonth(filteredData);
+  const months = getLastTwoMonths(filteredData);
+
+  const current = map[months[1]] || {};
+  const prev = map[months[0]] || {};
+
+  function set(id, value, varPct){
+    const el = document.getElementById(id);
+    if(!el) return;
+
+    el.innerHTML = `
+      ${value}
+      <div style="font-size:11px;color:#9ca3af;margin-top:4px">
+        ${formatPct(varPct)}
+      </div>
+    `;
+  }
+
+  set("kpiRegistros",
+    current.count || 0,
+    variation(current.count, prev.count)
+  );
+
+  set("kpiQtdEncontrada",
+    current.qtd || 0,
+    variation(current.qtd, prev.qtd)
+  );
+
+  set("kpiAv",
+    current.av || 0,
+    variation(current.av, prev.av)
+  );
+
+  set("kpiUsd",
+    (current.usd || 0).toFixed(2),
+    variation(current.usd, prev.usd)
+  );
+
+  set("kpiBrl",
+    (current.brl || 0).toFixed(2),
+    variation(current.brl, prev.brl)
+  );
+}
+
+/* =========================
+   GRÁFICOS
+========================= */
+
+function destroyCharts(){
+  charts.forEach(c => c?.destroy());
+  charts = [];
+}
+
+function renderCharts(){
+
+  destroyCharts();
+
+  const map = {};
+
+  filteredData.forEach(r=>{
+    const u = r[COL.UNIDADE] || "N/A";
+    map[u] = (map[u] || 0) + num(r[COL.AV]);
+  });
+
+  const chart = new Chart(document.getElementById("chartUnidade"),{
+    type:"bar",
+    data:{
+      labels:Object.keys(map),
+      datasets:[{
+        label:"AV Encontrado",
+        data:Object.values(map),
+        backgroundColor:"#ff7a1a",
+        borderRadius:6
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false}
+      }
+    }
+  });
+
+  charts.push(chart);
+}
+
+/* =========================
+   FILTRO
+========================= */
+
+function applyFilters(){
+  filteredData = [...rawData];
+  updateKpis();
+  renderCharts();
+}
+
+/* =========================
+   LOAD
+========================= */
+
+async function loadData(){
+
+  try{
+    const res = await fetch("/api/dados");
+    rawData = await res.json();
+
+    rawData = rawData.map(r=>{
+      const d = parseDate(r[COL.DATA]);
+      return {...r,_date:d};
+    });
+
+    filteredData = [...rawData];
+
+    updateKpis();
+    renderCharts();
+
+  }catch(e){
+    console.error("Erro ao carregar dados", e);
   }
 }
 
-async function loadGraficos(){
-  const res = await fetch("/api/av-graficos");
-  const data = await res.json();
+document.getElementById("applyFilters")?.addEventListener("click", applyFilters);
 
-  if(chartMotivo) chartMotivo.destroy();
-  if(chartStatus) chartStatus.destroy();
-  if(chartUnidade) chartUnidade.destroy();
-  if(chartEmpresa) chartEmpresa.destroy();
-  if(chartMes) chartMes.destroy();
-
-  chartMotivo = new Chart(document.getElementById("chartMotivo"), {
-    type:"bar",
-    data:{
-      labels:Object.keys(data.motivo),
-      datasets:[{
-        data:Object.values(data.motivo),
-        backgroundColor:"#ff7a1a"
-      }]
-    },
-    options:makeChartOptions(true)
-  });
-
-  chartStatus = new Chart(document.getElementById("chartControle"), {
-    type:"bar",
-    data:{
-      labels:Object.keys(data.status),
-      datasets:[{
-        data:Object.values(data.status),
-        backgroundColor:"#fb923c"
-      }]
-    },
-    options:makeChartOptions(true)
-  });
-
-  chartUnidade = new Chart(document.getElementById("chartUnidade"), {
-    type:"bar",
-    data:{
-      labels:Object.keys(data.unidade),
-      datasets:[{
-        data:Object.values(data.unidade),
-        backgroundColor:"#ff7a1a"
-      }]
-    },
-    options:makeChartOptions(true)
-  });
-
-  chartEmpresa = new Chart(document.getElementById("chartEmpresa"), {
-    type:"bar",
-    data:{
-      labels:Object.keys(data.empresa),
-      datasets:[{
-        data:Object.values(data.empresa),
-        backgroundColor:"#fb923c"
-      }]
-    },
-    options:makeChartOptions(true)
-  });
-
-  chartMes = new Chart(document.getElementById("chartMes"), {
-    type:"line",
-    data:{
-      labels:data.dias,
-      datasets:[{
-        data:data.valores,
-        borderColor:"#ff7a1a",
-        fill:true
-      }]
-    }
-  });
-}
-
-/* ================= INIT ================= */
-async function init(){
-  await loadResumo();
-  await loadGraficos();
-}
-
-init();
+loadData();
 </script>
   
 let dados = [];

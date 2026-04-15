@@ -3182,7 +3182,7 @@ function mapEstoqueRow(row) {
     plantao: rondaNorm(row[2]),
     nome: rondaNorm(row[3]),
     acao: rondaNorm(row[4]),
-    tipo_ronda: rondaNorm(row[4]) || "Estoque",
+    tipo_ronda: rondaNorm(row[5]) || "Estoque",
     origem_ronda: "Ronda Estoque",
   };
 }
@@ -3199,12 +3199,12 @@ async function loadRondasRaw() {
     },
     {
       aba: "Ronda Portas de emergência",
-      range: "'Ronda Portas de emergência'!C:H",
+      range: "'Ronda Portas de emergência'!B:H",
       mapper: mapPortasRow,
     },
     {
       aba: "Ronda estoque RK",
-      range: "'Ronda estoque RK'!B:F",
+      range: "'Ronda estoque RK'!B:G",
       mapper: mapEstoqueRow,
     },
   ];

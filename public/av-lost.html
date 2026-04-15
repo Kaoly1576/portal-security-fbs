@@ -1395,13 +1395,13 @@ function renderCharts() {
       labels: validLabels,
       datasets: [
         {
-          label: "AV Encontrado",
+          label: "QUANTIDADE EM AV",
           data: validLabels.map(label => colaboradorMap[label] || 0),
           backgroundColor: "#ff7a1a",
           borderRadius: 8
         },
         {
-          label: "Qtd Validada",
+          label: "AV ENCONTRADO",
           data: validLabels.map(label => qtdMap[label] || 0),
           backgroundColor: "#60a5fa",
           borderRadius: 8

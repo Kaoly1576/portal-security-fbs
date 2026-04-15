@@ -503,43 +503,48 @@ color:#e5e7eb;
 }
 
 .chart-grid-top{
-
-display:grid;
-
-grid-template-columns:1.05fr 0.95fr 1.05fr;
-
-gap:8px;
-
-margin-bottom:8px;
-
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:8px;
+  margin-bottom:8px;
+  align-items:stretch;
 }
 
 .chart-grid-middle{
-
-display:grid;
-
-grid-template-columns:0.8fr 0.8fr 0.8fr 0.75fr;
-
-gap:8px;
-
-margin-bottom:8px;
-
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:8px;
+  margin-bottom:8px;
+  align-items:stretch;
 }
 
 .chart-card{
-
-background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
-
-border:1px solid rgba(255,255,255,0.10);
-
-border-radius:12px;
-
-padding:10px 10px 8px;
-
-min-width:0;
-
+  background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:12px;
+  padding:10px 10px 8px;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
 }
 
+.chart-wrap{
+  position:relative;
+  width:100%;
+  height:220px;
+}
+
+.chart-wrap.tall{
+  height:260px;
+}
+
+.legend-note{
+  font-size:10px;
+  color:#9ca3af;
+  text-align:center;
+  margin-top:6px;
+}
 .chart-title{
 
 text-align:center;
@@ -1202,78 +1207,56 @@ Clique no filtro para abrir opções e selecionar vários valores sem usar Ctrl.
 
 </section>
 
+<!-- ================== GRÁFICOS SUPERIORES ================== -->
 <section class="chart-grid-top">
 
-<div class="chart-card">
-
-<div class="chart-title">Ocorrências por Unidade</div>
-
-<div class="chart-wrap tall">
-
-</div>
-
-</div>
-  
-<canvas id="chartUnidade"></canvas>
+  <div class="chart-card">
+    <div class="chart-title">Ocorrências por Unidade</div>
+    <div class="chart-wrap tall">
+      <canvas id="chartUnidade"></canvas>
+    </div>
+  </div>
 
   <div class="chart-card">
+    <div class="chart-title">Resumo por Status</div>
+    <div class="chart-wrap tall">
+      <canvas id="chartStatus"></canvas>
+    </div>
+  </div>
 
-<div class="chart-title">Resumo por Status</div>
-
-<div class="chart-wrap tall">
-
-<canvas id="chartStatus"></canvas>
-
-
-</div>
-  
-</div>
-
-<div class="legend-note">Top colaboradores do filtro aplicado</div>
-
-</div>
-
-</div>
+  <div class="chart-card">
+    <div class="chart-title">Top Colaboradores</div>
+    <div class="chart-wrap tall">
+      <canvas id="chartColaborador"></canvas>
+    </div>
+    <div class="legend-note">Top colaboradores do filtro aplicado</div>
+  </div>
 
 </section>
 
+<!-- ================== GRÁFICOS SECUNDÁRIOS ================== -->
 <section class="chart-grid-middle">
 
-<div class="chart-card">
+  <div class="chart-card">
+    <div class="chart-title">Unidade</div>
+    <div class="chart-wrap">
+      <canvas id="chartResumoUnidade"></canvas>
+    </div>
+  </div>
 
-<div class="chart-title">Unidade</div>
+  <div class="chart-card">
+    <div class="chart-title">Status das Solicitações</div>
+    <div class="chart-wrap">
+      <canvas id="chartResumoStatus"></canvas>
+    </div>
+  </div>
 
-<div class="chart-wrap">
-
-<canvas id="chartResumoUnidade"></canvas>
-
-</div>
-
-</div>
-
-<div class="chart-card">
-
-<div class="chart-title">Status das Solicitações</div>
-
-<div class="chart-wrap">
-
-<canvas id="chartResumoStatus"></canvas>
-
-</div>
-
-</div>
-
-<div class="chart-card">
-
-<div class="chart-title">Validação por Colaborador</div>
-
-<div class="chart-wrap">
-
-<canvas id="chartValidacao"></canvas>
-
-</div>
-
-</div>
+  <div class="chart-card">
+    <div class="chart-title">Validação por Colaborador</div>
+    <div class="chart-wrap">
+      <canvas id="chartValidacao"></canvas>
+    </div>
+  </div>
 
 </section>
 

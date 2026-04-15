@@ -3181,7 +3181,7 @@ function mapEstoqueRow(row) {
     unidade: rondaNorm(row[1]),
     plantao: rondaNorm(row[2]),
     nome: rondaNorm(row[3]),
-    acao: "Ronda",
+    acao: rondaNorm(row[4]),
     tipo_ronda: rondaNorm(row[4]) || "Estoque",
     origem_ronda: "Ronda Estoque",
   };

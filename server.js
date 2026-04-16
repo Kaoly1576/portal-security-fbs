@@ -2932,14 +2932,15 @@ app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
       : [];
 
     const byDayMap = {};
+    for (let i = 1; i <= 31; i++) {
+      byDayMap[i] = 0;
+    }
+
     filtrados.forEach((row) => {
       if (!row._primaryDate) return;
-      const d = row._primaryDate;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      byDayMap[key] = (byDayMap[key] || 0) + 1;
+      const day = row._primaryDate.getDate();
+      byDayMap[day] = (byDayMap[day] || 0) + 1;
     });
-
-    const dayLabels = Object.keys(byDayMap).sort((a, b) => a.localeCompare(b));
 
     return res.json({
       tableAHeader,
@@ -2964,11 +2965,8 @@ app.get("/api/cco-fbs-graficos", requireAuth, async (req, res) => {
         }
       ],
       porDia: {
-        labels: dayLabels.map((d) => {
-          const [y, m, day] = d.split("-");
-          return `${day}/${m}/${y}`;
-        }),
-        values: dayLabels.map((d) => byDayMap[d]),
+        labels: Array.from({ length: 31 }, (_, i) => String(i + 1)),
+        values: Array.from({ length: 31 }, (_, i) => byDayMap[i + 1] || 0),
       },
     });
   } catch (error) {

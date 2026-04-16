@@ -652,7 +652,7 @@
 
       <div class="kpi-card">
         <div class="kpi-label">META</div>
-        <div class="kpi-value" id="kpiMeta">3</div>
+        <div class="kpi-value" id="kpiMeta">0</div>
         <div class="kpi-sub" id="kpiMetaSub">Defina a meta</div>
       </div>
 
@@ -1004,13 +1004,25 @@
 
     function saveMetaForCurrentAba(value) {
       const metas = getMetaConfig();
-      metas[currentAba] = Number(value || 0);
+
+      if (value === "" || value === null || value === undefined) {
+        delete metas[currentAba];
+      } else {
+        metas[currentAba] = Number(value);
+      }
+
       localStorage.setItem(STORAGE_META_KEY, JSON.stringify(metas));
     }
 
     function getMetaForCurrentAba() {
       const metas = getMetaConfig();
-      return Number(metas[currentAba] || 0);
+      const value = metas[currentAba];
+
+      if (value === undefined || value === null || value === "") {
+        return null;
+      }
+
+      return Number(value);
     }
 
     function getColumnsMap() {
@@ -1147,7 +1159,7 @@
       const cols = getColumnsMap();
 
       const total = filteredData.length;
-      const meta = getMetaForCurrentAba();
+      const meta = getMetaForCurrentAba() ?? 0;
       const atingimento = meta > 0 ? (total / meta) * 100 : 0;
 
       const unidades = new Set(filteredData.map(r => normalizeValue(r[cols.unidade])).filter(Boolean)).size;
@@ -1160,8 +1172,7 @@
       document.getElementById("kpiUnidades").textContent = formatNumber(unidades);
       document.getElementById("kpiNomes").textContent = formatNumber(nomes);
       document.getElementById("kpiPlantoes").textContent = formatNumber(plantoes);
-
-      document.getElementById("metaInput").value = meta || "";
+      document.getElementById("metaInput").value = meta > 0 ? meta : "";
 
       if (meta > 0) {
         const diff = total - meta;
@@ -1441,7 +1452,9 @@
         renderCharts();
         renderTable();
 
-        document.getElementById("metaInput").value = getMetaForCurrentAba() || "";
+        const savedMeta = getMetaForCurrentAba();
+        document.getElementById("metaInput").value = savedMeta !== null ? savedMeta : "";
+
         document.getElementById("updateTime").textContent = new Date().toLocaleTimeString("pt-BR", {
           hour: "2-digit",
           minute: "2-digit"
@@ -1468,7 +1481,7 @@
     document.getElementById("dateStart").addEventListener("change", applyFilters);
     document.getElementById("dateEnd").addEventListener("change", applyFilters);
 
-    document.getElementById("metaInput").addEventListener("change", () => {
+    document.getElementById("metaInput").addEventListener("input", () => {
       saveMetaForCurrentAba(document.getElementById("metaInput").value);
       updateKpis();
     });

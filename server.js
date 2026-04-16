@@ -3046,589 +3046,97 @@ app.get("/api/cco-fbs-detalhes", requireAuth, async (req, res) => {
 });
 
 
-// ================== RONDAS DASHBOARD ==================
+// ================== GOOGLE SHEETS DASHBOARD RONDAS ==================
 
-app.get("/rondas", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "rondas.html"));
-});
-
-const RONDAS_SHEET_ID = "1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU";
-
-let rondasCache = null;
-let rondasCacheTime = 0;
-const RONDAS_CACHE_TTL = 5 * 60 * 1000;
-
-function rondaNorm(value) {
-  return String(value || "").trim();
-}
-
-function rondaNormUpper(value) {
-  return rondaNorm(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toUpperCase();
-}
-
-function rondaNormLower(value) {
-  return rondaNorm(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function rondaParseDate(value) {
-  if (!value) return null;
-  const raw = String(value).trim();
-
-  let m = raw.match(
-    /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
-  );
-  if (m) {
-    const [, dd, mm, yyyy, hh = "00", mi = "00", ss = "00"] = m;
-    const d = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-
-  m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) {
-    const d = new Date(`${raw}T00:00:00`);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-
-  const fallback = new Date(raw);
-  return Number.isNaN(fallback.getTime()) ? null : fallback;
-}
-
-function rondaFormatDateBR(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-function rondaFormatISO(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function rondaSplitMulti(value) {
-  if (!value) return [];
-  return String(value)
-    .split("|")
-    .map((v) => rondaNorm(v))
-    .filter(Boolean);
-}
-
-function rondaMatchesMulti(fieldValue, selectedValues) {
-  if (!selectedValues.length) return true;
-  return selectedValues.includes(rondaNorm(fieldValue));
-}
-
-function rondaIncludesText(source, term) {
-  return rondaNormUpper(source).includes(rondaNormUpper(term));
-}
-
-function rondaSortUnique(arr) {
-  return [...new Set(arr.filter(Boolean))].sort((a, b) =>
-    String(a).localeCompare(String(b), "pt-BR")
-  );
-}
-
-function rondaPercentChange(current, previous) {
-  current = Number(current || 0);
-  previous = Number(previous || 0);
-
-  if (previous === 0 && current === 0) return 0;
-  if (previous === 0) return 100;
-
-  return ((current - previous) / previous) * 100;
-}
-
-function rondaNormalizeHeader(value) {
+function normalizeText(value) {
   return String(value || "")
     .trim()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeName(value) {
+  if (!value) return "";
+
+  return normalizeText(value)
+    .toUpperCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
-function buildHeaderIndex(headers) {
-  const map = {};
-  headers.forEach((header, idx) => {
-    map[rondaNormalizeHeader(header)] = idx;
-  });
-  return map;
+function normalizeStatus(value) {
+  return normalizeText(value).toUpperCase();
 }
 
-function getHeaderValue(row, headerIndex, candidates) {
-  for (const candidate of candidates) {
-    const idx = headerIndex[rondaNormalizeHeader(candidate)];
-    if (idx !== undefined) {
-      return rondaNorm(row[idx]);
-    }
-  }
-  return "";
+function normalizeUnidade(value) {
+  return normalizeText(value).toUpperCase();
 }
 
-function mapRondaRowByHeader(row, headerIndex, origemPadrao, tipoPadrao) {
-  const data = getHeaderValue(row, headerIndex, [
-    "data",
-    "data da ronda",
-  ]);
+const RONDAS_SPREADSHEET_ID = "1jFF45tBHXerhWWXC-X5fHgVyeUxKvx7Q0MiIwx8mUjU";
 
-  const unidade = getHeaderValue(row, headerIndex, [
-    "unidade",
-  ]);
+const ABAS_RONDAS = {
+  geral: "Ronda geral",
+  emergencia: "Ronda portas de emergência",
+  estoque: "Ronda estoque RK"
+};
 
-  const plantao = getHeaderValue(row, headerIndex, [
-    "plantão",
-    "plantao",
-  ]);
-
-  const nome = getHeaderValue(row, headerIndex, [
-    "nome",
-    "colaborador",
-    "agente",
-  ]);
-
-  const acao = getHeaderValue(row, headerIndex, [
-    "ação",
-    "acao",
-  ]);
-
-  const qualAcao = getHeaderValue(row, headerIndex, [
-    "qual ação vai realizar?",
-    "qual acao vai realizar?",
-    "qual ação vai realizar",
-    "qual acao vai realizar",
-    "acao a realizar",
-    "ação a realizar",
-  ]);
-
-  const tipoRonda = getHeaderValue(row, headerIndex, [
-    "tipo de ronda",
-    "tipo ronda",
-    "tipo_ronda",
-    "tipo",
-  ]);
-
-  return {
-    data,
-    dataObj: rondaParseDate(data),
-    unidade,
-    plantao,
-    nome,
-    acao,
-    qual_acao: qualAcao || acao,
-    tipo_ronda: tipoRonda || tipoPadrao,
-    origem_ronda: origemPadrao,
-  };
-}
-
-async function loadRondasRaw() {
+async function buscarAbaRonda(abaKey) {
   const sheets = await conectarSheets();
-  const all = [];
 
-  const configs = [
-    {
-      aba: "Ronda Geral",
-      range: "'Ronda Geral'!B:Z",
-      origem: "Ronda Geral",
-      tipoPadrao: "Ronda Geral",
-    },
-    {
-      aba: "Ronda Portas de emergência",
-      range: "'Ronda Portas de emergência'!B:Z",
-      origem: "Portas de emergência",
-      tipoPadrao: "Portas de emergência",
-    },
-    {
-      aba: "Ronda estoque RK",
-      range: "'Ronda estoque RK'!B:Z",
-      origem: "Ronda Estoque",
-      tipoPadrao: "Estoque",
-    },
-  ];
+  const abaReal = ABAS_RONDAS[abaKey];
+  if (!abaReal) return [];
 
-  for (const cfg of configs) {
-    const resp = await sheets.spreadsheets.values.get({
-      spreadsheetId: RONDAS_SHEET_ID,
-      range: cfg.range,
-    });
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: RONDAS_SPREADSHEET_ID,
+    range: `'${abaReal}'!B:G`,
+  });
 
-    const rows = resp?.data?.values || [];
-    if (!rows.length) continue;
-
-    const headerRow = rows[0] || [];
-    const dataRows = rows.slice(1);
-    const headerIndex = buildHeaderIndex(headerRow);
-
-    for (const row of dataRows) {
-      if (!row || row.every((cell) => !String(cell || "").trim())) continue;
-
-      const record = mapRondaRowByHeader(
-        row,
-        headerIndex,
-        cfg.origem,
-        cfg.tipoPadrao
-      );
-
-      if (
-        !record.data &&
-        !record.unidade &&
-        !record.nome &&
-        !record.tipo_ronda &&
-        !record.qual_acao
-      ) {
-        continue;
-      }
-
-      all.push(record);
-    }
-  }
-
-  return all;
+  return response.data.values || [];
 }
 
-async function loadRondasComCache() {
-  const now = Date.now();
+app.get("/api/rondas/:aba", requireAuth, async (req, res) => {
+  try {
+    const aba = String(req.params.aba || "").toLowerCase();
 
-  if (rondasCache && now - rondasCacheTime < RONDAS_CACHE_TTL) {
-    return rondasCache;
-  }
-
-  rondasCache = await loadRondasRaw();
-  rondasCacheTime = now;
-
-  console.log("RONDAS cache atualizado:", rondasCache.length);
-
-  return rondasCache;
-}
-
-function filterRondas(records, query) {
-  const dataInicial = rondaNorm(query.dataInicial);
-  const dataFinal = rondaNorm(query.dataFinal);
-
-  const origens = rondaSplitMulti(query.origem);
-  const unidades = rondaSplitMulti(query.unidade);
-  const plantoes = rondaSplitMulti(query.plantao);
-  const tipos = rondaSplitMulti(query.tipo);
-  const nomes = rondaSplitMulti(query.nome);
-  const acoes = rondaSplitMulti(query.acao);
-  const busca = rondaNormLower(query.busca);
-
-  return records.filter((r) => {
-    const iso = r.dataObj ? rondaFormatISO(r.dataObj) : "";
-
-    if (dataInicial && (!iso || iso < dataInicial)) return false;
-    if (dataFinal && (!iso || iso > dataFinal)) return false;
-
-    if (!rondaMatchesMulti(r.origem_ronda, origens)) return false;
-    if (!rondaMatchesMulti(r.unidade, unidades)) return false;
-    if (!rondaMatchesMulti(r.plantao, plantoes)) return false;
-    if (!rondaMatchesMulti(r.tipo_ronda, tipos)) return false;
-    if (!rondaMatchesMulti(r.nome, nomes)) return false;
-    if (!rondaMatchesMulti(r.qual_acao || r.acao, acoes)) return false;
-
-    if (busca) {
-      const combined = [
-        r.data,
-        r.origem_ronda,
-        r.unidade,
-        r.plantao,
-        r.nome,
-        r.acao,
-        r.qual_acao,
-        r.tipo_ronda,
-      ].join(" ");
-
-      if (!rondaIncludesText(combined, busca)) return false;
+    if (!ABAS_RONDAS[aba]) {
+      return res.status(400).json({ erro: "Aba inválida" });
     }
 
-    return true;
-  });
-}
+    const dados = await buscarAbaRonda(aba);
+    const cabecalho = dados[0] || [];
+    const linhas = dados.slice(1);
 
-function filterRondasSemData(records, query) {
-  const clonedQuery = {
-    ...query,
-    dataInicial: "",
-    dataFinal: "",
-  };
-  return filterRondas(records, clonedQuery);
-}
+    const objetos = linhas.map((linha) => {
+      const obj = {};
 
-function getRondaComparativoBase(records, query) {
-  const base = filterRondasSemData(records, query);
+      cabecalho.forEach((col, i) => {
+        const columnName = normalizeText(col);
+        let value = linha[i] ?? "";
 
-  const validDates = base
-    .map((r) => r.dataObj)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
+        if (
+          columnName.toUpperCase().includes("NOME") ||
+          columnName.toUpperCase().includes("COLABORADOR")
+        ) {
+          value = normalizeName(value);
+        }
 
-  if (!validDates.length) {
-    return {
-      base,
-      latestMonth: null,
-      latestYear: null,
-      prevMonth: null,
-      prevYear: null,
-    };
-  }
+        if (columnName.toUpperCase().includes("STATUS")) {
+          value = normalizeStatus(value);
+        }
 
-  const latest = validDates[validDates.length - 1];
-  const latestMonth = latest.getMonth();
-  const latestYear = latest.getFullYear();
+        if (columnName.toUpperCase().includes("UNIDADE")) {
+          value = normalizeUnidade(value);
+        }
 
-  const prevRef = new Date(latestYear, latestMonth - 1, 1);
+        obj[columnName] = normalizeText(value);
+      });
 
-  return {
-    base,
-    latestMonth,
-    latestYear,
-    prevMonth: prevRef.getMonth(),
-    prevYear: prevRef.getFullYear(),
-  };
-}
-
-function buildRondasResumo(filtered, records, query) {
-  const totalRondas = filtered.length;
-
-  const comparativo = getRondaComparativoBase(records, query);
-
-  let rondasMesAtual = 0;
-  let rondasMesAnterior = 0;
-
-  if (comparativo.latestMonth !== null && comparativo.latestYear !== null) {
-    rondasMesAtual = comparativo.base.filter(
-      (r) =>
-        r.dataObj &&
-        r.dataObj.getMonth() === comparativo.latestMonth &&
-        r.dataObj.getFullYear() === comparativo.latestYear
-    ).length;
-
-    rondasMesAnterior = comparativo.base.filter(
-      (r) =>
-        r.dataObj &&
-        r.dataObj.getMonth() === comparativo.prevMonth &&
-        r.dataObj.getFullYear() === comparativo.prevYear
-    ).length;
-  }
-
-  const colaboradoresUnicos = new Set(
-    filtered.map((r) => rondaNorm(r.nome)).filter(Boolean)
-  ).size;
-
-  const unidadesUnicas = new Set(
-    filtered.map((r) => rondaNorm(r.unidade)).filter(Boolean)
-  ).size;
-
-  return {
-    totalRondas,
-    rondasMesAtual,
-    rondasMesAnterior,
-    variacaoMensal: rondaPercentChange(rondasMesAtual, rondasMesAnterior),
-    colaboradoresUnicos,
-    unidadesUnicas,
-  };
-}
-
-function buildRondasGraficos(filtered, records, query) {
-  const dias = Array.from({ length: 31 }, (_, i) =>
-    String(i + 1).padStart(2, "0")
-  );
-  const porDiaMap = Object.fromEntries(dias.map((d) => [d, 0]));
-
-  filtered.forEach((r) => {
-    if (!r.dataObj) return;
-    const dia = String(r.dataObj.getDate()).padStart(2, "0");
-    porDiaMap[dia] = (porDiaMap[dia] || 0) + 1;
-  });
-
-  const porDia = {
-    labels: dias,
-    valores: dias.map((d) => porDiaMap[d] || 0),
-    metas: dias.map(() => 35),
-  };
-
-  const comparativo = getRondaComparativoBase(records, query);
-
-  let mesAtual = 0;
-  let mesAnterior = 0;
-
-  if (comparativo.latestMonth !== null && comparativo.latestYear !== null) {
-    mesAtual = comparativo.base.filter(
-      (r) =>
-        r.dataObj &&
-        r.dataObj.getMonth() === comparativo.latestMonth &&
-        r.dataObj.getFullYear() === comparativo.latestYear
-    ).length;
-
-    mesAnterior = comparativo.base.filter(
-      (r) =>
-        r.dataObj &&
-        r.dataObj.getMonth() === comparativo.prevMonth &&
-        r.dataObj.getFullYear() === comparativo.prevYear
-    ).length;
-  }
-
-  function buildTop(recordsList, key, meta, limit = 10) {
-    const map = {};
-
-    recordsList.forEach((r) => {
-      const k = rondaNorm(r[key]) || "NÃO INFORMADO";
-      map[k] = (map[k] || 0) + 1;
+      return obj;
     });
 
-    const entries = Object.entries(map)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, limit);
-
-    return {
-      labels: entries.map(([k]) => k),
-      valores: entries.map(([, v]) => v),
-      metas: entries.map(() => meta),
-    };
-  }
-
-  return {
-    porDia,
-    comparativoMensal: {
-      mesAtual,
-      mesAnterior,
-      metaMensal: 1000,
-    },
-    porUnidade: buildTop(filtered, "unidade", 150),
-    porPlantao: buildTop(filtered, "plantao", 200),
-    porTipo: buildTop(filtered, "tipo_ronda", 300),
-    porAcao: buildTop(filtered, "qual_acao", 300),
-  };
-}
-
-function buildRondasFiltros(filteredBase) {
-  return {
-    origens: rondaSortUnique(filteredBase.map((r) => r.origem_ronda)),
-    unidades: rondaSortUnique(filteredBase.map((r) => r.unidade)),
-    plantoes: rondaSortUnique(filteredBase.map((r) => r.plantao)),
-    tipos: rondaSortUnique(filteredBase.map((r) => r.tipo_ronda)),
-    nomes: rondaSortUnique(filteredBase.map((r) => r.nome)),
-    acoes: rondaSortUnique(
-      filteredBase.map((r) => r.qual_acao || r.acao)
-    ),
-  };
-}
-
-function buildRondasDetalhes(filtered, page = 1, limit = 20) {
-  const sorted = [...filtered].sort((a, b) => {
-    const ad = a.dataObj ? a.dataObj.getTime() : 0;
-    const bd = b.dataObj ? b.dataObj.getTime() : 0;
-    return bd - ad;
-  });
-
-  const total = sorted.length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const currentPage = Math.min(Math.max(1, page), totalPages);
-  const start = (currentPage - 1) * limit;
-
-  const items = sorted.slice(start, start + limit).map((r) => ({
-    data: r.dataObj ? rondaFormatDateBR(r.dataObj) : r.data,
-    origem_ronda: r.origem_ronda,
-    unidade: r.unidade,
-    plantao: r.plantao,
-    nome: r.nome,
-    acao: r.acao,
-    qual_acao: r.qual_acao || r.acao,
-    tipo_ronda: r.tipo_ronda,
-  }));
-
-  return {
-    page: currentPage,
-    limit,
-    total,
-    totalPages,
-    items,
-  };
-}
-
-app.get("/api/rondas-debug", requireAuth, async (req, res) => {
-  try {
-    const all = await loadRondasComCache();
-    res.json({
-      total: all.length,
-      amostra: all.slice(0, 5),
-    });
-  } catch (error) {
-    console.error("Erro /api/rondas-debug:", error);
-    res.status(500).json({
-      error: "Erro no debug de rondas.",
-      detalhe: error.message,
-      stack: error.stack,
-    });
-  }
-});
-
-app.get("/api/rondas-filtros", requireAuth, async (req, res) => {
-  try {
-    const all = await loadRondasComCache();
-    const filtered = filterRondas(all, req.query);
-    res.json(buildRondasFiltros(filtered));
-  } catch (error) {
-    console.error("Erro /api/rondas-filtros:", error);
-    res.status(500).json({
-      error: "Erro ao carregar filtros de rondas.",
-      detalhe: error.message,
-    });
-  }
-});
-
-app.get("/api/rondas-resumo", requireAuth, async (req, res) => {
-  try {
-    const all = await loadRondasComCache();
-    const filtered = filterRondas(all, req.query);
-    res.json(buildRondasResumo(filtered, all, req.query));
-  } catch (error) {
-    console.error("Erro /api/rondas-resumo:", error);
-    res.status(500).json({
-      error: "Erro ao carregar resumo de rondas.",
-      detalhe: error.message,
-      stack: error.stack,
-    });
-  }
-});
-
-app.get("/api/rondas-graficos", requireAuth, async (req, res) => {
-  try {
-    const all = await loadRondasComCache();
-    const filtered = filterRondas(all, req.query);
-    res.json(buildRondasGraficos(filtered, all, req.query));
-  } catch (error) {
-    console.error("Erro /api/rondas-graficos:", error);
-    res.status(500).json({
-      error: "Erro ao carregar gráficos de rondas.",
-      detalhe: error.message,
-    });
-  }
-});
-
-app.get("/api/rondas-detalhes", requireAuth, async (req, res) => {
-  try {
-    const all = await loadRondasComCache();
-    const filtered = filterRondas(all, req.query);
-
-    const page = Number(req.query.page || 1);
-    const limit = Number(req.query.limit || 20);
-
-    res.json(buildRondasDetalhes(filtered, page, limit));
-  } catch (error) {
-    console.error("Erro /api/rondas-detalhes:", error);
-    res.status(500).json({
-      error: "Erro ao carregar detalhes de rondas.",
-      detalhe: error.message,
-    });
+    return res.json(objetos);
+  } catch (e) {
+    console.log("Erro /api/rondas/:aba:", e);
+    return res.json([]);
   }
 });
 

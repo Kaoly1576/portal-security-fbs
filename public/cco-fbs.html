@@ -3,736 +3,777 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CCO FBS</title>
+  <title>CCO-FBS Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    :root {
-      --bg-1: #273246;
-      --bg-2: #101826;
-      --bg-3: #060b14;
-      --panel: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-      --panel-strong: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
-      --border: rgba(255,255,255,0.08);
-      --text: #ffffff;
-      --muted: rgba(255,255,255,0.72);
-      --grid: rgba(255,255,255,0.08);
-      --input: #051127;
-      --orange: #ff7a1a;
-      --orange-2: #ff9a3d;
-      --red: #ff5252;
-      --green: #1ddc7f;
-      --blue: #60a5fa;
-      --purple: #8b5cf6;
-      --cyan: #22d3ee;
-      --yellow: #f59e0b;
-      --shadow: 0 10px 28px rgba(0,0,0,0.26);
-    }
-
-    html, body {
-      min-height: 100%;
-    }
-
-    body {
-      background: radial-gradient(circle at top left, var(--bg-1) 0%, var(--bg-2) 40%, var(--bg-3) 100%);
-      color: var(--text);
-      padding: 10px;
-    }
-
-    .page {
-      max-width: 1500px;
-      margin: 0 auto;
-    }
-
-    .topbar,
-    .hero,
-    .filters,
-    .kpi,
-    .panel,
-    .wide-panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 12px 18px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .brand-logo-wrap {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.24);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .brand-logo {
-      width: 30px;
-      height: 30px;
-      object-fit: contain;
-    }
-
-    .brand-text h1 {
-      color: var(--orange);
-      font-size: 18px;
-      font-weight: 900;
-      margin-bottom: 2px;
-      line-height: 1.1;
-    }
-
-    .brand-text p {
-      font-size: 11px;
-      color: var(--muted);
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    :root{
+      --bg-1:#0b0f16;
+      --bg-2:#141922;
+      --panel:#1a1f29;
+      --panel-2:#202633;
+      --border:rgba(255,255,255,0.10);
+      --text:#f3f4f6;
+      --muted:#9ca3af;
+      --orange:#ff7a1a;
+      --orange-strong:#ff5a00;
+      --blue:#60a5fa;
+      --green:#22c55e;
+      --red:#ef4444;
+      --yellow:#f59e0b;
+      --shadow:0 10px 30px rgba(0,0,0,0.28);
+      --radius:14px;
+    }
+
+    html, body{
+      min-height:100%;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 28%),
+        linear-gradient(180deg,#3c424c 0%, #171b22 18%, #0b0f16 42%, #0b0f16 100%);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    body{ padding:0; }
+
+    .page{
+      max-width:1440px;
+      margin:0 auto;
+      padding:14px;
     }
+
+    .hero{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      background:linear-gradient(90deg, rgba(255,122,26,0.10), rgba(255,255,255,0.03));
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:12px 16px;
+      box-shadow:var(--shadow);
+      margin-bottom:10px;
+    }
 
-    .btn {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.10);
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 12px;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: .2s ease;
+    .hero-left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
     }
+
+    .hero-logo{
+      width:38px;
+      height:38px;
+      border-radius:50%;
+      background:#1c140d;
+      border:1px solid rgba(255,122,26,0.20);
+      object-fit:contain;
+      padding:4px;
+      flex-shrink:0;
+    }
+
+    .hero-title-wrap{ min-width:0; }
+
+    .hero-title{
+      font-size:22px;
+      font-weight:800;
+      color:var(--orange);
+      line-height:1.1;
+    }
+
+    .hero-subtitle{
+      font-size:11px;
+      color:#cbd5e1;
+      margin-top:2px;
+    }
+
+    .hero-right{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      flex-shrink:0;
+    }
 
-    .btn:hover {
-      background: rgba(255,255,255,0.12);
+    .top-info{
+      text-align:right;
+      font-size:11px;
+      color:#d1d5db;
+      line-height:1.45;
     }
 
-    .hero {
-      padding: 18px 20px;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
+    .top-info strong{
+      color:var(--orange);
+      font-size:12px;
     }
+
+    .btn-top{
+      background:#2a2f39;
+      color:#fff;
+      text-decoration:none;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:10px;
+      padding:8px 12px;
+      font-size:11px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .btn-top:hover{ background:#353b47; }
 
-    .hero h2 {
-      font-size: 22px;
-      margin-bottom: 6px;
+    .panel{
+      background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      margin-bottom:8px;
     }
 
-    .hero p {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-      max-width: 980px;
+    .panel-header{
+      padding:10px 12px 6px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
     }
 
-    .hero-right {
-      text-align: right;
-      min-width: 150px;
+    .panel-title{
+      font-size:18px;
+      font-weight:800;
+      color:#f8fafc;
     }
 
-    .hero-right .small {
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 6px;
+    .panel-subtitle{
+      font-size:11px;
+      color:#cbd5e1;
+      margin-top:2px;
     }
 
-    .hero-right .time {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 22px;
+    .panel-body{ padding:10px 12px 12px; }
+
+    .filters-grid{
+      display:grid;
+      grid-template-columns:repeat(6, minmax(0, 1fr));
+      gap:8px;
+      margin-bottom:8px;
     }
 
-    .filters {
-      padding: 14px;
-      margin-bottom: 12px;
-      position: relative;
-      z-index: 20;
-      overflow: visible;
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width:0;
+      position:relative;
     }
 
-    .filters-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
-      align-items: end;
-      margin-bottom: 12px;
-      position: relative;
-      z-index: 21;
-      overflow: visible;
+    .field label{
+      font-size:10px;
+      font-weight:700;
+      color:#e5e7eb;
     }
 
-    .field {
-      min-width: 0;
-      position: relative;
-      z-index: 22;
+    .field input{
+      width:100%;
+      height:32px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:#191d25;
+      color:#fff;
+      font-size:11px;
+      padding:8px 10px;
+      outline:none;
     }
 
-    .field label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 12px;
-      color: #dfe8f4;
-      font-weight: 700;
+    .field input::placeholder{ color:#6b7280; }
+
+    .toolbar{
+      display:flex;
+      align-items:end;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:6px;
     }
 
-    .field input {
-      width: 100%;
-      height: 38px;
-      background: var(--input);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: #fff;
-      padding: 0 12px;
-      outline: none;
-      font-size: 13px;
-    }
-
-    .field input::placeholder {
-      color: rgba(255,255,255,0.42);
-    }
+    .btn{
+      height:32px;
+      border:none;
+      border-radius:8px;
+      padding:0 14px;
+      font-size:11px;
+      font-weight:800;
+      cursor:pointer;
+    }
 
-    .field.search-span {
-      grid-column: span 2;
+    .btn-apply{
+      background:var(--orange-strong);
+      color:#fff;
     }
 
-    .actions {
-      display: flex;
-      gap: 10px;
-      align-items: end;
-      flex-wrap: wrap;
+    .btn-clear{
+      background:#2b313c;
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.08);
     }
 
-    .btn-primary {
-      height: 38px;
-      border: none;
-      border-radius: 10px;
-      padding: 0 18px;
-      background: linear-gradient(90deg, #ff7a1a, #ff4d4f);
-      color: #fff;
-      font-weight: 800;
-      cursor: pointer;
-      transition: .2s ease;
+    .multi-select{
+      position:relative;
+      width:100%;
     }
-
-    .btn-primary:hover {
-      filter: brightness(1.05);
-    }
-
-    .btn-ghost {
-      height: 38px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0 18px;
-      background: #0d213b;
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
+
+    .multi-select-trigger{
+      width:100%;
+      height:32px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:#191d25;
+      color:#fff;
+      font-size:11px;
+      padding:8px 28px 8px 10px;
+      display:flex;
+      align-items:center;
+      cursor:pointer;
+      position:relative;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .dynamic-filters {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      position: relative;
-      z-index: 22;
-      overflow: visible;
+    .multi-select-trigger::after{
+      content:"▼";
+      position:absolute;
+      right:9px;
+      top:50%;
+      transform:translateY(-50%);
+      font-size:9px;
+      color:#d1d5db;
+      pointer-events:none;
     }
-
-    .multi {
-      position: relative;
-      z-index: 23;
+
+    .multi-select.open .multi-select-trigger{
+      border-color:rgba(255,122,26,0.55);
+      box-shadow:0 0 0 2px rgba(255,122,26,0.08);
     }
 
-    .multi.open {
-      z-index: 9999;
-    }
-
-    .multi-trigger {
-      width: 100%;
-      min-height: 38px;
-      background: var(--input);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: #fff;
-      padding: 8px 12px;
-      text-align: left;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
+    .multi-select-menu{
+      position:absolute;
+      top:36px;
+      left:0;
+      width:100%;
+      background:#171b22;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:10px;
+      box-shadow:0 12px 24px rgba(0,0,0,0.35);
+      display:none;
+      z-index:60;
+      padding:6px;
     }
+
+    .multi-select.open .multi-select-menu{ display:block; }
 
-    .multi-trigger span.label {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
+    .multi-search{ margin-bottom:6px; }
+
+    .multi-search input{
+      width:100%;
+      height:30px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:#11161d;
+      color:#fff;
+      font-size:11px;
+      padding:7px 9px;
+      outline:none;
     }
 
-    .multi-menu {
-      position: absolute;
-      top: 42px;
-      left: 0;
-      width: 100%;
-      background: #0c1d34;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px;
-      display: none;
-      z-index: 10000;
-      max-height: 260px;
-      overflow-y: auto;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.28);
+    .multi-actions{
+      display:flex;
+      gap:6px;
+      margin-bottom:6px;
     }
 
-    .multi.open .multi-menu {
-      display: block;
+    .multi-actions button{
+      flex:1;
+      height:28px;
+      border:none;
+      border-radius:7px;
+      background:#262c37;
+      color:#fff;
+      font-size:10px;
+      font-weight:700;
+      cursor:pointer;
     }
 
-    .multi-actions {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 8px;
+    .multi-options{
+      max-height:180px;
+      overflow:auto;
     }
 
-    .multi-actions button {
-      flex: 1;
-      border: none;
-      border-radius: 8px;
-      background: #173152;
-      color: #fff;
-      padding: 7px 8px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 700;
+    .multi-option{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      padding:7px 8px;
+      border-radius:7px;
+      font-size:11px;
+      color:#fff;
+      cursor:pointer;
     }
 
-    .multi-option {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 4px;
-      font-size: 13px;
-      color: #fff;
+    .multi-option:hover{ background:#232a35; }
+
+    .multi-option input{
+      width:auto;
+      height:auto;
+      accent-color:var(--orange);
     }
 
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
+    .multi-empty{
+      padding:8px;
+      color:#cbd5e1;
+      font-size:11px;
     }
 
-    .kpi {
-      padding: 14px 16px;
-      min-height: 88px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(6, minmax(0, 1fr));
+      gap:8px;
+      margin-bottom:8px;
     }
 
-    .kpi-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #dbe4ef;
-      margin-bottom: 8px;
-      font-weight: 800;
+    .kpi-card{
+      background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:12px;
+      padding:10px 12px;
+      min-width:0;
     }
 
-    .kpi-value {
-      font-size: 17px;
-      font-weight: 900;
-      line-height: 1.15;
-      word-break: break-word;
+    .kpi-label{
+      font-size:10px;
+      font-weight:800;
+      color:#d1d5db;
+      text-transform:uppercase;
+      margin-bottom:6px;
     }
 
-    .kpi-value.big {
-      font-size: 20px;
+    .kpi-value{
+      font-size:30px;
+      font-weight:900;
+      line-height:1;
+      color:var(--orange);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .kpi-sub {
-      margin-top: 6px;
-      font-size: 12px;
-      color: var(--muted);
-      min-height: 16px;
+    .kpi-sub{
+      font-size:11px;
+      margin-top:6px;
+      color:#cbd5e1;
+      min-height:16px;
     }
+
+    .variation{ font-weight:800; }
+    .variation.positive{ color:var(--green); }
+    .variation.negative{ color:var(--red); }
+    .variation.neutral{ color:#e5e7eb; }
 
-    .kpi-sub.positive { color: var(--green); }
-    .kpi-sub.negative { color: var(--red); }
+    .chart-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:8px;
+      margin-bottom:8px;
+      align-items:stretch;
+    }
 
-    .orange { color: var(--orange); }
-    .blue { color: var(--blue); }
-    .green { color: var(--green); }
-    .red { color: var(--red); }
-    .purple { color: var(--purple); }
+    .chart-grid-3{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:8px;
+      margin-bottom:8px;
+      align-items:stretch;
+    }
 
-    .grid-top {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 14px;
+    .chart-card{
+      background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:12px;
+      padding:10px 10px 8px;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
     }
 
-    .grid-bottom {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 14px;
+    .chart-title{
+      text-align:center;
+      font-size:13px;
+      font-weight:800;
+      color:var(--orange);
+      margin-bottom:8px;
     }
 
-    .panel {
-      padding: 14px;
-      overflow: hidden;
+    .chart-wrap{
+      position:relative;
+      width:100%;
+      height:260px;
     }
 
-    .panel-title {
-      color: var(--orange);
-      font-weight: 900;
-      font-size: 16px;
-      margin-bottom: 10px;
-      text-align: center;
+    .wide-chart .chart-wrap{
+      height:240px;
     }
 
-    .mini-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
+    .list-card{
+      background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:12px;
+      padding:10px 10px 8px;
+      min-width:0;
     }
 
-    .mini-table th,
-    .mini-table td {
-      padding: 7px 4px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      vertical-align: middle;
+    .mini-table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:unset;
     }
 
-    .mini-table th {
-      text-align: left;
-      color: #fff;
-      font-size: 12px;
-      position: sticky;
-      top: 0;
-      background: #132744;
-      z-index: 1;
+    .mini-table th, .mini-table td{
+      padding:7px 6px;
+      font-size:10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      white-space:nowrap;
+      text-align:left;
     }
 
-    .mini-table td:last-child,
-    .mini-table th:last-child {
-      text-align: right;
-      width: 70px;
-      white-space: nowrap;
+    .mini-table th{
+      position:sticky;
+      top:0;
+      background:#1d222b;
+      z-index:1;
     }
 
-    .bar-track {
-      width: 100%;
-      background: rgba(255,255,255,0.06);
-      height: 8px;
-      border-radius: 999px;
-      overflow: hidden;
+    .mini-table-wrap{
+      max-height:260px;
+      overflow:auto;
+      border-radius:8px;
     }
 
-    .bar-fill {
-      height: 8px;
-      background: #173b68;
-      border-radius: 999px;
+    .table-wrap{
+      overflow:auto;
+      max-height:360px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:#131820;
     }
 
-    .bar-fill.orange {
-      background: linear-gradient(90deg, #ff7a1a, #ff9a3d);
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:900px;
     }
 
-    .chart-box {
-      height: 260px;
-      position: relative;
+    th, td{
+      padding:8px 10px;
+      font-size:10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      white-space:nowrap;
+      text-align:left;
     }
 
-    .chart-box.line {
-      height: 280px;
+    th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      background:#1d222b;
+      color:#fff;
+      font-weight:800;
     }
+
+    tr:hover td{ background:#1a2029; }
 
-    .wide-panel {
-      padding: 14px;
-      margin-bottom: 14px;
+    .empty{
+      padding:18px;
+      color:#cbd5e1;
+      font-size:12px;
     }
 
-    .detail-wrap {
-      overflow: auto;
-      max-height: 520px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.06);
-      background: rgba(0,0,0,0.08);
+    .pagination{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      margin-top:10px;
+      flex-wrap:wrap;
     }
 
-    .detail-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px;
-      font-size: 12px;
+    .page-btn{
+      background:#2a2f39;
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:8px;
+      padding:7px 12px;
+      font-size:11px;
+      cursor:pointer;
     }
 
-    .detail-table th,
-    .detail-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      text-align: left;
-      white-space: nowrap;
+    .page-btn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
     }
 
-    .detail-table th {
-      position: sticky;
-      top: 0;
-      background: #10233f;
-      z-index: 1;
+    .page-info{
+      font-size:11px;
+      color:#d1d5db;
     }
 
-    .pager {
-      margin-top: 12px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+    .loading{
+      opacity:.65;
+      pointer-events:none;
+      filter:saturate(.85);
     }
 
-    .empty-state {
-      padding: 16px;
-      text-align: center;
-      color: #fff;
+    @media (max-width: 1300px){
+      .filters-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
+      .kpi-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
+      .chart-grid, .chart-grid-3{ grid-template-columns:1fr; }
     }
 
-    @media (max-width: 1280px) {
-      .filters-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    @media (max-width: 900px){
+      .hero{
+        flex-direction:column;
+        align-items:flex-start;
       }
 
-      .dynamic-filters {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .hero-right{
+        width:100%;
+        justify-content:space-between;
       }
 
-      .kpis {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .grid-top,
-      .grid-bottom {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .filters-grid,
-      .dynamic-filters,
-      .kpis {
-        grid-template-columns: 1fr;
-      }
-
-      .field.search-span {
-        grid-column: span 1;
-      }
-
-      .hero-right {
-        text-align: left;
-      }
-
-      .kpi-value {
-        font-size: 18px;
-      }
-
-      .topbar,
-      .hero {
-        flex-direction: column;
-        align-items: stretch;
+      .filters-grid, .kpi-grid{
+        grid-template-columns:1fr;
       }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-logo-wrap">
-          <img src="/images/logo.png" alt="Logo" class="brand-logo" />
-        </div>
-        <div class="brand-text">
-          <h1>CCO FBS</h1>
-          <p>Dashboard operacional com filtros multi seleção</p>
-        </div>
-      </div>
-
-      <a href="/portal" class="btn">Voltar ao Portal</a>
-    </header>
-
+  <div class="page" id="pageRoot">
     <section class="hero">
-      <div>
-        <h2>Dashboard CCO FBS</h2>
-        <p id="heroDescription">Carregando informações da base...</p>
+      <div class="hero-left">
+        <img src="/images/logo.png" alt="Logo" class="hero-logo" />
+        <div class="hero-title-wrap">
+          <div class="hero-title">CCO-FBS</div>
+          <div class="hero-subtitle">Dashboard operacional de solicitações de imagens com filtros, comparativo mensal e detalhamento</div>
+        </div>
       </div>
 
       <div class="hero-right">
-        <div class="small">Última atualização</div>
-        <div class="time" id="ultimaAtualizacao">--:--</div>
+        <div class="top-info">
+          <div id="userInfo">Carregando usuário...</div>
+          <div id="sheetInfo">Carregando planilha...</div>
+          <div>Última atualização <strong id="updateTime">--:--</strong></div>
+        </div>
+        <a href="/portal" class="btn-top">Voltar ao Portal</a>
       </div>
     </section>
 
-    <section class="filters">
-      <div class="filters-grid">
-        <div class="field">
-          <label>Data inicial</label>
-          <input type="date" id="filtroDataInicio" />
-        </div>
-
-        <div class="field">
-          <label>Data final</label>
-          <input type="date" id="filtroDataFim" />
-        </div>
-
-        <div class="field search-span">
-          <label>Busca geral</label>
-          <input type="text" id="filtroBusca" placeholder="Buscar em toda a base..." />
-        </div>
-
-        <div class="actions">
-          <button class="btn-primary" id="btnAplicar">Aplicar</button>
-          <button class="btn-ghost" id="btnLimpar">Limpar</button>
+    <section class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Dashboard - CCO-FBS</div>
+        <div class="panel-subtitle">
+          Filtros compactos com multiseleção, KPIs operacionais, gráficos com rótulos e detalhamento paginado.
         </div>
       </div>
 
-      <div class="dynamic-filters" id="dynamicFilters"></div>
+      <div class="panel-body">
+        <div class="filters-grid">
+          <div class="field">
+            <label>Data inicial</label>
+            <input type="date" id="dateStart" />
+          </div>
+
+          <div class="field">
+            <label>Data final</label>
+            <input type="date" id="dateEnd" />
+          </div>
+
+          <div class="field">
+            <label>Busca geral</label>
+            <input type="text" id="globalSearch" placeholder="Buscar..." />
+          </div>
+
+          <div class="field">
+            <label id="labelFilter1">Filtro 1</label>
+            <div class="multi-select" id="multiFilter1">
+              <div class="multi-select-trigger" id="triggerFilter1">Todos</div>
+              <div class="multi-select-menu" id="menuFilter1"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="labelFilter2">Filtro 2</label>
+            <div class="multi-select" id="multiFilter2">
+              <div class="multi-select-trigger" id="triggerFilter2">Todos</div>
+              <div class="multi-select-menu" id="menuFilter2"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="labelFilter3">Filtro 3</label>
+            <div class="multi-select" id="multiFilter3">
+              <div class="multi-select-trigger" id="triggerFilter3">Todos</div>
+              <div class="multi-select-menu" id="menuFilter3"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="labelFilter4">Filtro 4</label>
+            <div class="multi-select" id="multiFilter4">
+              <div class="multi-select-trigger" id="triggerFilter4">Todos</div>
+              <div class="multi-select-menu" id="menuFilter4"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="labelFilter5">Filtro 5</label>
+            <div class="multi-select" id="multiFilter5">
+              <div class="multi-select-trigger" id="triggerFilter5">Todos</div>
+              <div class="multi-select-menu" id="menuFilter5"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label id="labelFilter6">Filtro 6</label>
+            <div class="multi-select" id="multiFilter6">
+              <div class="multi-select-trigger" id="triggerFilter6">Todos</div>
+              <div class="multi-select-menu" id="menuFilter6"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn btn-apply" id="applyFilters">Aplicar</button>
+          <button class="btn btn-clear" id="clearFilters">Limpar</button>
+        </div>
+      </div>
     </section>
 
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-title">Total de registros</div>
-        <div class="kpi-value big orange" id="kpiTotal">0</div>
-        <div class="kpi-sub" id="kpiTotalSub"></div>
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">TOTAL DE SOLICITAÇÕES</div>
+        <div class="kpi-value" id="kpiTotal">0</div>
+        <div class="kpi-sub" id="kpiTotalSub">Sem comparativo</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Mês atual</div>
-        <div class="kpi-value big orange" id="kpiMesAtual">0</div>
-        <div class="kpi-sub">Período atual</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Mês anterior</div>
-        <div class="kpi-value big blue" id="kpiMesAnterior">0</div>
-        <div class="kpi-sub">Comparativo base</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Variação mensal</div>
-        <div class="kpi-value big orange" id="kpiVariacao">0%</div>
-        <div class="kpi-sub" id="kpiVariacaoSub">vs mês anterior</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Total de unidades</div>
-        <div class="kpi-value big blue" id="kpiUnidades">0</div>
+      <div class="kpi-card">
+        <div class="kpi-label">UNIDADES</div>
+        <div class="kpi-value" id="kpiUnidades">0</div>
         <div class="kpi-sub">Unidades distintas</div>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Status dominante</div>
-        <div class="kpi-value orange" id="kpiDominante">-</div>
-        <div class="kpi-sub" id="kpiDominanteSub"></div>
+      <div class="kpi-card">
+        <div class="kpi-label">MÊS ATUAL</div>
+        <div class="kpi-value" id="kpiMesAtual">0</div>
+        <div class="kpi-sub">Solicitações do mês de referência</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">MÊS ANTERIOR</div>
+        <div class="kpi-value" id="kpiMesAnterior">0</div>
+        <div class="kpi-sub">Comparativo do mês anterior</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">STATUS DOMINANTE</div>
+        <div class="kpi-value" id="kpiStatusDominante">-</div>
+        <div class="kpi-sub" id="kpiStatusDominanteSub">0 registros</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">VARIAÇÃO MENSAL</div>
+        <div class="kpi-value" id="kpiVariacao">0%</div>
+        <div class="kpi-sub" id="kpiVariacaoSub">Comparativo mensal</div>
       </div>
     </section>
 
-    <section class="grid-top">
-      <div class="panel">
-        <div class="panel-title" id="tituloTabelaA">Resumo A</div>
-        <table class="mini-table">
-          <thead>
-            <tr>
-              <th id="headTabelaA">Grupo</th>
-              <th>Qtd</th>
-              <th style="width:50%"></th>
-            </tr>
-          </thead>
-          <tbody id="tabelaA"></tbody>
-        </table>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title" id="tituloTabelaB">Resumo B</div>
-        <table class="mini-table">
-          <thead>
-            <tr>
-              <th id="headTabelaB">Grupo</th>
-              <th>Qtd</th>
-              <th style="width:50%"></th>
-            </tr>
-          </thead>
-          <tbody id="tabelaB"></tbody>
-        </table>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title" id="tituloStatus">Status</div>
-        <div class="chart-box">
-          <canvas id="chartStatus"></canvas>
+    <section class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Solicitações por Dia</div>
+        <div class="chart-wrap">
+          <canvas id="chartDia"></canvas>
         </div>
       </div>
-    </section>
 
-    <section class="grid-bottom">
-      <div class="panel">
-        <div class="panel-title" id="tituloChart1">Distribuição 1</div>
-        <div class="chart-box">
+      <div class="chart-card">
+        <div class="chart-title" id="chart1Title">Distribuição</div>
+        <div class="chart-wrap">
           <canvas id="chart1"></canvas>
         </div>
       </div>
+    </section>
 
-      <div class="panel">
-        <div class="panel-title" id="tituloChart2">Distribuição 2</div>
-        <div class="chart-box">
+    <section class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title" id="chart2Title">Distribuição</div>
+        <div class="chart-wrap">
           <canvas id="chart2"></canvas>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">Registros por Dia</div>
-        <div class="chart-box line">
-          <canvas id="chartDia"></canvas>
+      <div class="chart-card">
+        <div class="chart-title" id="chart3Title">Distribuição</div>
+        <div class="chart-wrap">
+          <canvas id="chart3"></canvas>
         </div>
       </div>
     </section>
 
-    <section class="wide-panel">
-      <div class="panel-title">Detalhamento</div>
-      <div class="detail-wrap" id="detailWrap"></div>
-      <div class="pager">
-        <button class="btn-ghost" id="btnPrev">Anterior</button>
-        <button class="btn-ghost" id="btnNext">Próxima</button>
+    <section class="chart-grid">
+      <div class="list-card">
+        <div class="chart-title" id="tableATitle">Top A</div>
+        <div class="mini-table-wrap">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="tableABody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <div class="chart-title" id="tableBTitle">Top B</div>
+        <div class="mini-table-wrap">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="tableBBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div class="panel-title" style="font-size:14px; text-align:center;">Detalhamento</div>
+      </div>
+      <div class="panel-body">
+        <div class="table-wrap" id="tableWrap"></div>
+        <div class="pagination">
+          <button class="page-btn" id="prevPage">Anterior</button>
+          <div class="page-info" id="pageInfo">Página 1 de 1</div>
+          <button class="page-btn" id="nextPage">Próxima</button>
+        </div>
       </div>
     </section>
   </div>
@@ -740,28 +781,23 @@
   <script>
     Chart.register(ChartDataLabels);
 
-    let currentPage = 1;
-    let totalPages = 1;
-    let dynamicFilterKeys = [];
+    const FILTER_IDS = [1,2,3,4,5,6];
 
-    let chartStatusInstance = null;
-    let chart1Instance = null;
-    let chart2Instance = null;
-    let chartDiaInstance = null;
+    let filtrosMeta = [];
+    let detailsPage = 1;
+    let detailsLimit = 50;
 
-    const donutColors = [
-      "#ff7a1a",
-      "#f59e0b",
-      "#60a5fa",
-      "#8b5cf6",
-      "#22d3ee",
-      "#22c55e",
-      "#f87171",
-      "#fb7185"
-    ];
+    let chartDia;
+    let chart1;
+    let chart2;
+    let chart3;
 
-    function esc(v) {
-      return String(v ?? "")
+    function normalizeText(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -769,245 +805,201 @@
         .replace(/'/g, "&#039;");
     }
 
-    function fmt(n) {
-      return new Intl.NumberFormat("pt-BR").format(n || 0);
+    function formatNumber(value) {
+      return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
     }
 
-    function fmtPct(v) {
-      return `${Number(v || 0).toFixed(1).replace(".", ",")}%`;
+    function formatPercent(value) {
+      return `${Number(value || 0).toLocaleString("pt-BR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+      })}%`;
     }
 
-    function cssSafe(text) {
-      return String(text).replace(/[^a-zA-Z0-9_-]/g, "_");
+    function setLoading(isLoading) {
+      document.getElementById("pageRoot").classList.toggle("loading", isLoading);
     }
 
-    function getFiltersQuery(page = 1) {
-      const qs = new URLSearchParams();
-      qs.set("dataInicio", document.getElementById("filtroDataInicio").value || "");
-      qs.set("dataFim", document.getElementById("filtroDataFim").value || "");
-      qs.set("busca", document.getElementById("filtroBusca").value || "");
-      qs.set("page", page);
-      qs.set("limit", 50);
+    function buildMultiSelect(containerId, triggerId, menuId, values, placeholder) {
+      const container = document.getElementById(containerId);
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
 
-      dynamicFilterKeys.forEach((key) => {
-        const selected = [...document.querySelectorAll(`#menu_${cssSafe(key)} input[type="checkbox"]:checked`)]
-          .map((el) => el.value)
-          .join("|");
+      menu.innerHTML = `
+        <div class="multi-search">
+          <input type="text" class="multi-search-input" placeholder="Buscar..." />
+        </div>
+        <div class="multi-actions">
+          <button type="button" class="select-all">Todos</button>
+          <button type="button" class="clear-all">Limpar</button>
+        </div>
+        <div class="multi-options"></div>
+      `;
 
-        qs.set(`f_${key}`, selected);
+      const optionsWrap = menu.querySelector(".multi-options");
+      const searchInput = menu.querySelector(".multi-search-input");
+
+      values.forEach(value => {
+        const label = document.createElement("label");
+        label.className = "multi-option";
+        label.dataset.value = normalizeText(value);
+        label.innerHTML = `
+          <input type="checkbox" value="${escapeHtml(value)}">
+          <span>${escapeHtml(value)}</span>
+        `;
+        optionsWrap.appendChild(label);
       });
 
-      return qs.toString();
-    }
-
-    function updateMultiTrigger(key) {
-      const safe = cssSafe(key);
-      const checked = [...document.querySelectorAll(`#menu_${safe} input[type="checkbox"]:checked`)]
-        .map((el) => el.value);
-
-      const trigger = document.getElementById(`trigger_${safe}`);
-      if (!checked.length) {
-        trigger.querySelector(".label").textContent = "Todos";
-      } else if (checked.length === 1) {
-        trigger.querySelector(".label").textContent = checked[0];
-      } else {
-        trigger.querySelector(".label").textContent = `${checked.length} selecionados`;
+      if (!values.length) {
+        optionsWrap.innerHTML = `<div class="multi-empty">Nenhuma opção disponível</div>`;
       }
-    }
 
-    function closeAllMulti() {
-      document.querySelectorAll(".multi").forEach((m) => m.classList.remove("open"));
+      function updateTriggerText() {
+        const selected = [...menu.querySelectorAll('.multi-option input[type="checkbox"]:checked')].map(i => i.value);
+
+        if (!selected.length) {
+          trigger.textContent = placeholder;
+        } else if (selected.length === 1) {
+          trigger.textContent = selected[0];
+        } else {
+          trigger.textContent = `${selected.length} selecionados`;
+        }
+      }
+
+      trigger.onclick = () => {
+        document.querySelectorAll(".multi-select").forEach(el => {
+          if (el !== container) el.classList.remove("open");
+        });
+
+        container.classList.toggle("open");
+
+        if (container.classList.contains("open")) {
+          setTimeout(() => searchInput.focus(), 30);
+        }
+      };
+
+      menu.querySelector(".select-all").onclick = () => {
+        menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(input => {
+          const option = input.closest(".multi-option");
+          if (option && option.style.display !== "none") input.checked = true;
+        });
+        updateTriggerText();
+      };
+
+      menu.querySelector(".clear-all").onclick = () => {
+        menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(input => {
+          input.checked = false;
+        });
+        updateTriggerText();
+      };
+
+      menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(input => {
+        input.addEventListener("change", updateTriggerText);
+      });
+
+      searchInput.addEventListener("input", () => {
+        const term = normalizeText(searchInput.value);
+        menu.querySelectorAll(".multi-option").forEach(option => {
+          option.style.display = !term || option.dataset.value.includes(term) ? "flex" : "none";
+        });
+      });
+
+      updateTriggerText();
     }
 
     document.addEventListener("click", (e) => {
-      if (!e.target.closest(".multi")) closeAllMulti();
+      document.querySelectorAll(".multi-select").forEach(container => {
+        if (!container.contains(e.target)) {
+          container.classList.remove("open");
+        }
+      });
     });
 
-    function buildMultiFilter(filter) {
-      const safe = cssSafe(filter.key);
-
-      return `
-        <div class="field">
-          <label>${esc(filter.label)}</label>
-          <div class="multi" id="multi_${safe}">
-            <button type="button" class="multi-trigger" id="trigger_${safe}">
-              <span class="label">Todos</span>
-              <span>▼</span>
-            </button>
-
-            <div class="multi-menu" id="menu_${safe}">
-              <div class="multi-actions">
-                <button type="button" data-action="all" data-key="${esc(filter.key)}">Todos</button>
-                <button type="button" data-action="clear" data-key="${esc(filter.key)}">Limpar</button>
-              </div>
-
-              ${filter.values.map(v => `
-                <label class="multi-option">
-                  <input type="checkbox" value="${esc(v)}" data-key="${esc(filter.key)}" />
-                  <span>${esc(v)}</span>
-                </label>
-              `).join("")}
-            </div>
-          </div>
-        </div>
-      `;
+    function getSelectedValues(menuId) {
+      return [...document.querySelectorAll(`#${menuId} .multi-option input[type="checkbox"]:checked`)]
+        .map(i => i.value);
     }
 
-    async function loadFilters() {
-      const res = await fetch("/api/cco-fbs-filtros", { credentials: "same-origin" });
-      const data = await res.json();
+    function getQueryParams(page = detailsPage) {
+      const params = new URLSearchParams();
 
-      dynamicFilterKeys = (data.filtros || []).map((f) => f.key);
+      const dataInicio = document.getElementById("dateStart").value;
+      const dataFim = document.getElementById("dateEnd").value;
+      const busca = document.getElementById("globalSearch").value.trim();
 
-      document.getElementById("heroDescription").textContent =
-        `Aba utilizada: ${data.sheetTitle || "N/A"} | Filtros multi seleção, comparativo mensal e visão operacional da base.`;
+      if (dataInicio) params.set("dataInicio", dataInicio);
+      if (dataFim) params.set("dataFim", dataFim);
+      if (busca) params.set("busca", busca);
 
-      const container = document.getElementById("dynamicFilters");
-      container.innerHTML = (data.filtros || []).map(buildMultiFilter).join("");
-
-      dynamicFilterKeys.forEach((key) => {
-        const safe = cssSafe(key);
-        const multi = document.getElementById(`multi_${safe}`);
-        const trigger = document.getElementById(`trigger_${safe}`);
-
-        trigger.addEventListener("click", (e) => {
-          e.stopPropagation();
-          document.querySelectorAll(".multi").forEach((m) => {
-            if (m !== multi) m.classList.remove("open");
-          });
-          multi.classList.toggle("open");
-        });
+      FILTER_IDS.forEach((idx) => {
+        const meta = filtrosMeta[idx - 1];
+        if (!meta) return;
+        const values = getSelectedValues(`menuFilter${idx}`);
+        if (values.length) {
+          params.set(`f_${meta.key}`, values.join("|"));
+        }
       });
 
-      container.querySelectorAll("input[type='checkbox']").forEach((input) => {
-        input.addEventListener("change", () => {
-          updateMultiTrigger(input.dataset.key);
-        });
-      });
+      params.set("page", String(page));
+      params.set("limit", String(detailsLimit));
 
-      container.querySelectorAll("[data-action='all']").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          const safe = cssSafe(key);
-          document.querySelectorAll(`#menu_${safe} input[type='checkbox']`).forEach((el) => {
-            el.checked = true;
-          });
-          updateMultiTrigger(key);
-        });
-      });
-
-      container.querySelectorAll("[data-action='clear']").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          const safe = cssSafe(key);
-          document.querySelectorAll(`#menu_${safe} input[type='checkbox']`).forEach((el) => {
-            el.checked = false;
-          });
-          updateMultiTrigger(key);
-        });
-      });
-    }
-
-    async function loadResumo() {
-      const res = await fetch(`/api/cco-fbs-resumo?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      document.getElementById("kpiTotal").textContent = fmt(data.total);
-      document.getElementById("kpiUnidades").textContent = fmt(data.totalUnidades);
-      document.getElementById("kpiMesAtual").textContent = fmt(data.mesAtual || 0);
-      document.getElementById("kpiMesAnterior").textContent = fmt(data.mesAnterior || 0);
-      document.getElementById("kpiVariacao").textContent = fmtPct(data.variacaoMensal || 0);
-      document.getElementById("kpiDominante").textContent = data.statusDominante || "-";
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
-
-      const totalSub = document.getElementById("kpiTotalSub");
-      const varSub = document.getElementById("kpiVariacaoSub");
-      const dominanteSub = document.getElementById("kpiDominanteSub");
-
-      if ((data.variacaoMensal || 0) >= 0) {
-        totalSub.textContent = "Comparativo mensal ativo";
-        totalSub.className = "kpi-sub positive";
-        varSub.className = "kpi-sub positive";
-      } else {
-        totalSub.textContent = "Comparativo mensal ativo";
-        totalSub.className = "kpi-sub negative";
-        varSub.className = "kpi-sub negative";
-      }
-
-      varSub.textContent = "vs mês anterior";
-      dominanteSub.textContent = data.totalStatusDominante ? `${fmt(data.totalStatusDominante)} registros` : "";
-      dominanteSub.className = "kpi-sub";
-    }
-
-    function renderMiniTable(elId, rows) {
-      const tbody = document.getElementById(elId);
-      const max = Math.max(...rows.map(r => r.total || 0), 1);
-
-      tbody.innerHTML = rows.map((item) => `
-        <tr>
-          <td>${esc(item.nome)}</td>
-          <td>${fmt(item.total)}</td>
-          <td>
-            <div class="bar-track">
-              <div class="bar-fill orange" style="width:${((item.total || 0) / max) * 100}%"></div>
-            </div>
-          </td>
-        </tr>
-      `).join("");
+      return params;
     }
 
     function destroyCharts() {
-      if (chartStatusInstance) chartStatusInstance.destroy();
-      if (chart1Instance) chart1Instance.destroy();
-      if (chart2Instance) chart2Instance.destroy();
-      if (chartDiaInstance) chartDiaInstance.destroy();
+      [chartDia, chart1, chart2, chart3].forEach(chart => {
+        if (chart) chart.destroy();
+      });
     }
 
-    function datalabelsOptions(indexAxis = "x") {
-      return {
-        color: "#ffffff",
-        anchor: indexAxis === "y" ? "end" : "end",
-        align: indexAxis === "y" ? "right" : "top",
-        offset: 4,
-        clamp: true,
-        font: {
-          family: "Arial",
-          weight: "bold",
-          size: 11
-        },
-        formatter: (value) => Number(value || 0).toLocaleString("pt-BR")
-      };
-    }
-
-    function baseChartOptions(horizontal = false, showLegend = false) {
+    function baseBarOptions(horizontal = false, legend = false) {
       return {
         indexAxis: horizontal ? "y" : "x",
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: showLegend,
+            display: legend,
             labels: {
-              color: "#fff",
+              color: "#e5e7eb",
               boxWidth: 10,
-              font: { size: 11 }
+              font: { size: 10 }
             }
           },
           tooltip: {
-            titleFont: { family: "Arial" },
-            bodyFont: { family: "Arial" }
+            backgroundColor: "#111827",
+            titleColor: "#fff",
+            bodyColor: "#e5e7eb",
+            borderColor: "rgba(255,255,255,0.08)",
+            borderWidth: 1
           },
-          datalabels: datalabelsOptions(horizontal ? "y" : "x")
+          datalabels: {
+            color: "#fff",
+            anchor: horizontal ? "end" : "end",
+            align: horizontal ? "right" : "top",
+            offset: 2,
+            clamp: true,
+            font: {
+              weight: "700",
+              size: 10
+            },
+            formatter: value => formatNumber(value)
+          }
         },
         scales: {
           x: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
-            grid: { color: "rgba(255,255,255,0.05)" }
+            ticks: {
+              color: "#d1d5db",
+              font: { size: 9 }
+            },
+            grid: { color: "rgba(255,255,255,0.05)" },
+            beginAtZero: true
           },
           y: {
-            ticks: { color: "#cbd5e1", font: { size: 10 } },
+            ticks: {
+              color: "#d1d5db",
+              font: { size: 9 }
+            },
             grid: { color: "rgba(255,255,255,0.05)" },
             beginAtZero: true
           }
@@ -1015,192 +1007,274 @@
       };
     }
 
-    async function loadGraficos() {
-      const res = await fetch(`/api/cco-fbs-graficos?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
+    function setVariationText(elId, variation) {
+      const el = document.getElementById(elId);
+      let type = "neutral";
+      if (variation > 0) type = "positive";
+      if (variation < 0) type = "negative";
+      const arrow = variation > 0 ? "↑" : variation < 0 ? "↓" : "→";
+      el.innerHTML = `<span class="variation ${type}">${arrow} ${formatPercent(Math.abs(variation))} vs mês anterior</span>`;
+    }
+
+    function fillMiniTable(tbodyId, rows) {
+      const tbody = document.getElementById(tbodyId);
+      tbody.innerHTML = "";
+
+      if (!rows?.length) {
+        tbody.innerHTML = `<tr><td colspan="2" class="empty">Sem dados</td></tr>`;
+        return;
+      }
+
+      rows.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${escapeHtml(row.nome)}</td><td>${formatNumber(row.total)}</td>`;
+        tbody.appendChild(tr);
       });
+    }
+
+    function setFilterVisibility(count) {
+      FILTER_IDS.forEach((idx) => {
+        const field = document.getElementById(`multiFilter${idx}`).closest(".field");
+        field.style.display = idx <= count ? "flex" : "none";
+      });
+    }
+
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/me");
+        const user = await res.json();
+        document.getElementById("userInfo").textContent =
+          `${user.nome || "Usuário"} | ${user.perfil || "usuario"}`;
+      } catch {
+        document.getElementById("userInfo").textContent = "Usuário não identificado";
+      }
+    }
+
+    async function loadFiltros() {
+      const res = await fetch("/api/cco-fbs-filtros");
+      const data = await res.json();
+
+      filtrosMeta = Array.isArray(data.filtros) ? data.filtros.slice(0, 6) : [];
+      setFilterVisibility(filtrosMeta.length);
+
+      filtrosMeta.forEach((filtro, index) => {
+        const idx = index + 1;
+        document.getElementById(`labelFilter${idx}`).textContent = filtro.label;
+        buildMultiSelect(
+          `multiFilter${idx}`,
+          `triggerFilter${idx}`,
+          `menuFilter${idx}`,
+          filtro.values || [],
+          "Todos"
+        );
+      });
+
+      document.getElementById("sheetInfo").textContent = `Aba: ${data.sheetTitle || "Solicitações de imagens"} | Data base: ${data.dateColumn || "Data"}`;
+    }
+
+    async function loadResumo() {
+      const params = getQueryParams();
+      const res = await fetch(`/api/cco-fbs-resumo?${params.toString()}`);
+      const data = await res.json();
+
+      document.getElementById("kpiTotal").textContent = formatNumber(data.total);
+      document.getElementById("kpiUnidades").textContent = formatNumber(data.totalUnidades);
+      document.getElementById("kpiMesAtual").textContent = formatNumber(data.mesAtual);
+      document.getElementById("kpiMesAnterior").textContent = formatNumber(data.mesAnterior);
+      document.getElementById("kpiStatusDominante").textContent = data.statusDominante || "-";
+      document.getElementById("kpiStatusDominanteSub").textContent = `${formatNumber(data.totalStatusDominante)} registros`;
+      document.getElementById("kpiVariacao").textContent = formatPercent(data.variacaoMensal);
+      document.getElementById("updateTime").textContent = data.ultimaAtualizacao || "--:--";
+
+      setVariationText("kpiTotalSub", data.variacaoMensal || 0);
+      document.getElementById("kpiVariacaoSub").textContent = "Comparativo mês atual x anterior";
+    }
+
+    async function loadGraficos() {
+      const params = getQueryParams();
+      const res = await fetch(`/api/cco-fbs-graficos?${params.toString()}`);
       const data = await res.json();
 
       destroyCharts();
 
-      document.getElementById("tituloTabelaA").textContent = data.tableAHeader || "Resumo A";
-      document.getElementById("headTabelaA").textContent = data.tableAHeader || "Grupo";
-      document.getElementById("tituloTabelaB").textContent = data.tableBHeader || "Resumo B";
-      document.getElementById("headTabelaB").textContent = data.tableBHeader || "Grupo";
-
-      renderMiniTable("tabelaA", data.tableA || []);
-      renderMiniTable("tabelaB", data.tableB || []);
-
-      const c1 = data.charts?.[0] || { header: "Distribuição 1", labels: [], values: [] };
-      const c2 = data.charts?.[1] || { header: "Distribuição 2", labels: [], values: [] };
-      const c3 = data.charts?.[2] || { header: "Status", labels: [], values: [] };
-
-      document.getElementById("tituloChart1").textContent = c1.header || "Distribuição 1";
-      document.getElementById("tituloChart2").textContent = c2.header || "Distribuição 2";
-      document.getElementById("tituloStatus").textContent = c3.header || "Status";
-
-      chart1Instance = new Chart(document.getElementById("chart1"), {
-        type: "bar",
-        data: {
-          labels: c1.labels,
-          datasets: [{
-            label: "Qtd",
-            data: c1.values,
-            backgroundColor: "#ff7a1a",
-            borderRadius: 8,
-            datalabels: datalabelsOptions("y")
-          }]
-        },
-        options: baseChartOptions(true, false)
-      });
-
-      chart2Instance = new Chart(document.getElementById("chart2"), {
-        type: "bar",
-        data: {
-          labels: c2.labels,
-          datasets: [{
-            label: "Qtd",
-            data: c2.values,
-            backgroundColor: "#60a5fa",
-            borderRadius: 8,
-            datalabels: datalabelsOptions("y")
-          }]
-        },
-        options: baseChartOptions(true, false)
-      });
-
-      chartStatusInstance = new Chart(document.getElementById("chartStatus"), {
-        type: "doughnut",
-        data: {
-          labels: c3.labels,
-          datasets: [{
-            data: c3.values,
-            backgroundColor: donutColors,
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: "56%",
-          plugins: {
-            legend: {
-              position: "right",
-              labels: {
-                color: "#fff",
-                boxWidth: 10,
-                font: { size: 10 }
-              }
-            },
-            datalabels: {
-              color: "#fff",
-              font: { weight: "700", size: 10 },
-              formatter: (value, ctx) => {
-                const dataset = ctx.chart.data.datasets[0].data || [];
-                const total = dataset.reduce((s, v) => s + Number(v || 0), 0);
-                const pct = total ? (value / total) * 100 : 0;
-                return pct >= 3 ? `${pct.toFixed(1)}%` : "";
-              }
-            }
-          }
-        }
-      });
-
-      chartDiaInstance = new Chart(document.getElementById("chartDia"), {
+      chartDia = new Chart(document.getElementById("chartDia"), {
         type: "line",
         data: {
           labels: data.porDia?.labels || [],
           datasets: [{
-            label: "Registros",
+            label: "Solicitações",
             data: data.porDia?.values || [],
-            borderColor: "#58a6ff",
-            backgroundColor: "rgba(88,166,255,0.15)",
-            fill: false,
-            tension: 0.35,
+            borderColor: "#60a5fa",
+            backgroundColor: "#60a5fa",
+            tension: 0.25,
             pointRadius: 3,
-            pointHoverRadius: 4
+            pointHoverRadius: 5,
+            fill: false
           }]
         },
         options: {
-          ...baseChartOptions(false, false),
-          plugins: {
-            ...baseChartOptions(false, false).plugins,
-            datalabels: {
-              color: "#fff",
-              align: "top",
-              anchor: "end",
-              offset: 4,
-              clamp: true,
-              font: { weight: "700", size: 9 },
-              formatter: (value) => value > 0 ? fmt(value) : ""
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:false },
+            tooltip:{
+              backgroundColor:"#111827",
+              titleColor:"#fff",
+              bodyColor:"#e5e7eb",
+              borderColor:"rgba(255,255,255,0.08)",
+              borderWidth:1
+            },
+            datalabels:{
+              color:"#fff",
+              align:"top",
+              anchor:"end",
+              offset:4,
+              clamp:true,
+              font:{ weight:"700", size:9 },
+              formatter:value => value > 0 ? formatNumber(value) : ""
+            }
+          },
+          scales:{
+            x:{
+              ticks:{ color:"#d1d5db", font:{ size:9 } },
+              grid:{ color:"rgba(255,255,255,0.05)" }
+            },
+            y:{
+              beginAtZero:true,
+              ticks:{ color:"#d1d5db", font:{ size:9 } },
+              grid:{ color:"rgba(255,255,255,0.05)" }
             }
           }
         }
       });
+
+      const charts = data.charts || [];
+      const chartMeta = [
+        { id: "chart1", title: "chart1Title", color: "#ff7a1a" },
+        { id: "chart2", title: "chart2Title", color: "#60a5fa" },
+        { id: "chart3", title: "chart3Title", color: "#f59e0b" }
+      ];
+
+      chartMeta.forEach((meta, idx) => {
+        const chartData = charts[idx] || { header: "Sem dados", labels: [], values: [] };
+        document.getElementById(meta.title).textContent = chartData.header || "Distribuição";
+
+        const config = {
+          type: "bar",
+          data: {
+            labels: chartData.labels || [],
+            datasets: [{
+              label: chartData.header || "Total",
+              data: chartData.values || [],
+              backgroundColor: meta.color,
+              borderRadius: 8
+            }]
+          },
+          options: baseBarOptions(true, false)
+        };
+
+        if (idx === 0) chart1 = new Chart(document.getElementById(meta.id), config);
+        if (idx === 1) chart2 = new Chart(document.getElementById(meta.id), config);
+        if (idx === 2) chart3 = new Chart(document.getElementById(meta.id), config);
+      });
+
+      document.getElementById("tableATitle").textContent = data.tableAHeader || "Top A";
+      document.getElementById("tableBTitle").textContent = data.tableBHeader || "Top B";
+      fillMiniTable("tableABody", data.tableA || []);
+      fillMiniTable("tableBBody", data.tableB || []);
     }
 
-    async function loadDetalhes() {
-      const res = await fetch(`/api/cco-fbs-detalhes?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
+    async function loadDetalhes(page = 1) {
+      detailsPage = page;
+      const params = getQueryParams(page);
+      const res = await fetch(`/api/cco-fbs-detalhes?${params.toString()}`);
       const data = await res.json();
 
-      totalPages = data.totalPages || 1;
+      const tableWrap = document.getElementById("tableWrap");
 
-      let html = `<table class="detail-table"><thead><tr>`;
-      (data.headers || []).forEach((header) => {
-        html += `<th>${esc(header)}</th>`;
-      });
-      html += `</tr></thead><tbody>`;
-
-      (data.rows || []).forEach((row) => {
-        html += `<tr>`;
-        (data.headers || []).forEach((header) => {
-          html += `<td>${esc(row[header] || "")}</td>`;
+      if (!data.rows?.length) {
+        tableWrap.innerHTML = `<div class="empty">Nenhum dado encontrado com os filtros aplicados.</div>`;
+      } else {
+        let html = "<table><thead><tr>";
+        (data.headers || []).forEach(header => {
+          html += `<th>${escapeHtml(header)}</th>`;
         });
-        html += `</tr>`;
-      });
+        html += "</tr></thead><tbody>";
 
-      html += `</tbody></table>`;
-      document.getElementById("detailWrap").innerHTML = html || `<div class="empty-state">Sem dados</div>`;
+        data.rows.forEach(row => {
+          html += "<tr>";
+          (data.headers || []).forEach(header => {
+            html += `<td>${escapeHtml(row[header] || "")}</td>`;
+          });
+          html += "</tr>";
+        });
+
+        html += "</tbody></table>";
+        tableWrap.innerHTML = html;
+      }
+
+      document.getElementById("pageInfo").textContent = `Página ${data.page || 1} de ${data.totalPages || 1} | Total ${formatNumber(data.total || 0)}`;
+      document.getElementById("prevPage").disabled = (data.page || 1) <= 1;
+      document.getElementById("nextPage").disabled = (data.page || 1) >= (data.totalPages || 1);
     }
 
-    async function loadAll(page = 1) {
-      currentPage = page;
-      await loadResumo();
-      await loadGraficos();
-      await loadDetalhes();
+    async function applyAll(page = 1) {
+      try {
+        setLoading(true);
+        await loadResumo();
+        await loadGraficos();
+        await loadDetalhes(page);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
+    function clearAllFilters() {
+      document.getElementById("globalSearch").value = "";
+      document.getElementById("dateStart").value = "";
+      document.getElementById("dateEnd").value = "";
 
-    document.getElementById("btnLimpar").addEventListener("click", () => {
-      document.getElementById("filtroDataInicio").value = "";
-      document.getElementById("filtroDataFim").value = "";
-      document.getElementById("filtroBusca").value = "";
-
-      dynamicFilterKeys.forEach((key) => {
-        document.querySelectorAll(`#menu_${cssSafe(key)} input[type="checkbox"]`).forEach((el) => {
-          el.checked = false;
+      FILTER_IDS.forEach((idx) => {
+        document.querySelectorAll(`#menuFilter${idx} input[type="checkbox"]`).forEach(input => {
+          input.checked = false;
         });
-        updateMultiTrigger(key);
+
+        document.querySelectorAll(`#menuFilter${idx} .multi-search-input`).forEach(input => {
+          input.value = "";
+        });
+
+        document.querySelectorAll(`#menuFilter${idx} .multi-option`).forEach(option => {
+          option.style.display = "flex";
+        });
+
+        const trigger = document.getElementById(`triggerFilter${idx}`);
+        if (trigger) trigger.textContent = "Todos";
       });
 
-      loadAll(1);
+      applyAll(1);
+    }
+
+    document.getElementById("applyFilters").addEventListener("click", () => applyAll(1));
+    document.getElementById("clearFilters").addEventListener("click", clearAllFilters);
+    document.getElementById("globalSearch").addEventListener("input", () => applyAll(1));
+    document.getElementById("dateStart").addEventListener("change", () => applyAll(1));
+    document.getElementById("dateEnd").addEventListener("change", () => applyAll(1));
+
+    document.getElementById("prevPage").addEventListener("click", () => {
+      if (detailsPage > 1) loadDetalhes(detailsPage - 1);
     });
 
-    document.getElementById("btnPrev").addEventListener("click", () => {
-      if (currentPage > 1) loadAll(currentPage - 1);
+    document.getElementById("nextPage").addEventListener("click", async () => {
+      await loadDetalhes(detailsPage + 1);
     });
 
-    document.getElementById("btnNext").addEventListener("click", () => {
-      if (currentPage < totalPages) loadAll(currentPage + 1);
-    });
+    async function init() {
+      await loadUser();
+      await loadFiltros();
+      await applyAll(1);
+    }
 
-    (async function init() {
-      await loadFilters();
-      await loadAll(1);
-    })();
+    init();
   </script>
 </body>
 </html>

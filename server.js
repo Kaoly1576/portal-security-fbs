@@ -3148,42 +3148,84 @@ function rondaPercentChange(current, previous) {
   return ((current - previous) / previous) * 100;
 }
 
-function mapRondaGeralRow(row) {
-  return {
-    data: rondaNorm(row[0]),
-    dataObj: rondaParseDate(row[0]),
-    unidade: rondaNorm(row[1]),
-    plantao: rondaNorm(row[2]),
-    nome: rondaNorm(row[3]),
-    acao: rondaNorm(row[4]),
-    tipo_ronda: rondaNorm(row[5]) || "Ronda Geral",
-    origem_ronda: "Ronda Geral",
-  };
+function rondaNormalizeHeader(value) {
+  return String(value || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
-function mapPortasRow(row) {
-  return {
-    data: rondaNorm(row[0]),
-    dataObj: rondaParseDate(row[0]),
-    unidade: rondaNorm(row[1]),
-    plantao: rondaNorm(row[2]),
-    nome: rondaNorm(row[3]),
-    acao: rondaNorm(row[4]),
-    tipo_ronda: rondaNorm(row[5]) || "Portas de emergência",
-    origem_ronda: "Portas de emergência",
-  };
+function buildHeaderIndex(headers) {
+  const map = {};
+  headers.forEach((header, idx) => {
+    map[rondaNormalizeHeader(header)] = idx;
+  });
+  return map;
 }
 
-function mapEstoqueRow(row) {
+function getHeaderValue(row, headerIndex, candidates) {
+  for (const candidate of candidates) {
+    const idx = headerIndex[rondaNormalizeHeader(candidate)];
+    if (idx !== undefined) {
+      return rondaNorm(row[idx]);
+    }
+  }
+  return "";
+}
+
+function mapRondaRowByHeader(row, headerIndex, origemPadrao, tipoPadrao) {
+  const data = getHeaderValue(row, headerIndex, [
+    "data",
+    "data da ronda",
+  ]);
+
+  const unidade = getHeaderValue(row, headerIndex, [
+    "unidade",
+  ]);
+
+  const plantao = getHeaderValue(row, headerIndex, [
+    "plantão",
+    "plantao",
+  ]);
+
+  const nome = getHeaderValue(row, headerIndex, [
+    "nome",
+    "colaborador",
+    "agente",
+  ]);
+
+  const acao = getHeaderValue(row, headerIndex, [
+    "ação",
+    "acao",
+  ]);
+
+  const qualAcao = getHeaderValue(row, headerIndex, [
+    "qual ação vai realizar?",
+    "qual acao vai realizar?",
+    "qual ação vai realizar",
+    "qual acao vai realizar",
+    "acao a realizar",
+    "ação a realizar",
+  ]);
+
+  const tipoRonda = getHeaderValue(row, headerIndex, [
+    "tipo de ronda",
+    "tipo ronda",
+    "tipo_ronda",
+    "tipo",
+  ]);
+
   return {
-    data: rondaNorm(row[0]),
-    dataObj: rondaParseDate(row[0]),
-    unidade: rondaNorm(row[1]),
-    plantao: rondaNorm(row[2]),
-    nome: rondaNorm(row[3]),
-    acao: rondaNorm(row[4]),
-    tipo_ronda: rondaNorm(row[5]) || "Estoque",
-    origem_ronda: "Ronda Estoque",
+    data,
+    dataObj: rondaParseDate(data),
+    unidade,
+    plantao,
+    nome,
+    acao,
+    qual_acao: qualAcao || acao,
+    tipo_ronda: tipoRonda || tipoPadrao,
+    origem_ronda: origemPadrao,
   };
 }
 
@@ -3194,18 +3236,21 @@ async function loadRondasRaw() {
   const configs = [
     {
       aba: "Ronda Geral",
-      range: "'Ronda Geral'!B:G",
-      mapper: mapRondaGeralRow,
+      range: "'Ronda Geral'!B:Z",
+      origem: "Ronda Geral",
+      tipoPadrao: "Ronda Geral",
     },
     {
       aba: "Ronda Portas de emergência",
-      range: "'Ronda Portas de emergência'!B:H",
-      mapper: mapPortasRow,
+      range: "'Ronda Portas de emergência'!B:Z",
+      origem: "Portas de emergência",
+      tipoPadrao: "Portas de emergência",
     },
     {
       aba: "Ronda estoque RK",
-      range: "'Ronda estoque RK'!B:G",
-      mapper: mapEstoqueRow,
+      range: "'Ronda estoque RK'!B:Z",
+      origem: "Ronda Estoque",
+      tipoPadrao: "Estoque",
     },
   ];
 
@@ -3218,18 +3263,26 @@ async function loadRondasRaw() {
     const rows = resp?.data?.values || [];
     if (!rows.length) continue;
 
+    const headerRow = rows[0] || [];
     const dataRows = rows.slice(1);
+    const headerIndex = buildHeaderIndex(headerRow);
 
     for (const row of dataRows) {
       if (!row || row.every((cell) => !String(cell || "").trim())) continue;
 
-      const record = cfg.mapper(row);
+      const record = mapRondaRowByHeader(
+        row,
+        headerIndex,
+        cfg.origem,
+        cfg.tipoPadrao
+      );
 
       if (
         !record.data &&
         !record.unidade &&
         !record.nome &&
-        !record.tipo_ronda
+        !record.tipo_ronda &&
+        !record.qual_acao
       ) {
         continue;
       }
@@ -3265,6 +3318,7 @@ function filterRondas(records, query) {
   const plantoes = rondaSplitMulti(query.plantao);
   const tipos = rondaSplitMulti(query.tipo);
   const nomes = rondaSplitMulti(query.nome);
+  const acoes = rondaSplitMulti(query.acao);
   const busca = rondaNormLower(query.busca);
 
   return records.filter((r) => {
@@ -3278,6 +3332,7 @@ function filterRondas(records, query) {
     if (!rondaMatchesMulti(r.plantao, plantoes)) return false;
     if (!rondaMatchesMulti(r.tipo_ronda, tipos)) return false;
     if (!rondaMatchesMulti(r.nome, nomes)) return false;
+    if (!rondaMatchesMulti(r.qual_acao || r.acao, acoes)) return false;
 
     if (busca) {
       const combined = [
@@ -3287,6 +3342,7 @@ function filterRondas(records, query) {
         r.plantao,
         r.nome,
         r.acao,
+        r.qual_acao,
         r.tipo_ronda,
       ].join(" ");
 
@@ -3297,38 +3353,69 @@ function filterRondas(records, query) {
   });
 }
 
-function buildRondasResumo(filtered) {
-  const totalRondas = filtered.length;
+function filterRondasSemData(records, query) {
+  const clonedQuery = {
+    ...query,
+    dataInicial: "",
+    dataFinal: "",
+  };
+  return filterRondas(records, clonedQuery);
+}
 
-  const validDates = filtered
+function getRondaComparativoBase(records, query) {
+  const base = filterRondasSemData(records, query);
+
+  const validDates = base
     .map((r) => r.dataObj)
     .filter(Boolean)
     .sort((a, b) => a - b);
 
+  if (!validDates.length) {
+    return {
+      base,
+      latestMonth: null,
+      latestYear: null,
+      prevMonth: null,
+      prevYear: null,
+    };
+  }
+
+  const latest = validDates[validDates.length - 1];
+  const latestMonth = latest.getMonth();
+  const latestYear = latest.getFullYear();
+
+  const prevRef = new Date(latestYear, latestMonth - 1, 1);
+
+  return {
+    base,
+    latestMonth,
+    latestYear,
+    prevMonth: prevRef.getMonth(),
+    prevYear: prevRef.getFullYear(),
+  };
+}
+
+function buildRondasResumo(filtered, records, query) {
+  const totalRondas = filtered.length;
+
+  const comparativo = getRondaComparativoBase(records, query);
+
   let rondasMesAtual = 0;
   let rondasMesAnterior = 0;
 
-  if (validDates.length) {
-    const latest = validDates[validDates.length - 1];
-    const currentMonth = latest.getMonth();
-    const currentYear = latest.getFullYear();
-
-    const prevRef = new Date(currentYear, currentMonth - 1, 1);
-    const prevMonth = prevRef.getMonth();
-    const prevYear = prevRef.getFullYear();
-
-    rondasMesAtual = filtered.filter(
+  if (comparativo.latestMonth !== null && comparativo.latestYear !== null) {
+    rondasMesAtual = comparativo.base.filter(
       (r) =>
         r.dataObj &&
-        r.dataObj.getMonth() === currentMonth &&
-        r.dataObj.getFullYear() === currentYear
+        r.dataObj.getMonth() === comparativo.latestMonth &&
+        r.dataObj.getFullYear() === comparativo.latestYear
     ).length;
 
-    rondasMesAnterior = filtered.filter(
+    rondasMesAnterior = comparativo.base.filter(
       (r) =>
         r.dataObj &&
-        r.dataObj.getMonth() === prevMonth &&
-        r.dataObj.getFullYear() === prevYear
+        r.dataObj.getMonth() === comparativo.prevMonth &&
+        r.dataObj.getFullYear() === comparativo.prevYear
     ).length;
   }
 
@@ -3350,7 +3437,7 @@ function buildRondasResumo(filtered) {
   };
 }
 
-function buildRondasGraficos(filtered) {
+function buildRondasGraficos(filtered, records, query) {
   const dias = Array.from({ length: 31 }, (_, i) =>
     String(i + 1).padStart(2, "0")
   );
@@ -3368,42 +3455,31 @@ function buildRondasGraficos(filtered) {
     metas: dias.map(() => 35),
   };
 
+  const comparativo = getRondaComparativoBase(records, query);
+
   let mesAtual = 0;
   let mesAnterior = 0;
 
-  const validDates = filtered
-    .map((r) => r.dataObj)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
-
-  if (validDates.length) {
-    const latest = validDates[validDates.length - 1];
-    const currMonth = latest.getMonth();
-    const currYear = latest.getFullYear();
-
-    const prevRef = new Date(currYear, currMonth - 1, 1);
-    const prevMonth = prevRef.getMonth();
-    const prevYear = prevRef.getFullYear();
-
-    mesAtual = filtered.filter(
+  if (comparativo.latestMonth !== null && comparativo.latestYear !== null) {
+    mesAtual = comparativo.base.filter(
       (r) =>
         r.dataObj &&
-        r.dataObj.getMonth() === currMonth &&
-        r.dataObj.getFullYear() === currYear
+        r.dataObj.getMonth() === comparativo.latestMonth &&
+        r.dataObj.getFullYear() === comparativo.latestYear
     ).length;
 
-    mesAnterior = filtered.filter(
+    mesAnterior = comparativo.base.filter(
       (r) =>
         r.dataObj &&
-        r.dataObj.getMonth() === prevMonth &&
-        r.dataObj.getFullYear() === prevYear
+        r.dataObj.getMonth() === comparativo.prevMonth &&
+        r.dataObj.getFullYear() === comparativo.prevYear
     ).length;
   }
 
-  function buildTop(records, key, meta, limit = 10) {
+  function buildTop(recordsList, key, meta, limit = 10) {
     const map = {};
 
-    records.forEach((r) => {
+    recordsList.forEach((r) => {
       const k = rondaNorm(r[key]) || "NÃO INFORMADO";
       map[k] = (map[k] || 0) + 1;
     });
@@ -3429,6 +3505,7 @@ function buildRondasGraficos(filtered) {
     porUnidade: buildTop(filtered, "unidade", 150),
     porPlantao: buildTop(filtered, "plantao", 200),
     porTipo: buildTop(filtered, "tipo_ronda", 300),
+    porAcao: buildTop(filtered, "qual_acao", 300),
   };
 }
 
@@ -3439,6 +3516,9 @@ function buildRondasFiltros(filteredBase) {
     plantoes: rondaSortUnique(filteredBase.map((r) => r.plantao)),
     tipos: rondaSortUnique(filteredBase.map((r) => r.tipo_ronda)),
     nomes: rondaSortUnique(filteredBase.map((r) => r.nome)),
+    acoes: rondaSortUnique(
+      filteredBase.map((r) => r.qual_acao || r.acao)
+    ),
   };
 }
 
@@ -3461,6 +3541,7 @@ function buildRondasDetalhes(filtered, page = 1, limit = 20) {
     plantao: r.plantao,
     nome: r.nome,
     acao: r.acao,
+    qual_acao: r.qual_acao || r.acao,
     tipo_ronda: r.tipo_ronda,
   }));
 
@@ -3508,7 +3589,7 @@ app.get("/api/rondas-resumo", requireAuth, async (req, res) => {
   try {
     const all = await loadRondasComCache();
     const filtered = filterRondas(all, req.query);
-    res.json(buildRondasResumo(filtered));
+    res.json(buildRondasResumo(filtered, all, req.query));
   } catch (error) {
     console.error("Erro /api/rondas-resumo:", error);
     res.status(500).json({
@@ -3523,7 +3604,7 @@ app.get("/api/rondas-graficos", requireAuth, async (req, res) => {
   try {
     const all = await loadRondasComCache();
     const filtered = filterRondas(all, req.query);
-    res.json(buildRondasGraficos(filtered));
+    res.json(buildRondasGraficos(filtered, all, req.query));
   } catch (error) {
     console.error("Erro /api/rondas-graficos:", error);
     res.status(500).json({

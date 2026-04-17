@@ -974,32 +974,52 @@
       });
 
       chartDistribuicaoInstance = new Chart(document.getElementById("chartDistribuicao"), {
-        type: "doughnut",
-        data: {
-          labels: (data.distribuicao || []).map(x => x.nome),
-          datasets: [{
-            data: (data.distribuicao || []).map(x => x.total),
-            backgroundColor: ["#22c55e", "#ef4444", "#58a6ff", "#8b5cf6"],
-            borderWidth: 0
-          }]
+  type: "bar",
+  data: {
+    labels: (data.distribuicao || []).map(x => x.nome),
+    datasets: [{
+      data: (data.distribuicao || []).map(x => x.total),
+      backgroundColor: "#ff7a1a",
+      borderRadius: 6,
+      barThickness: 28
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      datalabels: {
+        color: "#ffffff",
+        anchor: "end",
+        align: "end",
+        font: { size: 10, weight: "700" },
+        formatter: (value) => value > 0 ? fmt(value) : ""
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#cfcfcf",
+          font: { size: 10 },
+          maxRotation: 40,
+          minRotation: 40
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: "55%",
-          plugins: {
-            legend: {
-              position: "bottom",
-              labels: { color: "#fff", font: { size: 11 } }
-            },
-            datalabels: {
-              color: "#ffffff",
-              font: { size: 11, weight: "700" },
-              formatter: (value) => value > 0 ? fmt(value) : ""
-            }
-          }
-        }
-      });
+        grid: { display: false }
+      },
+      y: {
+        ticks: {
+          color: "#cfcfcf",
+          font: { size: 10 }
+        },
+        grid: {
+          color: "rgba(255,255,255,0.05)"
+        },
+        beginAtZero: true
+      }
+    }
+  }
+});
 
       document.getElementById("ultimaAtualizacao").textContent =
         new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });

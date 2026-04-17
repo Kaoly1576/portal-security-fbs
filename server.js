@@ -1957,7 +1957,6 @@ function accessMatchesMulti(fieldValue, selectedValues) {
   if (!selectedValues.length) return true;
   return selectedValues.includes(accessNormalize(fieldValue));
 }
-
 // ================== DESLIGADOS DASHBOARD ==================
 
 app.get("/desligados", requireAuth, (req, res) => {
@@ -2243,6 +2242,9 @@ app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
     const unidades = new Set(
       filtrados.map((r) => dNormalize(r[DESLIGADOS_COLUMNS.unidade])).filter(Boolean)
     ).size;
+    const totalSecurity = filtrados.filter(
+      (r) => dNormalizeLower(r[DESLIGADOS_COLUMNS.motivo]) === "security"
+    ).length;
     const taxaBloqueio = total ? (bloqueadosSim / total) * 100 : 0;
 
     const agora = new Date();
@@ -2255,6 +2257,7 @@ app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
       pendentes,
       empresas,
       unidades,
+      totalSecurity,
       taxaBloqueio,
       ultimaAtualizacao: agora.toLocaleTimeString("pt-BR", {
         hour: "2-digit",
@@ -2280,38 +2283,34 @@ app.get("/api/desligados-graficos", requireAuth, async (req, res) => {
     const unidadeMap = groupCount(filtrados, DESLIGADOS_COLUMNS.unidade);
     const empresaMap = groupCount(filtrados, DESLIGADOS_COLUMNS.empresa);
     const motivoMap = groupCount(filtrados, DESLIGADOS_COLUMNS.motivo);
+    const motivoOrdenado = Object.entries(motivoMap).sort((a, b) => b[1] - a[1]);
 
-    // Top motivos Security:
-// filtra apenas os registros cujo Motivo de desligamento seja SECURITY
-// e então agrupa pelos valores de Controle interno
-const topMotivosSecurityMap = {};
+    const topMotivosSecurityMap = {};
 
-filtrados.forEach((row) => {
-  const motivo = dNormalize(row[DESLIGADOS_COLUMNS.motivo]);
-  const motivoLower = dNormalizeLower(motivo);
+    filtrados.forEach((row) => {
+      const motivo = dNormalize(row[DESLIGADOS_COLUMNS.motivo]);
+      const motivoLower = dNormalizeLower(motivo);
 
-  // só entra se o motivo de desligamento for SECURITY
-  if (motivoLower !== "security") return;
+      if (motivoLower !== "security") return;
 
-  const controle = dNormalize(row[DESLIGADOS_COLUMNS.controle]);
-  const controleLower = dNormalizeLower(controle);
+      const controle = dNormalize(row[DESLIGADOS_COLUMNS.controle]);
+      const controleLower = dNormalizeLower(controle);
 
-  // ignora lixo / vazios
-  if (!controle) return;
-  if (controleLower === "null") return;
-  if (controleLower === "undefined") return;
-  if (controleLower === "sem valor") return;
-  if (controleLower === "-") return;
-  if (controleLower === "controle interno") return;
-  if (controleLower === "security") return;
+      if (!controle) return;
+      if (controleLower === "null") return;
+      if (controleLower === "undefined") return;
+      if (controleLower === "sem valor") return;
+      if (controleLower === "-") return;
+      if (controleLower === "controle interno") return;
+      if (controleLower === "security") return;
 
-  topMotivosSecurityMap[controle] =
-    (topMotivosSecurityMap[controle] || 0) + 1;
-});
+      topMotivosSecurityMap[controle] =
+        (topMotivosSecurityMap[controle] || 0) + 1;
+    });
 
-const topMotivosSecurity = Object.entries(topMotivosSecurityMap)
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 12);
+    const topMotivosSecurity = Object.entries(topMotivosSecurityMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12);
 
     const dayMap = {};
     filtrados.forEach((row) => {
@@ -2368,6 +2367,7 @@ const topMotivosSecurity = Object.entries(topMotivosSecurityMap)
       unidade: unidadeMap,
       empresa: empresaMap,
       motivo: motivoMap,
+      motivoOrdenado,
 
       topMotivosSecurity: {
         labels: topMotivosSecurity.map(([nome]) => nome),
@@ -2451,6 +2451,7 @@ app.get("/api/desligados-detalhes", requireAuth, async (req, res) => {
     });
   }
 });
+
 
 // ================== CCO FBS DASHBOARD ==================
 

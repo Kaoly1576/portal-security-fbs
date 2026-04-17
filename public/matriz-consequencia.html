@@ -1,317 +1,1195 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MATRIZ DE CONSEQUÊNCIA</title>
+  <title>MATRIZ</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top left, #273246 0%, #101826 40%, #060b14 100%);
-      color: #fff;
-      min-height: 100vh;
-      padding: 10px;
-    }
-    .container { width: 100%; max-width: 1400px; margin: 0 auto; }
-    .topbar, .hero, .filters, .card, .chart-card, .table-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-    .topbar {
-      display:flex; justify-content:space-between; align-items:center;
-      padding:12px 18px; margin-bottom:10px;
-    }
-    .brand { display:flex; align-items:center; gap:12px; }
-    .brand img {
-      width:40px; height:40px; object-fit:contain; border-radius:50%;
-      background: rgba(0,0,0,0.25); padding:4px;
-    }
-    .brand h1 { font-size:30px; color:#ff7a1a; font-weight:800; }
-    .brand span { display:block; font-size:12px; color:rgba(255,255,255,0.75); }
-    .btn-portal {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.10);
-      color:#fff; padding:12px 18px; border-radius:12px;
-      text-decoration:none; font-weight:700;
-    }
-    .hero {
-      padding:16px 20px; margin-bottom:10px;
-      display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
-    }
-    .hero h2 { font-size:28px; margin-bottom:6px; }
-    .hero p { font-size:13px; color:rgba(255,255,255,0.75); }
-    .updated-box { text-align:right; min-width:150px; }
-    .updated-box small { display:block; color:rgba(255,255,255,0.75); margin-bottom:4px; font-size:12px; }
-    .updated-box strong { color:#ff7a1a; font-size:20px; }
-
-    .filters { padding:12px; margin-bottom:10px; }
-    .filters-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
-    .filter-group { display:flex; flex-direction:column; gap:5px; position:relative; }
-    .filter-group label { font-size:12px; font-weight:700; color:rgba(255,255,255,0.9); }
-    .filter-group input, .multi-select-trigger {
-      height:36px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);
-      background:#051127; color:#fff; padding:0 12px; outline:none; font-size:13px;
-    }
-    .filter-group input::placeholder { color:rgba(255,255,255,0.45); }
-    .search-wide { grid-column: span 2; }
-    .btn-clear {
-      height:36px; border:none; border-radius:10px;
-      background: linear-gradient(90deg, #ff7a1a, #ff4d4d);
-      color:#fff; font-weight:800; font-size:14px; cursor:pointer; margin-top:17px;
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
     }
 
-    .multi-select { position:relative; }
-    .multi-select-trigger {
-      display:flex; align-items:center; justify-content:space-between;
-      cursor:pointer; user-select:none;
-    }
-    .multi-select-trigger span {
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 20px);
-    }
-    .multi-select-dropdown {
-      position:absolute; top:calc(100% + 6px); left:0; width:100%;
-      background:#0b1628; border:1px solid rgba(255,255,255,0.10);
-      border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.35);
-      z-index:50; display:none; max-height:260px; overflow:hidden;
-    }
-    .multi-select.open .multi-select-dropdown { display:block; }
-    .multi-select-search { padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); }
-    .multi-select-search input {
-      width:100%; height:32px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);
-      background:#051127; color:#fff; padding:0 10px; font-size:12px; outline:none;
-    }
-    .multi-select-options { max-height:210px; overflow:auto; padding:6px; }
-    .multi-option {
-      display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px;
-      cursor:pointer; font-size:12px; color:#fff;
-    }
-    .multi-option:hover { background:rgba(255,255,255,0.06); }
-    .multi-option input { accent-color:#ff7a1a; }
-
-    .kpis {
-      display:grid; grid-template-columns:repeat(6,1fr);
-      gap:10px; margin-bottom:12px;
-    }
-    .card {
-      padding:14px 16px; min-height:88px;
-      display:flex; flex-direction:column; justify-content:center;
-    }
-    .card h3 {
-      font-size:12px; color:#fff; margin-bottom:8px;
-      text-transform:uppercase; font-weight:800;
-    }
-    .card .value {
-      font-size:30px; font-weight:900; color:#ff7a1a; line-height:1;
-    }
-    .card .sub { font-size:13px; margin-top:6px; color:rgba(255,255,255,0.7); }
-    .card .sub.positive { color:#1ddc7f; }
-    .card .sub.negative { color:#ff5252; }
-
-    .charts-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
-    .charts-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-    .chart-card, .table-card { padding:12px 14px 16px; min-height:360px; }
-    .chart-card h3, .table-card h3 {
-      text-align:center; color:#ff7a1a; font-size:16px; margin-bottom:10px; font-weight:800;
-    }
-    .chart-meta {
-      display:flex; justify-content:space-between; align-items:center;
-      font-size:12px; margin-bottom:8px; color:rgba(255,255,255,0.75);
-    }
-    .chart-wrap { position:relative; height:290px; }
-
-    table { width:100%; border-collapse:collapse; font-size:12px; }
-    th, td {
-      padding:10px 8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left;
-    }
-    th { color:#ff7a1a; font-size:12px; text-transform:uppercase; }
-    td { color:rgba(255,255,255,0.88); }
-    .table-scroll { max-height:300px; overflow:auto; }
-    .pagination {
-      display:flex; justify-content:flex-end; align-items:center;
-      gap:8px; margin-top:10px; font-size:12px;
-    }
-    .pagination button {
-      border:none; background:#ff7a1a; color:#fff;
-      font-weight:700; padding:8px 12px; border-radius:8px; cursor:pointer;
-    }
-    .pagination button:disabled { background:#667; cursor:not-allowed; }
-
-    @media (max-width: 1280px) {
-      .filters-grid { grid-template-columns:repeat(3,1fr); }
-      .kpis { grid-template-columns:repeat(3,1fr); }
-      .charts-grid-2, .charts-grid-3 { grid-template-columns:1fr; }
+    :root{
+      --bg1:#4b5563;
+      --bg2:#111827;
+      --bg3:#050c18;
+      --card:rgba(17,24,39,0.82);
+      --card-2:rgba(10,15,28,0.96);
+      --input:#081222;
+      --th:#111c33;
+      --line:rgba(255,255,255,0.08);
+      --text:#ffffff;
+      --muted:#cbd5e1;
+      --orange:#ff7a1a;
+      --orange-2:#ff9540;
+      --blue:#58a6ff;
+      --green:#22c55e;
+      --red:#ef4444;
+      --purple:#8b5cf6;
+      --shadow:0 10px 24px rgba(0,0,0,0.28);
     }
 
-    @media (max-width: 768px) {
-      .filters-grid { grid-template-columns:1fr; }
-      .kpis { grid-template-columns:1fr; }
-      .search-wide { grid-column: span 1; }
-      .hero, .topbar { flex-direction:column; align-items:stretch; }
-      .updated-box { text-align:left; }
+    html,body{
+      min-height:100%;
+      overflow-x:hidden;
+    }
+
+    body{
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
+        linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 24%, var(--bg3) 52%, var(--bg3) 100%);
+      color:var(--text);
+    }
+
+    .page{
+      max-width:1500px;
+      margin:0 auto;
+      padding:14px;
+    }
+
+    .topbar,.hero,.filters,.panel,.wide-panel,.kpi{
+      background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(4px);
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:12px;
+      padding:14px 16px;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+
+    .brand-logo{
+      width:44px;
+      height:44px;
+      object-fit:contain;
+      border-radius:50%;
+      background:#1a120d;
+      padding:6px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+
+    .brand-text h1{
+      color:var(--orange);
+      font-size:18px;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .brand-text p{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .btn{
+      background:rgba(255,255,255,0.08);
+      border:1px solid var(--line);
+      color:#fff;
+      padding:10px 16px;
+      border-radius:12px;
+      text-decoration:none;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition:.2s ease;
+    }
+
+    .btn:hover{
+      background:rgba(255,255,255,0.14);
+    }
+
+    .hero{
+      padding:16px 18px;
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:center;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+
+    .hero h2{
+      font-size:18px;
+      margin-bottom:6px;
+    }
+
+    .hero p{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+      max-width:860px;
+    }
+
+    .hero-right{
+      text-align:right;
+      min-width:160px;
+    }
+
+    .hero-right .small{
+      color:var(--muted);
+      font-size:11px;
+      margin-bottom:6px;
+    }
+
+    .hero-right .time{
+      color:var(--orange);
+      font-weight:900;
+      font-size:22px;
+    }
+
+    .filters{
+      padding:14px;
+      margin-bottom:12px;
+    }
+
+    .filters-grid{
+      display:grid;
+      grid-template-columns:repeat(6,minmax(120px,1fr));
+      gap:10px;
+      align-items:end;
+    }
+
+    .field{
+      min-width:0;
+    }
+
+    .field.hidden{
+      display:none;
+    }
+
+    .field label{
+      display:block;
+      margin-bottom:6px;
+      font-size:11px;
+      color:#fff;
+      font-weight:700;
+    }
+
+    .field input,
+    .field select{
+      width:100%;
+      height:40px;
+      background:var(--input);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:10px;
+      color:#fff;
+      padding:0 12px;
+      outline:none;
+      font-size:12px;
+    }
+
+    .field input::placeholder{
+      color:#94a3b8;
+    }
+
+    input[type="date"],
+    select{
+      color-scheme: dark;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator{
+      filter: invert(1) brightness(1.7);
+      opacity: 1;
+      cursor: pointer;
+    }
+
+    .multi-select{
+      position:relative;
+      width:100%;
+    }
+
+    .multi-trigger{
+      width:100%;
+      background:var(--input);
+      border:1px solid rgba(255,255,255,0.08);
+      color:#fff;
+      border-radius:10px;
+      padding:0 34px 0 12px;
+      font-size:12px;
+      height:40px;
+      display:flex;
+      align-items:center;
+      cursor:pointer;
+      position:relative;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .multi-trigger::after{
+      content:"▼";
+      position:absolute;
+      right:12px;
+      font-size:10px;
+      color:#cbd5e1;
+      pointer-events:none;
+    }
+
+    .multi-menu{
+      position:absolute;
+      top:44px;
+      left:0;
+      width:100%;
+      background:var(--input);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px;
+      max-height:220px;
+      overflow-y:auto;
+      display:none;
+      z-index:50;
+      box-shadow:0 10px 24px rgba(0,0,0,0.35);
+      padding:6px;
+    }
+
+    .multi-select.open .multi-menu{
+      display:block;
+    }
+
+    .multi-option{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:12px;
+      color:#fff;
+    }
+
+    .multi-option:hover{
+      background:#1a2942;
+    }
+
+    .multi-option input{
+      width:auto;
+      height:auto;
+      accent-color:var(--orange);
+    }
+
+    .multi-actions{
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      padding:6px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      margin-bottom:4px;
+    }
+
+    .multi-actions button{
+      flex:1;
+      background:#1a2942;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      padding:6px 8px;
+      font-size:11px;
+      cursor:pointer;
+    }
+
+    .multi-actions button:hover{
+      background:#243756;
+    }
+
+    .search-span-2{
+      grid-column: span 2;
+    }
+
+    .actions{
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+
+    .btn-primary{
+      height:40px;
+      border:none;
+      border-radius:10px;
+      padding:0 16px;
+      background:linear-gradient(90deg,var(--orange),#ff4d4f);
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .btn-ghost{
+      height:40px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:0 16px;
+      background:#242424;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(6,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .kpi{
+      padding:14px;
+      min-height:100px;
+    }
+
+    .kpi-title{
+      font-size:11px;
+      text-transform:uppercase;
+      color:#fff;
+      margin-bottom:10px;
+      font-weight:800;
+    }
+
+    .kpi-value{
+      font-size:24px;
+      font-weight:900;
+      line-height:1.1;
+    }
+
+    .kpi-sub{
+      font-size:12px;
+      margin-top:6px;
+      color:var(--muted);
+      line-height:1.35;
+      min-height:30px;
+    }
+
+    .orange{color:var(--orange)}
+    .blue{color:var(--blue)}
+    .green{color:var(--green)}
+    .red{color:var(--red)}
+    .purple{color:var(--purple)}
+
+    .grid-top,.grid-middle{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .grid-bottom{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .panel{
+      padding:14px;
+      min-height:250px;
+      overflow:hidden;
+    }
+
+    .panel-title{
+      color:var(--orange);
+      font-weight:900;
+      font-size:14px;
+      margin-bottom:12px;
+      text-align:center;
+    }
+
+    .panel-sub{
+      color:var(--muted);
+      font-size:11px;
+      margin-bottom:10px;
+    }
+
+    .chart-box{
+      height:240px;
+      position:relative;
+    }
+
+    .chart-box.line{
+      height:260px;
+    }
+
+    .wide-panel{
+      padding:14px;
+      margin-bottom:14px;
+    }
+
+    .detail-wrap{
+      overflow:auto;
+      max-height:520px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.06);
+    }
+
+    .detail-table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1100px;
+      font-size:12px;
+      background:#091322;
+    }
+
+    .detail-table th,.detail-table td{
+      padding:8px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      text-align:left;
+      white-space:nowrap;
+    }
+
+    .detail-table th{
+      position:sticky;
+      top:0;
+      background:var(--th);
+      z-index:1;
+      color:#d6d6d6;
+    }
+
+    .pager{
+      margin-top:12px;
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .pager-info{
+      margin-right:auto;
+      color:var(--muted);
+      font-size:12px;
+      display:flex;
+      align-items:center;
+    }
+
+    .empty-state{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--muted);
+      height:100%;
+      min-height:120px;
+      font-size:13px;
+    }
+
+    canvas{
+      max-width:100% !important;
+    }
+
+    @media (max-width:1280px){
+      .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
+      .search-span-2{grid-column:span 1}
+    }
+
+    @media (max-width:768px){
+      .filters-grid,.kpis{grid-template-columns:1fr}
+      .hero-right{text-align:left}
+      .kpi-value{font-size:20px}
+      .topbar,.hero{flex-direction:column;align-items:flex-start}
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="topbar">
+  <div class="page">
+    <header class="topbar">
       <div class="brand">
-        <img src="/images/logo.png" alt="Logo">
-        <div>
+        <img src="/images/logo.png" alt="Logo" class="brand-logo" />
+        <div class="brand-text">
           <h1>MATRIZ</h1>
-          <span>Dashboard de matriz de consequência e reincidência</span>
+          <p>Dashboard de matriz de consequência e reincidência</p>
         </div>
       </div>
-      <a class="btn-portal" href="/portal.html">Voltar ao Portal</a>
-    </div>
+      <a href="/portal" class="btn">Voltar ao Portal</a>
+    </header>
 
-    <div class="hero">
+    <section class="hero">
       <div>
         <h2>Dashboard de Matriz de Consequência</h2>
         <p>Monitoramento de ocorrências, reincidência, consequência, status e conclusão.</p>
       </div>
-      <div class="updated-box">
-        <small>Última atualização</small>
-        <strong id="ultimaAtualizacao">--:--</strong>
+      <div class="hero-right">
+        <div class="small">Última atualização</div>
+        <div class="time" id="ultimaAtualizacao">--:--</div>
       </div>
-    </div>
+    </section>
 
-    <div class="filters">
+    <section class="filters">
       <div class="filters-grid">
-        <div class="filter-group">
+        <div class="field">
+          <label>Período</label>
+          <select id="filtroPeriodoTipo">
+            <option value="mes" selected>Mês</option>
+            <option value="dia">Dia</option>
+            <option value="semana">Semana</option>
+            <option value="ano">Ano</option>
+            <option value="personalizado">Personalizado</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Data de referência</label>
+          <input type="date" id="filtroDataRef" />
+        </div>
+
+        <div class="field hidden" id="wrapDataInicial">
           <label>Data inicial</label>
-          <input type="date" id="dataInicial">
+          <input type="date" id="filtroDataInicio" />
         </div>
-        <div class="filter-group">
+
+        <div class="field hidden" id="wrapDataFinal">
           <label>Data final</label>
-          <input type="date" id="dataFinal">
+          <input type="date" id="filtroDataFim" />
         </div>
-        <div class="filter-group">
+
+        <div class="field">
           <label>Filial</label>
-          <div class="multi-select" id="msFilial"></div>
+          <div class="multi-select" id="multiFilial">
+            <button type="button" class="multi-trigger" id="triggerFilial">Todos</button>
+            <div class="multi-menu" id="menuFilial"></div>
+          </div>
         </div>
-        <div class="filter-group">
+
+        <div class="field">
           <label>Violação</label>
-          <div class="multi-select" id="msViolacao"></div>
+          <div class="multi-select" id="multiViolacao">
+            <button type="button" class="multi-trigger" id="triggerViolacao">Todos</button>
+            <div class="multi-menu" id="menuViolacao"></div>
+          </div>
         </div>
-        <div class="filter-group">
+
+        <div class="field">
           <label>Descrição da Violação</label>
-          <div class="multi-select" id="msDescricao"></div>
+          <div class="multi-select" id="multiDescricao">
+            <button type="button" class="multi-trigger" id="triggerDescricao">Todos</button>
+            <div class="multi-menu" id="menuDescricao"></div>
+          </div>
         </div>
-        <div class="filter-group">
+      </div>
+
+      <div class="filters-grid" style="margin-top:10px;">
+        <div class="field">
           <label>Reincidência</label>
-          <div class="multi-select" id="msReincidencia"></div>
+          <div class="multi-select" id="multiReincidencia">
+            <button type="button" class="multi-trigger" id="triggerReincidencia">Todos</button>
+            <div class="multi-menu" id="menuReincidencia"></div>
+          </div>
         </div>
-        <div class="filter-group">
+
+        <div class="field">
           <label>Consequência</label>
-          <div class="multi-select" id="msConsequencia"></div>
+          <div class="multi-select" id="multiConsequencia">
+            <button type="button" class="multi-trigger" id="triggerConsequencia">Todos</button>
+            <div class="multi-menu" id="menuConsequencia"></div>
+          </div>
         </div>
-        <div class="filter-group">
+
+        <div class="field">
           <label>Status</label>
-          <div class="multi-select" id="msStatus"></div>
+          <div class="multi-select" id="multiStatus">
+            <button type="button" class="multi-trigger" id="triggerStatus">Todos</button>
+            <div class="multi-menu" id="menuStatus"></div>
+          </div>
         </div>
-        <div class="filter-group">
+
+        <div class="field">
           <label>Colaborador</label>
-          <div class="multi-select" id="msColaborador"></div>
+          <div class="multi-select" id="multiColaborador">
+            <button type="button" class="multi-trigger" id="triggerColaborador">Todos</button>
+            <div class="multi-menu" id="menuColaborador"></div>
+          </div>
         </div>
-        <div class="filter-group search-wide">
+
+        <div class="field search-span-2">
           <label>Busca geral</label>
-          <input type="text" id="busca" placeholder="Buscar por colaborador, CPF, filial, violação...">
-        </div>
-        <div class="filter-group">
-          <button class="btn-clear" id="btnLimpar">Limpar filtros</button>
+          <input type="text" id="filtroBusca" placeholder="Buscar por colaborador, CPF, filial, violação..." />
         </div>
       </div>
-    </div>
 
-    <div class="kpis">
-      <div class="card">
-        <h3>Total de Casos</h3>
-        <div class="value" id="kpiTotal">0</div>
-        <div class="sub">Total consolidado</div>
+      <div class="actions">
+        <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
+        <button class="btn-ghost" id="btnLimpar">Limpar filtros</button>
       </div>
-      <div class="card">
-        <h3>Casos no Mês</h3>
-        <div class="value" id="kpiMes">0</div>
-        <div class="sub">Mês atual</div>
-      </div>
-      <div class="card">
-        <h3>Mês Anterior</h3>
-        <div class="value" id="kpiMesAnterior">0</div>
-        <div class="sub">Comparativo base</div>
-      </div>
-      <div class="card">
-        <h3>Variação Mensal</h3>
-        <div class="value" id="kpiVariacao">0%</div>
-        <div class="sub" id="subVariacao">vs mês anterior</div>
-      </div>
-      <div class="card">
-        <h3>Reincidentes</h3>
-        <div class="value" id="kpiReincidentes">0</div>
-        <div class="sub">Casos reincidentes</div>
-      </div>
-      <div class="card">
-        <h3>Concluídos</h3>
-        <div class="value" id="kpiConcluidos">0</div>
-        <div class="sub">Status concluído</div>
-      </div>
-    </div>
+    </section>
 
-    <div class="charts-grid-3">
-      <div class="chart-card">
-        <h3>Casos por Filial</h3>
-        <div class="chart-meta"><span>Top filiais</span><span></span></div>
-        <div class="chart-wrap"><canvas id="chartFilial"></canvas></div>
+    <section class="kpis">
+      <div class="kpi">
+        <div class="kpi-title">Total de Casos</div>
+        <div class="kpi-value orange" id="kpiTotal">0</div>
+        <div class="kpi-sub">Total consolidado</div>
       </div>
-      <div class="chart-card">
-        <h3>Casos por Violação</h3>
-        <div class="chart-meta"><span>Top violações</span><span></span></div>
-        <div class="chart-wrap"><canvas id="chartViolacao"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3>Casos por Consequência</h3>
-        <div class="chart-meta"><span>Distribuição de consequência</span><span></span></div>
-        <div class="chart-wrap"><canvas id="chartConsequencia"></canvas></div>
-      </div>
-    </div>
 
-    <div class="charts-grid-2">
-      <div class="chart-card">
-        <h3>Casos por Dia</h3>
-        <div class="chart-meta"><span>Distribuição diária de 01 a 31</span><span></span></div>
-        <div class="chart-wrap"><canvas id="chartDia"></canvas></div>
+      <div class="kpi">
+        <div class="kpi-title" id="kpiPeriodoAtualTitulo">Casos no Período</div>
+        <div class="kpi-value orange" id="kpiAtual">0</div>
+        <div class="kpi-sub" id="kpiAtualSub">Período atual</div>
       </div>
-      <div class="chart-card">
-        <h3>Comparativo Mensal</h3>
-        <div class="chart-meta"><span>Mês atual x mês anterior</span><span></span></div>
-        <div class="chart-wrap"><canvas id="chartComparativo"></canvas></div>
-      </div>
-    </div>
 
-    <div class="charts-grid-2">
-      <div class="chart-card">
-        <h3>Casos por Status</h3>
-        <div class="chart-meta"><span>Distribuição por status</span><span></span></div>
-        <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+      <div class="kpi">
+        <div class="kpi-title" id="kpiPeriodoAnteriorTitulo">Base Anterior</div>
+        <div class="kpi-value orange" id="kpiAnterior">0</div>
+        <div class="kpi-sub" id="kpiAnteriorSub">Comparativo base</div>
       </div>
-      <div class="chart-card">
-        <h3>Reincidência</h3>
-        <div class="chart-meta"><span>Sim x Não</span><span></span></div>
-        <div class="chart-wrap"><canvas id="chartReincidencia"></canvas></div>
-      </div>
-    </div>
 
-    <div class="table-card">
-      <h3>Detalhamento</h3>
-      <div class="table-scroll">
-        <table>
+      <div class="kpi">
+        <div class="kpi-title">Variação</div>
+        <div class="kpi-value orange" id="kpiVariacao">0,0%</div>
+        <div class="kpi-sub" id="kpiVariacaoSub">vs período anterior</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Reincidentes</div>
+        <div class="kpi-value orange" id="kpiReincidentes">0</div>
+        <div class="kpi-sub">Casos reincidentes</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-title">Concluídos</div>
+        <div class="kpi-value orange" id="kpiConcluidos">0</div>
+        <div class="kpi-sub">Status concluído</div>
+      </div>
+    </section>
+
+    <section class="grid-top">
+      <div class="panel">
+        <div class="panel-title">Casos por Filial</div>
+        <div class="panel-sub">Top filiais</div>
+        <div class="chart-box">
+          <canvas id="chartFilial"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Casos por Violação</div>
+        <div class="panel-sub">Top violações</div>
+        <div class="chart-box">
+          <canvas id="chartViolacao"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Casos por Consequência</div>
+        <div class="panel-sub">Distribuição de consequência</div>
+        <div class="chart-box">
+          <canvas id="chartConsequencia"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-bottom">
+      <div class="panel">
+        <div class="panel-title">Casos por Dia</div>
+        <div class="panel-sub">Distribuição diária de 01 a 31</div>
+        <div class="chart-box line">
+          <canvas id="chartDia"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Comparativo</div>
+        <div class="panel-sub" id="comparativoChartLabel">Período atual x base anterior</div>
+        <div class="chart-box">
+          <canvas id="chartComparativo"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-bottom">
+      <div class="panel">
+        <div class="panel-title">Reincidência</div>
+        <div class="panel-sub">Sim, Não e sem resposta</div>
+        <div class="chart-box">
+          <canvas id="chartReincidencia"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Casos por Status</div>
+        <div class="panel-sub">Distribuição por status</div>
+        <div class="chart-box">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="wide-panel">
+      <div class="panel-title">Detalhamento</div>
+      <div class="detail-wrap" id="detailWrap"></div>
+      <div class="pager">
+        <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
+        <button class="btn-ghost" id="btnPrev">Anterior</button>
+        <button class="btn-ghost" id="btnNext">Próxima</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    Chart.register(ChartDataLabels);
+
+    let currentPage = 1;
+    let totalPages = 1;
+
+    let chartFilialInstance = null;
+    let chartViolacaoInstance = null;
+    let chartConsequenciaInstance = null;
+    let chartDiaInstance = null;
+    let chartComparativoInstance = null;
+    let chartReincidenciaInstance = null;
+    let chartStatusInstance = null;
+
+    function esc(v) {
+      return String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function fmt(n) {
+      return new Intl.NumberFormat("pt-BR").format(Number(n) || 0);
+    }
+
+    function fmtPct(n) {
+      return `${Number(n || 0).toLocaleString("pt-BR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+      })}%`;
+    }
+
+    function createMultiSelect(menuId, triggerId, values, placeholder) {
+      const menu = document.getElementById(menuId);
+      const trigger = document.getElementById(triggerId);
+
+      menu.innerHTML = `
+        <div class="multi-actions">
+          <button type="button" data-action="all">Todos</button>
+          <button type="button" data-action="clear">Limpar</button>
+        </div>
+      `;
+
+      values.forEach((value) => {
+        const safeValue = esc(value);
+        const label = document.createElement("label");
+        label.className = "multi-option";
+        label.innerHTML = `
+          <input type="checkbox" value="${safeValue}" />
+          <span>${safeValue}</span>
+        `;
+        menu.appendChild(label);
+      });
+
+      function updateTrigger() {
+        const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+        if (!checked.length) {
+          trigger.textContent = placeholder;
+        } else if (checked.length === 1) {
+          trigger.textContent = checked[0];
+        } else {
+          trigger.textContent = `${checked.length} selecionados`;
+        }
+      }
+
+      trigger.onclick = () => {
+        document.querySelectorAll(".multi-select").forEach((wrap) => {
+          if (wrap !== trigger.closest(".multi-select")) {
+            wrap.classList.remove("open");
+          }
+        });
+        trigger.closest(".multi-select").classList.toggle("open");
+      };
+
+      menu.addEventListener("click", (e) => {
+        const action = e.target.dataset.action;
+
+        if (action === "all") {
+          menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = true;
+          });
+          updateTrigger();
+          return;
+        }
+
+        if (action === "clear") {
+          menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = false;
+          });
+          updateTrigger();
+          return;
+        }
+
+        if (e.target.matches('input[type="checkbox"]')) {
+          updateTrigger();
+        }
+      });
+
+      updateTrigger();
+    }
+
+    function getMultiValues(menuId) {
+      return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+        .map((el) => el.value)
+        .join("|");
+    }
+
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".multi-select").forEach((wrap) => {
+        if (!wrap.contains(e.target)) {
+          wrap.classList.remove("open");
+        }
+      });
+    });
+
+    function toggleDateFields() {
+      const tipo = document.getElementById("filtroPeriodoTipo").value;
+      const wrapIni = document.getElementById("wrapDataInicial");
+      const wrapFim = document.getElementById("wrapDataFinal");
+      const ref = document.getElementById("filtroDataRef");
+
+      if (tipo === "personalizado") {
+        wrapIni.classList.remove("hidden");
+        wrapFim.classList.remove("hidden");
+        ref.disabled = true;
+      } else {
+        wrapIni.classList.add("hidden");
+        wrapFim.classList.add("hidden");
+        ref.disabled = false;
+      }
+    }
+
+    function getFiltersQuery(page = 1) {
+      const qs = new URLSearchParams();
+
+      const periodoTipo = document.getElementById("filtroPeriodoTipo").value;
+      const dataRef = document.getElementById("filtroDataRef").value;
+      const dataInicio = document.getElementById("filtroDataInicio").value;
+      const dataFim = document.getElementById("filtroDataFim").value;
+
+      if (periodoTipo === "personalizado") {
+        if (dataInicio) qs.set("dataInicio", dataInicio);
+        if (dataFim) qs.set("dataFim", dataFim);
+      } else {
+        qs.set("periodoTipo", periodoTipo);
+        if (dataRef) qs.set("dataRef", dataRef);
+      }
+
+      const filial = getMultiValues("menuFilial");
+      const violacao = getMultiValues("menuViolacao");
+      const descricao = getMultiValues("menuDescricao");
+      const reincidencia = getMultiValues("menuReincidencia");
+      const consequencia = getMultiValues("menuConsequencia");
+      const status = getMultiValues("menuStatus");
+      const colaborador = getMultiValues("menuColaborador");
+      const busca = document.getElementById("filtroBusca").value || "";
+
+      if (filial) qs.set("filial", filial);
+      if (violacao) qs.set("violacao", violacao);
+      if (descricao) qs.set("descricao", descricao);
+      if (reincidencia) qs.set("reincidencia", reincidencia);
+      if (consequencia) qs.set("consequencia", consequencia);
+      if (status) qs.set("status", status);
+      if (colaborador) qs.set("colaborador", colaborador);
+      if (busca) qs.set("busca", busca);
+
+      qs.set("page", page);
+      qs.set("limit", 20);
+
+      return qs.toString();
+    }
+
+    function destroyCharts() {
+      if (chartFilialInstance) chartFilialInstance.destroy();
+      if (chartViolacaoInstance) chartViolacaoInstance.destroy();
+      if (chartConsequenciaInstance) chartConsequenciaInstance.destroy();
+      if (chartDiaInstance) chartDiaInstance.destroy();
+      if (chartComparativoInstance) chartComparativoInstance.destroy();
+      if (chartReincidenciaInstance) chartReincidenciaInstance.destroy();
+      if (chartStatusInstance) chartStatusInstance.destroy();
+    }
+
+    function baseBarOptions(horizontal = false, legend = false) {
+      return {
+        indexAxis: horizontal ? "y" : "x",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: legend,
+            labels: {
+              color: "#e5e7eb",
+              boxWidth: 10,
+              font: { size: 10 }
+            }
+          },
+          datalabels: {
+            color: "#ffffff",
+            anchor: horizontal ? "end" : "end",
+            align: horizontal ? "right" : "top",
+            offset: 2,
+            clamp: true,
+            font: {
+              size: 10,
+              weight: "700"
+            },
+            formatter: (value) => value > 0 ? fmt(value) : ""
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#cfcfcf", font: { size: 10 } },
+            grid: { display: false },
+            beginAtZero: true
+          },
+          y: {
+            ticks: { color: "#cfcfcf", font: { size: 10 } },
+            grid: { color: "rgba(255,255,255,0.05)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    function lineOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: "#fff" }
+          },
+          datalabels: {
+            color: "#ffffff",
+            anchor: "end",
+            align: "top",
+            offset: 2,
+            font: { size: 10, weight: "700" },
+            formatter: (value) => value > 0 ? fmt(value) : ""
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#cfcfcf", font: { size: 10 } },
+            grid: { display: false }
+          },
+          y: {
+            ticks: { color: "#cfcfcf", font: { size: 10 } },
+            grid: { color: "rgba(255,255,255,0.05)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    async function loadFilters() {
+      const res = await fetch("/api/matriz-consequencia-filtros", { credentials: "same-origin" });
+      const data = await res.json();
+
+      createMultiSelect("menuFilial", "triggerFilial", data.filiais || [], "Todos");
+      createMultiSelect("menuViolacao", "triggerViolacao", data.violacoes || [], "Todos");
+      createMultiSelect("menuDescricao", "triggerDescricao", data.descricoes || [], "Todos");
+      createMultiSelect("menuReincidencia", "triggerReincidencia", data.reincidencias || [], "Todos");
+      createMultiSelect("menuConsequencia", "triggerConsequencia", data.consequencias || [], "Todos");
+      createMultiSelect("menuStatus", "triggerStatus", data.status || [], "Todos");
+      createMultiSelect("menuColaborador", "triggerColaborador", data.colaboradores || [], "Todos");
+    }
+
+    async function loadResumo() {
+      const res = await fetch(`/api/matriz-consequencia-resumo?${getFiltersQuery(currentPage)}`, {
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      document.getElementById("kpiTotal").textContent = fmt(data.total || 0);
+      document.getElementById("kpiAtual").textContent = fmt(data.mesAtual || 0);
+      document.getElementById("kpiAnterior").textContent = fmt(data.mesAnterior || 0);
+      document.getElementById("kpiVariacao").textContent = fmtPct(data.variacaoMensal || 0);
+      document.getElementById("kpiReincidentes").textContent = fmt(data.reincidentes || 0);
+      document.getElementById("kpiConcluidos").textContent = fmt(data.concluidos || 0);
+      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+
+      const comparativoLabel = (data.comparativoLabel || "base anterior").toUpperCase();
+      document.getElementById("kpiPeriodoAnteriorTitulo").textContent = comparativoLabel;
+      document.getElementById("comparativoChartLabel").textContent = `${data.periodoAtualInicio || "-"} até ${data.periodoAtualFim || "-"} x ${data.periodoAnteriorInicio || "-"} até ${data.periodoAnteriorFim || "-"}`;
+
+      document.getElementById("kpiAtualSub").textContent =
+        `${data.periodoAtualInicio || "-"} até ${data.periodoAtualFim || "-"}`;
+
+      document.getElementById("kpiAnteriorSub").textContent =
+        `${data.periodoAnteriorInicio || "-"} até ${data.periodoAnteriorFim || "-"}`;
+
+      const variacao = Number(data.variacaoMensal || 0);
+      const tipo = variacao > 0 ? "positive" : variacao < 0 ? "negative" : "neutral";
+      const arrow = variacao > 0 ? "↑" : variacao < 0 ? "↓" : "→";
+
+      document.getElementById("kpiVariacaoSub").innerHTML =
+        `<span class="${tipo}" style="font-weight:800; color:${variacao > 0 ? '#22c55e' : variacao < 0 ? '#ef4444' : '#cbd5e1'}">${arrow} vs ${data.comparativoLabel || "base anterior"}</span>`;
+    }
+
+    async function loadGraficos() {
+      const res = await fetch(`/api/matriz-consequencia-graficos?${getFiltersQuery(currentPage)}`, {
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      destroyCharts();
+
+      chartFilialInstance = new Chart(document.getElementById("chartFilial"), {
+        type: "bar",
+        data: {
+          labels: data.porFilial?.labels || [],
+          datasets: [{
+            label: "Casos",
+            data: data.porFilial?.valores || [],
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8
+          }]
+        },
+        options: baseBarOptions(true, false)
+      });
+
+      chartViolacaoInstance = new Chart(document.getElementById("chartViolacao"), {
+        type: "bar",
+        data: {
+          labels: data.porViolacao?.labels || [],
+          datasets: [{
+            label: "Casos",
+            data: data.porViolacao?.valores || [],
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8
+          }]
+        },
+        options: baseBarOptions(true, false)
+      });
+
+      chartConsequenciaInstance = new Chart(document.getElementById("chartConsequencia"), {
+        type: "bar",
+        data: {
+          labels: data.porConsequencia?.labels || [],
+          datasets: [{
+            label: "Casos",
+            data: data.porConsequencia?.valores || [],
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8
+          }]
+        },
+        options: baseBarOptions(true, false)
+      });
+
+      chartDiaInstance = new Chart(document.getElementById("chartDia"), {
+        type: "bar",
+        data: {
+          labels: data.porDia?.labels || [],
+          datasets: [{
+            label: "Casos",
+            data: data.porDia?.valores || [],
+            backgroundColor: "#ff7a1a",
+            borderRadius: 4
+          }]
+        },
+        options: {
+          ...baseBarOptions(false, true),
+          plugins: {
+            ...baseBarOptions(false, true).plugins,
+            legend: {
+              display: true,
+              labels: { color: "#fff" }
+            }
+          }
+        }
+      });
+
+      chartComparativoInstance = new Chart(document.getElementById("chartComparativo"), {
+        type: "bar",
+        data: {
+          labels: ["Período atual", (data.comparativoMensal?.label || "Base anterior")],
+          datasets: [{
+            label: "Casos",
+            data: [
+              data.comparativoMensal?.mesAtual || 0,
+              data.comparativoMensal?.mesAnterior || 0
+            ],
+            backgroundColor: ["#ff7a1a", "#58a6ff"],
+            borderRadius: 8
+          }]
+        },
+        options: baseBarOptions(false, true)
+      });
+
+      chartReincidenciaInstance = new Chart(document.getElementById("chartReincidencia"), {
+        type: "doughnut",
+        data: {
+          labels: data.reincidencia?.labels || [],
+          datasets: [{
+            data: data.reincidencia?.valores || [],
+            backgroundColor: ["#ff7a1a", "#58a6ff", "#8b5cf6"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "58%",
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { color: "#fff", font: { size: 11 } }
+            },
+            datalabels: {
+              color: "#ffffff",
+              font: { size: 10, weight: "700" },
+              formatter: (value) => value > 0 ? fmt(value) : ""
+            }
+          }
+        }
+      });
+
+      chartStatusInstance = new Chart(document.getElementById("chartStatus"), {
+        type: "bar",
+        data: {
+          labels: data.porStatus?.labels || [],
+          datasets: [{
+            label: "Casos",
+            data: data.porStatus?.valores || [],
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8
+          }]
+        },
+        options: baseBarOptions(true, false)
+      });
+    }
+
+    async function loadDetalhes() {
+      const res = await fetch(`/api/matriz-consequencia-detalhes?${getFiltersQuery(currentPage)}`, {
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      totalPages = data.totalPages || 1;
+      document.getElementById("pagerInfo").textContent = `Página ${data.page || 1} de ${totalPages}`;
+
+      let html = `
+        <table class="detail-table">
           <thead>
             <tr>
-              <th>Data da Ocorrência</th>
+              <th>Data da ocorrência</th>
               <th>Colaborador</th>
               <th>CPF</th>
               <th>Filial</th>
@@ -323,390 +1201,98 @@
               <th>Data Conclusão</th>
             </tr>
           </thead>
-          <tbody id="tbodyDetalhes"></tbody>
-        </table>
-      </div>
-      <div class="pagination">
-        <button id="btnPrev">Anterior</button>
-        <span id="pageInfo">Página 1</span>
-        <button id="btnNext">Próxima</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const COLORS = {
-      orange: '#ff7a1a',
-      text: '#ffffff',
-      grid: 'rgba(255,255,255,0.08)'
-    };
-
-    Chart.register(ChartDataLabels);
-
-    const state = {
-      page: 1,
-      limit: 20,
-      filtros: {
-        dataInicio: '',
-        dataFim: '',
-        filial: [],
-        violacao: [],
-        descricao: [],
-        reincidencia: [],
-        consequencia: [],
-        status: [],
-        colaborador: [],
-        busca: ''
-      }
-    };
-
-    const charts = {};
-
-    function formatNumber(v) {
-      return Number(v || 0).toLocaleString('pt-BR');
-    }
-
-    function formatPercent(v) {
-      return `${Number(v || 0).toFixed(1).replace('.', ',')}%`;
-    }
-
-    function getFiltersQuery() {
-      const p = new URLSearchParams();
-      if (state.filtros.dataInicio) p.append('dataInicio', state.filtros.dataInicio);
-      if (state.filtros.dataFim) p.append('dataFim', state.filtros.dataFim);
-      if (state.filtros.filial.length) p.append('filial', state.filtros.filial.join('|'));
-      if (state.filtros.violacao.length) p.append('violacao', state.filtros.violacao.join('|'));
-      if (state.filtros.descricao.length) p.append('descricao', state.filtros.descricao.join('|'));
-      if (state.filtros.reincidencia.length) p.append('reincidencia', state.filtros.reincidencia.join('|'));
-      if (state.filtros.consequencia.length) p.append('consequencia', state.filtros.consequencia.join('|'));
-      if (state.filtros.status.length) p.append('status', state.filtros.status.join('|'));
-      if (state.filtros.colaborador.length) p.append('colaborador', state.filtros.colaborador.join('|'));
-      if (state.filtros.busca) p.append('busca', state.filtros.busca);
-      return p.toString();
-    }
-
-    async function fetchJSON(url) {
-      const resp = await fetch(url, {
-        credentials: 'include',
-        headers: { 'Accept': 'application/json' }
-      });
-      const text = await resp.text();
-
-      if (!resp.ok) {
-        throw new Error(`Erro ${resp.status} ao buscar ${url}: ${text.slice(0, 200)}`);
-      }
-
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        throw new Error(`Resposta não é JSON em ${url}: ${text.slice(0, 200)}`);
-      }
-    }
-
-    function buildMultiSelect(elId, options, selected, onChange, placeholder = 'Todos') {
-      const root = document.getElementById(elId);
-      const selectedText = selected.length ? selected.join(', ') : placeholder;
-
-      root.innerHTML = `
-        <div class="multi-select-trigger">
-          <span>${selectedText}</span>
-          <strong>▼</strong>
-        </div>
-        <div class="multi-select-dropdown">
-          <div class="multi-select-search">
-            <input type="text" placeholder="Buscar...">
-          </div>
-          <div class="multi-select-options">
-            ${options.map(opt => `
-              <label class="multi-option" data-label="${String(opt).toLowerCase()}">
-                <input type="checkbox" value="${String(opt).replace(/"/g, '&quot;')}" ${selected.includes(opt) ? 'checked' : ''}>
-                <span>${opt}</span>
-              </label>
-            `).join('')}
-          </div>
-        </div>
+          <tbody>
       `;
 
-      root.querySelector('.multi-select-trigger').addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.multi-select').forEach(ms => {
-          if (ms !== root) ms.classList.remove('open');
-        });
-        root.classList.toggle('open');
-      });
-
-      const searchInput = root.querySelector('.multi-select-search input');
-      searchInput.addEventListener('input', () => {
-        const val = searchInput.value.trim().toLowerCase();
-        root.querySelectorAll('.multi-option').forEach(item => {
-          item.style.display = item.dataset.label.includes(val) ? 'flex' : 'none';
-        });
-      });
-
-      root.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', () => {
-          const values = [...root.querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
-          onChange(values);
-        });
-      });
-    }
-
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.multi-select').forEach(ms => ms.classList.remove('open'));
-    });
-
-    function datalabelsOptions(indexAxis = 'x') {
-      return {
-        color: '#ffffff',
-        anchor: indexAxis === 'y' ? 'end' : 'end',
-        align: indexAxis === 'y' ? 'right' : 'top',
-        offset: 4,
-        clamp: true,
-        font: { family: 'Arial', weight: 'bold', size: 11 },
-        formatter: (value) => Number(value || 0).toLocaleString('pt-BR')
-      };
-    }
-
-    function baseChartOptions(indexAxis = 'x') {
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis,
-        layout: { padding: { top: 24, right: 16, left: 8, bottom: 8 } },
-        plugins: {
-          legend: {
-            labels: { color: COLORS.text, font: { family: 'Arial' } }
-          },
-          tooltip: {
-            titleFont: { family: 'Arial' },
-            bodyFont: { family: 'Arial' }
-          },
-          datalabels: datalabelsOptions(indexAxis)
-        },
-        scales: {
-          x: {
-            ticks: { color: COLORS.text, font: { family: 'Arial' } },
-            grid: { color: COLORS.grid }
-          },
-          y: {
-            ticks: { color: COLORS.text, font: { family: 'Arial' } },
-            grid: { color: COLORS.grid }
-          }
-        }
-      };
-    }
-
-    function destroyChart(id) {
-      if (charts[id]) charts[id].destroy();
-    }
-
-    function renderBarHorizontal(canvasId, label, labels, valores) {
-      destroyChart(canvasId);
-      charts[canvasId] = new Chart(document.getElementById(canvasId), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{ label, data: valores, backgroundColor: COLORS.orange, datalabels: datalabelsOptions('y') }]
-        },
-        options: baseChartOptions('y')
-      });
-    }
-
-    function renderBar(canvasId, label, labels, valores) {
-      destroyChart(canvasId);
-      charts[canvasId] = new Chart(document.getElementById(canvasId), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{ label, data: valores, backgroundColor: COLORS.orange, datalabels: datalabelsOptions('x') }]
-        },
-        options: baseChartOptions('x')
-      });
-    }
-
-    function renderChartComparativo(data) {
-      destroyChart('chartComparativo');
-      charts.chartComparativo = new Chart(document.getElementById('chartComparativo'), {
-        type: 'bar',
-        data: {
-          labels: ['Mês anterior', 'Mês atual'],
-          datasets: [{
-            label: 'Casos',
-            data: [data.mesAnterior, data.mesAtual],
-            backgroundColor: ['rgba(255,122,26,0.55)', COLORS.orange],
-            datalabels: datalabelsOptions('x')
-          }]
-        },
-        options: baseChartOptions('x')
-      });
-    }
-
-    async function carregarFiltros() {
-      const data = await fetchJSON('/api/matriz-consequencia-filtros');
-
-      buildMultiSelect('msFilial', data.filiais || [], state.filtros.filial, (vals) => {
-        state.filtros.filial = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      buildMultiSelect('msViolacao', data.violacoes || [], state.filtros.violacao, (vals) => {
-        state.filtros.violacao = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      buildMultiSelect('msDescricao', data.descricoes || [], state.filtros.descricao, (vals) => {
-        state.filtros.descricao = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      buildMultiSelect('msReincidencia', data.reincidencias || [], state.filtros.reincidencia, (vals) => {
-        state.filtros.reincidencia = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      buildMultiSelect('msConsequencia', data.consequencias || [], state.filtros.consequencia, (vals) => {
-        state.filtros.consequencia = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      buildMultiSelect('msStatus', data.status || [], state.filtros.status, (vals) => {
-        state.filtros.status = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      buildMultiSelect('msColaborador', data.colaboradores || [], state.filtros.colaborador, (vals) => {
-        state.filtros.colaborador = vals; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-    }
-
-    async function carregarResumo() {
-      const qs = getFiltersQuery();
-      const data = await fetchJSON(`/api/matriz-consequencia-resumo?${qs}`);
-
-      document.getElementById('kpiTotal').textContent = formatNumber(data.total);
-      document.getElementById('kpiMes').textContent = formatNumber(data.mesAtual);
-      document.getElementById('kpiMesAnterior').textContent = formatNumber(data.mesAnterior);
-      document.getElementById('kpiVariacao').textContent = formatPercent(data.variacaoMensal);
-      document.getElementById('kpiReincidentes').textContent = formatNumber(data.reincidentes);
-      document.getElementById('kpiConcluidos').textContent = formatNumber(data.concluidos);
-
-      const sub = document.getElementById('subVariacao');
-      sub.textContent = 'vs mês anterior';
-      sub.className = `sub ${data.variacaoMensal >= 0 ? 'positive' : 'negative'}`;
-
-      document.getElementById('ultimaAtualizacao').textContent = data.ultimaAtualizacao || '--:--';
-    }
-
-    async function carregarGraficos() {
-      const qs = getFiltersQuery();
-      const data = await fetchJSON(`/api/matriz-consequencia-graficos?${qs}`);
-
-      renderBarHorizontal('chartFilial', 'Casos', data.porFilial.labels, data.porFilial.valores);
-      renderBarHorizontal('chartViolacao', 'Casos', data.porViolacao.labels, data.porViolacao.valores);
-      renderBarHorizontal('chartConsequencia', 'Casos', data.porConsequencia.labels, data.porConsequencia.valores);
-
-      renderBar('chartDia', 'Casos', data.porDia.labels, data.porDia.valores);
-      renderChartComparativo(data.comparativoMensal);
-
-      renderBar('chartStatus', 'Casos', data.porStatus.labels, data.porStatus.valores);
-      renderBar('chartReincidencia', 'Casos', data.reincidencia.labels, data.reincidencia.valores);
-    }
-
-    async function carregarDetalhes() {
-      const qs = getFiltersQuery();
-      const data = await fetchJSON(`/api/matriz-consequencia-detalhes?${qs}&page=${state.page}&limit=${state.limit}`);
-
-      const tbody = document.getElementById('tbodyDetalhes');
-      tbody.innerHTML = (data.items || []).map(row => `
-        <tr>
-          <td>${row.dataOcorrencia || ''}</td>
-          <td>${row.colaborador || ''}</td>
-          <td>${row.cpf || ''}</td>
-          <td>${row.filial || ''}</td>
-          <td>${row.violacao || ''}</td>
-          <td>${row.descricao || ''}</td>
-          <td>${row.reincidencia || ''}</td>
-          <td>${row.consequencia || ''}</td>
-          <td>${row.status || ''}</td>
-          <td>${row.dataConclusao || ''}</td>
-        </tr>
-      `).join('');
-
-      document.getElementById('pageInfo').textContent = `Página ${data.page} de ${data.totalPages}`;
-      document.getElementById('btnPrev').disabled = data.page <= 1;
-      document.getElementById('btnNext').disabled = data.page >= data.totalPages;
-    }
-
-    async function carregarTudo() {
-      await carregarFiltros();
-      await carregarResumo();
-      await carregarGraficos();
-      await carregarDetalhes();
-    }
-
-    function bindEvents() {
-      document.getElementById('dataInicial').addEventListener('change', (e) => {
-        state.filtros.dataInicio = e.target.value; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      document.getElementById('dataFinal').addEventListener('change', (e) => {
-        state.filtros.dataFim = e.target.value; state.page = 1; carregarResumo(); carregarGraficos(); carregarDetalhes();
-      });
-
-      document.getElementById('busca').addEventListener('input', (e) => {
-        state.filtros.busca = e.target.value.trim();
-        state.page = 1;
-        clearTimeout(window.__buscaTimer);
-        window.__buscaTimer = setTimeout(() => {
-          carregarResumo(); carregarGraficos(); carregarDetalhes();
-        }, 350);
-      });
-
-      document.getElementById('btnLimpar').addEventListener('click', () => {
-        state.page = 1;
-        state.filtros = {
-          dataInicio: '',
-          dataFim: '',
-          filial: [],
-          violacao: [],
-          descricao: [],
-          reincidencia: [],
-          consequencia: [],
-          status: [],
-          colaborador: [],
-          busca: ''
-        };
-
-        document.getElementById('dataInicial').value = '';
-        document.getElementById('dataFinal').value = '';
-        document.getElementById('busca').value = '';
-        carregarTudo();
-      });
-
-      document.getElementById('btnPrev').addEventListener('click', () => {
-        if (state.page > 1) {
-          state.page--;
-          carregarDetalhes();
-        }
-      });
-
-      document.getElementById('btnNext').addEventListener('click', () => {
-        state.page++;
-        carregarDetalhes();
-      });
-    }
-
-    async function init() {
-      try {
-        bindEvents();
-        await carregarTudo();
-      } catch (error) {
-        console.error('[MATRIZ] erro no init:', error);
-        document.getElementById('tbodyDetalhes').innerHTML = `
+      (data.items || []).forEach((item) => {
+        html += `
           <tr>
-            <td colspan="10" style="color:#ff6b6b;font-weight:bold;">
-              Erro ao carregar dashboard: ${error.message}
-            </td>
+            <td>${esc(item.dataOcorrencia || "")}</td>
+            <td>${esc(item.colaborador || "")}</td>
+            <td>${esc(item.cpf || "")}</td>
+            <td>${esc(item.filial || "")}</td>
+            <td>${esc(item.violacao || "")}</td>
+            <td>${esc(item.descricao || "")}</td>
+            <td>${esc(item.reincidencia || "")}</td>
+            <td>${esc(item.consequencia || "")}</td>
+            <td>${esc(item.status || "")}</td>
+            <td>${esc(item.dataConclusao || "")}</td>
+          </tr>
+        `;
+      });
+
+      if (!(data.items || []).length) {
+        html += `
+          <tr>
+            <td colspan="10" style="text-align:center;color:#c7c7c7;">Sem dados para os filtros aplicados.</td>
           </tr>
         `;
       }
+
+      html += `</tbody></table>`;
+      document.getElementById("detailWrap").innerHTML = html;
     }
 
-    init();
+    async function loadAll(page = 1) {
+      currentPage = page;
+      await loadResumo();
+      await loadGraficos();
+      await loadDetalhes();
+    }
+
+    function clearAllFilters() {
+      document.getElementById("filtroPeriodoTipo").value = "mes";
+      document.getElementById("filtroDataRef").value = "";
+      document.getElementById("filtroDataInicio").value = "";
+      document.getElementById("filtroDataFim").value = "";
+      document.getElementById("filtroBusca").value = "";
+
+      document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach((input) => {
+        input.checked = false;
+      });
+
+      document.getElementById("triggerFilial").textContent = "Todos";
+      document.getElementById("triggerViolacao").textContent = "Todos";
+      document.getElementById("triggerDescricao").textContent = "Todos";
+      document.getElementById("triggerReincidencia").textContent = "Todos";
+      document.getElementById("triggerConsequencia").textContent = "Todos";
+      document.getElementById("triggerStatus").textContent = "Todos";
+      document.getElementById("triggerColaborador").textContent = "Todos";
+
+      toggleDateFields();
+      setDefaultDateRef();
+      loadAll(1);
+    }
+
+    function setDefaultDateRef() {
+      const hoje = new Date();
+      const y = hoje.getFullYear();
+      const m = String(hoje.getMonth() + 1).padStart(2, "0");
+      const d = String(hoje.getDate()).padStart(2, "0");
+      document.getElementById("filtroDataRef").value = `${y}-${m}-${d}`;
+    }
+
+    document.getElementById("filtroPeriodoTipo").addEventListener("change", () => {
+      toggleDateFields();
+    });
+
+    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
+    document.getElementById("btnLimpar").addEventListener("click", clearAllFilters);
+
+    document.getElementById("btnPrev").addEventListener("click", () => {
+      if (currentPage > 1) loadAll(currentPage - 1);
+    });
+
+    document.getElementById("btnNext").addEventListener("click", () => {
+      if (currentPage < totalPages) loadAll(currentPage + 1);
+    });
+
+    (async function init() {
+      toggleDateFields();
+      setDefaultDateRef();
+      await loadFilters();
+      await loadAll(1);
+    })();
   </script>
 </body>
 </html>

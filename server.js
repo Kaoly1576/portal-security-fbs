@@ -2876,16 +2876,63 @@ app.get("/api/cco-fbs-resumo", requireAuth, async (req, res) => {
 
     const topStatus = Object.entries(statusMap).sort((a, b) => b[1] - a[1])[0] || null;
 
-    const rowsWithDate = filtrados
-      .filter((row) => row._primaryDate)
-      .sort((a, b) => a._primaryDate - b._primaryDate);
+    // =========================
+    // COMPARATIVO MENSAL CORRIGIDO
+    // =========================
 
-    const latestDate = rowsWithDate.length ? rowsWithDate[rowsWithDate.length - 1]._primaryDate : null;
-    const mesAtualKey = latestDate ? ccoGetMonthKey(latestDate) : "";
+    // Descobre o mês de referência:
+    // 1) se o usuário filtrou um mês/ano por data inicial e final, usa esse mês
+    // 2) caso contrário, usa o mês mais recente do conjunto filtrado
+    let mesAtualKey = "";
+
+    const dataInicio = ccoNormalize(req.query.dataInicio);
+    const dataFim = ccoNormalize(req.query.dataFim);
+
+    if (dataInicio) {
+      const refDate = new Date(`${dataInicio}T00:00:00`);
+      if (!isNaN(refDate)) {
+        mesAtualKey = ccoGetMonthKey(refDate);
+      }
+    }
+
+    if (!mesAtualKey && dataFim) {
+      const refDate = new Date(`${dataFim}T00:00:00`);
+      if (!isNaN(refDate)) {
+        mesAtualKey = ccoGetMonthKey(refDate);
+      }
+    }
+
+    if (!mesAtualKey) {
+      const rowsWithDate = filtrados
+        .filter((row) => row._primaryDate)
+        .sort((a, b) => a._primaryDate - b._primaryDate);
+
+      const latestDate = rowsWithDate.length
+        ? rowsWithDate[rowsWithDate.length - 1]._primaryDate
+        : null;
+
+      mesAtualKey = latestDate ? ccoGetMonthKey(latestDate) : "";
+    }
+
     const mesAnteriorKey = ccoGetPreviousMonthKey(mesAtualKey);
 
-    const mesAtual = filtrados.filter((row) => ccoGetMonthKey(row._primaryDate) === mesAtualKey).length;
-    const mesAnterior = filtrados.filter((row) => ccoGetMonthKey(row._primaryDate) === mesAnteriorKey).length;
+    // Remove apenas o recorte de data para conseguir comparar
+    // mês atual x mês anterior mantendo os demais filtros
+    const querySemData = {
+      ...req.query,
+      dataInicio: "",
+      dataFim: "",
+    };
+
+    const baseComparativo = ccoApplyFilters(meta.rows, querySemData, meta.filterHeaders);
+
+    const mesAtual = baseComparativo.filter(
+      (row) => ccoGetMonthKey(row._primaryDate) === mesAtualKey
+    ).length;
+
+    const mesAnterior = baseComparativo.filter(
+      (row) => ccoGetMonthKey(row._primaryDate) === mesAnteriorKey
+    ).length;
 
     return res.json({
       total,

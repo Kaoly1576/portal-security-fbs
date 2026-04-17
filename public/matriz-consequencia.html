@@ -4,25 +4,36 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MATRIZ</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, Helvetica, sans-serif}
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
 
     :root{
       --bg1:#4b5563;
       --bg2:#111827;
       --bg3:#050c18;
-      --input:#071325;
+      --card:rgba(17,24,39,0.82);
+      --card-2:rgba(10,15,28,0.96);
+      --input:#081222;
       --th:#111c33;
       --line:rgba(255,255,255,0.08);
       --text:#ffffff;
       --muted:#cbd5e1;
       --orange:#ff7a1a;
+      --orange-2:#ff9540;
       --blue:#58a6ff;
       --green:#22c55e;
       --red:#ef4444;
+      --purple:#8b5cf6;
+      --shadow:0 10px 24px rgba(0,0,0,0.28);
     }
 
     html,body{
@@ -47,7 +58,7 @@
       background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
       border:1px solid var(--line);
       border-radius:16px;
-      box-shadow:0 10px 24px rgba(0,0,0,0.28);
+      box-shadow:var(--shadow);
       backdrop-filter: blur(4px);
     }
 
@@ -103,6 +114,11 @@
       display:inline-flex;
       align-items:center;
       justify-content:center;
+      transition:.2s ease;
+    }
+
+    .btn:hover{
+      background:rgba(255,255,255,0.14);
     }
 
     .hero{
@@ -147,9 +163,6 @@
     .filters{
       padding:14px;
       margin-bottom:12px;
-      position:relative;
-      z-index:50;
-      overflow:visible !important;
     }
 
     .filters-grid{
@@ -157,16 +170,14 @@
       grid-template-columns:repeat(6,minmax(120px,1fr));
       gap:10px;
       align-items:end;
-      overflow:visible !important;
-      position:relative;
-      z-index:60;
     }
 
     .field{
       min-width:0;
-      position:relative;
-      z-index:70;
-      overflow:visible !important;
+    }
+
+    .field.hidden{
+      display:none;
     }
 
     .field label{
@@ -177,7 +188,8 @@
       font-weight:700;
     }
 
-    .field input,.field select{
+    .field input,
+    .field select{
       width:100%;
       height:40px;
       background:var(--input);
@@ -193,25 +205,20 @@
       color:#94a3b8;
     }
 
-    input[type="date"]{
-      color-scheme:dark;
-      padding-right:14px;
+    input[type="date"],
+    select{
+      color-scheme: dark;
     }
 
     input[type="date"]::-webkit-calendar-picker-indicator{
-      filter:invert(1) brightness(1.5);
-      opacity:1;
-      cursor:pointer;
+      filter: invert(1) brightness(1.7);
+      opacity: 1;
+      cursor: pointer;
     }
 
     .multi-select{
       position:relative;
       width:100%;
-      z-index:80;
-    }
-
-    .multi-select.open{
-      z-index:9999 !important;
     }
 
     .multi-trigger{
@@ -252,7 +259,7 @@
       max-height:220px;
       overflow-y:auto;
       display:none;
-      z-index:10000 !important;
+      z-index:50;
       box-shadow:0 10px 24px rgba(0,0,0,0.35);
       padding:6px;
     }
@@ -289,10 +296,6 @@
       padding:6px;
       border-bottom:1px solid rgba(255,255,255,0.06);
       margin-bottom:4px;
-      position:sticky;
-      top:0;
-      background:var(--input);
-      z-index:2;
     }
 
     .multi-actions button{
@@ -306,8 +309,12 @@
       cursor:pointer;
     }
 
+    .multi-actions button:hover{
+      background:#243756;
+    }
+
     .search-span-2{
-      grid-column:span 2;
+      grid-column: span 2;
     }
 
     .actions{
@@ -344,15 +351,11 @@
       grid-template-columns:repeat(6,minmax(0,1fr));
       gap:12px;
       margin-bottom:12px;
-      position:relative;
-      z-index:1;
     }
 
     .kpi{
       padding:14px;
-      min-height:92px;
-      position:relative;
-      z-index:1;
+      min-height:100px;
     }
 
     .kpi-title{
@@ -371,40 +374,36 @@
 
     .kpi-sub{
       font-size:12px;
+      margin-top:6px;
       color:var(--muted);
-      margin-top:4px;
       line-height:1.35;
+      min-height:30px;
     }
 
     .orange{color:var(--orange)}
     .blue{color:var(--blue)}
     .green{color:var(--green)}
     .red{color:var(--red)}
+    .purple{color:var(--purple)}
 
-    .grid-top{
+    .grid-top,.grid-middle{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
       gap:12px;
       margin-bottom:12px;
-      position:relative;
-      z-index:1;
     }
 
-    .grid-bottom-2{
+    .grid-bottom{
       display:grid;
-      grid-template-columns:1fr 1.2fr;
+      grid-template-columns:1fr 1fr;
       gap:12px;
       margin-bottom:12px;
-      position:relative;
-      z-index:1;
     }
 
     .panel{
       padding:14px;
       min-height:250px;
       overflow:hidden;
-      position:relative;
-      z-index:1;
     }
 
     .panel-title{
@@ -415,8 +414,8 @@
       text-align:center;
     }
 
-    .panel-subtitle{
-      color:#cdd6e0;
+    .panel-sub{
+      color:var(--muted);
       font-size:11px;
       margin-bottom:10px;
     }
@@ -433,8 +432,6 @@
     .wide-panel{
       padding:14px;
       margin-bottom:14px;
-      position:relative;
-      z-index:1;
     }
 
     .detail-wrap{
@@ -447,7 +444,7 @@
     .detail-table{
       width:100%;
       border-collapse:collapse;
-      min-width:900px;
+      min-width:1100px;
       font-size:12px;
       background:#091322;
     }
@@ -483,9 +480,23 @@
       align-items:center;
     }
 
+    .empty-state{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--muted);
+      height:100%;
+      min-height:120px;
+      font-size:13px;
+    }
+
+    canvas{
+      max-width:100% !important;
+    }
+
     @media (max-width:1280px){
       .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .grid-top,.grid-bottom-2{grid-template-columns:1fr}
+      .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
       .search-span-2{grid-column:span 1}
     }
 
@@ -526,16 +537,27 @@
         <div class="field">
           <label>Período</label>
           <select id="filtroPeriodoTipo">
-            <option value="mes">Mês</option>
+            <option value="mes" selected>Mês</option>
             <option value="dia">Dia</option>
             <option value="semana">Semana</option>
             <option value="ano">Ano</option>
+            <option value="personalizado">Personalizado</option>
           </select>
         </div>
 
         <div class="field">
           <label>Data de referência</label>
           <input type="date" id="filtroDataRef" />
+        </div>
+
+        <div class="field hidden" id="wrapDataInicial">
+          <label>Data inicial</label>
+          <input type="date" id="filtroDataInicio" />
+        </div>
+
+        <div class="field hidden" id="wrapDataFinal">
+          <label>Data final</label>
+          <input type="date" id="filtroDataFim" />
         </div>
 
         <div class="field">
@@ -561,7 +583,9 @@
             <div class="multi-menu" id="menuDescricao"></div>
           </div>
         </div>
+      </div>
 
+      <div class="filters-grid" style="margin-top:10px;">
         <div class="field">
           <label>Reincidência</label>
           <div class="multi-select" id="multiReincidencia">
@@ -569,9 +593,7 @@
             <div class="multi-menu" id="menuReincidencia"></div>
           </div>
         </div>
-      </div>
 
-      <div class="filters-grid" style="margin-top:10px;">
         <div class="field">
           <label>Consequência</label>
           <div class="multi-select" id="multiConsequencia">
@@ -610,27 +632,27 @@
 
     <section class="kpis">
       <div class="kpi">
-        <div class="kpi-title">Total de casos</div>
+        <div class="kpi-title">Total de Casos</div>
         <div class="kpi-value orange" id="kpiTotal">0</div>
         <div class="kpi-sub">Total consolidado</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-title" id="tituloPeriodoAtual">Casos no período</div>
+        <div class="kpi-title" id="kpiPeriodoAtualTitulo">Casos no Período</div>
         <div class="kpi-value orange" id="kpiAtual">0</div>
-        <div class="kpi-sub" id="subPeriodoAtual">-</div>
+        <div class="kpi-sub" id="kpiAtualSub">Período atual</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-title" id="tituloPeriodoAnterior">Base anterior</div>
+        <div class="kpi-title" id="kpiPeriodoAnteriorTitulo">Base Anterior</div>
         <div class="kpi-value orange" id="kpiAnterior">0</div>
-        <div class="kpi-sub" id="subPeriodoAnterior">-</div>
+        <div class="kpi-sub" id="kpiAnteriorSub">Comparativo base</div>
       </div>
 
       <div class="kpi">
         <div class="kpi-title">Variação</div>
         <div class="kpi-value orange" id="kpiVariacao">0,0%</div>
-        <div class="kpi-sub" id="subVariacao">vs base anterior</div>
+        <div class="kpi-sub" id="kpiVariacaoSub">vs período anterior</div>
       </div>
 
       <div class="kpi">
@@ -649,7 +671,7 @@
     <section class="grid-top">
       <div class="panel">
         <div class="panel-title">Casos por Filial</div>
-        <div class="panel-subtitle">Top filiais</div>
+        <div class="panel-sub">Top filiais</div>
         <div class="chart-box">
           <canvas id="chartFilial"></canvas>
         </div>
@@ -657,7 +679,7 @@
 
       <div class="panel">
         <div class="panel-title">Casos por Violação</div>
-        <div class="panel-subtitle">Top violações</div>
+        <div class="panel-sub">Top violações</div>
         <div class="chart-box">
           <canvas id="chartViolacao"></canvas>
         </div>
@@ -665,17 +687,17 @@
 
       <div class="panel">
         <div class="panel-title">Casos por Consequência</div>
-        <div class="panel-subtitle">Distribuição de consequência</div>
+        <div class="panel-sub">Distribuição de consequência</div>
         <div class="chart-box">
           <canvas id="chartConsequencia"></canvas>
         </div>
       </div>
     </section>
 
-    <section class="grid-bottom-2">
+    <section class="grid-bottom">
       <div class="panel">
         <div class="panel-title">Casos por Dia</div>
-        <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
+        <div class="panel-sub">Distribuição diária de 01 a 31</div>
         <div class="chart-box line">
           <canvas id="chartDia"></canvas>
         </div>
@@ -683,9 +705,27 @@
 
       <div class="panel">
         <div class="panel-title">Comparativo</div>
-        <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
+        <div class="panel-sub" id="comparativoChartLabel">Período atual x base anterior</div>
         <div class="chart-box">
           <canvas id="chartComparativo"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-bottom">
+      <div class="panel">
+        <div class="panel-title">Reincidência</div>
+        <div class="panel-sub">Sim, Não e sem resposta</div>
+        <div class="chart-box">
+          <canvas id="chartReincidencia"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Casos por Status</div>
+        <div class="panel-sub">Distribuição por status</div>
+        <div class="chart-box">
+          <canvas id="chartStatus"></canvas>
         </div>
       </div>
     </section>
@@ -712,6 +752,8 @@
     let chartConsequenciaInstance = null;
     let chartDiaInstance = null;
     let chartComparativoInstance = null;
+    let chartReincidenciaInstance = null;
+    let chartStatusInstance = null;
 
     function esc(v) {
       return String(v ?? "")
@@ -816,20 +858,60 @@
       });
     });
 
+    function toggleDateFields() {
+      const tipo = document.getElementById("filtroPeriodoTipo").value;
+      const wrapIni = document.getElementById("wrapDataInicial");
+      const wrapFim = document.getElementById("wrapDataFinal");
+      const ref = document.getElementById("filtroDataRef");
+
+      if (tipo === "personalizado") {
+        wrapIni.classList.remove("hidden");
+        wrapFim.classList.remove("hidden");
+        ref.disabled = true;
+      } else {
+        wrapIni.classList.add("hidden");
+        wrapFim.classList.add("hidden");
+        ref.disabled = false;
+      }
+    }
+
     function getFiltersQuery(page = 1) {
       const qs = new URLSearchParams();
-      qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
-      qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
-      qs.set("filial", getMultiValues("menuFilial"));
-      qs.set("violacao", getMultiValues("menuViolacao"));
-      qs.set("descricao", getMultiValues("menuDescricao"));
-      qs.set("reincidencia", getMultiValues("menuReincidencia"));
-      qs.set("consequencia", getMultiValues("menuConsequencia"));
-      qs.set("status", getMultiValues("menuStatus"));
-      qs.set("colaborador", getMultiValues("menuColaborador"));
-      qs.set("busca", document.getElementById("filtroBusca").value || "");
+
+      const periodoTipo = document.getElementById("filtroPeriodoTipo").value;
+      const dataRef = document.getElementById("filtroDataRef").value;
+      const dataInicio = document.getElementById("filtroDataInicio").value;
+      const dataFim = document.getElementById("filtroDataFim").value;
+
+      if (periodoTipo === "personalizado") {
+        if (dataInicio) qs.set("dataInicio", dataInicio);
+        if (dataFim) qs.set("dataFim", dataFim);
+      } else {
+        qs.set("periodoTipo", periodoTipo);
+        if (dataRef) qs.set("dataRef", dataRef);
+      }
+
+      const filial = getMultiValues("menuFilial");
+      const violacao = getMultiValues("menuViolacao");
+      const descricao = getMultiValues("menuDescricao");
+      const reincidencia = getMultiValues("menuReincidencia");
+      const consequencia = getMultiValues("menuConsequencia");
+      const status = getMultiValues("menuStatus");
+      const colaborador = getMultiValues("menuColaborador");
+      const busca = document.getElementById("filtroBusca").value || "";
+
+      if (filial) qs.set("filial", filial);
+      if (violacao) qs.set("violacao", violacao);
+      if (descricao) qs.set("descricao", descricao);
+      if (reincidencia) qs.set("reincidencia", reincidencia);
+      if (consequencia) qs.set("consequencia", consequencia);
+      if (status) qs.set("status", status);
+      if (colaborador) qs.set("colaborador", colaborador);
+      if (busca) qs.set("busca", busca);
+
       qs.set("page", page);
       qs.set("limit", 20);
+
       return qs.toString();
     }
 
@@ -839,19 +921,65 @@
       if (chartConsequenciaInstance) chartConsequenciaInstance.destroy();
       if (chartDiaInstance) chartDiaInstance.destroy();
       if (chartComparativoInstance) chartComparativoInstance.destroy();
+      if (chartReincidenciaInstance) chartReincidenciaInstance.destroy();
+      if (chartStatusInstance) chartStatusInstance.destroy();
     }
 
-    function horizontalBarOptions() {
+    function baseBarOptions(horizontal = false, legend = false) {
       return {
-        indexAxis: "y",
+        indexAxis: horizontal ? "y" : "x",
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: legend,
+            labels: {
+              color: "#e5e7eb",
+              boxWidth: 10,
+              font: { size: 10 }
+            }
+          },
+          datalabels: {
+            color: "#ffffff",
+            anchor: horizontal ? "end" : "end",
+            align: horizontal ? "right" : "top",
+            offset: 2,
+            clamp: true,
+            font: {
+              size: 10,
+              weight: "700"
+            },
+            formatter: (value) => value > 0 ? fmt(value) : ""
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: "#cfcfcf", font: { size: 10 } },
+            grid: { display: false },
+            beginAtZero: true
+          },
+          y: {
+            ticks: { color: "#cfcfcf", font: { size: 10 } },
+            grid: { color: "rgba(255,255,255,0.05)" },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    function lineOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: "#fff" }
+          },
           datalabels: {
             color: "#ffffff",
             anchor: "end",
-            align: "right",
+            align: "top",
+            offset: 2,
             font: { size: 10, weight: "700" },
             formatter: (value) => value > 0 ? fmt(value) : ""
           }
@@ -859,12 +987,12 @@
         scales: {
           x: {
             ticks: { color: "#cfcfcf", font: { size: 10 } },
-            grid: { color: "rgba(255,255,255,0.05)" },
-            beginAtZero: true
+            grid: { display: false }
           },
           y: {
-            ticks: { color: "#ffffff", font: { size: 11 } },
-            grid: { display: false }
+            ticks: { color: "#cfcfcf", font: { size: 10 } },
+            grid: { color: "rgba(255,255,255,0.05)" },
+            beginAtZero: true
           }
         }
       };
@@ -895,27 +1023,24 @@
       document.getElementById("kpiVariacao").textContent = fmtPct(data.variacaoMensal || 0);
       document.getElementById("kpiReincidentes").textContent = fmt(data.reincidentes || 0);
       document.getElementById("kpiConcluidos").textContent = fmt(data.concluidos || 0);
-
-      document.getElementById("tituloPeriodoAtual").textContent = "Casos no período";
-      document.getElementById("tituloPeriodoAnterior").textContent = (data.comparativoLabel || "base anterior").toUpperCase();
-
-      document.getElementById("subPeriodoAtual").textContent =
-        data.periodoAtualInicio && data.periodoAtualFim
-          ? `${data.periodoAtualInicio} até ${data.periodoAtualFim}`
-          : "Período atual";
-
-      document.getElementById("subPeriodoAnterior").textContent =
-        data.periodoAnteriorInicio && data.periodoAnteriorFim
-          ? `${data.periodoAnteriorInicio} até ${data.periodoAnteriorFim}`
-          : "Base de comparação";
-
-      const variacaoEl = document.getElementById("subVariacao");
-      variacaoEl.textContent = `vs ${data.comparativoLabel || "base anterior"}`;
-      variacaoEl.className = "kpi-sub";
-      if ((data.variacaoMensal || 0) > 0) variacaoEl.classList.add("green");
-      if ((data.variacaoMensal || 0) < 0) variacaoEl.classList.add("red");
-
       document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+
+      const comparativoLabel = (data.comparativoLabel || "base anterior").toUpperCase();
+      document.getElementById("kpiPeriodoAnteriorTitulo").textContent = comparativoLabel;
+      document.getElementById("comparativoChartLabel").textContent = `${data.periodoAtualInicio || "-"} até ${data.periodoAtualFim || "-"} x ${data.periodoAnteriorInicio || "-"} até ${data.periodoAnteriorFim || "-"}`;
+
+      document.getElementById("kpiAtualSub").textContent =
+        `${data.periodoAtualInicio || "-"} até ${data.periodoAtualFim || "-"}`;
+
+      document.getElementById("kpiAnteriorSub").textContent =
+        `${data.periodoAnteriorInicio || "-"} até ${data.periodoAnteriorFim || "-"}`;
+
+      const variacao = Number(data.variacaoMensal || 0);
+      const tipo = variacao > 0 ? "positive" : variacao < 0 ? "negative" : "neutral";
+      const arrow = variacao > 0 ? "↑" : variacao < 0 ? "↓" : "→";
+
+      document.getElementById("kpiVariacaoSub").innerHTML =
+        `<span class="${tipo}" style="font-weight:800; color:${variacao > 0 ? '#22c55e' : variacao < 0 ? '#ef4444' : '#cbd5e1'}">${arrow} vs ${data.comparativoLabel || "base anterior"}</span>`;
     }
 
     async function loadGraficos() {
@@ -937,7 +1062,7 @@
             borderRadius: 8
           }]
         },
-        options: horizontalBarOptions()
+        options: baseBarOptions(true, false)
       });
 
       chartViolacaoInstance = new Chart(document.getElementById("chartViolacao"), {
@@ -951,7 +1076,7 @@
             borderRadius: 8
           }]
         },
-        options: horizontalBarOptions()
+        options: baseBarOptions(true, false)
       });
 
       chartConsequenciaInstance = new Chart(document.getElementById("chartConsequencia"), {
@@ -965,7 +1090,7 @@
             borderRadius: 8
           }]
         },
-        options: horizontalBarOptions()
+        options: baseBarOptions(true, false)
       });
 
       chartDiaInstance = new Chart(document.getElementById("chartDia"), {
@@ -980,40 +1105,21 @@
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          ...baseBarOptions(false, true),
           plugins: {
-            legend: { labels: { color: "#fff" } },
-            datalabels: {
-              color: "#ffffff",
-              anchor: "end",
-              align: "top",
-              offset: 2,
-              font: { size: 10, weight: "700" },
-              formatter: (value) => value > 0 ? fmt(value) : ""
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#cfcfcf", font: { size: 10 } },
-              grid: { display: false }
-            },
-            y: {
-              ticks: { color: "#cfcfcf", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
+            ...baseBarOptions(false, true).plugins,
+            legend: {
+              display: true,
+              labels: { color: "#fff" }
             }
           }
         }
       });
 
-      document.getElementById("subComparativo").textContent =
-        `${data.comparativoMensal?.label || "Atual"} x base anterior`;
-
       chartComparativoInstance = new Chart(document.getElementById("chartComparativo"), {
         type: "bar",
         data: {
-          labels: ["Período atual", data.comparativoMensal?.label || "Base anterior"],
+          labels: ["Período atual", (data.comparativoMensal?.label || "Base anterior")],
           datasets: [{
             label: "Casos",
             data: [
@@ -1024,31 +1130,49 @@
             borderRadius: 8
           }]
         },
+        options: baseBarOptions(false, true)
+      });
+
+      chartReincidenciaInstance = new Chart(document.getElementById("chartReincidencia"), {
+        type: "doughnut",
+        data: {
+          labels: data.reincidencia?.labels || [],
+          datasets: [{
+            data: data.reincidencia?.valores || [],
+            backgroundColor: ["#ff7a1a", "#58a6ff", "#8b5cf6"],
+            borderWidth: 0
+          }]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          cutout: "58%",
           plugins: {
-            legend: { labels: { color: "#fff" } },
+            legend: {
+              position: "bottom",
+              labels: { color: "#fff", font: { size: 11 } }
+            },
             datalabels: {
               color: "#ffffff",
-              anchor: "end",
-              align: "top",
               font: { size: 10, weight: "700" },
               formatter: (value) => value > 0 ? fmt(value) : ""
             }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#fff", font: { size: 10 } },
-              grid: { display: false }
-            },
-            y: {
-              ticks: { color: "#cfcfcf", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
-            }
           }
         }
+      });
+
+      chartStatusInstance = new Chart(document.getElementById("chartStatus"), {
+        type: "bar",
+        data: {
+          labels: data.porStatus?.labels || [],
+          datasets: [{
+            label: "Casos",
+            data: data.porStatus?.valores || [],
+            backgroundColor: "#ff7a1a",
+            borderRadius: 8
+          }]
+        },
+        options: baseBarOptions(true, false)
       });
     }
 
@@ -1083,22 +1207,26 @@
       (data.items || []).forEach((item) => {
         html += `
           <tr>
-            <td>${esc(item.dataOcorrencia)}</td>
-            <td>${esc(item.colaborador)}</td>
-            <td>${esc(item.cpf)}</td>
-            <td>${esc(item.filial)}</td>
-            <td>${esc(item.violacao)}</td>
-            <td>${esc(item.descricao)}</td>
-            <td>${esc(item.reincidencia)}</td>
-            <td>${esc(item.consequencia)}</td>
-            <td>${esc(item.status)}</td>
-            <td>${esc(item.dataConclusao)}</td>
+            <td>${esc(item.dataOcorrencia || "")}</td>
+            <td>${esc(item.colaborador || "")}</td>
+            <td>${esc(item.cpf || "")}</td>
+            <td>${esc(item.filial || "")}</td>
+            <td>${esc(item.violacao || "")}</td>
+            <td>${esc(item.descricao || "")}</td>
+            <td>${esc(item.reincidencia || "")}</td>
+            <td>${esc(item.consequencia || "")}</td>
+            <td>${esc(item.status || "")}</td>
+            <td>${esc(item.dataConclusao || "")}</td>
           </tr>
         `;
       });
 
       if (!(data.items || []).length) {
-        html += `<tr><td colspan="10" style="text-align:center;color:#c7c7c7;">Sem dados para os filtros aplicados.</td></tr>`;
+        html += `
+          <tr>
+            <td colspan="10" style="text-align:center;color:#c7c7c7;">Sem dados para os filtros aplicados.</td>
+          </tr>
+        `;
       }
 
       html += `</tbody></table>`;
@@ -1112,11 +1240,11 @@
       await loadDetalhes();
     }
 
-    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
-
-    document.getElementById("btnLimpar").addEventListener("click", () => {
+    function clearAllFilters() {
       document.getElementById("filtroPeriodoTipo").value = "mes";
       document.getElementById("filtroDataRef").value = "";
+      document.getElementById("filtroDataInicio").value = "";
+      document.getElementById("filtroDataFim").value = "";
       document.getElementById("filtroBusca").value = "";
 
       document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach((input) => {
@@ -1131,8 +1259,25 @@
       document.getElementById("triggerStatus").textContent = "Todos";
       document.getElementById("triggerColaborador").textContent = "Todos";
 
+      toggleDateFields();
+      setDefaultDateRef();
       loadAll(1);
+    }
+
+    function setDefaultDateRef() {
+      const hoje = new Date();
+      const y = hoje.getFullYear();
+      const m = String(hoje.getMonth() + 1).padStart(2, "0");
+      const d = String(hoje.getDate()).padStart(2, "0");
+      document.getElementById("filtroDataRef").value = `${y}-${m}-${d}`;
+    }
+
+    document.getElementById("filtroPeriodoTipo").addEventListener("change", () => {
+      toggleDateFields();
     });
+
+    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
+    document.getElementById("btnLimpar").addEventListener("click", clearAllFilters);
 
     document.getElementById("btnPrev").addEventListener("click", () => {
       if (currentPage > 1) loadAll(currentPage - 1);
@@ -1143,14 +1288,9 @@
     });
 
     (async function init() {
+      toggleDateFields();
+      setDefaultDateRef();
       await loadFilters();
-
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const dd = String(today.getDate()).padStart(2, "0");
-      document.getElementById("filtroDataRef").value = `${yyyy}-${mm}-${dd}`;
-
       await loadAll(1);
     })();
   </script>

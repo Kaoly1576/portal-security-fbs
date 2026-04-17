@@ -3678,6 +3678,7 @@ let matrizCache = null;
 let matrizCacheTime = 0;
 const MATRIZ_CACHE_TTL = 5 * 60 * 1000;
 
+// -------------------- helpers --------------------
 function mcNorm(value) {
   return String(value || "").trim();
 }
@@ -3748,8 +3749,10 @@ function mcUnique(values) {
 function mcPercentChange(current, previous) {
   current = Number(current || 0);
   previous = Number(previous || 0);
+
   if (previous === 0 && current === 0) return 0;
   if (previous === 0) return 100;
+
   return ((current - previous) / previous) * 100;
 }
 
@@ -3762,6 +3765,201 @@ function mcGroupCount(rows, field) {
   return map;
 }
 
+function mcStartOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function mcEndOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function mcDiffDaysInclusive(start, end) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const s = mcStartOfDay(start);
+  const e = mcStartOfDay(end);
+  return Math.floor((e - s) / msPerDay) + 1;
+}
+
+function mcGetMonthKey(date) {
+  if (!date) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function mcResolvePeriodFromQuery(query, rowsFiltrados) {
+  // Compatibilidade com o front atual
+  const dataInicio = mcNorm(query.dataInicio);
+  const dataFim = mcNorm(query.dataFim);
+
+  if (dataInicio || dataFim) {
+    const start = dataInicio
+      ? new Date(`${dataInicio}T00:00:00`)
+      : (rowsFiltrados[0]?._dataObj ? mcStartOfDay(rowsFiltrados[0]._dataObj) : null);
+
+    const end = dataFim
+      ? new Date(`${dataFim}T23:59:59`)
+      : (rowsFiltrados[rowsFiltrados.length - 1]?._dataObj ? mcEndOfDay(rowsFiltrados[rowsFiltrados.length - 1]._dataObj) : null);
+
+    if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+      return { start, end };
+    }
+  }
+
+  // Novo modo: um único campo de período
+  // Ex.: ?periodoTipo=dia&dataRef=2026-04-17
+  // Ex.: ?periodoTipo=semana&dataRef=2026-04-17
+  // Ex.: ?periodoTipo=mes&dataRef=2026-04-17
+  // Ex.: ?periodoTipo=ano&dataRef=2026-04-17
+  const periodoTipo = mcNormLower(query.periodoTipo);
+  const dataRefStr = mcNorm(query.dataRef);
+
+  if (periodoTipo && dataRefStr) {
+    const ref = new Date(`${dataRefStr}T00:00:00`);
+    if (!Number.isNaN(ref.getTime())) {
+      if (periodoTipo === "dia") {
+        return {
+          start: mcStartOfDay(ref),
+          end: mcEndOfDay(ref),
+        };
+      }
+
+      if (periodoTipo === "semana") {
+        const weekStart = new Date(ref);
+        const day = weekStart.getDay(); // 0 dom, 1 seg...
+        const diff = day === 0 ? -6 : 1 - day; // semana começando na segunda
+        weekStart.setDate(weekStart.getDate() + diff);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return {
+          start: mcStartOfDay(weekStart),
+          end: mcEndOfDay(weekEnd),
+        };
+      }
+
+      if (periodoTipo === "mes") {
+        const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+        const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999);
+        return { start, end };
+      }
+
+      if (periodoTipo === "ano") {
+        const start = new Date(ref.getFullYear(), 0, 1);
+        const end = new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999);
+        return { start, end };
+      }
+    }
+  }
+
+  // fallback: usa o range real dos dados filtrados
+  const validDates = rowsFiltrados
+    .map((r) => r._dataObj)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!validDates.length) return { start: null, end: null };
+
+  return {
+    start: mcStartOfDay(validDates[0]),
+    end: mcEndOfDay(validDates[validDates.length - 1]),
+  };
+}
+
+function mcGetComparisonWindow(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return {
+      currentStart: null,
+      currentEnd: null,
+      previousStart: null,
+      previousEnd: null,
+      label: "base anterior",
+    };
+  }
+
+  const start = mcStartOfDay(startDate);
+  const end = mcEndOfDay(endDate);
+
+  const isSingleDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const isFullMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === 1 &&
+    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+  const isFullYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === 0 &&
+    start.getDate() === 1 &&
+    end.getMonth() === 11 &&
+    end.getDate() === 31;
+
+  const totalDays = mcDiffDaysInclusive(start, end);
+
+  // dia anterior
+  if (isSingleDay) {
+    const prevStart = new Date(start);
+    prevStart.setDate(prevStart.getDate() - 1);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: mcStartOfDay(prevStart),
+      previousEnd: mcEndOfDay(prevStart),
+      label: "dia anterior",
+    };
+  }
+
+  // mês anterior
+  if (isFullMonth) {
+    const previousStart = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+    const previousEnd = new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart,
+      previousEnd,
+      label: "mês anterior",
+    };
+  }
+
+  // ano anterior
+  if (isFullYear) {
+    const previousStart = new Date(start.getFullYear() - 1, 0, 1);
+    const previousEnd = new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart,
+      previousEnd,
+      label: "ano anterior",
+    };
+  }
+
+  // qualquer outro período -> janela anterior do mesmo tamanho
+  const previousEnd = new Date(start);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  previousEnd.setHours(23, 59, 59, 999);
+
+  const previousStart = new Date(previousEnd);
+  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
+  previousStart.setHours(0, 0, 0, 0);
+
+  return {
+    currentStart: start,
+    currentEnd: end,
+    previousStart,
+    previousEnd,
+    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
+  };
+}
+
+// -------------------- carga --------------------
 async function carregarMatrizRaw() {
   const sheets = await conectarSheets();
 
@@ -3817,6 +4015,7 @@ async function carregarMatrizComCache() {
   return matrizCache;
 }
 
+// -------------------- filtros --------------------
 function filtrarMatriz(rows, query) {
   const dataInicio = mcNorm(query.dataInicio);
   const dataFim = mcNorm(query.dataFim);
@@ -3831,9 +4030,17 @@ function filtrarMatriz(rows, query) {
 
   const busca = mcNormLower(query.busca);
 
+  // também entende periodoTipo + dataRef
+  const fakePeriod = mcResolvePeriodFromQuery(query, rows);
+  const periodStart = fakePeriod.start ? mcFormatISO(fakePeriod.start) : "";
+  const periodEnd = fakePeriod.end ? mcFormatISO(fakePeriod.end) : "";
+
   return rows.filter((row) => {
-    if (dataInicio && (!row._isoDate || row._isoDate < dataInicio)) return false;
-    if (dataFim && (!row._isoDate || row._isoDate > dataFim)) return false;
+    const startFilter = dataInicio || periodStart;
+    const endFilter = dataFim || periodEnd;
+
+    if (startFilter && (!row._isoDate || row._isoDate < startFilter)) return false;
+    if (endFilter && (!row._isoDate || row._isoDate > endFilter)) return false;
 
     if (!mcMatchesMulti(row["Filial"], filiais)) return false;
     if (!mcMatchesMulti(row["Violação"], violacoes)) return false;
@@ -3863,6 +4070,20 @@ function filtrarMatriz(rows, query) {
   });
 }
 
+// filtros sem considerar data, usados na comparação
+function filtrarMatrizSemData(rows, query) {
+  const cloneQuery = {
+    ...query,
+    dataInicio: "",
+    dataFim: "",
+    periodoTipo: "",
+    dataRef: "",
+  };
+
+  return filtrarMatriz(rows, cloneQuery);
+}
+
+// -------------------- APIs --------------------
 app.get("/api/matriz-consequencia-filtros", requireAuth, async (req, res) => {
   try {
     const dados = await carregarMatrizComCache();
@@ -3889,37 +4110,26 @@ app.get("/api/matriz-consequencia-resumo", requireAuth, async (req, res) => {
 
     const total = filtrados.length;
 
-    const validDates = filtrados
-      .map((r) => r._dataObj)
-      .filter(Boolean)
-      .sort((a, b) => a - b);
+    const ordenadosPorData = filtrados
+      .filter((r) => r._dataObj)
+      .sort((a, b) => a._dataObj - b._dataObj);
 
-    let mesAtual = 0;
-    let mesAnterior = 0;
+    const periodo = mcResolvePeriodFromQuery(req.query, ordenadosPorData);
+    const janela = mcGetComparisonWindow(periodo.start, periodo.end);
 
-    if (validDates.length) {
-      const latest = validDates[validDates.length - 1];
-      const currMonth = latest.getMonth();
-      const currYear = latest.getFullYear();
+    const baseComparacao = filtrarMatrizSemData(dados, req.query);
 
-      const prevRef = new Date(currYear, currMonth - 1, 1);
-      const prevMonth = prevRef.getMonth();
-      const prevYear = prevRef.getFullYear();
+    const casosPeriodoAtual = baseComparacao.filter((r) => {
+      return r._dataObj && janela.currentStart && janela.currentEnd &&
+        r._dataObj >= janela.currentStart &&
+        r._dataObj <= janela.currentEnd;
+    }).length;
 
-      mesAtual = filtrados.filter(
-        (r) =>
-          r._dataObj &&
-          r._dataObj.getMonth() === currMonth &&
-          r._dataObj.getFullYear() === currYear
-      ).length;
-
-      mesAnterior = filtrados.filter(
-        (r) =>
-          r._dataObj &&
-          r._dataObj.getMonth() === prevMonth &&
-          r._dataObj.getFullYear() === prevYear
-      ).length;
-    }
+    const casosPeriodoAnterior = baseComparacao.filter((r) => {
+      return r._dataObj && janela.previousStart && janela.previousEnd &&
+        r._dataObj >= janela.previousStart &&
+        r._dataObj <= janela.previousEnd;
+    }).length;
 
     const reincidentes = filtrados.filter((r) => {
       const v = mcNormLower(r["Reincidencia"]);
@@ -3933,11 +4143,16 @@ app.get("/api/matriz-consequencia-resumo", requireAuth, async (req, res) => {
 
     return res.json({
       total,
-      mesAtual,
-      mesAnterior,
-      variacaoMensal: mcPercentChange(mesAtual, mesAnterior),
+      mesAtual: casosPeriodoAtual,
+      mesAnterior: casosPeriodoAnterior,
+      variacaoMensal: mcPercentChange(casosPeriodoAtual, casosPeriodoAnterior),
       reincidentes,
       concluidos,
+      comparativoLabel: janela.label || "base anterior",
+      periodoAtualInicio: janela.currentStart ? mcFormatBR(janela.currentStart) : "",
+      periodoAtualFim: janela.currentEnd ? mcFormatBR(janela.currentEnd) : "",
+      periodoAnteriorInicio: janela.previousStart ? mcFormatBR(janela.previousStart) : "",
+      periodoAnteriorFim: janela.previousEnd ? mcFormatBR(janela.previousEnd) : "",
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
@@ -3978,37 +4193,26 @@ app.get("/api/matriz-consequencia-graficos", requireAuth, async (req, res) => {
       porDiaMap[r._dia] = (porDiaMap[r._dia] || 0) + 1;
     });
 
-    let mesAtual = 0;
-    let mesAnterior = 0;
+    const ordenadosPorData = filtrados
+      .filter((r) => r._dataObj)
+      .sort((a, b) => a._dataObj - b._dataObj);
 
-    const validDates = filtrados
-      .map((r) => r._dataObj)
-      .filter(Boolean)
-      .sort((a, b) => a - b);
+    const periodo = mcResolvePeriodFromQuery(req.query, ordenadosPorData);
+    const janela = mcGetComparisonWindow(periodo.start, periodo.end);
 
-    if (validDates.length) {
-      const latest = validDates[validDates.length - 1];
-      const currMonth = latest.getMonth();
-      const currYear = latest.getFullYear();
+    const baseComparacao = filtrarMatrizSemData(dados, req.query);
 
-      const prevRef = new Date(currYear, currMonth - 1, 1);
-      const prevMonth = prevRef.getMonth();
-      const prevYear = prevRef.getFullYear();
+    const valorAtual = baseComparacao.filter((r) => {
+      return r._dataObj && janela.currentStart && janela.currentEnd &&
+        r._dataObj >= janela.currentStart &&
+        r._dataObj <= janela.currentEnd;
+    }).length;
 
-      mesAtual = filtrados.filter(
-        (r) =>
-          r._dataObj &&
-          r._dataObj.getMonth() === currMonth &&
-          r._dataObj.getFullYear() === currYear
-      ).length;
-
-      mesAnterior = filtrados.filter(
-        (r) =>
-          r._dataObj &&
-          r._dataObj.getMonth() === prevMonth &&
-          r._dataObj.getFullYear() === prevYear
-      ).length;
-    }
+    const valorAnterior = baseComparacao.filter((r) => {
+      return r._dataObj && janela.previousStart && janela.previousEnd &&
+        r._dataObj >= janela.previousStart &&
+        r._dataObj <= janela.previousEnd;
+    }).length;
 
     const reincidenciaMap = {
       Sim: filtrados.filter((r) => {
@@ -4032,8 +4236,9 @@ app.get("/api/matriz-consequencia-graficos", requireAuth, async (req, res) => {
         valores: dias.map((d) => porDiaMap[d] || 0),
       },
       comparativoMensal: {
-        mesAtual,
-        mesAnterior,
+        mesAtual: valorAtual,
+        mesAnterior: valorAnterior,
+        label: janela.label || "base anterior",
       },
       reincidencia: {
         labels: Object.keys(reincidenciaMap),

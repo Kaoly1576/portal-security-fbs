@@ -812,9 +812,8 @@ app.post("/login", (req, res) => {
   });
 });
 
+// ================== LOGOUT =================
 
-
-// ================== LOGOUT ==================
 app.get("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -826,6 +825,7 @@ app.get("/logout", (req, res) => {
     return res.redirect("/login");
   });
 });
+
 
 // ================== ROTAS PROTEGIDAS ==================
 

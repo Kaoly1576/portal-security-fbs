@@ -22,11 +22,8 @@
       --orange:#ff7a1a;
       --orange-2:#ff9a4d;
       --blue:#3a63ff;
+      --danger:#ff4d4f;
       --shadow:0 14px 36px rgba(0,0,0,.35);
-      --radius-xl:24px;
-      --radius-lg:20px;
-      --radius-md:16px;
-      --radius-sm:12px;
     }
 
     *{
@@ -45,7 +42,6 @@
       background:
         linear-gradient(180deg, rgba(8,8,8,.90), rgba(8,8,8,.97)),
         url("/images/plano de fundo.png") center/cover fixed no-repeat;
-      background-blend-mode:normal,normal;
     }
 
     a{
@@ -67,7 +63,7 @@
 
     .topbar{
       display:grid;
-      grid-template-columns: 280px 1fr 290px;
+      grid-template-columns: 280px 1fr 340px;
       align-items:center;
       gap:14px;
       background:rgba(10,10,10,.82);
@@ -76,6 +72,7 @@
       box-shadow:var(--shadow);
       overflow:hidden;
       min-height:60px;
+      padding-right:10px;
     }
 
     .brand{
@@ -148,26 +145,34 @@
       align-items:center;
       justify-content:flex-end;
       gap:10px;
-      padding:8px 10px 8px 0;
+      padding:8px 0;
+      flex-wrap:wrap;
     }
 
-    .search-btn{
-      width:40px;
-      height:40px;
-      border-radius:12px;
+    .icon-btn,
+    .logout-btn{
+      height:42px;
+      border-radius:14px;
       border:1px solid var(--line);
       background:rgba(255,255,255,.03);
       color:#fff;
-      display:grid;
-      place-items:center;
-      font-size:15px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
       cursor:pointer;
-      flex:0 0 auto;
       transition:.2s ease;
     }
 
-    .search-btn:hover{
-      background:rgba(255,255,255,.06);
+    .icon-btn{
+      width:42px;
+      font-size:16px;
+      flex:0 0 auto;
+    }
+
+    .icon-btn:hover,
+    .logout-btn:hover{
+      background:rgba(255,255,255,.07);
+      transform:translateY(-1px);
     }
 
     .mini-user{
@@ -175,7 +180,7 @@
       align-items:center;
       gap:10px;
       min-width:0;
-      max-width:230px;
+      max-width:235px;
       padding:4px 12px 4px 6px;
       border-radius:18px;
       border:1px solid var(--line);
@@ -225,6 +230,70 @@
       overflow:hidden;
       text-overflow:ellipsis;
       margin-top:2px;
+    }
+
+    .logout-btn{
+      padding:0 14px;
+      gap:8px;
+      font-size:13px;
+      font-weight:800;
+      color:#ffd8d8;
+      border-color:rgba(255,77,79,.18);
+      background:rgba(255,77,79,.08);
+      white-space:nowrap;
+    }
+
+    .logout-btn:hover{
+      background:rgba(255,77,79,.14);
+      border-color:rgba(255,77,79,.3);
+    }
+
+    .search-panel{
+      display:none;
+      margin-top:14px;
+      padding:14px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:rgba(15,15,15,.88);
+      box-shadow:var(--shadow);
+    }
+
+    .search-panel.active{
+      display:block;
+    }
+
+    .search-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.03);
+    }
+
+    .search-box span{
+      font-size:16px;
+      opacity:.9;
+    }
+
+    .search-box input{
+      flex:1;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:#fff;
+      font-size:14px;
+    }
+
+    .search-box input::placeholder{
+      color:#9da7b7;
+    }
+
+    .search-tip{
+      margin-top:10px;
+      color:#aab4c5;
+      font-size:12px;
     }
 
     .content{
@@ -444,6 +513,11 @@
       line-height:1;
     }
 
+    .module-link.hidden-by-search,
+    .module-card.hidden-by-search{
+      display:none !important;
+    }
+
     .promo-card{
       padding:18px 18px 16px;
       min-height:250px;
@@ -613,6 +687,14 @@
       .module-inner{
         padding:0 12px 12px;
       }
+
+      .mini-user{
+        max-width:100%;
+      }
+
+      .top-actions{
+        justify-content:flex-start;
+      }
     }
   </style>
 </head>
@@ -630,7 +712,7 @@
       </nav>
 
       <div class="top-actions">
-        <button class="search-btn" aria-label="Buscar">⌕</button>
+        <button class="icon-btn" id="searchToggle" aria-label="Buscar">⌕</button>
 
         <div class="mini-user">
           <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
@@ -640,8 +722,28 @@
             <small id="topUserEmail">usuario@shopee.com</small>
           </div>
         </div>
+
+        <a class="logout-btn" href="/logout" id="logoutBtn">
+          <span>⎋</span>
+          <span>Sair</span>
+        </a>
       </div>
     </header>
+
+    <section class="search-panel" id="searchPanel">
+      <div class="search-box">
+        <span>⌕</span>
+        <input
+          type="text"
+          id="portalSearch"
+          placeholder="Pesquisar dashboard, módulo ou processo..."
+          autocomplete="off"
+        />
+      </div>
+      <div class="search-tip">
+        Pesquise por exemplo: Access, HC, Desligados, Rondas, CCO, Auditorias...
+      </div>
+    </section>
 
     <div class="content">
       <section class="left">
@@ -911,9 +1013,78 @@
       });
     }
 
+    function setupSearch() {
+      const searchToggle = document.getElementById("searchToggle");
+      const searchPanel = document.getElementById("searchPanel");
+      const searchInput = document.getElementById("portalSearch");
+      const moduleCards = document.querySelectorAll(".module-card");
+
+      if (!searchToggle || !searchPanel || !searchInput) return;
+
+      searchToggle.addEventListener("click", () => {
+        searchPanel.classList.toggle("active");
+
+        if (searchPanel.classList.contains("active")) {
+          setTimeout(() => searchInput.focus(), 120);
+        } else {
+          searchInput.value = "";
+          applySearch("");
+        }
+      });
+
+      searchInput.addEventListener("input", (e) => {
+        applySearch(e.target.value);
+      });
+
+      function applySearch(term) {
+        const normalized = term.trim().toLowerCase();
+
+        moduleCards.forEach(card => {
+          const title = card.querySelector(".module-title")?.innerText.toLowerCase() || "";
+          const links = card.querySelectorAll(".module-link");
+          let hasVisibleLink = false;
+
+          links.forEach(link => {
+            const text = link.innerText.toLowerCase();
+            const match = !normalized || text.includes(normalized) || title.includes(normalized);
+
+            link.classList.toggle("hidden-by-search", !match);
+
+            if (match) {
+              hasVisibleLink = true;
+            }
+          });
+
+          card.classList.toggle("hidden-by-search", !hasVisibleLink);
+
+          if (normalized && hasVisibleLink) {
+            card.classList.add("active");
+          }
+
+          if (!normalized && !card.dataset.keepOpen) {
+            // mantém como estiver quando limpar a busca
+          }
+        });
+      }
+    }
+
+    function setupLogout() {
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (!logoutBtn) return;
+
+      logoutBtn.addEventListener("click", function (e) {
+        const confirmed = confirm("Deseja realmente sair?");
+        if (!confirmed) {
+          e.preventDefault();
+        }
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       loadUserProfile();
       setupAccordion();
+      setupSearch();
+      setupLogout();
     });
   </script>
 </body>

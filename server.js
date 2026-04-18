@@ -812,10 +812,19 @@ app.post("/login", (req, res) => {
   });
 });
 
-// ================== LOGOUT ==================
 
+
+// ================== LOGOUT ==================
 app.get("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/login"));
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Erro ao destruir sessão:", err);
+      return res.redirect("/portal");
+    }
+
+    res.clearCookie("connect.sid");
+    return res.redirect("/login");
+  });
 });
 
 // ================== ROTAS PROTEGIDAS ==================

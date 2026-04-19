@@ -12,21 +12,12 @@
   <style>
     :root{
       --bg:#080808;
-      --bg-soft:#111111;
-      --panel:#1a1a1a;
-      --panel-2:#222222;
       --line:rgba(255,255,255,.08);
-      --line-strong:rgba(255,255,255,.12);
       --text:#f5f7fb;
       --muted:#9da7b7;
       --orange:#ff7a1a;
-      --orange-2:#ff9a4d;
       --danger:#ff4d4f;
       --shadow:0 14px 36px rgba(0,0,0,.35);
-      --radius-xl:24px;
-      --radius-lg:20px;
-      --radius-md:16px;
-      --radius-sm:12px;
     }
 
     *{
@@ -45,7 +36,6 @@
       background:
         linear-gradient(180deg, rgba(8,8,8,.90), rgba(8,8,8,.97)),
         url("/images/plano de fundo.png") center/cover fixed no-repeat;
-      background-blend-mode:normal,normal;
     }
 
     a{
@@ -103,7 +93,6 @@
       color:var(--orange);
       font-size:15px;
       font-weight:800;
-      letter-spacing:.1px;
       white-space:nowrap;
     }
 
@@ -278,12 +267,6 @@
       background:rgba(255,255,255,.03);
     }
 
-    .search-box span{
-      font-size:16px;
-      color:#d7deea;
-      flex:0 0 auto;
-    }
-
     .search-box input{
       flex:1;
       border:none;
@@ -360,7 +343,6 @@
       font-size:23px;
       font-weight:800;
       margin-bottom:16px;
-      letter-spacing:.2px;
     }
 
     .hero p{
@@ -404,10 +386,6 @@
       transition:.25s ease;
     }
 
-    .module-card:hover{
-      border-color:rgba(255,122,26,.14);
-    }
-
     .module-toggle{
       width:100%;
       display:flex;
@@ -419,10 +397,6 @@
       color:#fff;
     }
 
-    .module-toggle:hover{
-      background:rgba(255,255,255,.025);
-    }
-
     .module-title{
       display:flex;
       align-items:center;
@@ -430,11 +404,6 @@
       font-size:16px;
       font-weight:800;
       text-align:left;
-    }
-
-    .module-title .icon{
-      font-size:18px;
-      flex:0 0 auto;
     }
 
     .module-collapse{
@@ -520,10 +489,7 @@
       line-height:1;
     }
 
-    .module-card.hidden-by-search{
-      display:none !important;
-    }
-
+    .module-card.hidden-by-search,
     .module-link.hidden-by-search{
       display:none !important;
     }
@@ -565,15 +531,11 @@
     }
 
     .promo-link{
-      text-decoration:none;
-      color:inherit;
       transition:.2s ease;
     }
 
     .promo-link:hover{
       transform:translateY(-2px);
-      border-color:rgba(255,122,26,.22);
-      box-shadow:0 16px 36px rgba(0,0,0,.38);
     }
 
     .quick-card{
@@ -705,10 +667,6 @@
       .top-actions{
         justify-content:flex-start;
       }
-
-      .logout-btn{
-        padding:0 14px;
-      }
     }
   </style>
 </head>
@@ -726,9 +684,7 @@
       </nav>
 
       <div class="top-actions">
-        <button class="icon-btn" id="searchToggle" type="button" aria-label="Buscar">
-          ⌕
-        </button>
+        <button class="icon-btn" id="searchToggle" type="button" aria-label="Buscar">⌕</button>
 
         <div class="mini-user">
           <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
@@ -739,7 +695,7 @@
           </div>
         </div>
 
-        <button class="logout-btn" type="button" onclick="logoutUser()">
+        <button class="logout-btn" type="button" id="logoutBtn">
           <span>⎋</span>
           <span>Sair</span>
         </button>
@@ -776,7 +732,6 @@
         </section>
 
         <section class="accordion-grid">
-
           <div class="module-card active">
             <button class="module-toggle" type="button">
               <div class="module-title">
@@ -928,7 +883,6 @@
               </div>
             </div>
           </div>
-
         </section>
       </section>
 
@@ -936,25 +890,19 @@
         <a class="promo-card promo-link" href="https://sites.google.com/shopee.com/security-center-brasil?usp=sharing" target="_blank" rel="noopener noreferrer">
           <img src="/images/site.png" alt="Website Security">
           <h3>WEBSITE SECURITY FBS</h3>
-          <p>
-            Clique para acessar o portal oficial do Security Center Brasil.
-          </p>
+          <p>Clique para acessar o portal oficial do Security Center Brasil.</p>
         </a>
 
         <a class="promo-card promo-link" href="https://wms.ssc.shopee.com.br/v2/home" target="_blank" rel="noopener noreferrer">
           <img src="/images/wms.png" alt="WMS">
           <h3>WAREHOUSE MANAGEMENT SYSTEM</h3>
-          <p>
-            Clique para acessar o WMS.
-          </p>
+          <p>Clique para acessar o WMS.</p>
         </a>
 
         <a class="promo-card promo-link" href="https://spx.shopee.com.br/#/index" target="_blank" rel="noopener noreferrer">
           <img src="/images/SPX.PNG" alt="SPX">
           <h3>SHOPEE EXPRESS</h3>
-          <p>
-            Clique para acessar o SPX.
-          </p>
+          <p>Clique para acessar o SPX.</p>
         </a>
 
         <section class="quick-card">
@@ -1010,16 +958,6 @@
         if (topUserEmail) topUserEmail.textContent = email;
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
-
-        const topUserPhoto = document.getElementById("topUserPhoto");
-        const topUserName = document.getElementById("topUserName");
-        const topUserRole = document.getElementById("topUserRole");
-        const topUserEmail = document.getElementById("topUserEmail");
-
-        if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
-        if (topUserName) topUserName.textContent = fallbackName;
-        if (topUserRole) topUserRole.textContent = fallbackRole;
-        if (topUserEmail) topUserEmail.textContent = fallbackEmail;
       }
     }
 
@@ -1028,7 +966,6 @@
 
       cards.forEach(card => {
         const toggle = card.querySelector(".module-toggle");
-
         toggle.addEventListener("click", () => {
           card.classList.toggle("active");
         });
@@ -1047,7 +984,7 @@
         searchPanel.classList.toggle("active");
 
         if (searchPanel.classList.contains("active")) {
-          setTimeout(() => searchInput.focus(), 120);
+          setTimeout(() => searchInput.focus(), 100);
         } else {
           searchInput.value = "";
           applySearch("");
@@ -1069,12 +1006,8 @@
           links.forEach(link => {
             const text = link.innerText.toLowerCase();
             const match = !normalized || text.includes(normalized) || title.includes(normalized);
-
             link.classList.toggle("hidden-by-search", !match);
-
-            if (match) {
-              hasVisibleLink = true;
-            }
+            if (match) hasVisibleLink = true;
           });
 
           card.classList.toggle("hidden-by-search", !hasVisibleLink);
@@ -1086,17 +1019,20 @@
       }
     }
 
-    <form action="/logout" method="GET" style="margin:0;">
-  <button class="logout-btn" type="submit">
-    <span>⎋</span>
-    <span>Sair</span>
-  </button>
-</form>
+    function setupLogout() {
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (!logoutBtn) return;
+
+      logoutBtn.addEventListener("click", function() {
+        window.location.assign("/logout");
+      });
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
       loadUserProfile();
       setupAccordion();
       setupSearch();
+      setupLogout();
     });
   </script>
 </body>

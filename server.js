@@ -1337,6 +1337,147 @@ app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
   });
 });
 
+// ================== CHECKLIST ==================
+
+const CHECKLIST_CACHE = {
+  data: null,
+  lastFetch: 0
+};
+
+const CHECKLIST_TTL = 5 * 60 * 1000;
+
+async function buscarChecklist() {
+  const agora = Date.now();
+
+  if (CHECKLIST_CACHE.data && (agora - CHECKLIST_CACHE.lastFetch < CHECKLIST_TTL)) {
+    return CHECKLIST_CACHE.data;
+  }
+
+  const sheets = await getAuthSheets();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: "1vUv0AJ_bASBkkzxUWOyheJSASb4VDsaRKAl40EzRKsk",
+    range: "Respostas!A:Z"
+  });
+
+  const rows = res.data.values;
+  const headers = rows[0];
+
+  const dados = rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = r[i]);
+    return obj;
+  });
+
+  CHECKLIST_CACHE.data = dados;
+  CHECKLIST_CACHE.lastFetch = agora;
+
+  return dados;
+}
+
+// 🔹 AGRUPAR CHECKLIST
+function agruparChecklist(dados) {
+  const agrupado = {};
+
+  dados.forEach(l => {
+    const id = l["registro_id"];
+
+    if (!agrupado[id]) {
+      agrupado[id] = {
+        id,
+        data: l["Carimbo de data/hora"],
+        auditor: l["Auditor"],
+        processo: l["Processo"],
+        unidade: l["Unidade"],
+        total: 0,
+        conforme: 0,
+        naoConforme: 0
+      };
+    }
+
+    agrupado[id].total++;
+
+    if ((l["Resposta"] || "").toLowerCase().includes("conforme")) {
+      agrupado[id].conforme++;
+    } else {
+      agrupado[id].naoConforme++;
+    }
+  });
+
+  return Object.values(agrupado).map(c => ({
+    ...c,
+    perc: c.total ? ((c.conforme / c.total) * 100) : 0
+  }));
+}
+
+// ================== FILTROS ==================
+
+app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
+  const dados = await buscarChecklist();
+  const agrupado = agruparChecklist(dados);
+
+  const valores = (campo) => [...new Set(agrupado.map(x => x[campo]).filter(Boolean))];
+
+  res.json({
+    auditor: valores("auditor"),
+    processo: valores("processo"),
+    unidade: valores("unidade")
+  });
+});
+
+// ================== RESUMO ==================
+
+app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
+  const dados = await buscarChecklist();
+  const agrupado = agruparChecklist(dados);
+
+  const totalChecklists = agrupado.length;
+  const totalPerguntas = agrupado.reduce((a, b) => a + b.total, 0);
+  const totalConforme = agrupado.reduce((a, b) => a + b.conforme, 0);
+
+  const perc = totalPerguntas ? (totalConforme / totalPerguntas) * 100 : 0;
+
+  res.json({
+    totalChecklists,
+    totalPerguntas,
+    percConformidade: perc.toFixed(1)
+  });
+});
+
+// ================== GRÁFICOS ==================
+
+app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
+  const dados = await buscarChecklist();
+  const agrupado = agruparChecklist(dados);
+
+  const porProcesso = {};
+  const porDia = Array(31).fill(0);
+
+  agrupado.forEach(c => {
+    porProcesso[c.processo] = (porProcesso[c.processo] || 0) + c.naoConforme;
+
+    const dia = new Date(c.data).getDate();
+    if (dia) porDia[dia - 1]++;
+  });
+
+  res.json({
+    processo: {
+      labels: Object.keys(porProcesso),
+      valores: Object.values(porProcesso)
+    },
+    porDia
+  });
+});
+
+// ================== DETALHES ==================
+
+app.get("/api/checklist-detalhes", requireAuth, async (req, res) => {
+  const dados = await buscarChecklist();
+  const agrupado = agruparChecklist(dados);
+
+  res.json(agrupado);
+});
+
 
 
 // ================== DADOS DASHBOARD LOCAL ==================

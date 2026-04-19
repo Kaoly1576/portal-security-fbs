@@ -1185,6 +1185,160 @@ app.post("/api/aprovacoes/aprovar/:id", requireAprovador, (req, res) => {
   );
 });
 
+// ================== CHECKLIST DASHBOARD ==================
+
+const CHECKLIST_SHEET_ID = "1vUv0AJ_bASBkkzxUWOyheJSASb4VDsaRKAl40EzRKsk";
+const CHECKLIST_RANGE = "Respostas!A:Z";
+
+let checklistCache = [];
+let checklistCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000;
+
+// ================== NORMALIZAÇÃO ==================
+
+function norm(v) {
+  return String(v || "").trim();
+}
+
+function normUpper(v) {
+  return norm(v).toUpperCase();
+}
+
+function parseDateBR(v) {
+  const m = String(v || "").match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return null;
+  return new Date(m[3], m[2] - 1, m[1]);
+}
+
+// ================== LOAD ==================
+
+async function loadChecklist() {
+  const now = Date.now();
+
+  if (checklistCache.length && now - checklistCacheTime < CACHE_TTL) {
+    return checklistCache;
+  }
+
+  const sheets = await conectarSheets();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: CHECKLIST_SHEET_ID,
+    range: CHECKLIST_RANGE,
+  });
+
+  const values = res.data.values || [];
+
+  const header = values[0];
+  const rows = values.slice(1);
+
+  checklistCache = rows.map((row) => {
+    const obj = {};
+
+    header.forEach((col, i) => {
+      obj[col] = row[i] || "";
+    });
+
+    obj._data = parseDateBR(obj["Data"] || obj["data"]);
+    obj._dia = obj._data ? obj._data.getDate() : null;
+    obj._mes = obj._data
+      ? `${obj._data.getFullYear()}-${obj._data.getMonth() + 1}`
+      : "";
+
+    return obj;
+  });
+
+  checklistCacheTime = now;
+
+  return checklistCache;
+}
+
+// ================== FILTROS ==================
+
+function applyFilters(data, query) {
+  const busca = normUpper(query.busca);
+
+  return data.filter((r) => {
+    const texto = Object.values(r).join(" ").toUpperCase();
+
+    return !busca || texto.includes(busca);
+  });
+}
+
+// ================== RESUMO ==================
+
+app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
+  const data = await loadChecklist();
+  const filtrado = applyFilters(data, req.query);
+
+  const checklists = {};
+
+  filtrado.forEach((r) => {
+    const id = r["registro-id"];
+    if (!checklists[id]) checklists[id] = [];
+    checklists[id].push(r);
+  });
+
+  const total = Object.keys(checklists).length;
+
+  let ok = 0;
+  let nok = 0;
+
+  Object.values(checklists).forEach((lista) => {
+    const temFalha = lista.some((i) =>
+      normUpper(i["Resposta"]).includes("NÃO")
+    );
+
+    if (temFalha) nok++;
+    else ok++;
+  });
+
+  const taxa = total ? (ok / total) * 100 : 0;
+
+  res.json({
+    total,
+    ok,
+    nok,
+    taxa,
+  });
+});
+
+// ================== GRÁFICOS ==================
+
+app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
+  const data = await loadChecklist();
+  const filtrado = applyFilters(data, req.query);
+
+  const porDia = {};
+  const unidade = {};
+  const perguntasErro = {};
+
+  filtrado.forEach((r) => {
+    const dia = r._dia;
+    if (dia) porDia[dia] = (porDia[dia] || 0) + 1;
+
+    const un = r["Unidade"] || "Sem unidade";
+    unidade[un] = (unidade[un] || 0) + 1;
+
+    if (normUpper(r["Resposta"]).includes("NÃO")) {
+      const pergunta = r["Pergunta"];
+      perguntasErro[pergunta] = (perguntasErro[pergunta] || 0) + 1;
+    }
+  });
+
+  res.json({
+    porDia: {
+      labels: Array.from({ length: 31 }, (_, i) => i + 1),
+      values: Array.from({ length: 31 }, (_, i) => porDia[i + 1] || 0),
+    },
+    unidade,
+    perguntasErro: Object.entries(perguntasErro)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10),
+  });
+});
+
+
+
 // ================== DADOS DASHBOARD LOCAL ==================
 
 app.get("/dados-dashboard", requireAuth, (req, res) => {

@@ -134,13 +134,16 @@
     }
 
     .top-actions{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:10px;
-      padding:8px 0;
-      flex-wrap:wrap;
-    }
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  padding:8px 0;
+
+  /* 👇 ESSAS 2 LINHAS RESOLVEM */
+  flex-wrap:nowrap;
+  white-space:nowrap;
+}
 
     .icon-btn{
       width:42px;
@@ -174,6 +177,15 @@
       border:1px solid var(--line);
       background:rgba(255,255,255,.04);
     }
+
+    .mini-user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  max-width:260px;
+  overflow:hidden;
+}
 
     .mini-user img{
       width:42px;

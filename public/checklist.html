@@ -6,8 +6,9 @@
   <title>CHECKLIST</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, Helvetica, sans-serif}
 
     :root{
       --bg1:#4b5563;
@@ -22,6 +23,8 @@
       --blue:#58a6ff;
       --green:#22c55e;
       --red:#ef4444;
+      --purple:#8b5cf6;
+      --yellow:#f59e0b;
     }
 
     html,body{
@@ -37,7 +40,7 @@
     }
 
     .page{
-      max-width:1500px;
+      max-width:1550px;
       margin:0 auto;
       padding:14px;
     }
@@ -47,7 +50,7 @@
       border:1px solid var(--line);
       border-radius:16px;
       box-shadow:0 10px 24px rgba(0,0,0,0.28);
-      backdrop-filter:blur(4px);
+      backdrop-filter: blur(4px);
     }
 
     .topbar{
@@ -105,7 +108,9 @@
       transition:.2s ease;
     }
 
-    .btn:hover{background:rgba(255,255,255,0.14)}
+    .btn:hover{
+      background:rgba(255,255,255,0.14);
+    }
 
     .hero{
       padding:16px 18px;
@@ -126,7 +131,7 @@
       color:var(--muted);
       font-size:12px;
       line-height:1.5;
-      max-width:860px;
+      max-width:980px;
     }
 
     .hero-right{
@@ -190,7 +195,9 @@
       font-size:12px;
     }
 
-    .field input::placeholder{color:#94a3b8}
+    .field input::placeholder{
+      color:#94a3b8;
+    }
 
     input[type="date"]{
       color-scheme:dark;
@@ -203,7 +210,9 @@
       cursor:pointer;
     }
 
-    .multi-select{position:relative}
+    .multi-select{
+      position:relative;
+    }
 
     .multi-trigger{
       width:100%;
@@ -247,7 +256,9 @@
       padding:6px;
     }
 
-    .multi-menu.open-floating{display:block}
+    .multi-menu.open-floating{
+      display:block;
+    }
 
     .multi-option{
       display:flex;
@@ -260,7 +271,9 @@
       color:#fff;
     }
 
-    .multi-option:hover{background:#1a2942}
+    .multi-option:hover{
+      background:#1a2942;
+    }
 
     .multi-option input{
       width:auto;
@@ -292,9 +305,13 @@
       cursor:pointer;
     }
 
-    .multi-actions button:hover{background:#243756}
+    .multi-actions button:hover{
+      background:#243756;
+    }
 
-    .search-span-2{grid-column:span 2}
+    .search-span-2{
+      grid-column:span 2;
+    }
 
     .actions{
       display:flex;
@@ -366,6 +383,8 @@
     .blue{color:var(--blue)}
     .green{color:var(--green)}
     .red{color:var(--red)}
+    .purple{color:var(--purple)}
+    .yellow{color:var(--yellow)}
 
     .grid-top{
       display:grid;
@@ -376,9 +395,18 @@
       z-index:1;
     }
 
-    .grid-bottom-2{
+    .grid-middle{
       display:grid;
-      grid-template-columns:1fr 1.2fr;
+      grid-template-columns:1.2fr 1fr;
+      gap:12px;
+      margin-bottom:12px;
+      position:relative;
+      z-index:1;
+    }
+
+    .grid-bottom{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
       gap:12px;
       margin-bottom:12px;
       position:relative;
@@ -408,11 +436,17 @@
     }
 
     .chart-box{
-      height:240px;
+      height:250px;
       position:relative;
     }
 
-    .chart-box.line{height:260px}
+    .chart-box.tall{
+      height:320px;
+    }
+
+    .chart-box.line{
+      height:280px;
+    }
 
     .wide-panel{
       padding:14px;
@@ -431,7 +465,7 @@
     .detail-table{
       width:100%;
       border-collapse:collapse;
-      min-width:1280px;
+      min-width:1350px;
       font-size:12px;
       background:#091322;
     }
@@ -469,7 +503,7 @@
 
     @media (max-width:1280px){
       .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .grid-top,.grid-bottom-2{grid-template-columns:1fr}
+      .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
       .search-span-2{grid-column:span 1}
     }
 
@@ -488,7 +522,7 @@
         <img src="/images/logo.png" alt="Logo" class="brand-logo" />
         <div class="brand-text">
           <h1>CHECKLIST</h1>
-          <p>Dashboard operacional de respostas, NCs e tratativas</p>
+          <p>Dashboard operacional de checklists e conformidade</p>
         </div>
       </div>
       <a href="/portal" class="btn">Voltar ao Portal</a>
@@ -497,7 +531,7 @@
     <section class="hero">
       <div>
         <h2>Dashboard de Checklist</h2>
-        <p>Monitoramento de respostas do checklist, itens com NC, responsáveis, prazos e distribuição diária por dia do mês.</p>
+        <p>Monitoramento consolidado por checklist, conformidade, não conformidades, responsáveis, tópicos, prazos e evolução diária.</p>
       </div>
       <div class="hero-right">
         <div class="small">Última atualização</div>
@@ -525,8 +559,24 @@
         <div class="field">
           <label>Unidade</label>
           <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerUnidade">Todos</button>
+            <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
             <div class="multi-menu" id="menuUnidade"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Elaborado por</label>
+          <div class="multi-select">
+            <button type="button" class="multi-trigger" id="triggerElaborador">Todos</button>
+            <div class="multi-menu" id="menuElaborador"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Função</label>
+          <div class="multi-select">
+            <button type="button" class="multi-trigger" id="triggerFuncao">Todas</button>
+            <div class="multi-menu" id="menuFuncao"></div>
           </div>
         </div>
 
@@ -537,11 +587,13 @@
             <div class="multi-menu" id="menuEstado"></div>
           </div>
         </div>
+      </div>
 
+      <div class="filters-grid" style="margin-top:10px;">
         <div class="field">
           <label>Cidade</label>
           <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerCidade">Todos</button>
+            <button type="button" class="multi-trigger" id="triggerCidade">Todas</button>
             <div class="multi-menu" id="menuCidade"></div>
           </div>
         </div>
@@ -551,24 +603,6 @@
           <div class="multi-select">
             <button type="button" class="multi-trigger" id="triggerTopico">Todos</button>
             <div class="multi-menu" id="menuTopico"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="filters-grid" style="margin-top:10px;">
-        <div class="field">
-          <label>Elaborado por</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerElaboradoPor">Todos</button>
-            <div class="multi-menu" id="menuElaboradoPor"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Resposta</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerResposta">Todos</button>
-            <div class="multi-menu" id="menuResposta"></div>
           </div>
         </div>
 
@@ -581,24 +615,24 @@
         </div>
 
         <div class="field">
-          <label>Área responsável</label>
+          <label>Situação do prazo</label>
           <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerAreaResponsavel">Todos</button>
-            <div class="multi-menu" id="menuAreaResponsavel"></div>
+            <button type="button" class="multi-trigger" id="triggerPrazo">Todos</button>
+            <div class="multi-menu" id="menuPrazo"></div>
           </div>
         </div>
 
         <div class="field">
-          <label>Situação do prazo</label>
+          <label>Área responsável</label>
           <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerSituacaoPrazo">Todos</button>
-            <div class="multi-menu" id="menuSituacaoPrazo"></div>
+            <button type="button" class="multi-trigger" id="triggerArea">Todas</button>
+            <div class="multi-menu" id="menuArea"></div>
           </div>
         </div>
 
         <div class="field search-span-2">
           <label>Busca geral</label>
-          <input type="text" id="filtroBusca" placeholder="Buscar por unidade, cidade, pergunta, responsável..." />
+          <input type="text" id="filtroBusca" placeholder="Buscar por registro, unidade, tópico, pergunta, responsável..." />
         </div>
       </div>
 
@@ -610,71 +644,71 @@
 
     <section class="kpis">
       <div class="kpi">
-        <div class="kpi-title">Total de respostas</div>
+        <div class="kpi-title">Total de checklists</div>
         <div class="kpi-value orange" id="kpiTotal">0</div>
-        <div class="kpi-sub">Base consolidada com filtros gerais</div>
+        <div class="kpi-sub">Total consolidado</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-title" id="tituloPeriodoAtual">Respostas no período</div>
-        <div class="kpi-value orange" id="kpiAtual">0</div>
-        <div class="kpi-sub" id="subPeriodoAtual">-</div>
+        <div class="kpi-title">Checklists conformes</div>
+        <div class="kpi-value green" id="kpiConformes">0</div>
+        <div class="kpi-sub">Sem não conformidade</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-title" id="tituloPeriodoAnterior">Base anterior</div>
-        <div class="kpi-value orange" id="kpiAnterior">0</div>
-        <div class="kpi-sub" id="subPeriodoAnterior">-</div>
+        <div class="kpi-title">Checklists com NC</div>
+        <div class="kpi-value red" id="kpiNc">0</div>
+        <div class="kpi-sub">Com pelo menos uma NC</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-title">Variação</div>
-        <div class="kpi-value orange" id="kpiVariacao">0,0%</div>
-        <div class="kpi-sub" id="subVariacao">vs base anterior</div>
+        <div class="kpi-title">Taxa de conformidade</div>
+        <div class="kpi-value orange" id="kpiTaxa">0,0%</div>
+        <div class="kpi-sub">Base do período</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-title">Checklists únicos</div>
-        <div class="kpi-value orange" id="kpiChecklists">0</div>
-        <div class="kpi-sub">Registros distintos no período</div>
+        <div class="kpi-title">Pendências em aberto</div>
+        <div class="kpi-value yellow" id="kpiPendencias">0</div>
+        <div class="kpi-sub">Itens fora do prazo / pendentes</div>
       </div>
 
       <div class="kpi">
-        <div class="kpi-title">Itens com NC</div>
-        <div class="kpi-value orange" id="kpiNc">0</div>
-        <div class="kpi-sub">Linhas com geração de NC</div>
+        <div class="kpi-title">Média de pontuação</div>
+        <div class="kpi-value purple" id="kpiPontuacao">0,0</div>
+        <div class="kpi-sub">Média por checklist</div>
       </div>
     </section>
 
     <section class="grid-top">
       <div class="panel">
-        <div class="panel-title">Respostas por Unidade</div>
-        <div class="panel-subtitle">Top unidades no período</div>
+        <div class="panel-title">Checklists por Unidade</div>
+        <div class="panel-subtitle">Top unidades</div>
         <div class="chart-box">
           <canvas id="chartUnidade"></canvas>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-title">Respostas por Tópico</div>
-        <div class="panel-subtitle">Top tópicos no período</div>
+        <div class="panel-title">Checklists por Tópico</div>
+        <div class="panel-subtitle">Distribuição por tema</div>
         <div class="chart-box">
           <canvas id="chartTopico"></canvas>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel-title">Distribuição por Resposta</div>
-        <div class="panel-subtitle">Conforme, parcial, NC e demais status</div>
+        <div class="panel-title">Situação dos Prazos</div>
+        <div class="panel-subtitle">Controle das ações</div>
         <div class="chart-box">
-          <canvas id="chartResposta"></canvas>
+          <canvas id="chartPrazo"></canvas>
         </div>
       </div>
     </section>
 
-    <section class="grid-bottom-2">
+    <section class="grid-middle">
       <div class="panel">
-        <div class="panel-title">Respostas por Dia</div>
+        <div class="panel-title">Checklists por Dia</div>
         <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
         <div class="chart-box line">
           <canvas id="chartDia"></canvas>
@@ -682,7 +716,7 @@
       </div>
 
       <div class="panel">
-        <div class="panel-title">Comparativo</div>
+        <div class="panel-title">Comparativo do Período</div>
         <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
         <div class="chart-box">
           <canvas id="chartComparativo"></canvas>
@@ -690,8 +724,26 @@
       </div>
     </section>
 
+    <section class="grid-bottom">
+      <div class="panel">
+        <div class="panel-title">Perguntas com Mais NC</div>
+        <div class="panel-subtitle">Top não conformidades</div>
+        <div class="chart-box tall">
+          <canvas id="chartPerguntas"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Checklists por Elaborador</div>
+        <div class="panel-subtitle">Top responsáveis pela elaboração</div>
+        <div class="chart-box tall">
+          <canvas id="chartElaborador"></canvas>
+        </div>
+      </div>
+    </section>
+
     <section class="wide-panel">
-      <div class="panel-title">Detalhamento</div>
+      <div class="panel-title">Detalhamento por Checklist</div>
       <div class="detail-wrap" id="detailWrap"></div>
       <div class="pager">
         <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
@@ -707,11 +759,13 @@
     let currentPage = 1;
     let totalPages = 1;
 
-    let chartUnidadeInstance = null;
-    let chartTopicoInstance = null;
-    let chartRespostaInstance = null;
-    let chartDiaInstance = null;
-    let chartComparativoInstance = null;
+    let chartUnidade = null;
+    let chartTopico = null;
+    let chartPrazo = null;
+    let chartDia = null;
+    let chartComparativo = null;
+    let chartPerguntas = null;
+    let chartElaborador = null;
 
     let activeFloatingMenu = null;
     let activeTrigger = null;
@@ -736,6 +790,13 @@
       })}%`;
     }
 
+    function fmtNum1(n) {
+      return Number(n || 0).toLocaleString("pt-BR", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+      });
+    }
+
     function closeAllMultiSelects() {
       document.querySelectorAll(".multi-menu").forEach((menu) => {
         menu.classList.remove("open-floating");
@@ -756,9 +817,11 @@
       let width = rect.width;
       width = Math.max(240, width);
       width = Math.min(420, width);
+
       menu.style.width = `${width}px`;
 
       const menuHeight = Math.min(menu.scrollHeight || 260, 260);
+
       let left = rect.left;
       let top = rect.bottom + 4;
 
@@ -791,7 +854,7 @@
         </div>
       `;
 
-      (values || []).forEach((value) => {
+      values.forEach((value) => {
         const safeValue = esc(value);
         const label = document.createElement("label");
         label.className = "multi-option";
@@ -803,7 +866,7 @@
       });
 
       function updateTrigger() {
-        const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map((i) => i.value);
+        const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
         if (!checked.length) {
           trigger.textContent = placeholder;
         } else if (checked.length === 1) {
@@ -815,6 +878,7 @@
 
       trigger.onclick = (e) => {
         e.stopPropagation();
+
         const alreadyOpen = menu.classList.contains("open-floating");
         closeAllMultiSelects();
 
@@ -832,6 +896,7 @@
 
       menu.addEventListener("click", (e) => {
         e.stopPropagation();
+
         const action = e.target.dataset.action;
 
         if (action === "all") {
@@ -867,316 +932,6 @@
         .join("|");
     }
 
-    function getFiltersQuery(page = 1) {
-      const qs = new URLSearchParams();
-      qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
-      qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
-      qs.set("unidade", getMultiValues("menuUnidade"));
-      qs.set("estado", getMultiValues("menuEstado"));
-      qs.set("cidade", getMultiValues("menuCidade"));
-      qs.set("topico", getMultiValues("menuTopico"));
-      qs.set("elaboradoPor", getMultiValues("menuElaboradoPor"));
-      qs.set("resposta", getMultiValues("menuResposta"));
-      qs.set("geraNc", getMultiValues("menuGeraNc"));
-      qs.set("areaResponsavel", getMultiValues("menuAreaResponsavel"));
-      qs.set("situacaoPrazo", getMultiValues("menuSituacaoPrazo"));
-      qs.set("busca", document.getElementById("filtroBusca").value || "");
-      qs.set("page", page);
-      qs.set("limit", 20);
-      return qs.toString();
-    }
-
-    function destroyCharts() {
-      if (chartUnidadeInstance) chartUnidadeInstance.destroy();
-      if (chartTopicoInstance) chartTopicoInstance.destroy();
-      if (chartRespostaInstance) chartRespostaInstance.destroy();
-      if (chartDiaInstance) chartDiaInstance.destroy();
-      if (chartComparativoInstance) chartComparativoInstance.destroy();
-    }
-
-    function horizontalBarOptions() {
-      return {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          datalabels: {
-            color: "#ffffff",
-            anchor: "end",
-            align: "right",
-            font: { size: 10, weight: "700" },
-            formatter: (value) => value > 0 ? fmt(value) : ""
-          }
-        },
-        scales: {
-          x: {
-            ticks: { color: "#cfcfcf", font: { size: 10 } },
-            grid: { color: "rgba(255,255,255,0.05)" },
-            beginAtZero: true
-          },
-          y: {
-            ticks: { color: "#ffffff", font: { size: 11 } },
-            grid: { display: false }
-          }
-        }
-      };
-    }
-
-    async function loadFilters() {
-      const res = await fetch("/api/checklist/filtros", { credentials: "same-origin" });
-      const data = await res.json();
-
-      createMultiSelect("menuUnidade", "triggerUnidade", data.unidades || [], "Todos");
-      createMultiSelect("menuEstado", "triggerEstado", data.estados || [], "Todos");
-      createMultiSelect("menuCidade", "triggerCidade", data.cidades || [], "Todos");
-      createMultiSelect("menuTopico", "triggerTopico", data.topicos || [], "Todos");
-      createMultiSelect("menuElaboradoPor", "triggerElaboradoPor", data.elaboradoPor || [], "Todos");
-      createMultiSelect("menuResposta", "triggerResposta", data.respostas || [], "Todos");
-      createMultiSelect("menuGeraNc", "triggerGeraNc", data.geraNc || [], "Todos");
-      createMultiSelect("menuAreaResponsavel", "triggerAreaResponsavel", data.areaResponsavel || [], "Todos");
-      createMultiSelect("menuSituacaoPrazo", "triggerSituacaoPrazo", data.situacaoPrazo || [], "Todos");
-    }
-
-    async function loadResumo() {
-      const res = await fetch(`/api/checklist/resumo?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      document.getElementById("kpiTotal").textContent = fmt(data.total || 0);
-      document.getElementById("kpiAtual").textContent = fmt(data.periodoAtual || 0);
-      document.getElementById("kpiAnterior").textContent = fmt(data.periodoAnterior || 0);
-      document.getElementById("kpiVariacao").textContent = fmtPct(data.variacao || 0);
-      document.getElementById("kpiChecklists").textContent = fmt(data.checklistsUnicos || 0);
-      document.getElementById("kpiNc").textContent = fmt(data.itensNc || 0);
-
-      document.getElementById("tituloPeriodoAtual").textContent = "Respostas no período";
-      document.getElementById("tituloPeriodoAnterior").textContent = (data.comparativoLabel || "base anterior").toUpperCase();
-
-      document.getElementById("subPeriodoAtual").textContent =
-        data.periodoAtualInicio && data.periodoAtualFim
-          ? `${data.periodoAtualInicio} até ${data.periodoAtualFim}`
-          : "Período atual";
-
-      document.getElementById("subPeriodoAnterior").textContent =
-        data.periodoAnteriorInicio && data.periodoAnteriorFim
-          ? `${data.periodoAnteriorInicio} até ${data.periodoAnteriorFim}`
-          : "Base de comparação";
-
-      const variacaoEl = document.getElementById("subVariacao");
-      variacaoEl.textContent = `vs ${data.comparativoLabel || "base anterior"}`;
-      variacaoEl.className = "kpi-sub";
-      if ((data.variacao || 0) > 0) variacaoEl.classList.add("green");
-      if ((data.variacao || 0) < 0) variacaoEl.classList.add("red");
-
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
-    }
-
-    async function loadGraficos() {
-      const res = await fetch(`/api/checklist/graficos?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      destroyCharts();
-
-      chartUnidadeInstance = new Chart(document.getElementById("chartUnidade"), {
-        type: "bar",
-        data: {
-          labels: data.porUnidade?.labels || [],
-          datasets: [{
-            label: "Respostas",
-            data: data.porUnidade?.valores || [],
-            backgroundColor: "#ff7a1a",
-            borderRadius: 8
-          }]
-        },
-        options: horizontalBarOptions()
-      });
-
-      chartTopicoInstance = new Chart(document.getElementById("chartTopico"), {
-        type: "bar",
-        data: {
-          labels: data.porTopico?.labels || [],
-          datasets: [{
-            label: "Respostas",
-            data: data.porTopico?.valores || [],
-            backgroundColor: "#ff7a1a",
-            borderRadius: 8
-          }]
-        },
-        options: horizontalBarOptions()
-      });
-
-      chartRespostaInstance = new Chart(document.getElementById("chartResposta"), {
-        type: "bar",
-        data: {
-          labels: data.porResposta?.labels || [],
-          datasets: [{
-            label: "Respostas",
-            data: data.porResposta?.valores || [],
-            backgroundColor: "#ff7a1a",
-            borderRadius: 8
-          }]
-        },
-        options: horizontalBarOptions()
-      });
-
-      chartDiaInstance = new Chart(document.getElementById("chartDia"), {
-        type: "bar",
-        data: {
-          labels: data.porDia?.labels || [],
-          datasets: [{
-            label: "Respostas",
-            data: data.porDia?.valores || [],
-            backgroundColor: "#ff7a1a",
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: "#fff" } },
-            datalabels: {
-              color: "#ffffff",
-              anchor: "end",
-              align: "top",
-              offset: 2,
-              font: { size: 10, weight: "700" },
-              formatter: (value) => value > 0 ? fmt(value) : ""
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#cfcfcf", font: { size: 10 } },
-              grid: { display: false }
-            },
-            y: {
-              ticks: { color: "#cfcfcf", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      document.getElementById("subComparativo").textContent =
-        `${data.comparativo?.label || "Atual"} x base anterior`;
-
-      chartComparativoInstance = new Chart(document.getElementById("chartComparativo"), {
-        type: "bar",
-        data: {
-          labels: ["Período atual", data.comparativo?.label || "Base anterior"],
-          datasets: [{
-            label: "Respostas",
-            data: [
-              data.comparativo?.atual || 0,
-              data.comparativo?.anterior || 0
-            ],
-            backgroundColor: ["#ff7a1a", "#58a6ff"],
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: "#fff" } },
-            datalabels: {
-              color: "#ffffff",
-              anchor: "end",
-              align: "top",
-              font: { size: 10, weight: "700" },
-              formatter: (value) => value > 0 ? fmt(value) : ""
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: "#fff", font: { size: 10 } },
-              grid: { display: false }
-            },
-            y: {
-              ticks: { color: "#cfcfcf", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
-            }
-          }
-        }
-      });
-    }
-
-    async function loadDetalhes() {
-      const res = await fetch(`/api/checklist/detalhes?${getFiltersQuery(currentPage)}`, {
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-
-      totalPages = data.totalPages || 1;
-      document.getElementById("pagerInfo").textContent = `Página ${data.page || 1} de ${totalPages}`;
-
-      let html = `
-        <table class="detail-table">
-          <thead>
-            <tr>
-              <th>Data Checklist</th>
-              <th>Registro</th>
-              <th>Unidade</th>
-              <th>Estado</th>
-              <th>Cidade</th>
-              <th>Elaborado por</th>
-              <th>Tópico</th>
-              <th>Pergunta</th>
-              <th>Resposta</th>
-              <th>Gera NC</th>
-              <th>Responsável tratativa</th>
-              <th>Área responsável</th>
-              <th>Data limite</th>
-              <th>Situação prazo</th>
-              <th>Pontuação</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
-      (data.items || []).forEach((item) => {
-        html += `
-          <tr>
-            <td>${esc(item.dataChecklist)}</td>
-            <td>${esc(item.registroId)}</td>
-            <td>${esc(item.unidade)}</td>
-            <td>${esc(item.estado)}</td>
-            <td>${esc(item.cidade)}</td>
-            <td>${esc(item.elaboradoPor)}</td>
-            <td>${esc(item.topico)}</td>
-            <td>${esc(item.perguntaTexto)}</td>
-            <td>${esc(item.resposta)}</td>
-            <td>${esc(item.geraNc)}</td>
-            <td>${esc(item.responsavelTratativa)}</td>
-            <td>${esc(item.areaResponsavel)}</td>
-            <td>${esc(item.dataLimite)}</td>
-            <td>${esc(item.situacaoPrazo)}</td>
-            <td>${esc(item.pontuacao)}</td>
-          </tr>
-        `;
-      });
-
-      if (!(data.items || []).length) {
-        html += `<tr><td colspan="15" style="text-align:center;color:#c7c7c7;">Sem dados para os filtros aplicados.</td></tr>`;
-      }
-
-      html += "</tbody></table>";
-      document.getElementById("detailWrap").innerHTML = html;
-    }
-
-    async function loadAll(page = 1) {
-      currentPage = page;
-      await loadResumo();
-      await loadGraficos();
-      await loadDetalhes();
-    }
-
     document.addEventListener("click", (e) => {
       if (
         activeFloatingMenu &&
@@ -1200,54 +955,42 @@
       }
     }, true);
 
-    document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
+    function getFiltersQuery(page = 1) {
+      const qs = new URLSearchParams();
+      qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
+      qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
+      qs.set("unidade", getMultiValues("menuUnidade"));
+      qs.set("elaborador", getMultiValues("menuElaborador"));
+      qs.set("funcao", getMultiValues("menuFuncao"));
+      qs.set("estado", getMultiValues("menuEstado"));
+      qs.set("cidade", getMultiValues("menuCidade"));
+      qs.set("topico", getMultiValues("menuTopico"));
+      qs.set("geraNc", getMultiValues("menuGeraNc"));
+      qs.set("prazo", getMultiValues("menuPrazo"));
+      qs.set("area", getMultiValues("menuArea"));
+      qs.set("busca", document.getElementById("filtroBusca").value || "");
+      qs.set("page", page);
+      qs.set("limit", 25);
+      return qs.toString();
+    }
 
-    document.getElementById("btnLimpar").addEventListener("click", () => {
-      document.getElementById("filtroPeriodoTipo").value = "mes";
-      document.getElementById("filtroDataRef").value = "";
-      document.getElementById("filtroBusca").value = "";
+    function destroyCharts() {
+      if (chartUnidade) chartUnidade.destroy();
+      if (chartTopico) chartTopico.destroy();
+      if (chartPrazo) chartPrazo.destroy();
+      if (chartDia) chartDia.destroy();
+      if (chartComparativo) chartComparativo.destroy();
+      if (chartPerguntas) chartPerguntas.destroy();
+      if (chartElaborador) chartElaborador.destroy();
+    }
 
-      document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach((input) => {
-        input.checked = false;
-      });
-
-      [
-        "triggerUnidade",
-        "triggerEstado",
-        "triggerCidade",
-        "triggerTopico",
-        "triggerElaboradoPor",
-        "triggerResposta",
-        "triggerGeraNc",
-        "triggerAreaResponsavel",
-        "triggerSituacaoPrazo"
-      ].forEach((id) => {
-        document.getElementById(id).textContent = "Todos";
-      });
-
-      closeAllMultiSelects();
-      loadAll(1);
-    });
-
-    document.getElementById("btnPrev").addEventListener("click", () => {
-      if (currentPage > 1) loadAll(currentPage - 1);
-    });
-
-    document.getElementById("btnNext").addEventListener("click", () => {
-      if (currentPage < totalPages) loadAll(currentPage + 1);
-    });
-
-    (async function init() {
-      await loadFilters();
-
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, "0");
-      const dd = String(today.getDate()).padStart(2, "0");
-      document.getElementById("filtroDataRef").value = `${yyyy}-${mm}-${dd}`;
-
-      await loadAll(1);
-    })();
-  </script>
-</body>
-</html>
+    function horizontalBarOptions() {
+      return {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            color: "#ffffff",
+            anchor: "end",

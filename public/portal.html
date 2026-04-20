@@ -378,11 +378,11 @@
     }
 
     .accordion-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:14px;
-      align-items:start;
-    }
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  align-items:start;
+}
 
     .module-card,
     .promo-card,
@@ -744,159 +744,160 @@
         </section>
 
         <section class="accordion-grid">
-          <div class="module-card active">
-            <button class="module-toggle" type="button">
-              <div class="module-title">
-                <span class="icon">🔐</span>
-                <span>Controle de Acesso</span>
-              </div>
-              <div class="module-collapse">⌃</div>
-            </button>
 
-            <div class="module-body">
-              <div class="module-inner">
-                <div class="module-links">
-                  <a class="module-link" href="/access">
-                    <div>
-                      <strong>Access</strong>
-                      <span>Acessos e liberações</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
+  <div class="module-card">
+    <button class="module-toggle" type="button">
+      <div class="module-title">
+        <span class="icon">🧾</span>
+        <span>Auditorias</span>
+      </div>
+      <div class="module-collapse">⌃</div>
+    </button>
 
-                  <a class="module-link" href="/first-mile-access.html">
-                    <div>
-                      <strong>First Mile</strong>
-                      <span>Rotas e coletas</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-                </div>
-              </div>
+    <div class="module-body">
+      <div class="module-inner">
+        <div class="module-links">
+          <a class="module-link" href="/dashboard">
+            <div>
+              <strong>AV - Lost</strong>
+              <span>AV recuperado</span>
             </div>
-          </div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <div class="module-card active">
-            <button class="module-toggle" type="button">
-              <div class="module-title">
-                <span class="icon">👥</span>
-                <span>HC</span>
-              </div>
-              <div class="module-collapse">⌃</div>
-            </button>
+  <div class="module-card active">
+    <button class="module-toggle" type="button">
+      <div class="module-title">
+        <span class="icon">🔐</span>
+        <span>Controle de Acesso</span>
+      </div>
+      <div class="module-collapse">⌃</div>
+    </button>
 
-            <div class="module-body">
-              <div class="module-inner">
-                <div class="module-links">
-                  <a class="module-link" href="/hc">
-                    <div>
-                      <strong>Headcount FBS Reps</strong>
-                      <span>HC e presença</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-
-                  <a class="module-link" href="/agentes-fbs">
-                    <div>
-                      <strong>ABS Grupo Altum</strong>
-                      <span>Gestão de presença</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-
-                  <a class="module-link" href="/chamada-agentes">
-                    <div>
-                      <strong>Lançamento de faltas - Altum</strong>
-                      <span>Controle ABS</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-
-                  <a class="module-link" href="/desligados">
-                    <div>
-                      <strong>Desligados</strong>
-                      <span>Controle de acessos removidos</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-                </div>
-              </div>
+    <div class="module-body">
+      <div class="module-inner">
+        <div class="module-links">
+          <a class="module-link" href="/access">
+            <div>
+              <strong>Access</strong>
+              <span>Acessos e liberações</span>
             </div>
-          </div>
+            <div class="arrow">›</div>
+          </a>
 
-          <div class="module-card">
-            <button class="module-toggle" type="button">
-              <div class="module-title">
-                <span class="icon">⚙️</span>
-                <span>Processos</span>
-              </div>
-              <div class="module-collapse">⌃</div>
-            </button>
-
-            <div class="module-body">
-              <div class="module-inner">
-                <div class="module-links">
-                  <a class="module-link" href="/cco-fbs">
-                    <div>
-                      <strong>CCO</strong>
-                      <span>Solicitações de imagens</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-
-                  <a class="module-link" href="/matriz-consequencia">
-                    <div>
-                      <strong>Matriz de consequência</strong>
-                      <span>Medidas disciplinares</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-
-                  <a class="module-link" href="/registro-lacres">
-                    <div>
-                      <strong>Registros de lacres</strong>
-                      <span>Registros de veículos de outbound</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-
-                  <a class="module-link" href="/rondas.html">
-                    <div>
-                      <strong>Rondas</strong>
-                      <span>Monitoramento</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-                </div>
-              </div>
+          <a class="module-link" href="/first-mile-access.html">
+            <div>
+              <strong>First Mile</strong>
+              <span>Rotas e coletas</span>
             </div>
-          </div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <div class="module-card">
-            <button class="module-toggle" type="button">
-              <div class="module-title">
-                <span class="icon">🧾</span>
-                <span>Auditorias</span>
-              </div>
-              <div class="module-collapse">⌃</div>
-            </button>
+  <div class="module-card active">
+    <button class="module-toggle" type="button">
+      <div class="module-title">
+        <span class="icon">👥</span>
+        <span>HC</span>
+      </div>
+      <div class="module-collapse">⌃</div>
+    </button>
 
-            <div class="module-body">
-              <div class="module-inner">
-                <div class="module-links">
-                  <a class="module-link" href="/dashboard">
-                    <div>
-                      <strong>AV - Lost</strong>
-                      <span>AV recuperado</span>
-                    </div>
-                    <div class="arrow">›</div>
-                  </a>
-                </div>
-              </div>
+    <div class="module-body">
+      <div class="module-inner">
+        <div class="module-links">
+          <a class="module-link" href="/hc">
+            <div>
+              <strong>Headcount FBS Reps</strong>
+              <span>HC e presença</span>
             </div>
-          </div>
-        </section>
-      </section>
+            <div class="arrow">›</div>
+          </a>
+
+          <a class="module-link" href="/agentes-fbs">
+            <div>
+              <strong>ABS Grupo Altum</strong>
+              <span>Gestão de presença</span>
+            </div>
+            <div class="arrow">›</div>
+          </a>
+
+          <a class="module-link" href="/chamada-agentes">
+            <div>
+              <strong>Lançamento de faltas - Altum</strong>
+              <span>Controle ABS</span>
+            </div>
+            <div class="arrow">›</div>
+          </a>
+
+          <a class="module-link" href="/desligados">
+            <div>
+              <strong>Desligados</strong>
+              <span>Controle de acessos removidos</span>
+            </div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <button class="module-toggle" type="button">
+      <div class="module-title">
+        <span class="icon">⚙️</span>
+        <span>Processos</span>
+      </div>
+      <div class="module-collapse">⌃</div>
+    </button>
+
+    <div class="module-body">
+      <div class="module-inner">
+        <div class="module-links">
+          <a class="module-link" href="/cco-fbs">
+            <div>
+              <strong>CCO</strong>
+              <span>Solicitações de imagens</span>
+            </div>
+            <div class="arrow">›</div>
+          </a>
+
+          <a class="module-link" href="/matriz-consequencia">
+            <div>
+              <strong>Matriz de consequência</strong>
+              <span>Medidas disciplinares</span>
+            </div>
+            <div class="arrow">›</div>
+          </a>
+
+          <a class="module-link" href="/registro-lacres">
+            <div>
+              <strong>Registros de lacres</strong>
+              <span>Registros de veículos de outbound</span>
+            </div>
+            <div class="arrow">›</div>
+          </a>
+
+          <a class="module-link" href="/rondas.html">
+            <div>
+              <strong>Rondas</strong>
+              <span>Monitoramento</span>
+            </div>
+            <div class="arrow">›</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
 
       <aside class="right">
         <a class="promo-card promo-link" href="https://sites.google.com/shopee.com/security-center-brasil?usp=sharing" target="_blank" rel="noopener noreferrer">

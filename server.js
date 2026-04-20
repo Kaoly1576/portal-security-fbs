@@ -5381,12 +5381,14 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
 
 // ================== CHECKLIST DASHBOARD ==================
 
+// ================== CHECKLIST DASHBOARD ==================
+
 app.get("/checklist", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "checklist.html"));
 });
 
 const CHECKLIST_SPREADSHEET_ID = "1vUv0AJ_bASBkkzxUWOyheJSASb4VDsaRKAl40EzRKsk";
-const CHECKLIST_SHEET_NAME = "Respostas";
+const CHECKLIST_RANGE = "'Respostas'!A1:Z200000";
 
 let checklistCache = null;
 let checklistCacheTime = 0;
@@ -5394,51 +5396,22 @@ const CHECKLIST_CACHE_TTL = 5 * 60 * 1000;
 
 // ================== HELPERS ==================
 
-function checklistNormalize(value) {
+function clNorm(value) {
   return String(value || "").trim();
 }
 
-function checklistNormalizeLower(value) {
-  return checklistNormalize(value)
+function clNormLower(value) {
+  return clNorm(value)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
 
-function checklistIsUsefulHeader(header) {
-  const h = checklistNormalize(header);
-  return h && !/^unnamed/i.test(h);
-}
-
-function checklistFindHeader(headers, possibilities) {
-  for (const possibility of possibilities) {
-    const found = headers.find(
-      (h) => checklistNormalizeLower(h) === checklistNormalizeLower(possibility)
-    );
-    if (found) return found;
-  }
-
-  for (const possibility of possibilities) {
-    const found = headers.find((h) =>
-      checklistNormalizeLower(h).includes(checklistNormalizeLower(possibility))
-    );
-    if (found) return found;
-  }
-
-  return null;
-}
-
-function checklistParseDate(value) {
-  const str = checklistNormalize(value);
+function clParseDate(value) {
+  const str = clNorm(value);
   if (!str) return null;
 
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [day, month, year] = datePart.split("/").map(Number);
-    const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
-  }
-
+  // formato YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const [datePart] = str.split(" ");
     const [year, month, day] = datePart.split("-").map(Number);
@@ -5446,10 +5419,26 @@ function checklistParseDate(value) {
     return isNaN(dt) ? null : dt;
   }
 
+  // formato MM/DD/YYYY ou M/D/YYYY  -> BASE DO CHECKLIST
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [month, day, year] = datePart.split("/").map(Number);
+    const dt = new Date(year, month - 1, day);
+    return isNaN(dt) ? null : dt;
+  }
+
+  // formato DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    const dt = new Date(year, month - 1, day);
+    return isNaN(dt) ? null : dt;
+  }
+
   return null;
 }
 
-function checklistFormatInputDate(date) {
+function clFormatInputDate(date) {
   if (!date) return "";
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -5457,45 +5446,28 @@ function checklistFormatInputDate(date) {
   return `${year}-${month}-${day}`;
 }
 
-function checklistFormatBRDate(date) {
+function clFormatBR(date) {
   if (!date) return "";
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
 }
 
-function checklistParseMulti(value) {
+function clSplitMulti(value) {
   if (!value) return [];
   return String(value)
     .split("|")
-    .map((v) => checklistNormalize(v))
+    .map((v) => clNorm(v))
     .filter(Boolean);
 }
 
-function checklistGroupCount(data, header) {
-  const map = {};
-  data.forEach((row) => {
-    const key = checklistNormalize(row[header]) || "Sem valor";
-    map[key] = (map[key] || 0) + 1;
-  });
-  return map;
+function clMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(clNorm(fieldValue));
 }
 
-function checklistTopEntries(data, header, limit = 10, onlyFilled = true) {
-  if (!header) return [];
-  let base = data;
-
-  if (onlyFilled) {
-    base = data.filter((row) => checklistNormalize(row[header]));
-  }
-
-  return Object.entries(checklistGroupCount(base, header))
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit);
-}
-
-function checklistPercentChange(current, previous) {
+function clPercentChange(current, previous) {
   current = Number(current || 0);
   previous = Number(previous || 0);
 
@@ -5505,34 +5477,33 @@ function checklistPercentChange(current, previous) {
   return ((current - previous) / previous) * 100;
 }
 
-function checklistStartOfDay(date) {
+function clStartOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
 }
 
-function checklistEndOfDay(date) {
+function clEndOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
-function checklistDiffDaysInclusive(start, end) {
+function clDiffDaysInclusive(start, end) {
   const msPerDay = 24 * 60 * 60 * 1000;
-  const s = checklistStartOfDay(start);
-  const e = checklistStartOfDay(end);
+  const s = clStartOfDay(start);
+  const e = clStartOfDay(end);
   return Math.floor((e - s) / msPerDay) + 1;
 }
 
-function checklistResolvePeriodFromQuery(query, rows) {
-  const periodoTipo = checklistNormalizeLower(query.periodoTipo || "mes");
-  const dataRefStr = checklistNormalize(query.dataRef);
+function clResolvePeriodFromQuery(query, groups) {
+  const periodoTipo = clNormLower(query.periodoTipo || "mes");
+  const dataRef = clNorm(query.dataRef);
 
-  if (dataRefStr) {
-    const ref = new Date(`${dataRefStr}T00:00:00`);
+  if (dataRef) {
+    const ref = new Date(`${dataRef}T00:00:00`);
 
     if (!isNaN(ref.getTime())) {
       if (periodoTipo === "dia") {
         return {
-          start: checklistStartOfDay(ref),
-          end: checklistEndOfDay(ref),
-          label: "dia",
+          start: clStartOfDay(ref),
+          end: clEndOfDay(ref),
         };
       }
 
@@ -5546,9 +5517,8 @@ function checklistResolvePeriodFromQuery(query, rows) {
         weekEnd.setDate(weekEnd.getDate() + 6);
 
         return {
-          start: checklistStartOfDay(weekStart),
-          end: checklistEndOfDay(weekEnd),
-          label: "semana",
+          start: clStartOfDay(weekStart),
+          end: clEndOfDay(weekEnd),
         };
       }
 
@@ -5556,35 +5526,34 @@ function checklistResolvePeriodFromQuery(query, rows) {
         return {
           start: new Date(ref.getFullYear(), 0, 1),
           end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
-          label: "ano",
         };
       }
 
       return {
         start: new Date(ref.getFullYear(), ref.getMonth(), 1),
         end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
-        label: "mês",
       };
     }
   }
 
-  const validDates = rows
-    .map((r) => r._primaryDate)
+  const validDates = groups
+    .map((g) => g._dateObj)
     .filter(Boolean)
     .sort((a, b) => a - b);
 
   if (!validDates.length) {
-    return { start: null, end: null, label: "período" };
+    return { start: null, end: null };
   }
 
+  const latest = validDates[validDates.length - 1];
+
   return {
-    start: checklistStartOfDay(validDates[0]),
-    end: checklistEndOfDay(validDates[validDates.length - 1]),
-    label: "período",
+    start: new Date(latest.getFullYear(), latest.getMonth(), 1),
+    end: new Date(latest.getFullYear(), latest.getMonth() + 1, 0, 23, 59, 59, 999),
   };
 }
 
-function checklistGetComparisonWindow(startDate, endDate) {
+function clGetComparisonWindow(startDate, endDate) {
   if (!startDate || !endDate) {
     return {
       currentStart: null,
@@ -5595,8 +5564,8 @@ function checklistGetComparisonWindow(startDate, endDate) {
     };
   }
 
-  const start = checklistStartOfDay(startDate);
-  const end = checklistEndOfDay(endDate);
+  const start = clStartOfDay(startDate);
+  const end = clEndOfDay(endDate);
 
   const isSingleDay =
     start.getFullYear() === end.getFullYear() &&
@@ -5616,7 +5585,7 @@ function checklistGetComparisonWindow(startDate, endDate) {
     end.getMonth() === 11 &&
     end.getDate() === 31;
 
-  const totalDays = checklistDiffDaysInclusive(start, end);
+  const totalDays = clDiffDaysInclusive(start, end);
 
   if (isSingleDay) {
     const prev = new Date(start);
@@ -5625,8 +5594,8 @@ function checklistGetComparisonWindow(startDate, endDate) {
     return {
       currentStart: start,
       currentEnd: end,
-      previousStart: checklistStartOfDay(prev),
-      previousEnd: checklistEndOfDay(prev),
+      previousStart: clStartOfDay(prev),
+      previousEnd: clEndOfDay(prev),
       label: "dia anterior",
     };
   }
@@ -5670,429 +5639,198 @@ function checklistGetComparisonWindow(startDate, endDate) {
 
 // ================== LOAD RAW ==================
 
-async function checklistLoadRaw() {
+async function clLoadRaw() {
   const sheets = await conectarSheets();
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: CHECKLIST_SPREADSHEET_ID,
-    range: `'${CHECKLIST_SHEET_NAME}'!A1:Z200000`,
+    range: CHECKLIST_RANGE,
   });
 
   const values = response.data.values || [];
   if (!values.length || values.length < 2) {
-    return { headers: [], rows: [], sheetTitle: CHECKLIST_SHEET_NAME };
+    return [];
   }
 
-  const headers = values[0].map((h, idx) => {
-    const name = checklistNormalize(h);
-    return name || `COL_${idx + 1}`;
-  });
+  const headers = values[0].map((h, i) => clNorm(h) || `COL_${i + 1}`);
+  const rows = values.slice(1);
 
-  const rows = values.slice(1).map((line) => {
+  return rows.map((line) => {
     const obj = {};
     headers.forEach((header, i) => {
       obj[header] = line[i] ?? "";
     });
+
+    obj._dateObj = clParseDate(obj["data_checklist"]);
+    obj._day = obj._dateObj ? obj._dateObj.getDate() : null;
+    obj._monthKey = obj._dateObj
+      ? `${obj._dateObj.getFullYear()}-${String(obj._dateObj.getMonth() + 1).padStart(2, "0")}`
+      : "";
+
     return obj;
   });
-
-  return { headers, rows, sheetTitle: CHECKLIST_SHEET_NAME };
 }
 
-// ================== LOAD CACHE + MAP HEADERS ==================
+// ================== CACHE ==================
 
-async function checklistLoadWithCache() {
+async function clLoadWithCache() {
   const now = Date.now();
 
   if (checklistCache && now - checklistCacheTime < CHECKLIST_CACHE_TTL) {
     return checklistCache;
   }
 
-  const { headers, rows, sheetTitle } = await checklistLoadRaw();
+  const rows = await clLoadRaw();
 
-  const cleanHeaders = headers.filter((header) => checklistIsUsefulHeader(header));
-
-  const cleanRows = rows
-    .map((row) => {
-      const obj = {};
-      cleanHeaders.forEach((header) => {
-        obj[header] = row[header] ?? "";
-      });
-      return obj;
-    })
-    .filter((row) => cleanHeaders.some((header) => checklistNormalize(row[header])));
-
-  const registroIdHeader = checklistFindHeader(cleanHeaders, [
-    "registro_id",
-    "registro-id",
-    "registro id",
-    "id do registro",
-  ]);
-
-  const primaryDateColumn = checklistFindHeader(cleanHeaders, [
-    "data_checklist",
-    "data checklist",
-    "data",
-    "data da inspeção",
-    "data da inspecao",
-    "data da auditoria",
-    "data de criação",
-    "data de criacao",
-  ]);
-
-  const unidadeHeader = checklistFindHeader(cleanHeaders, [
-    "unidade",
-    "site",
-    "base",
-    "filial",
-  ]);
-
-  const elaboradorHeader = checklistFindHeader(cleanHeaders, [
-    "elaborado_por",
-    "elaborado por",
-    "auditor",
-    "responsável",
-    "responsavel",
-    "nome do auditor",
-    "colaborador",
-  ]);
-
-  const funcaoHeader = checklistFindHeader(cleanHeaders, [
-    "funcao",
-    "função",
-    "cargo",
-  ]);
-
-  const estadoHeader = checklistFindHeader(cleanHeaders, [
-    "estado",
-    "uf",
-  ]);
-
-  const cidadeHeader = checklistFindHeader(cleanHeaders, [
-    "cidade",
-    "city",
-  ]);
-
-  const topicoHeader = checklistFindHeader(cleanHeaders, [
-    "topico",
-    "tópico",
-    "categoria",
-    "grupo",
-    "seção",
-    "secao",
-  ]);
-
-  const perguntaHeader = checklistFindHeader(cleanHeaders, [
-    "pergunta",
-    "item",
-    "questão",
-    "questao",
-    "pergunta_texto",
-  ]);
-
-  const respostaHeader = checklistFindHeader(cleanHeaders, [
-    "resposta",
-    "resultado",
-    "status",
-    "conforme",
-  ]);
-
-  const geraNcHeader = checklistFindHeader(cleanHeaders, [
-    "gera_nc",
-    "gera nc",
-    "gera não conformidade",
-    "gera nao conformidade",
-    "nc",
-  ]);
-
-  const prazoHeader = checklistFindHeader(cleanHeaders, [
-    "situacao_prazo",
-    "situação do prazo",
-    "situacao do prazo",
-    "prazo",
-    "status do prazo",
-  ]);
-
-  const areaHeader = checklistFindHeader(cleanHeaders, [
-    "area_responsavel",
-    "área responsável",
-    "area responsavel",
-    "responsável pela ação",
-    "responsavel pela acao",
-    "área",
-    "area",
-  ]);
-
-  const pontuacaoHeader = checklistFindHeader(cleanHeaders, [
-    "pontuacao",
-    "pontuação",
-    "score",
-    "nota",
-  ]);
-
-  const enrichedRows = cleanRows.map((row) => {
-    const dt = primaryDateColumn ? checklistParseDate(row[primaryDateColumn]) : null;
-    return {
-      ...row,
-      _primaryDate: dt,
-      _day: dt ? dt.getDate() : null,
-      _monthKey: dt
-        ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`
-        : "",
-    };
-  });
-
-  checklistCache = {
-    sheetTitle,
-    headers: cleanHeaders,
-    rows: enrichedRows,
-    registroIdHeader,
-    primaryDateColumn,
-    unidadeHeader,
-    elaboradorHeader,
-    funcaoHeader,
-    estadoHeader,
-    cidadeHeader,
-    topicoHeader,
-    perguntaHeader,
-    respostaHeader,
-    geraNcHeader,
-    prazoHeader,
-    areaHeader,
-    pontuacaoHeader,
-  };
-
+  checklistCache = rows;
   checklistCacheTime = now;
 
-  console.log("CHECKLIST cache atualizado:", {
-    aba: sheetTitle,
-    totalLinhas: enrichedRows.length,
-    totalColunas: cleanHeaders.length,
-    registroIdHeader,
-    primaryDateColumn,
-    unidadeHeader,
-    elaboradorHeader,
-    funcaoHeader,
-    estadoHeader,
-    cidadeHeader,
-    topicoHeader,
-    perguntaHeader,
-    respostaHeader,
-    geraNcHeader,
-    prazoHeader,
-    areaHeader,
-    pontuacaoHeader,
-  });
+  console.log("CHECKLIST cache atualizado:", rows.length);
 
   return checklistCache;
 }
 
-// ================== APPLY FILTERS ROW LEVEL ==================
+// ================== GROUP BY registro_id ==================
 
-function checklistApplyFilters(rows, query, meta) {
-  const busca = checklistNormalizeLower(query.busca);
+function clGroupByChecklist(rows) {
+  const map = new Map();
 
-  const selections = [
-    { queryKey: "unidade", header: meta.unidadeHeader },
-    { queryKey: "elaborador", header: meta.elaboradorHeader },
-    { queryKey: "funcao", header: meta.funcaoHeader },
-    { queryKey: "estado", header: meta.estadoHeader },
-    { queryKey: "cidade", header: meta.cidadeHeader },
-    { queryKey: "topico", header: meta.topicoHeader },
-    { queryKey: "geraNc", header: meta.geraNcHeader },
-    { queryKey: "prazo", header: meta.prazoHeader },
-    { queryKey: "area", header: meta.areaHeader },
-  ];
+  rows.forEach((row) => {
+    const id = clNorm(row["registro_id"]);
+    if (!id) return;
 
-  return rows.filter((row) => {
-    for (const item of selections) {
-      const selected = checklistParseMulti(query[item.queryKey]);
-      if (selected.length && item.header) {
-        if (!selected.includes(checklistNormalize(row[item.header]))) {
-          return false;
-        }
-      }
+    if (!map.has(id)) {
+      map.set(id, {
+        registro_id: id,
+        data_checklist: row["data_checklist"] || "",
+        elaborado_por: row["elaborado_por"] || "",
+        funcao: row["funcao"] || "",
+        unidade: row["unidade"] || "",
+        estado: row["estado"] || "",
+        cidade: row["cidade"] || "",
+        _dateObj: row._dateObj || null,
+        itens: [],
+      });
     }
 
-    if (busca) {
-      const searchable = Object.entries(row)
-        .filter(([key]) => !key.startsWith("_"))
-        .map(([, value]) => checklistNormalizeLower(value))
-        .join(" ");
+    map.get(id).itens.push(row);
+  });
 
-      if (!searchable.includes(busca)) return false;
+  return [...map.values()].map((group) => {
+    const totalItens = group.itens.length;
+
+    const itensNc = group.itens.filter((item) => {
+      const geraNc = clNormLower(item["gera_nc"]);
+      return geraNc === "sim" || geraNc === "s" || geraNc === "yes" || geraNc === "true";
+    }).length;
+
+    const pendencias = group.itens.filter((item) => {
+      const prazo = clNormLower(item["situacao_prazo"]);
+      return prazo.includes("pend") || prazo.includes("aberto") || prazo.includes("atras");
+    }).length;
+
+    const pontuacoes = group.itens
+      .map((item) => Number(String(item["pontuacao"] || "").replace(",", ".")))
+      .filter((n) => !isNaN(n));
+
+    const mediaPontuacao = pontuacoes.length
+      ? pontuacoes.reduce((sum, n) => sum + n, 0) / pontuacoes.length
+      : 0;
+
+    return {
+      ...group,
+      totalItens,
+      totalNc: itensNc,
+      pendencias,
+      mediaPontuacao,
+      conforme: itensNc === 0,
+    };
+  });
+}
+
+// ================== FILTERS ON RAW ROWS ==================
+
+function clApplyFilters(rows, query) {
+  const unidade = clSplitMulti(query.unidade);
+  const elaborador = clSplitMulti(query.elaborador);
+  const funcao = clSplitMulti(query.funcao);
+  const estado = clSplitMulti(query.estado);
+  const cidade = clSplitMulti(query.cidade);
+  const topico = clSplitMulti(query.topico);
+  const geraNc = clSplitMulti(query.geraNc);
+  const prazo = clSplitMulti(query.prazo);
+  const area = clSplitMulti(query.area);
+  const busca = clNormLower(query.busca);
+
+  return rows.filter((row) => {
+    if (!clMatchesMulti(row["unidade"], unidade)) return false;
+    if (!clMatchesMulti(row["elaborado_por"], elaborador)) return false;
+    if (!clMatchesMulti(row["funcao"], funcao)) return false;
+    if (!clMatchesMulti(row["estado"], estado)) return false;
+    if (!clMatchesMulti(row["cidade"], cidade)) return false;
+    if (!clMatchesMulti(row["topico"], topico)) return false;
+    if (!clMatchesMulti(row["gera_nc"], geraNc)) return false;
+    if (!clMatchesMulti(row["situacao_prazo"], prazo)) return false;
+    if (!clMatchesMulti(row["area_responsavel"], area)) return false;
+
+    if (busca) {
+      const text = Object.values(row)
+        .filter((v) => typeof v !== "object")
+        .join(" ")
+        .toLowerCase();
+
+      if (!text.includes(busca)) return false;
     }
 
     return true;
   });
 }
 
-function checklistApplyFiltersWithoutPeriod(rows, query, meta) {
-  const cloneQuery = {
+function clApplyFiltersWithoutPeriod(rows, query) {
+  return clApplyFilters(rows, {
     ...query,
     periodoTipo: "",
     dataRef: "",
-  };
-  return checklistApplyFilters(rows, cloneQuery, meta);
+  });
 }
 
-// ================== GROUP BY CHECKLIST ==================
+// ================== PERIOD FILTER ON GROUPS ==================
 
-function checklistGroupByRegistroId(rows, meta) {
-  const idHeader = meta.registroIdHeader;
-
-  const grouped = new Map();
-
-  rows.forEach((row, index) => {
-    const rawId = idHeader ? checklistNormalize(row[idHeader]) : "";
-    const id = rawId || `SEM_ID_${index + 1}`;
-
-    if (!grouped.has(id)) {
-      grouped.set(id, {
-        registroId: id,
-        rows: [],
-      });
-    }
-
-    grouped.get(id).rows.push(row);
-  });
-
-  const groups = [...grouped.values()].map((group) => {
-    const orderedRows = [...group.rows].sort((a, b) => {
-      const ad = a._primaryDate ? a._primaryDate.getTime() : 0;
-      const bd = b._primaryDate ? b._primaryDate.getTime() : 0;
-      return ad - bd;
-    });
-
-    const first = orderedRows[0] || {};
-
-    const unidade = meta.unidadeHeader ? checklistNormalize(first[meta.unidadeHeader]) : "";
-    const elaborador = meta.elaboradorHeader ? checklistNormalize(first[meta.elaboradorHeader]) : "";
-    const funcao = meta.funcaoHeader ? checklistNormalize(first[meta.funcaoHeader]) : "";
-    const estado = meta.estadoHeader ? checklistNormalize(first[meta.estadoHeader]) : "";
-    const cidade = meta.cidadeHeader ? checklistNormalize(first[meta.cidadeHeader]) : "";
-    const data = orderedRows.find((r) => r._primaryDate)?._primaryDate || first._primaryDate || null;
-
-    const totalItens = orderedRows.length;
-
-    const totalNc = meta.geraNcHeader
-      ? orderedRows.filter((r) => {
-          const v = checklistNormalizeLower(r[meta.geraNcHeader]);
-          return (
-            v === "sim" ||
-            v === "s" ||
-            v === "yes" ||
-            v === "true" ||
-            v.includes("nc")
-          );
-        }).length
-      : 0;
-
-    const totalPrazosAbertos = meta.prazoHeader
-      ? orderedRows.filter((r) => {
-          const v = checklistNormalizeLower(r[meta.prazoHeader]);
-          return (
-            v.includes("aberto") ||
-            v.includes("pendente") ||
-            v.includes("vencido") ||
-            v.includes("atrasado")
-          );
-        }).length
-      : 0;
-
-    const scoreValues = meta.pontuacaoHeader
-      ? orderedRows
-          .map((r) => {
-            const raw = checklistNormalize(r[meta.pontuacaoHeader])
-              .replace(/\./g, "")
-              .replace(",", ".");
-            const n = Number(raw);
-            return isNaN(n) ? null : n;
-          })
-          .filter((n) => n !== null)
-      : [];
-
-    const mediaPontuacao = scoreValues.length
-      ? scoreValues.reduce((sum, n) => sum + n, 0) / scoreValues.length
-      : 0;
-
-    const conforme = totalNc === 0;
-
-    return {
-      registroId: group.registroId,
-      rows: orderedRows,
-      _primaryDate: data,
-      unidade,
-      elaborador,
-      funcao,
-      estado,
-      cidade,
-      totalItens,
-      totalNc,
-      totalPrazosAbertos,
-      mediaPontuacao,
-      conforme,
-    };
-  });
-
-  return groups;
-}
-
-function checklistFilterGroupsByPeriod(groups, query) {
-  const period = checklistResolvePeriodFromQuery(query, groups);
+function clFilterGroupsByPeriod(groups, query) {
+  const period = clResolvePeriodFromQuery(query, groups);
 
   if (!period.start || !period.end) {
-    return {
-      groups,
-      period,
-    };
+    return { groups, period };
   }
 
   const filtered = groups.filter((group) => {
-    const dt = group._primaryDate;
+    const dt = group._dateObj;
     return dt && dt >= period.start && dt <= period.end;
   });
 
-  return {
-    groups: filtered,
-    period,
-  };
+  return { groups: filtered, period };
 }
 
 // ================== FILTROS ==================
 
 app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
   try {
-    const meta = await checklistLoadWithCache();
-
-    const rowFiltered = checklistApplyFilters(meta.rows, req.query, meta);
-
-    const allGroups = checklistGroupByRegistroId(rowFiltered, meta);
-
-    function uniqueFromRows(header) {
-      if (!header) return [];
-      return [...new Set(rowFiltered.map((r) => checklistNormalize(r[header])).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "pt-BR"));
-    }
+    const rows = await clLoadWithCache();
 
     return res.json({
-      unidade: uniqueFromRows(meta.unidadeHeader),
-      elaborador: uniqueFromRows(meta.elaboradorHeader),
-      funcao: uniqueFromRows(meta.funcaoHeader),
-      estado: uniqueFromRows(meta.estadoHeader),
-      cidade: uniqueFromRows(meta.cidadeHeader),
-      topico: uniqueFromRows(meta.topicoHeader),
-      geraNc: uniqueFromRows(meta.geraNcHeader),
-      prazo: uniqueFromRows(meta.prazoHeader),
-      area: uniqueFromRows(meta.areaHeader),
-      totalLinhas: rowFiltered.length,
-      totalChecklists: allGroups.length,
+      unidade: [...new Set(rows.map((r) => clNorm(r["unidade"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      elaborador: [...new Set(rows.map((r) => clNorm(r["elaborado_por"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      funcao: [...new Set(rows.map((r) => clNorm(r["funcao"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      estado: [...new Set(rows.map((r) => clNorm(r["estado"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      cidade: [...new Set(rows.map((r) => clNorm(r["cidade"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      topico: [...new Set(rows.map((r) => clNorm(r["topico"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      geraNc: [...new Set(rows.map((r) => clNorm(r["gera_nc"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      prazo: [...new Set(rows.map((r) => clNorm(r["situacao_prazo"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      area: [...new Set(rows.map((r) => clNorm(r["area_responsavel"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/checklist-filtros:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
 
@@ -6100,37 +5838,35 @@ app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
 
 app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
   try {
-    const meta = await checklistLoadWithCache();
+    const rows = await clLoadWithCache();
 
-    const baseRows = checklistApplyFilters(meta.rows, req.query, meta);
-    const baseGroups = checklistGroupByRegistroId(baseRows, meta);
+    const filteredRows = clApplyFilters(rows, req.query);
+    const groups = clGroupByChecklist(filteredRows);
 
-    const periodResult = checklistFilterGroupsByPeriod(baseGroups, req.query);
-    const filtrados = periodResult.groups;
-    const period = periodResult.period;
+    const { groups: periodGroups, period } = clFilterGroupsByPeriod(groups, req.query);
 
-    const total = filtrados.length;
-    const ok = filtrados.filter((g) => g.conforme).length;
+    const total = periodGroups.length;
+    const ok = periodGroups.filter((g) => g.conforme).length;
     const nok = total - ok;
     const taxa = total ? (ok / total) * 100 : 0;
-    const pendencias = filtrados.reduce((sum, g) => sum + g.totalPrazosAbertos, 0);
+    const pendencias = periodGroups.reduce((sum, g) => sum + g.pendencias, 0);
     const media = total
-      ? filtrados.reduce((sum, g) => sum + g.mediaPontuacao, 0) / total
+      ? periodGroups.reduce((sum, g) => sum + g.mediaPontuacao, 0) / total
       : 0;
 
-    const comparisonWindow = checklistGetComparisonWindow(period.start, period.end);
+    const comparison = clGetComparisonWindow(period.start, period.end);
 
-    const baseNoPeriod = checklistApplyFiltersWithoutPeriod(meta.rows, req.query, meta);
-    const groupsNoPeriod = checklistGroupByRegistroId(baseNoPeriod, meta);
+    const baseNoPeriodRows = clApplyFiltersWithoutPeriod(rows, req.query);
+    const baseNoPeriodGroups = clGroupByChecklist(baseNoPeriodRows);
 
-    const anterior = groupsNoPeriod.filter((g) => {
-      const dt = g._primaryDate;
+    const anterior = baseNoPeriodGroups.filter((g) => {
+      const dt = g._dateObj;
       return (
         dt &&
-        comparisonWindow.previousStart &&
-        comparisonWindow.previousEnd &&
-        dt >= comparisonWindow.previousStart &&
-        dt <= comparisonWindow.previousEnd
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
       );
     }).length;
 
@@ -6142,30 +5878,22 @@ app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
       pendencias,
       media,
       anterior,
-      comparativoLabel: comparisonWindow.label || "base anterior",
-      periodoAtualInicio: comparisonWindow.currentStart
-        ? checklistFormatBRDate(comparisonWindow.currentStart)
-        : "",
-      periodoAtualFim: comparisonWindow.currentEnd
-        ? checklistFormatBRDate(comparisonWindow.currentEnd)
-        : "",
-      periodoAnteriorInicio: comparisonWindow.previousStart
-        ? checklistFormatBRDate(comparisonWindow.previousStart)
-        : "",
-      periodoAnteriorFim: comparisonWindow.previousEnd
-        ? checklistFormatBRDate(comparisonWindow.previousEnd)
-        : "",
-      variacao: checklistPercentChange(total, anterior),
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? clFormatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? clFormatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? clFormatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? clFormatBR(comparison.previousEnd) : "",
+      variacao: clPercentChange(total, anterior),
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       }),
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/checklist-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
 
@@ -6173,14 +5901,12 @@ app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
 
 app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
   try {
-    const meta = await checklistLoadWithCache();
+    const rows = await clLoadWithCache();
 
-    const baseRows = checklistApplyFilters(meta.rows, req.query, meta);
-    const baseGroups = checklistGroupByRegistroId(baseRows, meta);
+    const filteredRows = clApplyFilters(rows, req.query);
+    const groups = clGroupByChecklist(filteredRows);
 
-    const periodResult = checklistFilterGroupsByPeriod(baseGroups, req.query);
-    const filtrados = periodResult.groups;
-    const period = periodResult.period;
+    const { groups: periodGroups, period } = clFilterGroupsByPeriod(groups, req.query);
 
     const porDia = {};
     for (let i = 1; i <= 31; i++) porDia[i] = 0;
@@ -6191,70 +5917,59 @@ app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
     const elaborador = {};
     const perguntasErro = {};
 
-    filtrados.forEach((group) => {
-      if (group._primaryDate) {
-        const day = group._primaryDate.getDate();
+    periodGroups.forEach((group) => {
+      if (group._dateObj) {
+        const day = group._dateObj.getDate();
         porDia[day] = (porDia[day] || 0) + 1;
       }
 
-      const unidadeKey = group.unidade || "Sem unidade";
+      const unidadeKey = clNorm(group.unidade) || "Sem unidade";
       unidade[unidadeKey] = (unidade[unidadeKey] || 0) + 1;
 
-      const elaboradorKey = group.elaborador || "Sem elaborador";
+      const elaboradorKey = clNorm(group.elaborado_por) || "Sem elaborador";
       elaborador[elaboradorKey] = (elaborador[elaboradorKey] || 0) + 1;
 
-      group.rows.forEach((row) => {
-        if (meta.topicoHeader) {
-          const topicoKey = checklistNormalize(row[meta.topicoHeader]) || "Sem tópico";
-          topico[topicoKey] = (topico[topicoKey] || 0) + 1;
-        }
+      group.itens.forEach((row) => {
+        const topicoKey = clNorm(row["topico"]) || "Sem tópico";
+        topico[topicoKey] = (topico[topicoKey] || 0) + 1;
 
-        if (meta.prazoHeader) {
-          const prazoKey = checklistNormalize(row[meta.prazoHeader]) || "Sem prazo";
-          prazo[prazoKey] = (prazo[prazoKey] || 0) + 1;
-        }
+        const prazoKey = clNorm(row["situacao_prazo"]) || "Sem prazo";
+        prazo[prazoKey] = (prazo[prazoKey] || 0) + 1;
 
-        if (meta.geraNcHeader) {
-          const geraNc = checklistNormalizeLower(row[meta.geraNcHeader]);
-          const isNc =
-            geraNc === "sim" ||
-            geraNc === "s" ||
-            geraNc === "yes" ||
-            geraNc === "true" ||
-            geraNc.includes("nc");
+        const geraNc = clNormLower(row["gera_nc"]);
+        const isNc = geraNc === "sim" || geraNc === "s" || geraNc === "yes" || geraNc === "true";
 
-          if (isNc && meta.perguntaHeader) {
-            const pergunta = checklistNormalize(row[meta.perguntaHeader]) || "Sem pergunta";
-            perguntasErro[pergunta] = (perguntasErro[pergunta] || 0) + 1;
-          }
+        if (isNc) {
+          const pergunta = clNorm(row["pergunta_texto"]) || "Sem pergunta";
+          perguntasErro[pergunta] = (perguntasErro[pergunta] || 0) + 1;
         }
       });
     });
 
-    const comparisonWindow = checklistGetComparisonWindow(period.start, period.end);
+    const comparison = clGetComparisonWindow(period.start, period.end);
 
-    const baseNoPeriod = checklistApplyFiltersWithoutPeriod(meta.rows, req.query, meta);
-    const groupsNoPeriod = checklistGroupByRegistroId(baseNoPeriod, meta);
+    const baseNoPeriodRows = clApplyFiltersWithoutPeriod(rows, req.query);
+    const baseNoPeriodGroups = clGroupByChecklist(baseNoPeriodRows);
 
-    const mesAtual = groupsNoPeriod.filter((g) => {
-      const dt = g._primaryDate;
+    const mesAtual = baseNoPeriodGroups.filter((g) => {
+      const dt = g._dateObj;
       return (
         dt &&
-        comparisonWindow.currentStart &&
-        comparisonWindow.currentEnd &&
-        dt >= comparisonWindow.currentStart &&
-        dt <= comparisonWindow.currentEnd
+        comparison.currentStart &&
+        comparison.currentEnd &&
+        dt >= comparison.currentStart &&
+        dt <= comparison.currentEnd
       );
     }).length;
 
-    const mesAnterior = groupsNoPeriod.filter((g) => {
-      const dt = g._primaryDate;
+    const mesAnterior = baseNoPeriodGroups.filter((g) => {
+      const dt = g._dateObj;
       return (
         dt &&
-        comparisonWindow.previousStart &&
-        comparisonWindow.previousEnd &&
-        dt >= comparisonWindow.previousStart &&
-        dt <= comparisonWindow.previousEnd
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
       );
     }).length;
 
@@ -6270,14 +5985,12 @@ app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
       comparativoMensal: {
         mesAtual,
         mesAnterior,
-        label: comparisonWindow.label || "base anterior",
+        label: comparison.label || "base anterior",
       },
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/checklist-graficos:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
 
@@ -6285,20 +5998,19 @@ app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
 
 app.get("/api/checklist-detalhes", requireAuth, async (req, res) => {
   try {
-    const meta = await checklistLoadWithCache();
+    const rows = await clLoadWithCache();
 
-    const baseRows = checklistApplyFilters(meta.rows, req.query, meta);
-    const baseGroups = checklistGroupByRegistroId(baseRows, meta);
+    const filteredRows = clApplyFilters(rows, req.query);
+    const groups = clGroupByChecklist(filteredRows);
 
-    const periodResult = checklistFilterGroupsByPeriod(baseGroups, req.query);
-    const filtrados = periodResult.groups;
+    const { groups: periodGroups } = clFilterGroupsByPeriod(groups, req.query);
 
     const page = Math.max(Number(req.query.page || 1), 1);
     const limit = Math.min(Math.max(Number(req.query.limit || 25), 1), 200);
 
-    const sorted = [...filtrados].sort((a, b) => {
-      const ad = a._primaryDate ? a._primaryDate.getTime() : 0;
-      const bd = b._primaryDate ? b._primaryDate.getTime() : 0;
+    const sorted = [...periodGroups].sort((a, b) => {
+      const ad = a._dateObj ? a._dateObj.getTime() : 0;
+      const bd = b._dateObj ? b._dateObj.getTime() : 0;
       return bd - ad;
     });
 
@@ -6307,17 +6019,17 @@ app.get("/api/checklist-detalhes", requireAuth, async (req, res) => {
     const currentPage = Math.min(page, totalPages);
     const start = (currentPage - 1) * limit;
 
-    const rows = sorted.slice(start, start + limit).map((group) => ({
-      registroId: group.registroId,
-      data: group._primaryDate ? checklistFormatBRDate(group._primaryDate) : "",
-      elaborador: group.elaborador || "",
+    const rowsOut = sorted.slice(start, start + limit).map((group) => ({
+      registroId: group.registro_id,
+      data: group._dateObj ? clFormatBR(group._dateObj) : group.data_checklist || "",
+      elaborador: group.elaborado_por || "",
       unidade: group.unidade || "",
       funcao: group.funcao || "",
       estado: group.estado || "",
       cidade: group.cidade || "",
       totalItens: group.totalItens,
       totalNc: group.totalNc,
-      pendencias: group.totalPrazosAbertos,
+      pendencias: group.pendencias,
       conformidade: group.conforme ? "Conforme" : "Com NC",
       mediaPontuacao: Number(group.mediaPontuacao || 0).toFixed(1),
     }));
@@ -6327,49 +6039,30 @@ app.get("/api/checklist-detalhes", requireAuth, async (req, res) => {
       page: currentPage,
       limit,
       totalPages,
-      rows,
+      rows: rowsOut,
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/checklist-detalhes:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
 
-// ================== DEBUG OPCIONAL ==================
+// ================== DEBUG ==================
 
 app.get("/api/checklist-debug", requireAuth, async (req, res) => {
   try {
-    const meta = await checklistLoadWithCache();
+    const rows = await clLoadWithCache();
 
     return res.json({
-      totalLinhas: meta.rows.length,
-      headers: meta.headers,
-      registroIdHeader: meta.registroIdHeader,
-      primaryDateColumn: meta.primaryDateColumn,
-      unidadeHeader: meta.unidadeHeader,
-      elaboradorHeader: meta.elaboradorHeader,
-      funcaoHeader: meta.funcaoHeader,
-      estadoHeader: meta.estadoHeader,
-      cidadeHeader: meta.cidadeHeader,
-      topicoHeader: meta.topicoHeader,
-      perguntaHeader: meta.perguntaHeader,
-      respostaHeader: meta.respostaHeader,
-      geraNcHeader: meta.geraNcHeader,
-      prazoHeader: meta.prazoHeader,
-      areaHeader: meta.areaHeader,
-      pontuacaoHeader: meta.pontuacaoHeader,
-      sample: meta.rows.slice(0, 5),
+      totalLinhas: rows.length,
+      headers: rows.length ? Object.keys(rows[0]).filter((h) => !h.startsWith("_")) : [],
+      sample: rows.slice(0, 5),
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/checklist-debug:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
 
 // ================== SERVIDOR ==================
 

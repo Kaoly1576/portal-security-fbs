@@ -756,163 +756,500 @@
   <script>
 Chart.register(ChartDataLabels);
 
-let chartUnidade, chartTopico, chartPrazo, chartDia, chartComparativo, chartPerguntas, chartElaborador;
+let chartUnidade = null;
+let chartTopico = null;
+let chartPrazo = null;
+let chartDia = null;
+let chartComparativo = null;
+let chartPerguntas = null;
+let chartElaborador = null;
 
-// ========================= LOAD DASH =========================
-async function carregarDashboard(page = 1) {
+let currentPage = 1;
+let totalPages = 1;
 
-  const query = getFiltersQuery(page);
+// ========================= HELPERS =========================
+function fmt(value) {
+  return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
+}
 
-  const resumo = await fetch(`/api/checklist-resumo?${query}`).then(r => r.json());
-  const graficos = await fetch(`/api/checklist-graficos?${query}`).then(r => r.json());
+function fmtPct(value) {
+  return `${Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  })}%`;
+}
 
-  // ========================= CARDS =========================
-  document.getElementById("cardTotal").innerText = fmt(resumo.total);
-  document.getElementById("cardOk").innerText = fmt(resumo.ok);
-  document.getElementById("cardNok").innerText = fmt(resumo.nok);
-  document.getElementById("cardTaxa").innerText = fmtPct(resumo.taxa);
-  document.getElementById("cardPendencias").innerText = fmt(resumo.pendencias || 0);
-  document.getElementById("cardMedia").innerText = fmtNum1(resumo.media || 0);
+function fmtNum1(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
+}
+
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function destroyCharts() {
+  [chartUnidade, chartTopico, chartPrazo, chartDia, chartComparativo, chartPerguntas, chartElaborador]
+    .forEach(chart => {
+      if (chart) chart.destroy();
+    });
+
+  chartUnidade = null;
+  chartTopico = null;
+  chartPrazo = null;
+  chartDia = null;
+  chartComparativo = null;
+  chartPerguntas = null;
+  chartElaborador = null;
+}
+
+function horizontalBarOptions() {
+  return {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      datalabels: {
+        color: "#ffffff",
+        anchor: "end",
+        align: "right",
+        font: { size: 10, weight: "700" },
+        formatter: (value) => value > 0 ? fmt(value) : ""
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#cfcfcf", font: { size: 10 } },
+        grid: { color: "rgba(255,255,255,0.05)" },
+        beginAtZero: true
+      },
+      y: {
+        ticks: { color: "#ffffff", font: { size: 10 } },
+        grid: { display: false }
+      }
+    }
+  };
+}
+
+function getMultiValues(menuId) {
+  const inputs = document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`);
+  return [...inputs].map(el => el.value).join("|");
+}
+
+function getFiltersQuery(page = 1) {
+  const qs = new URLSearchParams();
+
+  qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo")?.value || "mes");
+  qs.set("dataRef", document.getElementById("filtroDataRef")?.value || "");
+  qs.set("unidade", getMultiValues("menuUnidade"));
+  qs.set("elaborador", getMultiValues("menuElaborador"));
+  qs.set("funcao", getMultiValues("menuFuncao"));
+  qs.set("estado", getMultiValues("menuEstado"));
+  qs.set("cidade", getMultiValues("menuCidade"));
+  qs.set("topico", getMultiValues("menuTopico"));
+  qs.set("geraNc", getMultiValues("menuGeraNc"));
+  qs.set("prazo", getMultiValues("menuPrazo"));
+  qs.set("area", getMultiValues("menuArea"));
+  qs.set("busca", document.getElementById("filtroBusca")?.value || "");
+  qs.set("page", page);
+  qs.set("limit", 15);
+
+  return qs.toString();
+}
+
+// ========================= MULTISELECT =========================
+function createMultiSelect(menuId, triggerId, values, placeholder) {
+  const menu = document.getElementById(menuId);
+  const trigger = document.getElementById(triggerId);
+
+  if (!menu || !trigger) return;
+
+  menu.innerHTML = `
+    <div class="multi-actions">
+      <button type="button" data-action="all">Todos</button>
+      <button type="button" data-action="clear">Limpar</button>
+    </div>
+  `;
+
+  values.forEach((value) => {
+    const safeValue = esc(value);
+    const label = document.createElement("label");
+    label.className = "multi-option";
+    label.innerHTML = `
+      <input type="checkbox" value="${safeValue}" />
+      <span>${safeValue}</span>
+    `;
+    menu.appendChild(label);
+  });
+
+  function updateTrigger() {
+    const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+    if (!checked.length) {
+      trigger.textContent = placeholder;
+    } else if (checked.length === 1) {
+      trigger.textContent = checked[0];
+    } else {
+      trigger.textContent = `${checked.length} selecionados`;
+    }
+  }
+
+  trigger.onclick = () => {
+    document.querySelectorAll(".multi-select").forEach((wrap) => {
+      if (wrap !== trigger.closest(".multi-select")) {
+        wrap.classList.remove("open");
+      }
+    });
+    trigger.closest(".multi-select")?.classList.toggle("open");
+  };
+
+  menu.addEventListener("click", (e) => {
+    const action = e.target.dataset.action;
+
+    if (action === "all") {
+      menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+        input.checked = true;
+      });
+      updateTrigger();
+      return;
+    }
+
+    if (action === "clear") {
+      menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+        input.checked = false;
+      });
+      updateTrigger();
+      return;
+    }
+
+    if (e.target.matches('input[type="checkbox"]')) {
+      updateTrigger();
+    }
+  });
+
+  updateTrigger();
+}
+
+document.addEventListener("click", (e) => {
+  document.querySelectorAll(".multi-select").forEach((wrap) => {
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove("open");
+    }
+  });
+});
+
+// ========================= FILTROS =========================
+async function loadFiltros() {
+  const res = await fetch("/api/checklist-filtros", { credentials: "same-origin" });
+  const data = await res.json();
+
+  console.log("FILTROS:", data);
+
+  createMultiSelect("menuUnidade", "triggerUnidade", data.unidade || [], "Todas");
+  createMultiSelect("menuElaborador", "triggerElaborador", data.elaborador || [], "Todos");
+  createMultiSelect("menuFuncao", "triggerFuncao", data.funcao || [], "Todas");
+  createMultiSelect("menuEstado", "triggerEstado", data.estado || [], "Todos");
+  createMultiSelect("menuCidade", "triggerCidade", data.cidade || [], "Todas");
+  createMultiSelect("menuTopico", "triggerTopico", data.topico || [], "Todos");
+  createMultiSelect("menuGeraNc", "triggerGeraNc", data.geraNc || [], "Todos");
+  createMultiSelect("menuPrazo", "triggerPrazo", data.prazo || [], "Todos");
+  createMultiSelect("menuArea", "triggerArea", data.area || [], "Todas");
+}
+
+// ========================= RESUMO =========================
+async function loadResumo(page = 1) {
+  const res = await fetch(`/api/checklist-resumo?${getFiltersQuery(page)}`, {
+    credentials: "same-origin"
+  });
+  const data = await res.json();
+
+  console.log("RESUMO:", data);
+
+  document.getElementById("cardTotal").textContent = fmt(data.total);
+  document.getElementById("cardOk").textContent = fmt(data.ok);
+  document.getElementById("cardNok").textContent = fmt(data.nok);
+  document.getElementById("cardTaxa").textContent = fmtPct(data.taxa);
+  document.getElementById("cardPendencias").textContent = fmt(data.pendencias);
+  document.getElementById("cardMedia").textContent = fmtNum1(data.media);
+
+  const ultima = document.getElementById("ultimaAtualizacao");
+  if (ultima) ultima.textContent = data.ultimaAtualizacao || "--:--";
+
+  const subtituloComparativo = document.getElementById("subComparativo");
+  if (subtituloComparativo) {
+    subtituloComparativo.textContent =
+      `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
+  }
+
+  return data;
+}
+
+// ========================= GRÁFICOS =========================
+async function loadGraficos(page = 1) {
+  const res = await fetch(`/api/checklist-graficos?${getFiltersQuery(page)}`, {
+    credentials: "same-origin"
+  });
+  const data = await res.json();
+
+  console.log("GRAFICOS:", data);
 
   destroyCharts();
 
-  // ========================= DIA 1 A 31 =========================
   const dias = Array.from({ length: 31 }, (_, i) => i + 1);
-  const valoresDia = dias.map(d => graficos.porDia?.[d] || 0);
+  const valoresDia = dias.map(d => data.porDia?.[d] || 0);
 
   chartDia = new Chart(document.getElementById("chartDia"), {
-    type: "line",
+    type: "bar",
     data: {
-      labels: dias,
+      labels: dias.map(d => String(d).padStart(2, "0")),
       datasets: [{
         label: "Checklists por dia",
         data: valoresDia,
-        borderColor: "#4da3ff",
-        backgroundColor: "rgba(77,163,255,0.2)",
-        tension: 0.3,
-        fill: true
+        backgroundColor: "#ff7a1a",
+        borderRadius: 4
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: { labels: { color: "#fff" } },
         datalabels: {
-          color: "#fff",
+          color: "#ffffff",
+          anchor: "end",
           align: "top",
-          formatter: v => v > 0 ? v : ""
+          offset: 2,
+          font: { size: 10, weight: "700" },
+          formatter: (value) => value > 0 ? fmt(value) : ""
         }
       },
       scales: {
-        x: { ticks: { color: "#aaa" } },
-        y: { ticks: { color: "#aaa" } }
-      }
-    }
-  });
-
-  // ========================= UNIDADE =========================
-  chartUnidade = new Chart(document.getElementById("chartUnidade"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.unidade || {}),
-      datasets: [{
-        data: Object.values(graficos.unidade || {}),
-        backgroundColor: "#ff6a00"
-      }]
-    },
-    options: horizontalBarOptions()
-  });
-
-  // ========================= TOPICO =========================
-  chartTopico = new Chart(document.getElementById("chartTopico"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.topico || {}),
-      datasets: [{
-        data: Object.values(graficos.topico || {}),
-        backgroundColor: "#ff6a00"
-      }]
-    },
-    options: horizontalBarOptions()
-  });
-
-  // ========================= PRAZO =========================
-  chartPrazo = new Chart(document.getElementById("chartPrazo"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.prazo || {}),
-      datasets: [{
-        data: Object.values(graficos.prazo || {}),
-        backgroundColor: "#ff6a00"
-      }]
-    },
-    options: horizontalBarOptions()
-  });
-
-  // ========================= ELABORADOR =========================
-  chartElaborador = new Chart(document.getElementById("chartElaborador"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.elaborador || {}),
-      datasets: [{
-        data: Object.values(graficos.elaborador || {}),
-        backgroundColor: "#ff6a00"
-      }]
-    },
-    options: horizontalBarOptions()
-  });
-
-  // ========================= PERGUNTAS COM NC =========================
-  chartPerguntas = new Chart(document.getElementById("chartPerguntas"), {
-    type: "bar",
-    data: {
-      labels: (graficos.perguntasErro || []).map(x => x[0]),
-      datasets: [{
-        data: (graficos.perguntasErro || []).map(x => x[1]),
-        backgroundColor: "#ff3b3b"
-      }]
-    },
-    options: horizontalBarOptions()
-  });
-
-  // ========================= COMPARATIVO =========================
-  chartComparativo = new Chart(document.getElementById("chartComparativo"), {
-    type: "bar",
-    data: {
-      labels: ["Período atual", "Período anterior"],
-      datasets: [{
-        data: [
-          resumo.total || 0,
-          resumo.anterior || 0
-        ],
-        backgroundColor: ["#ff6a00", "#4da3ff"]
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: false },
-        datalabels: {
-          color: "#fff",
-          anchor: "end",
-          formatter: v => fmt(v)
+        x: {
+          ticks: { color: "#cfcfcf", font: { size: 10 } },
+          grid: { display: false }
+        },
+        y: {
+          ticks: { color: "#cfcfcf", font: { size: 10 } },
+          grid: { color: "rgba(255,255,255,0.05)" },
+          beginAtZero: true
         }
       }
     }
   });
 
+  chartUnidade = new Chart(document.getElementById("chartUnidade"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(data.unidade || {}),
+      datasets: [{
+        label: "Checklists",
+        data: Object.values(data.unidade || {}),
+        backgroundColor: "#ff7a1a",
+        borderRadius: 8
+      }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartTopico = new Chart(document.getElementById("chartTopico"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(data.topico || {}),
+      datasets: [{
+        label: "Tópicos",
+        data: Object.values(data.topico || {}),
+        backgroundColor: "#ff7a1a",
+        borderRadius: 8
+      }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartPrazo = new Chart(document.getElementById("chartPrazo"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(data.prazo || {}),
+      datasets: [{
+        label: "Prazos",
+        data: Object.values(data.prazo || {}),
+        backgroundColor: "#ff7a1a",
+        borderRadius: 8
+      }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartPerguntas = new Chart(document.getElementById("chartPerguntas"), {
+    type: "bar",
+    data: {
+      labels: (data.perguntasErro || []).map(x => x[0]),
+      datasets: [{
+        label: "NC",
+        data: (data.perguntasErro || []).map(x => x[1]),
+        backgroundColor: "#ff4d4f",
+        borderRadius: 8
+      }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartElaborador = new Chart(document.getElementById("chartElaborador"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(data.elaborador || {}),
+      datasets: [{
+        label: "Checklists",
+        data: Object.values(data.elaborador || {}),
+        backgroundColor: "#58a6ff",
+        borderRadius: 8
+      }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartComparativo = new Chart(document.getElementById("chartComparativo"), {
+    type: "bar",
+    data: {
+      labels: ["Período atual", data.comparativoMensal?.label || "Anterior"],
+      datasets: [{
+        label: "Checklists",
+        data: [
+          data.comparativoMensal?.mesAtual || 0,
+          data.comparativoMensal?.mesAnterior || 0
+        ],
+        backgroundColor: ["#ff7a1a", "#58a6ff"],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#fff" } },
+        datalabels: {
+          color: "#ffffff",
+          anchor: "end",
+          align: "top",
+          font: { size: 10, weight: "700" },
+          formatter: (value) => value > 0 ? fmt(value) : ""
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#fff", font: { size: 10 } },
+          grid: { display: false }
+        },
+        y: {
+          ticks: { color: "#cfcfcf", font: { size: 10 } },
+          grid: { color: "rgba(255,255,255,0.05)" },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+// ========================= TABELA =========================
+async function loadDetalhes(page = 1) {
+  const res = await fetch(`/api/checklist-detalhes?${getFiltersQuery(page)}`, {
+    credentials: "same-origin"
+  });
+  const data = await res.json();
+
+  console.log("DETALHES:", data);
+
+  currentPage = data.page || 1;
+  totalPages = data.totalPages || 1;
+
+  const tbody = document.getElementById("tbodyDetalhes");
+  if (!tbody) return;
+
+  tbody.innerHTML = (data.rows || []).map((row) => `
+    <tr>
+      <td>${esc(row.registroId)}</td>
+      <td>${esc(row.data)}</td>
+      <td>${esc(row.elaborador)}</td>
+      <td>${esc(row.unidade)}</td>
+      <td>${esc(row.funcao)}</td>
+      <td>${esc(row.estado)}</td>
+      <td>${esc(row.cidade)}</td>
+      <td>${fmt(row.totalItens)}</td>
+      <td>${fmt(row.totalNc)}</td>
+      <td>${fmt(row.pendencias)}</td>
+      <td>${esc(row.conformidade)}</td>
+      <td>${esc(row.mediaPontuacao)}</td>
+    </tr>
+  `).join("");
+
+  const pager = document.getElementById("pagerInfo");
+  if (pager) pager.textContent = `Página ${currentPage} de ${totalPages}`;
+}
+
+// ========================= LOAD GERAL =========================
+async function carregarDashboard(page = 1) {
+  try {
+    await loadResumo(page);
+    await loadGraficos(page);
+    await loadDetalhes(page);
+  } catch (error) {
+    console.error("Erro ao carregar dashboard:", error);
+  }
 }
 
 // ========================= BOTÕES =========================
-document.getElementById("btnAplicar").onclick = () => {
+document.getElementById("btnAplicar")?.addEventListener("click", () => {
   carregarDashboard(1);
-};
+});
 
-document.getElementById("btnLimpar").onclick = () => {
-  document.querySelectorAll("input").forEach(i => i.value = "");
-  closeAllMultiSelects();
+document.getElementById("btnLimpar")?.addEventListener("click", () => {
+  document.getElementById("filtroPeriodoTipo").value = "mes";
+  document.getElementById("filtroDataRef").value = "";
+  document.getElementById("filtroBusca").value = "";
+
+  document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach((input) => {
+    input.checked = false;
+  });
+
+  [
+    ["triggerUnidade", "Todas"],
+    ["triggerElaborador", "Todos"],
+    ["triggerFuncao", "Todas"],
+    ["triggerEstado", "Todos"],
+    ["triggerCidade", "Todas"],
+    ["triggerTopico", "Todos"],
+    ["triggerGeraNc", "Todos"],
+    ["triggerPrazo", "Todos"],
+    ["triggerArea", "Todas"]
+  ].forEach(([id, texto]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = texto;
+  });
+
   carregarDashboard(1);
-};
+});
+
+document.getElementById("btnPrev")?.addEventListener("click", () => {
+  if (currentPage > 1) carregarDashboard(currentPage - 1);
+});
+
+document.getElementById("btnNext")?.addEventListener("click", () => {
+  if (currentPage < totalPages) carregarDashboard(currentPage + 1);
+});
 
 // ========================= INIT =========================
-carregarDashboard();
+(async function init() {
+  try {
+    await loadFiltros();
+    await carregarDashboard(1);
+  } catch (error) {
+    console.error("Erro no init do checklist:", error);
+  }
+})();
 </script>

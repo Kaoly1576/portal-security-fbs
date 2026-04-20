@@ -5379,6 +5379,996 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== CHECKLIST DASHBOARD ==================
+
+app.get("/checklist", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "checklist.html"));
+});
+
+const CHECKLIST_SPREADSHEET_ID = "1vUv0AJ_bASBkkzxUWOyheJSASb4VDsaRKAl40EzRKsk";
+const CHECKLIST_SHEET_NAME = "Respostas";
+
+let checklistCache = null;
+let checklistCacheTime = 0;
+const CHECKLIST_CACHE_TTL = 5 * 60 * 1000;
+
+// ================== HELPERS ==================
+
+function checklistNormalize(value) {
+  return String(value || "").trim();
+}
+
+function checklistNormalizeLower(value) {
+  return checklistNormalize(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function checklistIsUsefulHeader(header) {
+  const h = checklistNormalize(header);
+  return h && !/^unnamed/i.test(h);
+}
+
+function checklistFindHeader(headers, possibilities) {
+  for (const possibility of possibilities) {
+    const found = headers.find(
+      (h) => checklistNormalizeLower(h) === checklistNormalizeLower(possibility)
+    );
+    if (found) return found;
+  }
+
+  for (const possibility of possibilities) {
+    const found = headers.find((h) =>
+      checklistNormalizeLower(h).includes(checklistNormalizeLower(possibility))
+    );
+    if (found) return found;
+  }
+
+  return null;
+}
+
+function checklistParseDate(value) {
+  const str = checklistNormalize(value);
+  if (!str) return null;
+
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    const dt = new Date(year, month - 1, day);
+    return isNaN(dt) ? null : dt;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [year, month, day] = datePart.split("-").map(Number);
+    const dt = new Date(year, month - 1, day);
+    return isNaN(dt) ? null : dt;
+  }
+
+  return null;
+}
+
+function checklistFormatInputDate(date) {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function checklistFormatBRDate(date) {
+  if (!date) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function checklistParseMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split("|")
+    .map((v) => checklistNormalize(v))
+    .filter(Boolean);
+}
+
+function checklistGroupCount(data, header) {
+  const map = {};
+  data.forEach((row) => {
+    const key = checklistNormalize(row[header]) || "Sem valor";
+    map[key] = (map[key] || 0) + 1;
+  });
+  return map;
+}
+
+function checklistTopEntries(data, header, limit = 10, onlyFilled = true) {
+  if (!header) return [];
+  let base = data;
+
+  if (onlyFilled) {
+    base = data.filter((row) => checklistNormalize(row[header]));
+  }
+
+  return Object.entries(checklistGroupCount(base, header))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+}
+
+function checklistPercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+
+  return ((current - previous) / previous) * 100;
+}
+
+function checklistStartOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function checklistEndOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function checklistDiffDaysInclusive(start, end) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const s = checklistStartOfDay(start);
+  const e = checklistStartOfDay(end);
+  return Math.floor((e - s) / msPerDay) + 1;
+}
+
+function checklistResolvePeriodFromQuery(query, rows) {
+  const periodoTipo = checklistNormalizeLower(query.periodoTipo || "mes");
+  const dataRefStr = checklistNormalize(query.dataRef);
+
+  if (dataRefStr) {
+    const ref = new Date(`${dataRefStr}T00:00:00`);
+
+    if (!isNaN(ref.getTime())) {
+      if (periodoTipo === "dia") {
+        return {
+          start: checklistStartOfDay(ref),
+          end: checklistEndOfDay(ref),
+          label: "dia",
+        };
+      }
+
+      if (periodoTipo === "semana") {
+        const weekStart = new Date(ref);
+        const day = weekStart.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        weekStart.setDate(weekStart.getDate() + diff);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return {
+          start: checklistStartOfDay(weekStart),
+          end: checklistEndOfDay(weekEnd),
+          label: "semana",
+        };
+      }
+
+      if (periodoTipo === "ano") {
+        return {
+          start: new Date(ref.getFullYear(), 0, 1),
+          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
+          label: "ano",
+        };
+      }
+
+      return {
+        start: new Date(ref.getFullYear(), ref.getMonth(), 1),
+        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
+        label: "mês",
+      };
+    }
+  }
+
+  const validDates = rows
+    .map((r) => r._primaryDate)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!validDates.length) {
+    return { start: null, end: null, label: "período" };
+  }
+
+  return {
+    start: checklistStartOfDay(validDates[0]),
+    end: checklistEndOfDay(validDates[validDates.length - 1]),
+    label: "período",
+  };
+}
+
+function checklistGetComparisonWindow(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return {
+      currentStart: null,
+      currentEnd: null,
+      previousStart: null,
+      previousEnd: null,
+      label: "base anterior",
+    };
+  }
+
+  const start = checklistStartOfDay(startDate);
+  const end = checklistEndOfDay(endDate);
+
+  const isSingleDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const isFullMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === 1 &&
+    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+  const isFullYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === 0 &&
+    start.getDate() === 1 &&
+    end.getMonth() === 11 &&
+    end.getDate() === 31;
+
+  const totalDays = checklistDiffDaysInclusive(start, end);
+
+  if (isSingleDay) {
+    const prev = new Date(start);
+    prev.setDate(prev.getDate() - 1);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: checklistStartOfDay(prev),
+      previousEnd: checklistEndOfDay(prev),
+      label: "dia anterior",
+    };
+  }
+
+  if (isFullMonth) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
+      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
+      label: "mês anterior",
+    };
+  }
+
+  if (isFullYear) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear() - 1, 0, 1),
+      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
+      label: "ano anterior",
+    };
+  }
+
+  const previousEnd = new Date(start);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  previousEnd.setHours(23, 59, 59, 999);
+
+  const previousStart = new Date(previousEnd);
+  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
+  previousStart.setHours(0, 0, 0, 0);
+
+  return {
+    currentStart: start,
+    currentEnd: end,
+    previousStart,
+    previousEnd,
+    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
+  };
+}
+
+// ================== LOAD RAW ==================
+
+async function checklistLoadRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CHECKLIST_SPREADSHEET_ID,
+    range: `'${CHECKLIST_SHEET_NAME}'!A1:Z200000`,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) {
+    return { headers: [], rows: [], sheetTitle: CHECKLIST_SHEET_NAME };
+  }
+
+  const headers = values[0].map((h, idx) => {
+    const name = checklistNormalize(h);
+    return name || `COL_${idx + 1}`;
+  });
+
+  const rows = values.slice(1).map((line) => {
+    const obj = {};
+    headers.forEach((header, i) => {
+      obj[header] = line[i] ?? "";
+    });
+    return obj;
+  });
+
+  return { headers, rows, sheetTitle: CHECKLIST_SHEET_NAME };
+}
+
+// ================== LOAD CACHE + MAP HEADERS ==================
+
+async function checklistLoadWithCache() {
+  const now = Date.now();
+
+  if (checklistCache && now - checklistCacheTime < CHECKLIST_CACHE_TTL) {
+    return checklistCache;
+  }
+
+  const { headers, rows, sheetTitle } = await checklistLoadRaw();
+
+  const cleanHeaders = headers.filter((header) => checklistIsUsefulHeader(header));
+
+  const cleanRows = rows
+    .map((row) => {
+      const obj = {};
+      cleanHeaders.forEach((header) => {
+        obj[header] = row[header] ?? "";
+      });
+      return obj;
+    })
+    .filter((row) => cleanHeaders.some((header) => checklistNormalize(row[header])));
+
+  const registroIdHeader = checklistFindHeader(cleanHeaders, [
+    "registro_id",
+    "registro-id",
+    "registro id",
+    "id do registro",
+  ]);
+
+  const primaryDateColumn = checklistFindHeader(cleanHeaders, [
+    "data_checklist",
+    "data checklist",
+    "data",
+    "data da inspeção",
+    "data da inspecao",
+    "data da auditoria",
+    "data de criação",
+    "data de criacao",
+  ]);
+
+  const unidadeHeader = checklistFindHeader(cleanHeaders, [
+    "unidade",
+    "site",
+    "base",
+    "filial",
+  ]);
+
+  const elaboradorHeader = checklistFindHeader(cleanHeaders, [
+    "elaborado_por",
+    "elaborado por",
+    "auditor",
+    "responsável",
+    "responsavel",
+    "nome do auditor",
+    "colaborador",
+  ]);
+
+  const funcaoHeader = checklistFindHeader(cleanHeaders, [
+    "funcao",
+    "função",
+    "cargo",
+  ]);
+
+  const estadoHeader = checklistFindHeader(cleanHeaders, [
+    "estado",
+    "uf",
+  ]);
+
+  const cidadeHeader = checklistFindHeader(cleanHeaders, [
+    "cidade",
+    "city",
+  ]);
+
+  const topicoHeader = checklistFindHeader(cleanHeaders, [
+    "topico",
+    "tópico",
+    "categoria",
+    "grupo",
+    "seção",
+    "secao",
+  ]);
+
+  const perguntaHeader = checklistFindHeader(cleanHeaders, [
+    "pergunta",
+    "item",
+    "questão",
+    "questao",
+    "pergunta_texto",
+  ]);
+
+  const respostaHeader = checklistFindHeader(cleanHeaders, [
+    "resposta",
+    "resultado",
+    "status",
+    "conforme",
+  ]);
+
+  const geraNcHeader = checklistFindHeader(cleanHeaders, [
+    "gera_nc",
+    "gera nc",
+    "gera não conformidade",
+    "gera nao conformidade",
+    "nc",
+  ]);
+
+  const prazoHeader = checklistFindHeader(cleanHeaders, [
+    "situacao_prazo",
+    "situação do prazo",
+    "situacao do prazo",
+    "prazo",
+    "status do prazo",
+  ]);
+
+  const areaHeader = checklistFindHeader(cleanHeaders, [
+    "area_responsavel",
+    "área responsável",
+    "area responsavel",
+    "responsável pela ação",
+    "responsavel pela acao",
+    "área",
+    "area",
+  ]);
+
+  const pontuacaoHeader = checklistFindHeader(cleanHeaders, [
+    "pontuacao",
+    "pontuação",
+    "score",
+    "nota",
+  ]);
+
+  const enrichedRows = cleanRows.map((row) => {
+    const dt = primaryDateColumn ? checklistParseDate(row[primaryDateColumn]) : null;
+    return {
+      ...row,
+      _primaryDate: dt,
+      _day: dt ? dt.getDate() : null,
+      _monthKey: dt
+        ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`
+        : "",
+    };
+  });
+
+  checklistCache = {
+    sheetTitle,
+    headers: cleanHeaders,
+    rows: enrichedRows,
+    registroIdHeader,
+    primaryDateColumn,
+    unidadeHeader,
+    elaboradorHeader,
+    funcaoHeader,
+    estadoHeader,
+    cidadeHeader,
+    topicoHeader,
+    perguntaHeader,
+    respostaHeader,
+    geraNcHeader,
+    prazoHeader,
+    areaHeader,
+    pontuacaoHeader,
+  };
+
+  checklistCacheTime = now;
+
+  console.log("CHECKLIST cache atualizado:", {
+    aba: sheetTitle,
+    totalLinhas: enrichedRows.length,
+    totalColunas: cleanHeaders.length,
+    registroIdHeader,
+    primaryDateColumn,
+    unidadeHeader,
+    elaboradorHeader,
+    funcaoHeader,
+    estadoHeader,
+    cidadeHeader,
+    topicoHeader,
+    perguntaHeader,
+    respostaHeader,
+    geraNcHeader,
+    prazoHeader,
+    areaHeader,
+    pontuacaoHeader,
+  });
+
+  return checklistCache;
+}
+
+// ================== APPLY FILTERS ROW LEVEL ==================
+
+function checklistApplyFilters(rows, query, meta) {
+  const busca = checklistNormalizeLower(query.busca);
+
+  const selections = [
+    { queryKey: "unidade", header: meta.unidadeHeader },
+    { queryKey: "elaborador", header: meta.elaboradorHeader },
+    { queryKey: "funcao", header: meta.funcaoHeader },
+    { queryKey: "estado", header: meta.estadoHeader },
+    { queryKey: "cidade", header: meta.cidadeHeader },
+    { queryKey: "topico", header: meta.topicoHeader },
+    { queryKey: "geraNc", header: meta.geraNcHeader },
+    { queryKey: "prazo", header: meta.prazoHeader },
+    { queryKey: "area", header: meta.areaHeader },
+  ];
+
+  return rows.filter((row) => {
+    for (const item of selections) {
+      const selected = checklistParseMulti(query[item.queryKey]);
+      if (selected.length && item.header) {
+        if (!selected.includes(checklistNormalize(row[item.header]))) {
+          return false;
+        }
+      }
+    }
+
+    if (busca) {
+      const searchable = Object.entries(row)
+        .filter(([key]) => !key.startsWith("_"))
+        .map(([, value]) => checklistNormalizeLower(value))
+        .join(" ");
+
+      if (!searchable.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function checklistApplyFiltersWithoutPeriod(rows, query, meta) {
+  const cloneQuery = {
+    ...query,
+    periodoTipo: "",
+    dataRef: "",
+  };
+  return checklistApplyFilters(rows, cloneQuery, meta);
+}
+
+// ================== GROUP BY CHECKLIST ==================
+
+function checklistGroupByRegistroId(rows, meta) {
+  const idHeader = meta.registroIdHeader;
+
+  const grouped = new Map();
+
+  rows.forEach((row, index) => {
+    const rawId = idHeader ? checklistNormalize(row[idHeader]) : "";
+    const id = rawId || `SEM_ID_${index + 1}`;
+
+    if (!grouped.has(id)) {
+      grouped.set(id, {
+        registroId: id,
+        rows: [],
+      });
+    }
+
+    grouped.get(id).rows.push(row);
+  });
+
+  const groups = [...grouped.values()].map((group) => {
+    const orderedRows = [...group.rows].sort((a, b) => {
+      const ad = a._primaryDate ? a._primaryDate.getTime() : 0;
+      const bd = b._primaryDate ? b._primaryDate.getTime() : 0;
+      return ad - bd;
+    });
+
+    const first = orderedRows[0] || {};
+
+    const unidade = meta.unidadeHeader ? checklistNormalize(first[meta.unidadeHeader]) : "";
+    const elaborador = meta.elaboradorHeader ? checklistNormalize(first[meta.elaboradorHeader]) : "";
+    const funcao = meta.funcaoHeader ? checklistNormalize(first[meta.funcaoHeader]) : "";
+    const estado = meta.estadoHeader ? checklistNormalize(first[meta.estadoHeader]) : "";
+    const cidade = meta.cidadeHeader ? checklistNormalize(first[meta.cidadeHeader]) : "";
+    const data = orderedRows.find((r) => r._primaryDate)?._primaryDate || first._primaryDate || null;
+
+    const totalItens = orderedRows.length;
+
+    const totalNc = meta.geraNcHeader
+      ? orderedRows.filter((r) => {
+          const v = checklistNormalizeLower(r[meta.geraNcHeader]);
+          return (
+            v === "sim" ||
+            v === "s" ||
+            v === "yes" ||
+            v === "true" ||
+            v.includes("nc")
+          );
+        }).length
+      : 0;
+
+    const totalPrazosAbertos = meta.prazoHeader
+      ? orderedRows.filter((r) => {
+          const v = checklistNormalizeLower(r[meta.prazoHeader]);
+          return (
+            v.includes("aberto") ||
+            v.includes("pendente") ||
+            v.includes("vencido") ||
+            v.includes("atrasado")
+          );
+        }).length
+      : 0;
+
+    const scoreValues = meta.pontuacaoHeader
+      ? orderedRows
+          .map((r) => {
+            const raw = checklistNormalize(r[meta.pontuacaoHeader])
+              .replace(/\./g, "")
+              .replace(",", ".");
+            const n = Number(raw);
+            return isNaN(n) ? null : n;
+          })
+          .filter((n) => n !== null)
+      : [];
+
+    const mediaPontuacao = scoreValues.length
+      ? scoreValues.reduce((sum, n) => sum + n, 0) / scoreValues.length
+      : 0;
+
+    const conforme = totalNc === 0;
+
+    return {
+      registroId: group.registroId,
+      rows: orderedRows,
+      _primaryDate: data,
+      unidade,
+      elaborador,
+      funcao,
+      estado,
+      cidade,
+      totalItens,
+      totalNc,
+      totalPrazosAbertos,
+      mediaPontuacao,
+      conforme,
+    };
+  });
+
+  return groups;
+}
+
+function checklistFilterGroupsByPeriod(groups, query) {
+  const period = checklistResolvePeriodFromQuery(query, groups);
+
+  if (!period.start || !period.end) {
+    return {
+      groups,
+      period,
+    };
+  }
+
+  const filtered = groups.filter((group) => {
+    const dt = group._primaryDate;
+    return dt && dt >= period.start && dt <= period.end;
+  });
+
+  return {
+    groups: filtered,
+    period,
+  };
+}
+
+// ================== FILTROS ==================
+
+app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
+  try {
+    const meta = await checklistLoadWithCache();
+
+    const rowFiltered = checklistApplyFilters(meta.rows, req.query, meta);
+
+    const allGroups = checklistGroupByRegistroId(rowFiltered, meta);
+
+    function uniqueFromRows(header) {
+      if (!header) return [];
+      return [...new Set(rowFiltered.map((r) => checklistNormalize(r[header])).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    }
+
+    return res.json({
+      unidade: uniqueFromRows(meta.unidadeHeader),
+      elaborador: uniqueFromRows(meta.elaboradorHeader),
+      funcao: uniqueFromRows(meta.funcaoHeader),
+      estado: uniqueFromRows(meta.estadoHeader),
+      cidade: uniqueFromRows(meta.cidadeHeader),
+      topico: uniqueFromRows(meta.topicoHeader),
+      geraNc: uniqueFromRows(meta.geraNcHeader),
+      prazo: uniqueFromRows(meta.prazoHeader),
+      area: uniqueFromRows(meta.areaHeader),
+      totalLinhas: rowFiltered.length,
+      totalChecklists: allGroups.length,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+// ================== RESUMO ==================
+
+app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
+  try {
+    const meta = await checklistLoadWithCache();
+
+    const baseRows = checklistApplyFilters(meta.rows, req.query, meta);
+    const baseGroups = checklistGroupByRegistroId(baseRows, meta);
+
+    const periodResult = checklistFilterGroupsByPeriod(baseGroups, req.query);
+    const filtrados = periodResult.groups;
+    const period = periodResult.period;
+
+    const total = filtrados.length;
+    const ok = filtrados.filter((g) => g.conforme).length;
+    const nok = total - ok;
+    const taxa = total ? (ok / total) * 100 : 0;
+    const pendencias = filtrados.reduce((sum, g) => sum + g.totalPrazosAbertos, 0);
+    const media = total
+      ? filtrados.reduce((sum, g) => sum + g.mediaPontuacao, 0) / total
+      : 0;
+
+    const comparisonWindow = checklistGetComparisonWindow(period.start, period.end);
+
+    const baseNoPeriod = checklistApplyFiltersWithoutPeriod(meta.rows, req.query, meta);
+    const groupsNoPeriod = checklistGroupByRegistroId(baseNoPeriod, meta);
+
+    const anterior = groupsNoPeriod.filter((g) => {
+      const dt = g._primaryDate;
+      return (
+        dt &&
+        comparisonWindow.previousStart &&
+        comparisonWindow.previousEnd &&
+        dt >= comparisonWindow.previousStart &&
+        dt <= comparisonWindow.previousEnd
+      );
+    }).length;
+
+    return res.json({
+      total,
+      ok,
+      nok,
+      taxa,
+      pendencias,
+      media,
+      anterior,
+      comparativoLabel: comparisonWindow.label || "base anterior",
+      periodoAtualInicio: comparisonWindow.currentStart
+        ? checklistFormatBRDate(comparisonWindow.currentStart)
+        : "",
+      periodoAtualFim: comparisonWindow.currentEnd
+        ? checklistFormatBRDate(comparisonWindow.currentEnd)
+        : "",
+      periodoAnteriorInicio: comparisonWindow.previousStart
+        ? checklistFormatBRDate(comparisonWindow.previousStart)
+        : "",
+      periodoAnteriorFim: comparisonWindow.previousEnd
+        ? checklistFormatBRDate(comparisonWindow.previousEnd)
+        : "",
+      variacao: checklistPercentChange(total, anterior),
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+// ================== GRÁFICOS ==================
+
+app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
+  try {
+    const meta = await checklistLoadWithCache();
+
+    const baseRows = checklistApplyFilters(meta.rows, req.query, meta);
+    const baseGroups = checklistGroupByRegistroId(baseRows, meta);
+
+    const periodResult = checklistFilterGroupsByPeriod(baseGroups, req.query);
+    const filtrados = periodResult.groups;
+    const period = periodResult.period;
+
+    const porDia = {};
+    for (let i = 1; i <= 31; i++) porDia[i] = 0;
+
+    const unidade = {};
+    const topico = {};
+    const prazo = {};
+    const elaborador = {};
+    const perguntasErro = {};
+
+    filtrados.forEach((group) => {
+      if (group._primaryDate) {
+        const day = group._primaryDate.getDate();
+        porDia[day] = (porDia[day] || 0) + 1;
+      }
+
+      const unidadeKey = group.unidade || "Sem unidade";
+      unidade[unidadeKey] = (unidade[unidadeKey] || 0) + 1;
+
+      const elaboradorKey = group.elaborador || "Sem elaborador";
+      elaborador[elaboradorKey] = (elaborador[elaboradorKey] || 0) + 1;
+
+      group.rows.forEach((row) => {
+        if (meta.topicoHeader) {
+          const topicoKey = checklistNormalize(row[meta.topicoHeader]) || "Sem tópico";
+          topico[topicoKey] = (topico[topicoKey] || 0) + 1;
+        }
+
+        if (meta.prazoHeader) {
+          const prazoKey = checklistNormalize(row[meta.prazoHeader]) || "Sem prazo";
+          prazo[prazoKey] = (prazo[prazoKey] || 0) + 1;
+        }
+
+        if (meta.geraNcHeader) {
+          const geraNc = checklistNormalizeLower(row[meta.geraNcHeader]);
+          const isNc =
+            geraNc === "sim" ||
+            geraNc === "s" ||
+            geraNc === "yes" ||
+            geraNc === "true" ||
+            geraNc.includes("nc");
+
+          if (isNc && meta.perguntaHeader) {
+            const pergunta = checklistNormalize(row[meta.perguntaHeader]) || "Sem pergunta";
+            perguntasErro[pergunta] = (perguntasErro[pergunta] || 0) + 1;
+          }
+        }
+      });
+    });
+
+    const comparisonWindow = checklistGetComparisonWindow(period.start, period.end);
+
+    const baseNoPeriod = checklistApplyFiltersWithoutPeriod(meta.rows, req.query, meta);
+    const groupsNoPeriod = checklistGroupByRegistroId(baseNoPeriod, meta);
+
+    const mesAtual = groupsNoPeriod.filter((g) => {
+      const dt = g._primaryDate;
+      return (
+        dt &&
+        comparisonWindow.currentStart &&
+        comparisonWindow.currentEnd &&
+        dt >= comparisonWindow.currentStart &&
+        dt <= comparisonWindow.currentEnd
+      );
+    }).length;
+
+    const mesAnterior = groupsNoPeriod.filter((g) => {
+      const dt = g._primaryDate;
+      return (
+        dt &&
+        comparisonWindow.previousStart &&
+        comparisonWindow.previousEnd &&
+        dt >= comparisonWindow.previousStart &&
+        dt <= comparisonWindow.previousEnd
+      );
+    }).length;
+
+    return res.json({
+      porDia,
+      unidade,
+      topico,
+      prazo,
+      elaborador,
+      perguntasErro: Object.entries(perguntasErro)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10),
+      comparativoMensal: {
+        mesAtual,
+        mesAnterior,
+        label: comparisonWindow.label || "base anterior",
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+// ================== DETALHES ==================
+
+app.get("/api/checklist-detalhes", requireAuth, async (req, res) => {
+  try {
+    const meta = await checklistLoadWithCache();
+
+    const baseRows = checklistApplyFilters(meta.rows, req.query, meta);
+    const baseGroups = checklistGroupByRegistroId(baseRows, meta);
+
+    const periodResult = checklistFilterGroupsByPeriod(baseGroups, req.query);
+    const filtrados = periodResult.groups;
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 25), 1), 200);
+
+    const sorted = [...filtrados].sort((a, b) => {
+      const ad = a._primaryDate ? a._primaryDate.getTime() : 0;
+      const bd = b._primaryDate ? b._primaryDate.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    const rows = sorted.slice(start, start + limit).map((group) => ({
+      registroId: group.registroId,
+      data: group._primaryDate ? checklistFormatBRDate(group._primaryDate) : "",
+      elaborador: group.elaborador || "",
+      unidade: group.unidade || "",
+      funcao: group.funcao || "",
+      estado: group.estado || "",
+      cidade: group.cidade || "",
+      totalItens: group.totalItens,
+      totalNc: group.totalNc,
+      pendencias: group.totalPrazosAbertos,
+      conformidade: group.conforme ? "Conforme" : "Com NC",
+      mediaPontuacao: Number(group.mediaPontuacao || 0).toFixed(1),
+    }));
+
+    return res.json({
+      total,
+      page: currentPage,
+      limit,
+      totalPages,
+      rows,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
+
+// ================== DEBUG OPCIONAL ==================
+
+app.get("/api/checklist-debug", requireAuth, async (req, res) => {
+  try {
+    const meta = await checklistLoadWithCache();
+
+    return res.json({
+      totalLinhas: meta.rows.length,
+      headers: meta.headers,
+      registroIdHeader: meta.registroIdHeader,
+      primaryDateColumn: meta.primaryDateColumn,
+      unidadeHeader: meta.unidadeHeader,
+      elaboradorHeader: meta.elaboradorHeader,
+      funcaoHeader: meta.funcaoHeader,
+      estadoHeader: meta.estadoHeader,
+      cidadeHeader: meta.cidadeHeader,
+      topicoHeader: meta.topicoHeader,
+      perguntaHeader: meta.perguntaHeader,
+      respostaHeader: meta.respostaHeader,
+      geraNcHeader: meta.geraNcHeader,
+      prazoHeader: meta.prazoHeader,
+      areaHeader: meta.areaHeader,
+      pontuacaoHeader: meta.pontuacaoHeader,
+      sample: meta.rows.slice(0, 5),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      message: error.message,
+    });
+  }
+});
 
 
 // ================== SERVIDOR ==================

@@ -5411,39 +5411,21 @@ function clParseDate(value) {
   const str = clNorm(value);
   if (!str) return null;
 
-  // formato YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [year, month, day] = datePart.split("-").map(Number);
+  // MM/DD/YYYY ou M/D/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+    const [month, day, year] = str.split("/").map(Number);
     const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
+    return isNaN(dt.getTime()) ? null : dt;
   }
 
-  // formato MM/DD/YYYY ou M/D/YYYY  -> BASE DO CHECKLIST
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [month, day, year] = datePart.split("/").map(Number);
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [year, month, day] = str.split("-").map(Number);
     const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
-  }
-
-  // formato DD/MM/YYYY
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [day, month, year] = datePart.split("/").map(Number);
-    const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
+    return isNaN(dt.getTime()) ? null : dt;
   }
 
   return null;
-}
-
-function clFormatInputDate(date) {
-  if (!date) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function clFormatBR(date) {
@@ -5487,9 +5469,7 @@ function clEndOfDay(date) {
 
 function clDiffDaysInclusive(start, end) {
   const msPerDay = 24 * 60 * 60 * 1000;
-  const s = clStartOfDay(start);
-  const e = clStartOfDay(end);
-  return Math.floor((e - s) / msPerDay) + 1;
+  return Math.floor((clStartOfDay(end) - clStartOfDay(start)) / msPerDay) + 1;
 }
 
 function clResolvePeriodFromQuery(query, groups) {
@@ -5748,7 +5728,7 @@ function clGroupByChecklist(rows) {
   });
 }
 
-// ================== FILTERS ON RAW ROWS ==================
+// ================== FILTERS ==================
 
 function clApplyFilters(rows, query) {
   const unidade = clSplitMulti(query.unidade);
@@ -5793,8 +5773,6 @@ function clApplyFiltersWithoutPeriod(rows, query) {
     dataRef: "",
   });
 }
-
-// ================== PERIOD FILTER ON GROUPS ==================
 
 function clFilterGroupsByPeriod(groups, query) {
   const period = clResolvePeriodFromQuery(query, groups);
@@ -6057,6 +6035,7 @@ app.get("/api/checklist-debug", requireAuth, async (req, res) => {
       totalLinhas: rows.length,
       headers: rows.length ? Object.keys(rows[0]).filter((h) => !h.startsWith("_")) : [],
       sample: rows.slice(0, 5),
+      totalChecklists: [...new Set(rows.map((r) => r["registro_id"]).filter(Boolean))].length,
     });
   } catch (error) {
     console.error("Erro /api/checklist-debug:", error);

@@ -313,12 +313,18 @@
     }
 
     .center-column{
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-      min-width:0;
-    }
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-width:0;
+  width:100%;
+}
 
+    .hero,
+.accordion-grid,
+.module-card{
+  width:100%;
+}
     .hero{
       position:relative;
       min-height:260px;
@@ -385,14 +391,14 @@
     }
 
     .accordion-grid{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:14px;
-      align-items:start;
-      max-width:920px;
-      width:100%;
-      margin:0 auto;
-    }
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  align-items:start;
+  width:100%;
+  max-width:100%;
+  margin:0;
+}
 
     .module-card{
       overflow:hidden;

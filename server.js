@@ -5379,145 +5379,634 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
   }
 });
 
-// ================== CHECKLIST ==================
+// ================== CHECKLIST DASHBOARD ==================
 
-const CHECKLIST_CACHE = {
-  data: null,
-  lastFetch: 0
-};
+const CHECKLIST_SHEET_ID = "1vUv0AJ_bASBkkzxUWOyheJSASb4VDsaRKAl40EzRKsk";
+const CHECKLIST_SHEET_RANGE = "Respostas!A:Z";
 
-const CHECKLIST_TTL = 5 * 60 * 1000;
+let checklistCache = null;
+let checklistCacheTime = 0;
+const CHECKLIST_CACHE_TTL = 5 * 60 * 1000;
 
-async function buscarChecklist() {
-  const agora = Date.now();
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
-  if (CHECKLIST_CACHE.data && (agora - CHECKLIST_CACHE.lastFetch < CHECKLIST_TTL)) {
-    return CHECKLIST_CACHE.data;
+function normalizeUpper(value) {
+  return normalizeText(value).toUpperCase();
+}
+
+function toArrayParam(param) {
+  if (!param) return [];
+  return String(param)
+    .split("|")
+    .map(v => normalizeText(v))
+    .filter(Boolean);
+}
+
+function parseUSDate(value) {
+  if (!value) return null;
+
+  const str = String(value).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const parts = str.split("/");
+  if (parts.length === 3) {
+    const month = Number(parts[0]);
+    const day = Number(parts[1]);
+    const year = Number(parts[2]);
+    const d = new Date(year, month - 1, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDateBR(date) {
+  if (!date || isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR");
+}
+
+function formatHourBR(date) {
+  if (!date || isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function getDayOnly(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfWeek(date) {
+  const d = startOfWeek(date);
+  d.setDate(d.getDate() + 6);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+}
+
+function endOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+}
+
+function startOfYear(date) {
+  return new Date(date.getFullYear(), 0, 1, 0, 0, 0, 0);
+}
+
+function endOfYear(date) {
+  return new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999);
+}
+
+function getPeriodoAtualEAnterior(periodoTipo, dataRef) {
+  const ref = dataRef ? parseUSDate(dataRef) : new Date();
+  const base = ref && !isNaN(ref.getTime()) ? ref : new Date();
+
+  let atualInicio, atualFim, anteriorInicio, anteriorFim, comparativoLabel;
+
+  if (periodoTipo === "dia") {
+    atualInicio = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
+    atualFim = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
+
+    anteriorInicio = new Date(atualInicio);
+    anteriorInicio.setDate(anteriorInicio.getDate() - 1);
+
+    anteriorFim = new Date(atualFim);
+    anteriorFim.setDate(anteriorFim.getDate() - 1);
+
+    comparativoLabel = "dia anterior";
+  } else if (periodoTipo === "semana") {
+    atualInicio = startOfWeek(base);
+    atualFim = endOfWeek(base);
+
+    anteriorInicio = new Date(atualInicio);
+    anteriorInicio.setDate(anteriorInicio.getDate() - 7);
+
+    anteriorFim = new Date(atualFim);
+    anteriorFim.setDate(anteriorFim.getDate() - 7);
+
+    comparativoLabel = "semana anterior";
+  } else if (periodoTipo === "ano") {
+    atualInicio = startOfYear(base);
+    atualFim = endOfYear(base);
+
+    anteriorInicio = new Date(base.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
+    anteriorFim = new Date(base.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+
+    comparativoLabel = "ano anterior";
+  } else {
+    atualInicio = startOfMonth(base);
+    atualFim = endOfMonth(base);
+
+    anteriorInicio = new Date(base.getFullYear(), base.getMonth() - 1, 1, 0, 0, 0, 0);
+    anteriorFim = new Date(base.getFullYear(), base.getMonth(), 0, 23, 59, 59, 999);
+
+    comparativoLabel = "mês anterior";
+  }
+
+  return {
+    atualInicio,
+    atualFim,
+    anteriorInicio,
+    anteriorFim,
+    comparativoLabel
+  };
+}
+
+async function buscarChecklistRaw() {
+  const now = Date.now();
+
+  if (checklistCache && (now - checklistCacheTime) < CHECKLIST_CACHE_TTL) {
+    return checklistCache;
   }
 
   const sheets = await getAuthSheets();
 
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: "1vUv0AJ_bASBkkzxUWOyheJSASb4VDsaRKAl40EzRKsk",
-    range: "Respostas!A:Z"
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: CHECKLIST_SHEET_ID,
+    range: CHECKLIST_SHEET_RANGE
   });
 
-  const rows = res.data.values;
-  const headers = rows[0];
+  const rows = response.data.values || [];
+  if (!rows.length) return [];
 
-  const dados = rows.slice(1).map(r => {
+  const headers = rows[0].map(h => normalizeText(h));
+
+  const data = rows.slice(1).map(row => {
     const obj = {};
-    headers.forEach((h, i) => obj[h] = r[i]);
+    headers.forEach((header, i) => {
+      obj[header] = row[i] ?? "";
+    });
     return obj;
   });
 
-  CHECKLIST_CACHE.data = dados;
-  CHECKLIST_CACHE.lastFetch = agora;
+  checklistCache = data;
+  checklistCacheTime = now;
 
-  return dados;
+  return data;
 }
 
-// 🔹 AGRUPAR CHECKLIST
-function agruparChecklist(dados) {
-  const agrupado = {};
+function agruparChecklists(rawRows) {
+  const mapa = new Map();
 
-  dados.forEach(l => {
-    const id = l["registro_id"];
+  rawRows.forEach(row => {
+    const registroId = normalizeText(row.registro_id);
+    if (!registroId) return;
 
-    if (!agrupado[id]) {
-      agrupado[id] = {
-        id,
-        data: l["Carimbo de data/hora"],
-        auditor: l["Auditor"],
-        processo: l["Processo"],
-        unidade: l["Unidade"],
-        total: 0,
-        conforme: 0,
-        naoConforme: 0
-      };
+    const dataChecklist = parseUSDate(row.data_checklist);
+    const dataAtualizacao = row.data_atualizacao ? new Date(row.data_atualizacao) : null;
+
+    if (!mapa.has(registroId)) {
+      mapa.set(registroId, {
+        registro_id: registroId,
+        data_checklist: dataChecklist,
+        data_checklist_br: formatDateBR(dataChecklist),
+        elaborado_por: normalizeText(row.elaborado_por),
+        funcao: normalizeText(row.funcao),
+        unidade: normalizeText(row.unidade),
+        estado: normalizeText(row.estado),
+        cidade: normalizeText(row.cidade),
+        total_perguntas: 0,
+        total_nc: 0,
+        total_conformes: 0,
+        total_parciais: 0,
+        total_nao_conformes: 0,
+        soma_pontos: 0,
+        topicos: new Set(),
+        areas_responsaveis: new Set(),
+        responsaveis: new Set(),
+        respostas: [],
+        data_atualizacao: dataAtualizacao
+      });
     }
 
-    agrupado[id].total++;
+    const item = mapa.get(registroId);
 
-    if ((l["Resposta"] || "").toLowerCase().includes("conforme")) {
-      agrupado[id].conforme++;
-    } else {
-      agrupado[id].naoConforme++;
+    item.total_perguntas += 1;
+    item.soma_pontos += Number(row.pontuacao || 0);
+
+    const resposta = normalizeText(row.resposta);
+    const geraNc = normalizeUpper(row.gera_nc);
+
+    if (normalizeUpper(resposta) === "CONFORME") item.total_conformes += 1;
+    if (normalizeUpper(resposta) === "ATENDE PARCIALMENTE") item.total_parciais += 1;
+    if (normalizeUpper(resposta) === "NÃO CONFORME" || normalizeUpper(resposta) === "NAO CONFORME") item.total_nao_conformes += 1;
+    if (geraNc === "SIM") item.total_nc += 1;
+
+    if (normalizeText(row.topico)) item.topicos.add(normalizeText(row.topico));
+    if (normalizeText(row.area_responsavel)) item.areas_responsaveis.add(normalizeText(row.area_responsavel));
+    if (normalizeText(row.responsavel_tratativa)) item.responsaveis.add(normalizeText(row.responsavel_tratativa));
+
+    item.respostas.push({
+      pergunta_id: normalizeText(row.pergunta_id),
+      topico: normalizeText(row.topico),
+      pergunta_texto: normalizeText(row.pergunta_texto),
+      resposta: resposta,
+      gera_nc: geraNc,
+      pontuacao: Number(row.pontuacao || 0),
+      area_responsavel: normalizeText(row.area_responsavel),
+      responsavel_tratativa: normalizeText(row.responsavel_tratativa),
+      situacao_prazo: normalizeText(row.situacao_prazo),
+      data_limite: normalizeText(row.data_limite)
+    });
+
+    if (dataAtualizacao && (!item.data_atualizacao || dataAtualizacao > item.data_atualizacao)) {
+      item.data_atualizacao = dataAtualizacao;
     }
   });
 
-  return Object.values(agrupado).map(c => ({
-    ...c,
-    perc: c.total ? ((c.conforme / c.total) * 100) : 0
-  }));
+  return Array.from(mapa.values()).map(item => {
+    const percentualConformidade = item.total_perguntas
+      ? (item.total_conformes / item.total_perguntas) * 100
+      : 0;
+
+    return {
+      ...item,
+      topicos: Array.from(item.topicos),
+      areas_responsaveis: Array.from(item.areas_responsaveis),
+      responsaveis: Array.from(item.responsaveis),
+      percentual_conformidade: Number(percentualConformidade.toFixed(1)),
+      possui_nc: item.total_nc > 0 ? "Sim" : "Não",
+      possui_pendencia: item.respostas.some(r => normalizeUpper(r.situacao_prazo) && normalizeUpper(r.situacao_prazo) !== "EM DIA") ? "Sim" : "Não",
+      data_atualizacao_br: item.data_atualizacao ? formatHourBR(item.data_atualizacao) : ""
+    };
+  });
+}
+
+function aplicarFiltrosChecklist(data, query) {
+  const unidades = toArrayParam(query.unidade);
+  const elaboradores = toArrayParam(query.elaborador);
+  const funcoes = toArrayParam(query.funcao);
+  const estados = toArrayParam(query.estado);
+  const cidades = toArrayParam(query.cidade);
+  const topicos = toArrayParam(query.topico);
+  const areas = toArrayParam(query.area);
+  const nc = toArrayParam(query.nc);
+  const busca = normalizeUpper(query.busca);
+
+  const dataRef = query.dataRef;
+  const periodoTipo = query.periodoTipo || "mes";
+
+  const { atualInicio, atualFim } = getPeriodoAtualEAnterior(periodoTipo, dataRef);
+
+  return data.filter(item => {
+    const itemDate = item.data_checklist;
+    if (!itemDate || isNaN(itemDate.getTime())) return false;
+
+    if (itemDate < atualInicio || itemDate > atualFim) return false;
+
+    if (unidades.length && !unidades.includes(item.unidade)) return false;
+    if (elaboradores.length && !elaboradores.includes(item.elaborado_por)) return false;
+    if (funcoes.length && !funcoes.includes(item.funcao)) return false;
+    if (estados.length && !estados.includes(item.estado)) return false;
+    if (cidades.length && !cidades.includes(item.cidade)) return false;
+    if (nc.length && !nc.includes(item.possui_nc)) return false;
+
+    if (topicos.length) {
+      const encontrouTopico = item.topicos.some(t => topicos.includes(t));
+      if (!encontrouTopico) return false;
+    }
+
+    if (areas.length) {
+      const encontrouArea = item.areas_responsaveis.some(a => areas.includes(a));
+      if (!encontrouArea) return false;
+    }
+
+    if (busca) {
+      const bloco = normalizeUpper([
+        item.registro_id,
+        item.data_checklist_br,
+        item.elaborado_por,
+        item.funcao,
+        item.unidade,
+        item.estado,
+        item.cidade,
+        item.topicos.join(" "),
+        item.areas_responsaveis.join(" "),
+        item.responsaveis.join(" "),
+        ...item.respostas.map(r => [
+          r.topico,
+          r.pergunta_texto,
+          r.resposta,
+          r.area_responsavel,
+          r.responsavel_tratativa,
+          r.situacao_prazo
+        ].join(" "))
+      ].join(" "));
+
+      if (!bloco.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function aplicarPeriodoSemFiltrosExtras(data, query, tipoPeriodo) {
+  const cloneQuery = { ...query, periodoTipo: tipoPeriodo };
+  return aplicarFiltrosChecklist(data, cloneQuery);
+}
+
+function contarPorCampo(items, getter, limit = 10) {
+  const mapa = {};
+
+  items.forEach(item => {
+    const key = normalizeText(getter(item));
+    const nome = key || "NÃO INFORMADO";
+    mapa[nome] = (mapa[nome] || 0) + 1;
+  });
+
+  const ordenado = Object.entries(mapa)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+
+  return {
+    labels: ordenado.map(([k]) => k),
+    valores: ordenado.map(([, v]) => v)
+  };
+}
+
+function contarPorTopicoNC(items, limit = 10) {
+  const mapa = {};
+
+  items.forEach(item => {
+    item.respostas.forEach(r => {
+      if (normalizeUpper(r.gera_nc) === "SIM") {
+        const key = normalizeText(r.topico) || "NÃO INFORMADO";
+        mapa[key] = (mapa[key] || 0) + 1;
+      }
+    });
+  });
+
+  const ordenado = Object.entries(mapa)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+
+  return {
+    labels: ordenado.map(([k]) => k),
+    valores: ordenado.map(([, v]) => v)
+  };
+}
+
+function contarPorDiaMes(items) {
+  const mapa = {};
+  for (let i = 1; i <= 31; i++) mapa[String(i).padStart(2, "0")] = 0;
+
+  items.forEach(item => {
+    if (!item.data_checklist || isNaN(item.data_checklist.getTime())) return;
+    const dia = String(item.data_checklist.getDate()).padStart(2, "0");
+    mapa[dia] += 1;
+  });
+
+  return {
+    labels: Object.keys(mapa),
+    valores: Object.values(mapa)
+  };
+}
+
+function calcularResumoChecklist(todos, filtrados, query) {
+  const { atualInicio, atualFim, anteriorInicio, anteriorFim, comparativoLabel } =
+    getPeriodoAtualEAnterior(query.periodoTipo || "mes", query.dataRef);
+
+  const periodoAnterior = todos.filter(item => {
+    const d = item.data_checklist;
+    if (!d || isNaN(d.getTime())) return false;
+
+    if (d < anteriorInicio || d > anteriorFim) return false;
+
+    const clone = {
+      ...query,
+      dataRef: formatDateBR(anteriorInicio).split("/").reverse().join("-")
+    };
+
+    const unidades = toArrayParam(query.unidade);
+    const elaboradores = toArrayParam(query.elaborador);
+    const funcoes = toArrayParam(query.funcao);
+    const estados = toArrayParam(query.estado);
+    const cidades = toArrayParam(query.cidade);
+    const topicos = toArrayParam(query.topico);
+    const areas = toArrayParam(query.area);
+    const nc = toArrayParam(query.nc);
+    const busca = normalizeUpper(query.busca);
+
+    if (unidades.length && !unidades.includes(item.unidade)) return false;
+    if (elaboradores.length && !elaboradores.includes(item.elaborado_por)) return false;
+    if (funcoes.length && !funcoes.includes(item.funcao)) return false;
+    if (estados.length && !estados.includes(item.estado)) return false;
+    if (cidades.length && !cidades.includes(item.cidade)) return false;
+    if (nc.length && !nc.includes(item.possui_nc)) return false;
+
+    if (topicos.length) {
+      const encontrouTopico = item.topicos.some(t => topicos.includes(t));
+      if (!encontrouTopico) return false;
+    }
+
+    if (areas.length) {
+      const encontrouArea = item.areas_responsaveis.some(a => areas.includes(a));
+      if (!encontrouArea) return false;
+    }
+
+    if (busca) {
+      const bloco = normalizeUpper([
+        item.registro_id,
+        item.data_checklist_br,
+        item.elaborado_por,
+        item.funcao,
+        item.unidade,
+        item.estado,
+        item.cidade,
+        item.topicos.join(" "),
+        item.areas_responsaveis.join(" "),
+        item.responsaveis.join(" "),
+        ...item.respostas.map(r => [
+          r.topico,
+          r.pergunta_texto,
+          r.resposta,
+          r.area_responsavel,
+          r.responsavel_tratativa,
+          r.situacao_prazo
+        ].join(" "))
+      ].join(" "));
+
+      if (!bloco.includes(busca)) return false;
+    }
+
+    return true;
+  });
+
+  const total = filtrados.length;
+  const totalPerguntas = filtrados.reduce((acc, item) => acc + item.total_perguntas, 0);
+  const totalNC = filtrados.reduce((acc, item) => acc + item.total_nc, 0);
+  const conformes = filtrados.reduce((acc, item) => acc + item.total_conformes, 0);
+  const percentualConformidade = totalPerguntas ? (conformes / totalPerguntas) * 100 : 0;
+  const mediaPerguntas = total ? totalPerguntas / total : 0;
+  const checklistsComNC = filtrados.filter(i => i.total_nc > 0).length;
+  const variacao = periodoAnterior.length
+    ? ((total - periodoAnterior.length) / periodoAnterior.length) * 100
+    : (total > 0 ? 100 : 0);
+
+  const ultimaAtualizacao = filtrados
+    .map(i => i.data_atualizacao)
+    .filter(Boolean)
+    .sort((a, b) => b - a)[0];
+
+  return {
+    total,
+    totalPerguntas,
+    totalNC,
+    percentualConformidade: Number(percentualConformidade.toFixed(1)),
+    mediaPerguntas: Number(mediaPerguntas.toFixed(1)),
+    checklistsComNC,
+    periodoAtual: total,
+    periodoAnterior: periodoAnterior.length,
+    variacao: Number(variacao.toFixed(1)),
+    comparativoLabel,
+    periodoAtualInicio: formatDateBR(atualInicio),
+    periodoAtualFim: formatDateBR(atualFim),
+    periodoAnteriorInicio: formatDateBR(anteriorInicio),
+    periodoAnteriorFim: formatDateBR(anteriorFim),
+    ultimaAtualizacao: ultimaAtualizacao ? formatHourBR(ultimaAtualizacao) : "--:--"
+  };
 }
 
 // ================== FILTROS ==================
 
 app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
-  const dados = await buscarChecklist();
-  const agrupado = agruparChecklist(dados);
+  try {
+    const raw = await buscarChecklistRaw();
+    const agrupados = agruparChecklists(raw);
 
-  const valores = (campo) => [...new Set(agrupado.map(x => x[campo]).filter(Boolean))];
+    const uniqueSorted = arr =>
+      [...new Set(arr.map(v => normalizeText(v)).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
-  res.json({
-    auditor: valores("auditor"),
-    processo: valores("processo"),
-    unidade: valores("unidade")
-  });
+    const topicos = [...new Set(
+      agrupados.flatMap(item => item.topicos.map(t => normalizeText(t))).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const areas = [...new Set(
+      agrupados.flatMap(item => item.areas_responsaveis.map(a => normalizeText(a))).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return res.json({
+      unidades: uniqueSorted(agrupados.map(i => i.unidade)),
+      elaboradores: uniqueSorted(agrupados.map(i => i.elaborado_por)),
+      funcoes: uniqueSorted(agrupados.map(i => i.funcao)),
+      estados: uniqueSorted(agrupados.map(i => i.estado)),
+      cidades: uniqueSorted(agrupados.map(i => i.cidade)),
+      topicos,
+      areas,
+      nc: ["Sim", "Não"]
+    });
+  } catch (error) {
+    console.error("Erro /api/checklist-filtros:", error);
+    return res.status(500).json({ error: "Erro ao carregar filtros do checklist." });
+  }
 });
 
 // ================== RESUMO ==================
 
 app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
-  const dados = await buscarChecklist();
-  const agrupado = agruparChecklist(dados);
+  try {
+    const raw = await buscarChecklistRaw();
+    const agrupados = agruparChecklists(raw);
+    const filtrados = aplicarFiltrosChecklist(agrupados, req.query);
+    const resumo = calcularResumoChecklist(agrupados, filtrados, req.query);
 
-  const totalChecklists = agrupado.length;
-  const totalPerguntas = agrupado.reduce((a, b) => a + b.total, 0);
-  const totalConforme = agrupado.reduce((a, b) => a + b.conforme, 0);
-
-  const perc = totalPerguntas ? (totalConforme / totalPerguntas) * 100 : 0;
-
-  res.json({
-    totalChecklists,
-    totalPerguntas,
-    percConformidade: perc.toFixed(1)
-  });
+    return res.json(resumo);
+  } catch (error) {
+    console.error("Erro /api/checklist-resumo:", error);
+    return res.status(500).json({ error: "Erro ao carregar resumo do checklist." });
+  }
 });
 
 // ================== GRÁFICOS ==================
 
 app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
-  const dados = await buscarChecklist();
-  const agrupado = agruparChecklist(dados);
+  try {
+    const raw = await buscarChecklistRaw();
+    const agrupados = agruparChecklists(raw);
+    const filtrados = aplicarFiltrosChecklist(agrupados, req.query);
+    const resumo = calcularResumoChecklist(agrupados, filtrados, req.query);
 
-  const porProcesso = {};
-  const porDia = Array(31).fill(0);
-
-  agrupado.forEach(c => {
-    porProcesso[c.processo] = (porProcesso[c.processo] || 0) + c.naoConforme;
-
-    const dia = new Date(c.data).getDate();
-    if (dia) porDia[dia - 1]++;
-  });
-
-  res.json({
-    processo: {
-      labels: Object.keys(porProcesso),
-      valores: Object.values(porProcesso)
-    },
-    porDia
-  });
+    return res.json({
+      porUnidade: contarPorCampo(filtrados, item => item.unidade, 10),
+      porElaborador: contarPorCampo(filtrados, item => item.elaborado_por, 10),
+      porTopicoNC: contarPorTopicoNC(filtrados, 10),
+      porDia: contarPorDiaMes(filtrados),
+      comparativoMensal: {
+        label: resumo.comparativoLabel,
+        atual: resumo.periodoAtual,
+        anterior: resumo.periodoAnterior
+      }
+    });
+  } catch (error) {
+    console.error("Erro /api/checklist-graficos:", error);
+    return res.status(500).json({ error: "Erro ao carregar gráficos do checklist." });
+  }
 });
 
 // ================== DETALHES ==================
 
 app.get("/api/checklist-detalhes", requireAuth, async (req, res) => {
-  const dados = await buscarChecklist();
-  const agrupado = agruparChecklist(dados);
+  try {
+    const raw = await buscarChecklistRaw();
+    const agrupados = agruparChecklists(raw);
+    const filtrados = aplicarFiltrosChecklist(agrupados, req.query);
 
-  res.json(agrupado);
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.max(Number(req.query.limit || 20), 1);
+
+    const ordenados = [...filtrados].sort((a, b) => {
+      const da = a.data_checklist ? a.data_checklist.getTime() : 0;
+      const db = b.data_checklist ? b.data_checklist.getTime() : 0;
+      return db - da;
+    });
+
+    const totalItems = ordenados.length;
+    const totalPages = Math.max(Math.ceil(totalItems / limit), 1);
+    const start = (page - 1) * limit;
+    const items = ordenados.slice(start, start + limit).map(item => ({
+      registro_id: item.registro_id,
+      data_checklist: item.data_checklist_br,
+      elaborado_por: item.elaborado_por,
+      funcao: item.funcao,
+      unidade: item.unidade,
+      estado: item.estado,
+      cidade: item.cidade,
+      total_perguntas: item.total_perguntas,
+      total_nc: item.total_nc,
+      percentual_conformidade: item.percentual_conformidade,
+      topicos: item.topicos.join(", "),
+      areas: item.areas_responsaveis.join(", "),
+      possui_nc: item.possui_nc
+    }));
+
+    return res.json({
+      page,
+      totalPages,
+      totalItems,
+      items
+    });
+  } catch (error) {
+    console.error("Erro /api/checklist-detalhes:", error);
+    return res.status(500).json({ error: "Erro ao carregar detalhamento do checklist." });
+  }
 });
 
 

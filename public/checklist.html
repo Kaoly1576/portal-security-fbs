@@ -813,7 +813,7 @@ function destroyCharts() {
   chartElaborador = null;
 }
 
-function horizontalBarOptions(label = "Quantidade") {
+function horizontalBarOptions() {
   return {
     indexAxis: "y",
     responsive: true,
@@ -983,16 +983,21 @@ async function loadResumo(page = 1) {
   const query = getFiltersQuery(page);
   const resumo = await fetch(`/api/checklist-resumo?${query}`).then(r => r.json());
 
-  document.getElementById("cardTotal").innerText = fmt(resumo.total);
-  document.getElementById("cardOk").innerText = fmt(resumo.ok);
-  document.getElementById("cardNok").innerText = fmt(resumo.nok);
-  document.getElementById("cardTaxa").innerText = fmtPct(resumo.taxa);
-  document.getElementById("cardPendencias").innerText = fmt(resumo.pendencias || 0);
-  document.getElementById("cardMedia").innerText = fmtNum1(resumo.media || 0);
+  document.getElementById("kpiTotal").innerText = fmt(resumo.total);
+  document.getElementById("kpiConformes").innerText = fmt(resumo.ok);
+  document.getElementById("kpiNc").innerText = fmt(resumo.nok);
+  document.getElementById("kpiTaxa").innerText = fmtPct(resumo.taxa);
+  document.getElementById("kpiPendencias").innerText = fmt(resumo.pendencias || 0);
+  document.getElementById("kpiPontuacao").innerText = fmtNum1(resumo.media || 0);
 
   const ultima = document.getElementById("ultimaAtualizacao");
   if (ultima) {
     ultima.innerText = resumo.ultimaAtualizacao || "--:--";
+  }
+
+  const subComparativo = document.getElementById("subComparativo");
+  if (subComparativo) {
+    subComparativo.innerText = resumo.comparativoLabel || "Atual x base anterior";
   }
 }
 
@@ -1047,7 +1052,7 @@ async function loadGraficos(page = 1) {
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions("Checklists")
+    options: horizontalBarOptions()
   });
 
   chartTopico = new Chart(document.getElementById("chartTopico"), {
@@ -1061,7 +1066,7 @@ async function loadGraficos(page = 1) {
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions("Tópicos")
+    options: horizontalBarOptions()
   });
 
   chartPrazo = new Chart(document.getElementById("chartPrazo"), {
@@ -1075,7 +1080,7 @@ async function loadGraficos(page = 1) {
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions("Prazos")
+    options: horizontalBarOptions()
   });
 
   chartPerguntas = new Chart(document.getElementById("chartPerguntas"), {
@@ -1089,7 +1094,7 @@ async function loadGraficos(page = 1) {
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions("NC")
+    options: horizontalBarOptions()
   });
 
   chartElaborador = new Chart(document.getElementById("chartElaborador"), {
@@ -1103,7 +1108,7 @@ async function loadGraficos(page = 1) {
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions("Elaborador")
+    options: horizontalBarOptions()
   });
 
   chartComparativo = new Chart(document.getElementById("chartComparativo"), {
@@ -1149,25 +1154,59 @@ async function loadDetalhes(page = 1) {
 
   totalPages = data.totalPages || 1;
 
-  const tbody = document.getElementById("tabelaChecklist");
-  if (!tbody) return;
+  const detailWrap = document.getElementById("detailWrap");
+  if (!detailWrap) return;
 
-  tbody.innerHTML = (data.rows || []).map((row) => `
-    <tr>
-      <td>${esc(row.registroId)}</td>
-      <td>${esc(row.data)}</td>
-      <td>${esc(row.elaborador)}</td>
-      <td>${esc(row.unidade)}</td>
-      <td>${esc(row.funcao)}</td>
-      <td>${esc(row.estado)}</td>
-      <td>${esc(row.cidade)}</td>
-      <td>${fmt(row.totalItens)}</td>
-      <td>${fmt(row.totalNc)}</td>
-      <td>${fmt(row.pendencias)}</td>
-      <td>${esc(row.conformidade)}</td>
-      <td>${esc(row.mediaPontuacao)}</td>
-    </tr>
-  `).join("");
+  let html = `
+    <table class="detail-table">
+      <thead>
+        <tr>
+          <th>Registro ID</th>
+          <th>Data</th>
+          <th>Elaborador</th>
+          <th>Unidade</th>
+          <th>Função</th>
+          <th>Estado</th>
+          <th>Cidade</th>
+          <th>Total Itens</th>
+          <th>Total NC</th>
+          <th>Pendências</th>
+          <th>Conformidade</th>
+          <th>Média Pontuação</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  (data.rows || []).forEach((row) => {
+    html += `
+      <tr>
+        <td>${esc(row.registroId)}</td>
+        <td>${esc(row.data)}</td>
+        <td>${esc(row.elaborador)}</td>
+        <td>${esc(row.unidade)}</td>
+        <td>${esc(row.funcao)}</td>
+        <td>${esc(row.estado)}</td>
+        <td>${esc(row.cidade)}</td>
+        <td>${fmt(row.totalItens)}</td>
+        <td>${fmt(row.totalNc)}</td>
+        <td>${fmt(row.pendencias)}</td>
+        <td>${esc(row.conformidade)}</td>
+        <td>${esc(row.mediaPontuacao)}</td>
+      </tr>
+    `;
+  });
+
+  if (!(data.rows || []).length) {
+    html += `
+      <tr>
+        <td colspan="12" style="text-align:center;color:#cbd5e1;">Sem dados para os filtros aplicados.</td>
+      </tr>
+    `;
+  }
+
+  html += `</tbody></table>`;
+  detailWrap.innerHTML = html;
 
   const pager = document.getElementById("pagerInfo");
   if (pager) {

@@ -768,26 +768,26 @@ let currentPage = 1;
 let totalPages = 1;
 
 // ========================= HELPERS =========================
-function fmt(value) {
-  return new Intl.NumberFormat("pt-BR").format(Number(value || 0));
+function fmt(v) {
+  return new Intl.NumberFormat("pt-BR").format(Number(v || 0));
 }
 
-function fmtPct(value) {
-  return `${Number(value || 0).toLocaleString("pt-BR", {
+function fmtPct(v) {
+  return `${Number(v || 0).toLocaleString("pt-BR", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1
   })}%`;
 }
 
-function fmtNum1(value) {
-  return Number(value || 0).toLocaleString("pt-BR", {
+function fmtNum1(v) {
+  return Number(v || 0).toLocaleString("pt-BR", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1
   });
 }
 
-function esc(value) {
-  return String(value ?? "")
+function esc(v) {
+  return String(v ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -796,10 +796,13 @@ function esc(value) {
 }
 
 function destroyCharts() {
-  [chartUnidade, chartTopico, chartPrazo, chartDia, chartComparativo, chartPerguntas, chartElaborador]
-    .forEach(chart => {
-      if (chart) chart.destroy();
-    });
+  if (chartUnidade) chartUnidade.destroy();
+  if (chartTopico) chartTopico.destroy();
+  if (chartPrazo) chartPrazo.destroy();
+  if (chartDia) chartDia.destroy();
+  if (chartComparativo) chartComparativo.destroy();
+  if (chartPerguntas) chartPerguntas.destroy();
+  if (chartElaborador) chartElaborador.destroy();
 
   chartUnidade = null;
   chartTopico = null;
@@ -810,63 +813,42 @@ function destroyCharts() {
   chartElaborador = null;
 }
 
-function horizontalBarOptions() {
+function horizontalBarOptions(label = "Quantidade") {
   return {
     indexAxis: "y",
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
+      legend: {
+        labels: { color: "#fff" }
+      },
       datalabels: {
-        color: "#ffffff",
+        color: "#fff",
         anchor: "end",
         align: "right",
-        font: { size: 10, weight: "700" },
-        formatter: (value) => value > 0 ? fmt(value) : ""
+        formatter: (v) => v > 0 ? fmt(v) : "",
+        font: {
+          weight: "700",
+          size: 10
+        }
       }
     },
     scales: {
       x: {
-        ticks: { color: "#cfcfcf", font: { size: 10 } },
+        ticks: { color: "#cbd5e1" },
         grid: { color: "rgba(255,255,255,0.05)" },
         beginAtZero: true
       },
       y: {
-        ticks: { color: "#ffffff", font: { size: 10 } },
+        ticks: { color: "#fff" },
         grid: { display: false }
       }
     }
   };
 }
 
-function getMultiValues(menuId) {
-  const inputs = document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`);
-  return [...inputs].map(el => el.value).join("|");
-}
-
-function getFiltersQuery(page = 1) {
-  const qs = new URLSearchParams();
-
-  qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo")?.value || "mes");
-  qs.set("dataRef", document.getElementById("filtroDataRef")?.value || "");
-  qs.set("unidade", getMultiValues("menuUnidade"));
-  qs.set("elaborador", getMultiValues("menuElaborador"));
-  qs.set("funcao", getMultiValues("menuFuncao"));
-  qs.set("estado", getMultiValues("menuEstado"));
-  qs.set("cidade", getMultiValues("menuCidade"));
-  qs.set("topico", getMultiValues("menuTopico"));
-  qs.set("geraNc", getMultiValues("menuGeraNc"));
-  qs.set("prazo", getMultiValues("menuPrazo"));
-  qs.set("area", getMultiValues("menuArea"));
-  qs.set("busca", document.getElementById("filtroBusca")?.value || "");
-  qs.set("page", page);
-  qs.set("limit", 15);
-
-  return qs.toString();
-}
-
 // ========================= MULTISELECT =========================
-function createMultiSelect(menuId, triggerId, values, placeholder) {
+function createMultiSelect(menuId, triggerId, values, emptyLabel) {
   const menu = document.getElementById(menuId);
   const trigger = document.getElementById(triggerId);
 
@@ -880,20 +862,20 @@ function createMultiSelect(menuId, triggerId, values, placeholder) {
   `;
 
   values.forEach((value) => {
-    const safeValue = esc(value);
     const label = document.createElement("label");
     label.className = "multi-option";
     label.innerHTML = `
-      <input type="checkbox" value="${safeValue}" />
-      <span>${safeValue}</span>
+      <input type="checkbox" value="${esc(value)}" />
+      <span>${esc(value)}</span>
     `;
     menu.appendChild(label);
   });
 
   function updateTrigger() {
     const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+
     if (!checked.length) {
-      trigger.textContent = placeholder;
+      trigger.textContent = emptyLabel;
     } else if (checked.length === 1) {
       trigger.textContent = checked[0];
     } else {
@@ -907,7 +889,8 @@ function createMultiSelect(menuId, triggerId, values, placeholder) {
         wrap.classList.remove("open");
       }
     });
-    trigger.closest(".multi-select")?.classList.toggle("open");
+
+    trigger.closest(".multi-select").classList.toggle("open");
   };
 
   menu.addEventListener("click", (e) => {
@@ -937,6 +920,12 @@ function createMultiSelect(menuId, triggerId, values, placeholder) {
   updateTrigger();
 }
 
+function closeAllMultiSelects() {
+  document.querySelectorAll(".multi-select").forEach((wrap) => {
+    wrap.classList.remove("open");
+  });
+}
+
 document.addEventListener("click", (e) => {
   document.querySelectorAll(".multi-select").forEach((wrap) => {
     if (!wrap.contains(e.target)) {
@@ -945,12 +934,38 @@ document.addEventListener("click", (e) => {
   });
 });
 
-// ========================= FILTROS =========================
+function getMultiValues(menuId) {
+  return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+    .map((el) => el.value)
+    .join("|");
+}
+
+// ========================= QUERY =========================
+function getFiltersQuery(page = 1) {
+  const qs = new URLSearchParams();
+
+  qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo")?.value || "mes");
+  qs.set("dataRef", document.getElementById("filtroDataRef")?.value || "");
+  qs.set("unidade", getMultiValues("menuUnidade"));
+  qs.set("elaborador", getMultiValues("menuElaborador"));
+  qs.set("funcao", getMultiValues("menuFuncao"));
+  qs.set("estado", getMultiValues("menuEstado"));
+  qs.set("cidade", getMultiValues("menuCidade"));
+  qs.set("topico", getMultiValues("menuTopico"));
+  qs.set("geraNc", getMultiValues("menuGeraNc"));
+  qs.set("prazo", getMultiValues("menuPrazo"));
+  qs.set("area", getMultiValues("menuArea"));
+  qs.set("busca", document.getElementById("filtroBusca")?.value || "");
+  qs.set("page", page);
+  qs.set("limit", 20);
+
+  return qs.toString();
+}
+
+// ========================= LOAD FILTROS =========================
 async function loadFiltros() {
   const res = await fetch("/api/checklist-filtros", { credentials: "same-origin" });
   const data = await res.json();
-
-  console.log("FILTROS:", data);
 
   createMultiSelect("menuUnidade", "triggerUnidade", data.unidade || [], "Todas");
   createMultiSelect("menuElaborador", "triggerElaborador", data.elaborador || [], "Todos");
@@ -965,52 +980,38 @@ async function loadFiltros() {
 
 // ========================= RESUMO =========================
 async function loadResumo(page = 1) {
-  const res = await fetch(`/api/checklist-resumo?${getFiltersQuery(page)}`, {
-    credentials: "same-origin"
-  });
-  const data = await res.json();
+  const query = getFiltersQuery(page);
+  const resumo = await fetch(`/api/checklist-resumo?${query}`).then(r => r.json());
 
-  console.log("RESUMO:", data);
-
-  document.getElementById("cardTotal").textContent = fmt(data.total);
-  document.getElementById("cardOk").textContent = fmt(data.ok);
-  document.getElementById("cardNok").textContent = fmt(data.nok);
-  document.getElementById("cardTaxa").textContent = fmtPct(data.taxa);
-  document.getElementById("cardPendencias").textContent = fmt(data.pendencias);
-  document.getElementById("cardMedia").textContent = fmtNum1(data.media);
+  document.getElementById("cardTotal").innerText = fmt(resumo.total);
+  document.getElementById("cardOk").innerText = fmt(resumo.ok);
+  document.getElementById("cardNok").innerText = fmt(resumo.nok);
+  document.getElementById("cardTaxa").innerText = fmtPct(resumo.taxa);
+  document.getElementById("cardPendencias").innerText = fmt(resumo.pendencias || 0);
+  document.getElementById("cardMedia").innerText = fmtNum1(resumo.media || 0);
 
   const ultima = document.getElementById("ultimaAtualizacao");
-  if (ultima) ultima.textContent = data.ultimaAtualizacao || "--:--";
-
-  const subtituloComparativo = document.getElementById("subComparativo");
-  if (subtituloComparativo) {
-    subtituloComparativo.textContent =
-      `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
+  if (ultima) {
+    ultima.innerText = resumo.ultimaAtualizacao || "--:--";
   }
-
-  return data;
 }
 
 // ========================= GRÁFICOS =========================
 async function loadGraficos(page = 1) {
-  const res = await fetch(`/api/checklist-graficos?${getFiltersQuery(page)}`, {
-    credentials: "same-origin"
-  });
-  const data = await res.json();
-
-  console.log("GRAFICOS:", data);
+  const query = getFiltersQuery(page);
+  const graficos = await fetch(`/api/checklist-graficos?${query}`).then(r => r.json());
 
   destroyCharts();
 
   const dias = Array.from({ length: 31 }, (_, i) => i + 1);
-  const valoresDia = dias.map(d => data.porDia?.[d] || 0);
+  const valoresDia = dias.map(d => graficos.porDia?.[d] || 0);
 
   chartDia = new Chart(document.getElementById("chartDia"), {
     type: "bar",
     data: {
       labels: dias.map(d => String(d).padStart(2, "0")),
       datasets: [{
-        label: "Checklists por dia",
+        label: "Checklists",
         data: valoresDia,
         backgroundColor: "#ff7a1a",
         borderRadius: 4
@@ -1022,24 +1023,15 @@ async function loadGraficos(page = 1) {
       plugins: {
         legend: { labels: { color: "#fff" } },
         datalabels: {
-          color: "#ffffff",
-          anchor: "end",
+          color: "#fff",
           align: "top",
-          offset: 2,
-          font: { size: 10, weight: "700" },
-          formatter: (value) => value > 0 ? fmt(value) : ""
+          anchor: "end",
+          formatter: v => v > 0 ? fmt(v) : ""
         }
       },
       scales: {
-        x: {
-          ticks: { color: "#cfcfcf", font: { size: 10 } },
-          grid: { display: false }
-        },
-        y: {
-          ticks: { color: "#cfcfcf", font: { size: 10 } },
-          grid: { color: "rgba(255,255,255,0.05)" },
-          beginAtZero: true
-        }
+        x: { ticks: { color: "#cbd5e1" }, grid: { display: false } },
+        y: { ticks: { color: "#cbd5e1" }, grid: { color: "rgba(255,255,255,0.05)" }, beginAtZero: true }
       }
     }
   });
@@ -1047,84 +1039,84 @@ async function loadGraficos(page = 1) {
   chartUnidade = new Chart(document.getElementById("chartUnidade"), {
     type: "bar",
     data: {
-      labels: Object.keys(data.unidade || {}),
+      labels: Object.keys(graficos.unidade || {}),
       datasets: [{
         label: "Checklists",
-        data: Object.values(data.unidade || {}),
+        data: Object.values(graficos.unidade || {}),
         backgroundColor: "#ff7a1a",
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions()
+    options: horizontalBarOptions("Checklists")
   });
 
   chartTopico = new Chart(document.getElementById("chartTopico"), {
     type: "bar",
     data: {
-      labels: Object.keys(data.topico || {}),
+      labels: Object.keys(graficos.topico || {}),
       datasets: [{
         label: "Tópicos",
-        data: Object.values(data.topico || {}),
+        data: Object.values(graficos.topico || {}),
         backgroundColor: "#ff7a1a",
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions()
+    options: horizontalBarOptions("Tópicos")
   });
 
   chartPrazo = new Chart(document.getElementById("chartPrazo"), {
     type: "bar",
     data: {
-      labels: Object.keys(data.prazo || {}),
+      labels: Object.keys(graficos.prazo || {}),
       datasets: [{
         label: "Prazos",
-        data: Object.values(data.prazo || {}),
+        data: Object.values(graficos.prazo || {}),
         backgroundColor: "#ff7a1a",
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions()
+    options: horizontalBarOptions("Prazos")
   });
 
   chartPerguntas = new Chart(document.getElementById("chartPerguntas"), {
     type: "bar",
     data: {
-      labels: (data.perguntasErro || []).map(x => x[0]),
+      labels: (graficos.perguntasErro || []).map(x => x[0]),
       datasets: [{
         label: "NC",
-        data: (data.perguntasErro || []).map(x => x[1]),
-        backgroundColor: "#ff4d4f",
+        data: (graficos.perguntasErro || []).map(x => x[1]),
+        backgroundColor: "#ef4444",
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions()
+    options: horizontalBarOptions("NC")
   });
 
   chartElaborador = new Chart(document.getElementById("chartElaborador"), {
     type: "bar",
     data: {
-      labels: Object.keys(data.elaborador || {}),
+      labels: Object.keys(graficos.elaborador || {}),
       datasets: [{
         label: "Checklists",
-        data: Object.values(data.elaborador || {}),
-        backgroundColor: "#58a6ff",
+        data: Object.values(graficos.elaborador || {}),
+        backgroundColor: "#60a5fa",
         borderRadius: 8
       }]
     },
-    options: horizontalBarOptions()
+    options: horizontalBarOptions("Elaborador")
   });
 
   chartComparativo = new Chart(document.getElementById("chartComparativo"), {
     type: "bar",
     data: {
-      labels: ["Período atual", data.comparativoMensal?.label || "Anterior"],
+      labels: ["Período atual", graficos.comparativoMensal?.label || "Base anterior"],
       datasets: [{
         label: "Checklists",
         data: [
-          data.comparativoMensal?.mesAtual || 0,
-          data.comparativoMensal?.mesAnterior || 0
+          graficos.comparativoMensal?.mesAtual || 0,
+          graficos.comparativoMensal?.mesAnterior || 0
         ],
-        backgroundColor: ["#ff7a1a", "#58a6ff"],
+        backgroundColor: ["#ff7a1a", "#60a5fa"],
         borderRadius: 8
       }]
     },
@@ -1134,41 +1126,30 @@ async function loadGraficos(page = 1) {
       plugins: {
         legend: { labels: { color: "#fff" } },
         datalabels: {
-          color: "#ffffff",
-          anchor: "end",
+          color: "#fff",
           align: "top",
-          font: { size: 10, weight: "700" },
-          formatter: (value) => value > 0 ? fmt(value) : ""
+          anchor: "end",
+          formatter: v => fmt(v)
         }
       },
       scales: {
-        x: {
-          ticks: { color: "#fff", font: { size: 10 } },
-          grid: { display: false }
-        },
-        y: {
-          ticks: { color: "#cfcfcf", font: { size: 10 } },
-          grid: { color: "rgba(255,255,255,0.05)" },
-          beginAtZero: true
-        }
+        x: { ticks: { color: "#cbd5e1" }, grid: { display: false } },
+        y: { ticks: { color: "#cbd5e1" }, grid: { color: "rgba(255,255,255,0.05)" }, beginAtZero: true }
       }
     }
   });
 }
 
-// ========================= TABELA =========================
+// ========================= DETALHES =========================
 async function loadDetalhes(page = 1) {
-  const res = await fetch(`/api/checklist-detalhes?${getFiltersQuery(page)}`, {
-    credentials: "same-origin"
-  });
-  const data = await res.json();
+  currentPage = page;
 
-  console.log("DETALHES:", data);
+  const query = getFiltersQuery(page);
+  const data = await fetch(`/api/checklist-detalhes?${query}`).then(r => r.json());
 
-  currentPage = data.page || 1;
   totalPages = data.totalPages || 1;
 
-  const tbody = document.getElementById("tbodyDetalhes");
+  const tbody = document.getElementById("tabelaChecklist");
   if (!tbody) return;
 
   tbody.innerHTML = (data.rows || []).map((row) => `
@@ -1189,18 +1170,16 @@ async function loadDetalhes(page = 1) {
   `).join("");
 
   const pager = document.getElementById("pagerInfo");
-  if (pager) pager.textContent = `Página ${currentPage} de ${totalPages}`;
+  if (pager) {
+    pager.innerText = `Página ${data.page || 1} de ${totalPages}`;
+  }
 }
 
-// ========================= LOAD GERAL =========================
+// ========================= LOAD ALL =========================
 async function carregarDashboard(page = 1) {
-  try {
-    await loadResumo(page);
-    await loadGraficos(page);
-    await loadDetalhes(page);
-  } catch (error) {
-    console.error("Erro ao carregar dashboard:", error);
-  }
+  await loadResumo(page);
+  await loadGraficos(page);
+  await loadDetalhes(page);
 }
 
 // ========================= BOTÕES =========================
@@ -1217,7 +1196,7 @@ document.getElementById("btnLimpar")?.addEventListener("click", () => {
     input.checked = false;
   });
 
-  [
+  const resetMap = [
     ["triggerUnidade", "Todas"],
     ["triggerElaborador", "Todos"],
     ["triggerFuncao", "Todas"],
@@ -1226,30 +1205,37 @@ document.getElementById("btnLimpar")?.addEventListener("click", () => {
     ["triggerTopico", "Todos"],
     ["triggerGeraNc", "Todos"],
     ["triggerPrazo", "Todos"],
-    ["triggerArea", "Todas"]
-  ].forEach(([id, texto]) => {
+    ["triggerArea", "Todas"],
+  ];
+
+  resetMap.forEach(([id, label]) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = texto;
+    if (el) el.textContent = label;
   });
 
+  closeAllMultiSelects();
   carregarDashboard(1);
 });
 
 document.getElementById("btnPrev")?.addEventListener("click", () => {
-  if (currentPage > 1) carregarDashboard(currentPage - 1);
+  if (currentPage > 1) {
+    carregarDashboard(currentPage - 1);
+  }
 });
 
 document.getElementById("btnNext")?.addEventListener("click", () => {
-  if (currentPage < totalPages) carregarDashboard(currentPage + 1);
+  if (currentPage < totalPages) {
+    carregarDashboard(currentPage + 1);
+  }
 });
 
 // ========================= INIT =========================
-(async function init() {
+(async function initChecklist() {
   try {
     await loadFiltros();
     await carregarDashboard(1);
   } catch (error) {
-    console.error("Erro no init do checklist:", error);
+    console.error("Erro ao iniciar checklist:", error);
   }
 })();
 </script>

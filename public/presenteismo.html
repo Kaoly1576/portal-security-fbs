@@ -83,17 +83,13 @@
     .detail-table th{position:sticky;top:0;background:var(--th);z-index:1;color:#d6d6d6}
     .pager{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
     .pager-info{margin-right:auto;color:var(--muted);font-size:12px;display:flex;align-items:center}
-    @media (max-width:1400px){
-      .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
-    }
+    @media (max-width:1400px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
     @media (max-width:1280px){
       .filters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
       .search-span-2{grid-column:span 1}
     }
-    @media (max-width:900px){
-      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-    }
+    @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:768px){
       .filters-grid,.kpis{grid-template-columns:1fr}
       .hero-right{text-align:left}
@@ -247,23 +243,17 @@
     <div class="panel">
       <div class="panel-title">Horas ABS por Plantão</div>
       <div class="panel-subtitle">Soma de horas por plantão</div>
-      <div class="chart-box">
-        <canvas id="chartPlantao"></canvas>
-      </div>
+      <div class="chart-box"><canvas id="chartPlantao"></canvas></div>
     </div>
     <div class="panel">
       <div class="panel-title">Registros por Unidade</div>
       <div class="panel-subtitle">Distribuição por unidade</div>
-      <div class="chart-box">
-        <canvas id="chartUnidade"></canvas>
-      </div>
+      <div class="chart-box"><canvas id="chartUnidade"></canvas></div>
     </div>
     <div class="panel">
       <div class="panel-title">Status de Cobertura</div>
       <div class="panel-subtitle">Integral, parcial e sem cobertura</div>
-      <div class="chart-box">
-        <canvas id="chartCobertura"></canvas>
-      </div>
+      <div class="chart-box"><canvas id="chartCobertura"></canvas></div>
     </div>
   </section>
 
@@ -271,16 +261,12 @@
     <div class="panel">
       <div class="panel-title">Horas ABS por Dia</div>
       <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
-      <div class="chart-box line">
-        <canvas id="chartDia"></canvas>
-      </div>
+      <div class="chart-box line"><canvas id="chartDia"></canvas></div>
     </div>
     <div class="panel">
       <div class="panel-title">Comparativo do Período</div>
       <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
-      <div class="chart-box">
-        <canvas id="chartComparativo"></canvas>
-      </div>
+      <div class="chart-box"><canvas id="chartComparativo"></canvas></div>
     </div>
   </section>
 
@@ -288,16 +274,12 @@
     <div class="panel">
       <div class="panel-title">Horas ABS por Agente</div>
       <div class="panel-subtitle">Top agentes com mais horas</div>
-      <div class="chart-box">
-        <canvas id="chartAgente"></canvas>
-      </div>
+      <div class="chart-box"><canvas id="chartAgente"></canvas></div>
     </div>
     <div class="panel">
       <div class="panel-title">Desconto por Plantão</div>
       <div class="panel-subtitle">Top plantões por desconto</div>
-      <div class="chart-box">
-        <canvas id="chartDesconto"></canvas>
-      </div>
+      <div class="chart-box"><canvas id="chartDesconto"></canvas></div>
     </div>
   </section>
 
@@ -351,11 +333,10 @@ function fmt(n){return new Intl.NumberFormat("pt-BR").format(Number(n||0));}
 function fmtCurrency(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
 function fmtHours(hours){
   const total = Number(hours||0);
-  const hh = Math.floor(total);
+  let hh = Math.floor(total);
   let mm = Math.round((total - hh) * 60);
-  let finalH = hh;
-  if (mm === 60) { finalH += 1; mm = 0; }
-  return `${finalH}h${String(mm).padStart(2,"0")}`;
+  if (mm === 60) { hh += 1; mm = 0; }
+  return `${hh}h${String(mm).padStart(2,"0")}`;
 }
 
 function destroyCharts() {
@@ -488,6 +469,8 @@ async function loadResumo(page=1){
   });
   const data = await res.json();
 
+  console.log("RESUMO PRESENTEISMO:", data);
+
   document.getElementById("cardTotal").textContent = fmt(data.total);
   document.getElementById("cardHoras").textContent = fmtHours(data.horasAbs);
   document.getElementById("cardPctAbs").textContent =
@@ -500,6 +483,8 @@ async function loadResumo(page=1){
   document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
   document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
   document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+  document.getElementById("subComparativo").textContent =
+    `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
 }
 
 async function loadGraficos(page=1){
@@ -507,6 +492,8 @@ async function loadGraficos(page=1){
     credentials:"same-origin"
   });
   const data = await res.json();
+
+  console.log("GRAFICOS PRESENTEISMO:", data);
 
   destroyCharts();
 
@@ -655,6 +642,8 @@ async function loadDetalhes(page=1){
   });
   const data = await res.json();
 
+  console.log("DETALHES PRESENTEISMO:", data);
+
   currentPage = data.page || 1;
   totalPages = data.totalPages || 1;
   document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
@@ -708,9 +697,13 @@ document.getElementById("btnNext").addEventListener("click", () => {
 });
 
 (async function init(){
-  await loadFiltros();
-  document.getElementById("filtroDataRef").value = "";
-  await loadAll(1);
+  try {
+    await loadFiltros();
+    document.getElementById("filtroDataRef").value = "";
+    await loadAll(1);
+  } catch (error) {
+    console.error("Erro no init do presenteísmo:", error);
+  }
 })();
 </script>
 </body>

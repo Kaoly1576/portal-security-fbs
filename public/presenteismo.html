@@ -691,8 +691,7 @@ document.getElementById("btnNext").addEventListener("click", () => { if(currentP
 
 (async function init(){
   await loadFiltros();
-  const today = new Date();
-  document.getElementById("filtroDataRef").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  document.getElementById("filtroDataRef").value = "";
   await loadAll(1);
 })();
 </script>

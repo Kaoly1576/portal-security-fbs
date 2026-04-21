@@ -5866,36 +5866,36 @@ app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
 
 app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
   try {
-    const rows = await prLoadWithCache();
+    const rows = await loadData();
 
-    const filteredRows = prApplyFilters(rows, req.query);
-    const { rows: periodRows, period } = prFilterRowsByPeriod(filteredRows, req.query);
+    const filteredRows = applyFilters(rows, req.query);
+    const { rows: periodRows, period } = filterByPeriod(filteredRows, req.query);
 
     const total = periodRows.length;
-    const horasAbs = periodRows.reduce((sum, row) => sum + row._hoursAbs, 0);
-    const descontoTotal = periodRows.reduce((sum, row) => sum + row._descontoNum, 0);
+    const horasAbs = periodRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
+    const descontoTotal = periodRows.reduce((sum, row) => sum + Number(row._desconto || 0), 0);
 
-    const registrosComAbs = periodRows.filter(row => Number(row._hoursAbs || 0) > 0).length;
+    const registrosComAbs = periodRows.filter((row) => Number(row._abs || 0) > 0).length;
     const percentualAbsenteismo = total ? (registrosComAbs / total) * 100 : 0;
 
-    const coberturaIntegral = periodRows.filter(row =>
-      prNormLower(row["STATUS DE COBERTURA"]).includes("integral")
+    const coberturaIntegral = periodRows.filter((row) =>
+      nLower(row["STATUS DE COBERTURA"]).includes("integral")
     ).length;
 
-    const coberturaParcial = periodRows.filter(row =>
-      prNormLower(row["STATUS DE COBERTURA"]).includes("parcial")
+    const coberturaParcial = periodRows.filter((row) =>
+      nLower(row["STATUS DE COBERTURA"]).includes("parcial")
     ).length;
 
-    const semCobertura = periodRows.filter(row => {
-      const c = prNormLower(row["STATUS DE COBERTURA"]);
+    const semCobertura = periodRows.filter((row) => {
+      const c = nLower(row["STATUS DE COBERTURA"]);
       return !c || c.includes("sem cobertura") || c.includes("nao coberto") || c.includes("não coberto");
     }).length;
 
-    const comparison = prGetComparisonWindow(period.start, period.end);
-    const baseNoPeriod = prApplyFiltersWithoutPeriod(rows, req.query);
+    const comparison = getComparisonWindow(period.start, period.end);
+    const baseNoPeriod = applyFiltersWithoutPeriod(rows, req.query);
 
-    const anteriorRows = baseNoPeriod.filter(row => {
-      const dt = row._dateObj;
+    const anteriorRows = baseNoPeriod.filter((row) => {
+      const dt = row._date;
       return (
         dt &&
         comparison.previousStart &&
@@ -5905,7 +5905,7 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
       );
     });
 
-    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + row._hoursAbs, 0);
+    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
 
     return res.json({
       total,
@@ -5918,18 +5918,18 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
       semCobertura,
       anteriorHoras,
       comparativoLabel: comparison.label || "base anterior",
-      periodoAtualInicio: comparison.currentStart ? prFormatBR(comparison.currentStart) : "",
-      periodoAtualFim: comparison.currentEnd ? prFormatBR(comparison.currentEnd) : "",
-      periodoAnteriorInicio: comparison.previousStart ? prFormatBR(comparison.previousStart) : "",
-      periodoAnteriorFim: comparison.previousEnd ? prFormatBR(comparison.previousEnd) : "",
-      variacaoHoras: ((anteriorHoras === 0 && horasAbs === 0) ? 0 : (anteriorHoras === 0 ? 100 : ((horasAbs - anteriorHoras) / anteriorHoras) * 100)),
+      periodoAtualInicio: comparison.currentStart ? formatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? formatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? formatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? formatBR(comparison.previousEnd) : "",
       ultimaAtualizacao: getHoraAtualizacaoBR(),
-      });
+    });
   } catch (error) {
     console.error("Erro /api/presenteismo-resumo:", error);
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
+
 // ================== GRÁFICOS ==================
 
 app.get("/api/checklist-graficos", requireAuth, async (req, res) => {

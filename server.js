@@ -6259,6 +6259,8 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
 app.get("/api/presenteismo-graficos", requireAuth, async (req,res)=>{
   const rows = await loadData();
 
+  const filtered = filterByPeriod(applyFilters(rows, req.query), req.query);
+
   let plantao = {};
   let unidade = {};
   let cobertura = {};
@@ -6268,7 +6270,7 @@ app.get("/api/presenteismo-graficos", requireAuth, async (req,res)=>{
 
   for(let i=1;i<=31;i++) dia[i]=0;
 
-  rows.forEach(r=>{
+  filtered.forEach(r=>{
     const p = n(r["PLANTÃO"]) || "SEM";
     const u = n(r["UNIDADE"]) || "SEM";
     const c = n(r["STATUS DE COBERTURA"]) || "SEM";

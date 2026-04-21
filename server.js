@@ -5789,6 +5789,69 @@ function clFilterGroupsByPeriod(groups, query) {
   return { groups: filtered, period };
 }
 
+function applyFilters(rows, query){
+  const unidade = (query.unidade || "").split("|").filter(Boolean);
+  const empresa = (query.empresa || "").split("|").filter(Boolean);
+  const plantao = (query.plantao || "").split("|").filter(Boolean);
+  const turno = (query.turno || "").split("|").filter(Boolean);
+  const agente = (query.agente || "").split("|").filter(Boolean);
+  const status = (query.status || "").split("|").filter(Boolean);
+  const cobertura = (query.cobertura || "").split("|").filter(Boolean);
+  const busca = n(query.busca || "").toLowerCase();
+
+  return rows.filter(r => {
+    if (unidade.length && !unidade.includes(n(r["UNIDADE"]))) return false;
+    if (empresa.length && !empresa.includes(n(r["EMPRESA"]))) return false;
+    if (plantao.length && !plantao.includes(n(r["PLANTÃO"]))) return false;
+    if (turno.length && !turno.includes(n(r["TURNO"]))) return false;
+    if (agente.length && !agente.includes(n(r["AGENTE"]))) return false;
+    if (status.length && !status.includes(n(r["STATUS"]))) return false;
+    if (cobertura.length && !cobertura.includes(n(r["STATUS DE COBERTURA"]))) return false;
+
+    if (busca) {
+      const text = Object.values(r).join(" ").toLowerCase();
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function filterByPeriod(rows, query){
+  const periodoTipo = n(query.periodoTipo || "mes").toLowerCase();
+  const dataRef = n(query.dataRef);
+
+  if (!dataRef) return rows;
+
+  const ref = new Date(`${dataRef}T00:00:00`);
+  if (isNaN(ref.getTime())) return rows;
+
+  let start, end;
+
+  if (periodoTipo === "dia") {
+    start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 0, 0, 0, 0);
+    end = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 23, 59, 59, 999);
+  } else if (periodoTipo === "semana") {
+    start = new Date(ref);
+    const day = start.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + diff);
+    start.setHours(0,0,0,0);
+
+    end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23,59,59,999);
+  } else if (periodoTipo === "ano") {
+    start = new Date(ref.getFullYear(), 0, 1, 0, 0, 0, 0);
+    end = new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999);
+  } else {
+    start = new Date(ref.getFullYear(), ref.getMonth(), 1, 0, 0, 0, 0);
+    end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+
+  return rows.filter(r => r._date && r._date >= start && r._date <= end);
+}
+
 // ================== FILTROS ==================
 
 app.get("/api/checklist-filtros", requireAuth, async (req, res) => {

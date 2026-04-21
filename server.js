@@ -6498,6 +6498,7 @@ app.get("/api/presenteismo-graficos", requireAuth, async (req, res) => {
     const filteredRows = applyFilters(rows, req.query);
     const { rows: periodRows, period } = filterByPeriod(filteredRows, req.query);
 
+    let empresa = {};
     let plantao = {};
     let unidade = {};
     let cobertura = {};
@@ -6512,12 +6513,14 @@ app.get("/api/presenteismo-graficos", requireAuth, async (req, res) => {
       const u = n(r["UNIDADE"]) || "SEM";
       const c = n(r["STATUS DE COBERTURA"]) || "SEM";
       const a = n(r["AGENTE"]) || "SEM";
+      const e = n(r["EMPRESA"]) || "SEM";
 
       plantao[p] = (plantao[p] || 0) + Number(r._abs || 0);
       unidade[u] = (unidade[u] || 0) + 1;
       cobertura[c] = (cobertura[c] || 0) + 1;
       agente[a] = (agente[a] || 0) + Number(r._abs || 0);
       desconto[p] = (desconto[p] || 0) + Number(r._desconto || 0);
+      empresa[e] = (empresa[e] || 0) + 1;
 
       if (r._day) dia[r._day] += Number(r._abs || 0);
     });
@@ -6545,6 +6548,7 @@ app.get("/api/presenteismo-graficos", requireAuth, async (req, res) => {
 
     return res.json({
       horasPorPlantao: top(plantao, 12),
+      empresas: top(empresa, 12),
       registrosPorUnidade: top(unidade, 12),
       cobertura: top(cobertura, 10),
       horasPorDia: dia,

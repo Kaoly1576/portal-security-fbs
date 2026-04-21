@@ -5368,8 +5368,6 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
 
 // ================== CHECKLIST DASHBOARD ==================
 
-// ================== CHECKLIST DASHBOARD ==================
-
 app.get("/checklist", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "checklist.html"));
 });
@@ -5398,21 +5396,39 @@ function clParseDate(value) {
   const str = clNorm(value);
   if (!str) return null;
 
-  // MM/DD/YYYY ou M/D/YYYY
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
-    const [month, day, year] = str.split("/").map(Number);
+  // formato YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [year, month, day] = datePart.split("-").map(Number);
     const dt = new Date(year, month - 1, day);
-    return isNaN(dt.getTime()) ? null : dt;
+    return isNaN(dt) ? null : dt;
   }
 
-  // YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    const [year, month, day] = str.split("-").map(Number);
+  // formato MM/DD/YYYY ou M/D/YYYY  -> BASE DO CHECKLIST
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [month, day, year] = datePart.split("/").map(Number);
     const dt = new Date(year, month - 1, day);
-    return isNaN(dt.getTime()) ? null : dt;
+    return isNaN(dt) ? null : dt;
+  }
+
+  // formato DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+    const [datePart] = str.split(" ");
+    const [day, month, year] = datePart.split("/").map(Number);
+    const dt = new Date(year, month - 1, day);
+    return isNaN(dt) ? null : dt;
   }
 
   return null;
+}
+
+function clFormatInputDate(date) {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function clFormatBR(date) {
@@ -5456,7 +5472,9 @@ function clEndOfDay(date) {
 
 function clDiffDaysInclusive(start, end) {
   const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.floor((clStartOfDay(end) - clStartOfDay(start)) / msPerDay) + 1;
+  const s = clStartOfDay(start);
+  const e = clStartOfDay(end);
+  return Math.floor((e - s) / msPerDay) + 1;
 }
 
 function clResolvePeriodFromQuery(query, groups) {
@@ -5715,7 +5733,7 @@ function clGroupByChecklist(rows) {
   });
 }
 
-// ================== FILTERS ==================
+// ================== FILTERS ON RAW ROWS ==================
 
 function clApplyFilters(rows, query) {
   const unidade = clSplitMulti(query.unidade);
@@ -5761,6 +5779,8 @@ function clApplyFiltersWithoutPeriod(rows, query) {
   });
 }
 
+// ================== PERIOD FILTER ON GROUPS ==================
+
 function clFilterGroupsByPeriod(groups, query) {
   const period = clResolvePeriodFromQuery(query, groups);
 
@@ -5774,69 +5794,6 @@ function clFilterGroupsByPeriod(groups, query) {
   });
 
   return { groups: filtered, period };
-}
-
-function applyFilters(rows, query){
-  const unidade = (query.unidade || "").split("|").filter(Boolean);
-  const empresa = (query.empresa || "").split("|").filter(Boolean);
-  const plantao = (query.plantao || "").split("|").filter(Boolean);
-  const turno = (query.turno || "").split("|").filter(Boolean);
-  const agente = (query.agente || "").split("|").filter(Boolean);
-  const status = (query.status || "").split("|").filter(Boolean);
-  const cobertura = (query.cobertura || "").split("|").filter(Boolean);
-  const busca = n(query.busca || "").toLowerCase();
-
-  return rows.filter(r => {
-    if (unidade.length && !unidade.includes(n(r["UNIDADE"]))) return false;
-    if (empresa.length && !empresa.includes(n(r["EMPRESA"]))) return false;
-    if (plantao.length && !plantao.includes(n(r["PLANTÃO"]))) return false;
-    if (turno.length && !turno.includes(n(r["TURNO"]))) return false;
-    if (agente.length && !agente.includes(n(r["AGENTE"]))) return false;
-    if (status.length && !status.includes(n(r["STATUS"]))) return false;
-    if (cobertura.length && !cobertura.includes(n(r["STATUS DE COBERTURA"]))) return false;
-
-    if (busca) {
-      const text = Object.values(r).join(" ").toLowerCase();
-      if (!text.includes(busca)) return false;
-    }
-
-    return true;
-  });
-}
-
-function filterByPeriod(rows, query){
-  const periodoTipo = n(query.periodoTipo || "mes").toLowerCase();
-  const dataRef = n(query.dataRef);
-
-  if (!dataRef) return rows;
-
-  const ref = new Date(`${dataRef}T00:00:00`);
-  if (isNaN(ref.getTime())) return rows;
-
-  let start, end;
-
-  if (periodoTipo === "dia") {
-    start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 0, 0, 0, 0);
-    end = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate(), 23, 59, 59, 999);
-  } else if (periodoTipo === "semana") {
-    start = new Date(ref);
-    const day = start.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    start.setDate(start.getDate() + diff);
-    start.setHours(0,0,0,0);
-
-    end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    end.setHours(23,59,59,999);
-  } else if (periodoTipo === "ano") {
-    start = new Date(ref.getFullYear(), 0, 1, 0, 0, 0, 0);
-    end = new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999);
-  } else {
-    start = new Date(ref.getFullYear(), ref.getMonth(), 1, 0, 0, 0, 0);
-    end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999);
-  }
-
-  return rows.filter(r => r._date && r._date >= start && r._date <= end);
 }
 
 // ================== FILTROS ==================
@@ -5862,6 +5819,68 @@ app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
   }
 });
 
+// ================== RESUMO ==================
+
+app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
+  try {
+    const rows = await clLoadWithCache();
+
+    const filteredRows = clApplyFilters(rows, req.query);
+    const groups = clGroupByChecklist(filteredRows);
+
+    const { groups: periodGroups, period } = clFilterGroupsByPeriod(groups, req.query);
+
+    const total = periodGroups.length;
+    const ok = periodGroups.filter((g) => g.conforme).length;
+    const nok = total - ok;
+    const taxa = total ? (ok / total) * 100 : 0;
+    const pendencias = periodGroups.reduce((sum, g) => sum + g.pendencias, 0);
+    const media = total
+      ? periodGroups.reduce((sum, g) => sum + g.mediaPontuacao, 0) / total
+      : 0;
+
+    const comparison = clGetComparisonWindow(period.start, period.end);
+
+    const baseNoPeriodRows = clApplyFiltersWithoutPeriod(rows, req.query);
+    const baseNoPeriodGroups = clGroupByChecklist(baseNoPeriodRows);
+
+    const anterior = baseNoPeriodGroups.filter((g) => {
+      const dt = g._dateObj;
+      return (
+        dt &&
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
+      );
+    }).length;
+
+    return res.json({
+      total,
+      ok,
+      nok,
+      taxa,
+      pendencias,
+      media,
+      anterior,
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? clFormatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? clFormatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? clFormatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? clFormatBR(comparison.previousEnd) : "",
+      variacao: clPercentChange(total, anterior),
+      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }),
+    });
+  } catch (error) {
+    console.error("Erro /api/checklist-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
 
 // ================== GRÁFICOS ==================
 
@@ -6023,7 +6042,6 @@ app.get("/api/checklist-debug", requireAuth, async (req, res) => {
       totalLinhas: rows.length,
       headers: rows.length ? Object.keys(rows[0]).filter((h) => !h.startsWith("_")) : [],
       sample: rows.slice(0, 5),
-      totalChecklists: [...new Set(rows.map((r) => r["registro_id"]).filter(Boolean))].length,
     });
   } catch (error) {
     console.error("Erro /api/checklist-debug:", error);

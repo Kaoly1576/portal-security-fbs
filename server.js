@@ -228,19 +228,14 @@ function detectarLinhaDatas(rows) {
   }
 
   const lateralDates = [];
+
   for (let i = firstDateColIndex; i < dateRow.length; i++) {
     const valor = String(dateRow[i] || "").trim();
+
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
       lateralDates.push({
         colIndex: i,
         date: valor,
-      }
-       function getHoraAtualizacaoBR() {
-  return new Date().toLocaleTimeString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
       });
     }
   }
@@ -250,6 +245,16 @@ function detectarLinhaDatas(rows) {
     firstDateColIndex,
     lateralDates,
   };
+}
+
+// 🔥 FUNÇÃO FORA (isso é importante)
+function getHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 async function lerSheetChamada() {

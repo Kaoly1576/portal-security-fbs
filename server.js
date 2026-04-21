@@ -5814,31 +5814,38 @@ app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
 
 // ================== RESUMO ==================
 
-app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
+app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
   try {
-    const rows = await clLoadWithCache();
+    const rows = await prLoadWithCache();
 
-    const filteredRows = clApplyFilters(rows, req.query);
-    const groups = clGroupByChecklist(filteredRows);
+    const filteredRows = prApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = prFilterRowsByPeriod(filteredRows, req.query);
 
-    const { groups: periodGroups, period } = clFilterGroupsByPeriod(groups, req.query);
+    const total = periodRows.length;
+    const horasAbs = periodRows.reduce((sum, row) => sum + row._hoursAbs, 0);
+    const descontoTotal = periodRows.reduce((sum, row) => sum + row._descontoNum, 0);
 
-    const total = periodGroups.length;
-    const ok = periodGroups.filter((g) => g.conforme).length;
-    const nok = total - ok;
-    const taxa = total ? (ok / total) * 100 : 0;
-    const pendencias = periodGroups.reduce((sum, g) => sum + g.pendencias, 0);
-    const media = total
-      ? periodGroups.reduce((sum, g) => sum + g.mediaPontuacao, 0) / total
-      : 0;
+    const registrosComAbs = periodRows.filter(row => Number(row._hoursAbs || 0) > 0).length;
+    const percentualAbsenteismo = total ? (registrosComAbs / total) * 100 : 0;
 
-    const comparison = clGetComparisonWindow(period.start, period.end);
+    const coberturaIntegral = periodRows.filter(row =>
+      prNormLower(row["STATUS DE COBERTURA"]).includes("integral")
+    ).length;
 
-    const baseNoPeriodRows = clApplyFiltersWithoutPeriod(rows, req.query);
-    const baseNoPeriodGroups = clGroupByChecklist(baseNoPeriodRows);
+    const coberturaParcial = periodRows.filter(row =>
+      prNormLower(row["STATUS DE COBERTURA"]).includes("parcial")
+    ).length;
 
-    const anterior = baseNoPeriodGroups.filter((g) => {
-      const dt = g._dateObj;
+    const semCobertura = periodRows.filter(row => {
+      const c = prNormLower(row["STATUS DE COBERTURA"]);
+      return !c || c.includes("sem cobertura") || c.includes("nao coberto") || c.includes("não coberto");
+    }).length;
+
+    const comparison = prGetComparisonWindow(period.start, period.end);
+    const baseNoPeriod = prApplyFiltersWithoutPeriod(rows, req.query);
+
+    const anteriorRows = baseNoPeriod.filter(row => {
+      const dt = row._dateObj;
       return (
         dt &&
         comparison.previousStart &&
@@ -5846,22 +5853,26 @@ app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
         dt >= comparison.previousStart &&
         dt <= comparison.previousEnd
       );
-    }).length;
+    });
+
+    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + row._hoursAbs, 0);
 
     return res.json({
       total,
-      ok,
-      nok,
-      taxa,
-      pendencias,
-      media,
-      anterior,
+      horasAbs,
+      descontoTotal,
+      registrosComAbs,
+      percentualAbsenteismo,
+      coberturaIntegral,
+      coberturaParcial,
+      semCobertura,
+      anteriorHoras,
       comparativoLabel: comparison.label || "base anterior",
-      periodoAtualInicio: comparison.currentStart ? clFormatBR(comparison.currentStart) : "",
-      periodoAtualFim: comparison.currentEnd ? clFormatBR(comparison.currentEnd) : "",
-      periodoAnteriorInicio: comparison.previousStart ? clFormatBR(comparison.previousStart) : "",
-      periodoAnteriorFim: comparison.previousEnd ? clFormatBR(comparison.previousEnd) : "",
-      variacao: clPercentChange(total, anterior),
+      periodoAtualInicio: comparison.currentStart ? prFormatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? prFormatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? prFormatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? prFormatBR(comparison.previousEnd) : "",
+      variacaoHoras: ((anteriorHoras === 0 && horasAbs === 0) ? 0 : (anteriorHoras === 0 ? 100 : ((horasAbs - anteriorHoras) / anteriorHoras) * 100)),
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
@@ -5870,11 +5881,10 @@ app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
       }),
     });
   } catch (error) {
-    console.error("Erro /api/checklist-resumo:", error);
+    console.error("Erro /api/presenteismo-resumo:", error);
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
 // ================== GRÁFICOS ==================
 
 app.get("/api/checklist-graficos", requireAuth, async (req, res) => {

@@ -6152,8 +6152,8 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
     const { rows: periodRows, period } = prFilterRowsByPeriod(filteredRows, req.query);
 
     const total = periodRows.length;
-    const horasAbs = periodRows.reduce((sum, row) => sum + row._hoursAbs, 0);
-    const descontoTotal = periodRows.reduce((sum, row) => sum + row._descontoNum, 0);
+    const horasAbs = periodRows.reduce((sum, row) => sum + Number(row._hoursAbs || 0), 0);
+    const descontoTotal = periodRows.reduce((sum, row) => sum + Number(row._descontoNum || 0), 0);
 
     const registrosComAbs = periodRows.filter(row => Number(row._hoursAbs || 0) > 0).length;
     const percentualAbsenteismo = total ? (registrosComAbs / total) * 100 : 0;
@@ -6185,7 +6185,7 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
       );
     });
 
-    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + row._hoursAbs, 0);
+    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + Number(row._hoursAbs || 0), 0);
 
     return res.json({
       total,
@@ -6202,7 +6202,6 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
       periodoAtualFim: comparison.currentEnd ? prFormatBR(comparison.currentEnd) : "",
       periodoAnteriorInicio: comparison.previousStart ? prFormatBR(comparison.previousStart) : "",
       periodoAnteriorFim: comparison.previousEnd ? prFormatBR(comparison.previousEnd) : "",
-      variacaoHoras: ((anteriorHoras === 0 && horasAbs === 0) ? 0 : (anteriorHoras === 0 ? 100 : ((horasAbs - anteriorHoras) / anteriorHoras) * 100)),
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",

@@ -4714,7 +4714,7 @@ app.get("/api/hc-onboarding-resumo", requireAuth, async (req, res) => {
         instrutores: onbInstrutores,
         concordam: onbConcordam,
       }),
-      ultimaAtualizacao: getHoraAtualizacaoBR(),,
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
   });
   } catch (error) {
     console.error("Erro /api/hc-onboarding-resumo:", error);

@@ -6043,6 +6043,190 @@ app.get("/api/checklist-debug", requireAuth, async (req, res) => {
   }
 });
 
+
+// ================== PRESENTEISMO DASHBOARD ==================
+
+app.get("/presenteismo", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "presenteismo.html"));
+});
+
+const PRESENTEISMO_SPREADSHEET_ID = "1DivjZdxzDES6Nu_ZJI_1gmrJgKqlrlqYgg3I-ybPr5k";
+const PRESENTEISMO_RANGE = "'REGISTRO DE PRESENTEÍSMO'!A1:L200000";
+
+let cache = null;
+let cacheTime = 0;
+const TTL = 5 * 60 * 1000;
+
+// ================== UTIL ==================
+
+function n(v){ return String(v || "").trim(); }
+
+function parseDate(v){
+  const m = n(v).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if(!m) return null;
+  return new Date(m[3], m[2]-1, m[1]);
+}
+
+function parseHours(v){
+  const p = n(v).split(":").map(Number);
+  if(p.length !== 3) return 0;
+  return p[0] + (p[1]/60) + (p[2]/3600);
+}
+
+function parseMoney(v){
+  return Number(
+    n(v)
+    .replace(/[R$\s]/g,"")
+    .replace(/\./g,"")
+    .replace(",",".")
+  ) || 0;
+}
+
+// ================== LOAD ==================
+
+async function loadData(){
+  if(cache && Date.now() - cacheTime < TTL) return cache;
+
+  const sheets = await conectarSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: PRESENTEISMO_SPREADSHEET_ID,
+    range: PRESENTEISMO_RANGE
+  });
+
+  const values = res.data.values || [];
+  const headers = values[0];
+
+  const data = values.slice(1).map(r=>{
+    let obj = {};
+    headers.forEach((h,i)=> obj[h] = r[i] || "");
+
+    obj._date = parseDate(obj["DATA"]);
+    obj._day = obj._date ? obj._date.getDate() : null;
+    obj._abs = parseHours(obj["ABSENTEISMO"]);
+    obj._desconto = parseMoney(obj["DESCONTO"]);
+
+    return obj;
+  });
+
+  cache = data;
+  cacheTime = Date.now();
+
+  return data;
+}
+
+// ================== FILTROS ==================
+
+app.get("/api/presenteismo-filtros", requireAuth, async (req,res)=>{
+  const rows = await loadData();
+
+  const uniq = (f)=> [...new Set(rows.map(r=>n(r[f])).filter(Boolean))].sort();
+
+  res.json({
+    unidade: uniq("UNIDADE"),
+    empresa: uniq("EMPRESA"),
+    plantao: uniq("PLANTÃO"),
+    turno: uniq("TURNO"),
+    agente: uniq("AGENTE"),
+    status: uniq("STATUS"),
+    cobertura: uniq("STATUS DE COBERTURA")
+  });
+});
+
+// ================== RESUMO ==================
+
+app.get("/api/presenteismo-resumo", requireAuth, async (req,res)=>{
+  const rows = await loadData();
+
+  const total = rows.length;
+  const horas = rows.reduce((s,r)=> s + r._abs, 0);
+  const desconto = rows.reduce((s,r)=> s + r._desconto, 0);
+
+  const integral = rows.filter(r=> n(r["STATUS DE COBERTURA"]).toLowerCase().includes("integral")).length;
+  const parcial = rows.filter(r=> n(r["STATUS DE COBERTURA"]).toLowerCase().includes("parcial")).length;
+  const sem = total - integral - parcial;
+
+  res.json({
+    total,
+    horasAbs: horas,
+    descontoTotal: desconto,
+    coberturaIntegral: integral,
+    coberturaParcial: parcial,
+    semCobertura: sem,
+    ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR")
+  });
+});
+
+// ================== GRAFICOS ==================
+
+app.get("/api/presenteismo-graficos", requireAuth, async (req,res)=>{
+  const rows = await loadData();
+
+  let plantao = {};
+  let unidade = {};
+  let cobertura = {};
+  let dia = {};
+  let agente = {};
+  let desconto = {};
+
+  for(let i=1;i<=31;i++) dia[i]=0;
+
+  rows.forEach(r=>{
+    const p = n(r["PLANTÃO"]) || "SEM";
+    const u = n(r["UNIDADE"]) || "SEM";
+    const c = n(r["STATUS DE COBERTURA"]) || "SEM";
+    const a = n(r["AGENTE"]) || "SEM";
+
+    plantao[p] = (plantao[p]||0) + r._abs;
+    unidade[u] = (unidade[u]||0) + 1;
+    cobertura[c] = (cobertura[c]||0) + 1;
+    agente[a] = (agente[a]||0) + r._abs;
+    desconto[p] = (desconto[p]||0) + r._desconto;
+
+    if(r._day) dia[r._day] += r._abs;
+  });
+
+  const top = (o)=> Object.fromEntries(Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,10));
+
+  res.json({
+    horasPorPlantao: top(plantao),
+    registrosPorUnidade: top(unidade),
+    cobertura: top(cobertura),
+    horasPorDia: dia,
+    horasPorAgente: top(agente),
+    descontoPorPlantao: top(desconto),
+    comparativo:{
+      atual: Object.values(plantao).reduce((a,b)=>a+b,0),
+      anterior: 0,
+      label:"mês anterior"
+    }
+  });
+});
+
+// ================== DETALHES ==================
+
+app.get("/api/presenteismo-detalhes", requireAuth, async (req,res)=>{
+  const rows = await loadData();
+
+  res.json({
+    page:1,
+    totalPages:1,
+    rows: rows.slice(0,50).map(r=>({
+      mes:r["MÊS"],
+      data:r["DATA"],
+      unidade:r["UNIDADE"],
+      empresa:r["EMPRESA"],
+      plantao:r["PLANTÃO"],
+      turno:r["TURNO"],
+      agente:r["AGENTE"],
+      status:r["STATUS"],
+      statusCobertura:r["STATUS DE COBERTURA"],
+      abs:r["ABSENTEISMO"],
+      desconto:r["DESCONTO"],
+      cobrindo:r["COLABORADOR COBRINDO POSTO"]
+    }))
+  });
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

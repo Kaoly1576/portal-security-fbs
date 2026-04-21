@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRESENTEÍSMO</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    :root{
+      --bg1:#4b5563;--bg2:#111827;--bg3:#050c18;--card:rgba(17,24,39,.78);
+      --input:#071325;--th:#111c33;--line:rgba(255,255,255,.08);--text:#fff;
+      --muted:#cbd5e1;--orange:#ff7a1a;--blue:#58a6ff;--green:#22c55e;--red:#ef4444;--purple:#a855f7;
+    }
+    html,body{min-height:100%;overflow-x:hidden}
+    body{
+      background:
+        radial-gradient(circle at top,rgba(255,255,255,.14),transparent 35%),
+        linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 24%,var(--bg3) 52%,var(--bg3) 100%);
+      color:var(--text)
+    }
+    .page{max-width:1500px;margin:0 auto;padding:14px}
+    .topbar,.hero,.filters,.panel,.wide-panel,.kpi{
+      background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+      border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.28);backdrop-filter:blur(4px)
+    }
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:12px;padding:14px 16px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:14px}
+    .brand-logo{width:44px;height:44px;object-fit:contain;border-radius:50%;background:#1a120d;padding:6px;border:1px solid rgba(255,255,255,.08)}
+    .brand-text h1{color:var(--orange);font-size:18px;font-weight:900;line-height:1}
+    .brand-text p{font-size:11px;color:var(--muted);margin-top:4px}
+    .btn{background:rgba(255,255,255,.08);border:1px solid var(--line);color:#fff;padding:10px 16px;border-radius:12px;text-decoration:none;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.2s ease}
+    .btn:hover{background:rgba(255,255,255,.14)}
+    .hero{padding:16px 18px;display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+    .hero h2{font-size:18px;margin-bottom:6px}
+    .hero p{color:var(--muted);font-size:12px;line-height:1.5;max-width:860px}
+    .hero-right{text-align:right;min-width:170px}
+    .hero-right .small{color:var(--muted);font-size:11px;margin-bottom:6px}
+    .hero-right .time{color:var(--orange);font-weight:900;font-size:22px}
+    .filters{padding:14px;margin-bottom:12px;position:relative;z-index:50;overflow:visible!important}
+    .filters-grid{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:10px;align-items:end;overflow:visible!important;position:relative;z-index:60}
+    .field{min-width:0;position:relative;overflow:visible!important}
+    .field label{display:block;margin-bottom:6px;font-size:11px;color:#fff;font-weight:700}
+    .field input,.field select{width:100%;height:40px;background:var(--input);border:1px solid rgba(255,255,255,.08);border-radius:10px;color:#fff;padding:0 12px;outline:none;font-size:12px}
+    .field input::placeholder{color:#94a3b8}
+    input[type="date"]{color-scheme:dark;padding-right:14px}
+    input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.5);opacity:1;cursor:pointer}
+    .multi-select{position:relative;width:100%}
+    .multi-select.open{z-index:9999!important}
+    .multi-trigger{width:100%;background:var(--input);border:1px solid rgba(255,255,255,.08);color:#fff;border-radius:10px;padding:0 34px 0 12px;font-size:12px;height:40px;display:flex;align-items:center;cursor:pointer;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .multi-trigger::after{content:"▼";position:absolute;right:12px;font-size:10px;color:#cbd5e1;pointer-events:none}
+    .multi-menu{position:absolute;top:44px;left:0;width:100%;background:var(--input);border:1px solid rgba(255,255,255,.08);border-radius:12px;max-height:220px;overflow-y:auto;display:none;z-index:10000!important;box-shadow:0 10px 24px rgba(0,0,0,.35);padding:6px}
+    .multi-select.open .multi-menu{display:block}
+    .multi-option{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:#fff}
+    .multi-option:hover{background:#1a2942}
+    .multi-option input{width:auto;height:auto;accent-color:var(--orange)}
+    .multi-actions{display:flex;justify-content:space-between;gap:6px;padding:6px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px;position:sticky;top:0;background:var(--input);z-index:2}
+    .multi-actions button{flex:1;background:#1a2942;color:#fff;border:none;border-radius:8px;padding:6px 8px;font-size:11px;cursor:pointer}
+    .multi-actions button:hover{background:#243756}
+    .search-span-2{grid-column:span 2}
+    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .btn-primary{height:40px;border:none;border-radius:10px;padding:0 16px;background:linear-gradient(90deg,var(--orange),#ff4d4f);color:#fff;font-weight:800;cursor:pointer}
+    .btn-ghost{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 16px;background:#242424;color:#fff;font-weight:700;cursor:pointer}
+    .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    .kpi{padding:14px;min-height:96px}
+    .kpi-title{font-size:11px;text-transform:uppercase;color:#fff;margin-bottom:10px;font-weight:800}
+    .kpi-value{font-size:24px;font-weight:900;line-height:1.1}
+    .kpi-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+    .orange{color:var(--orange)} .blue{color:var(--blue)} .green{color:var(--green)} .red{color:var(--red)} .purple{color:var(--purple)}
+    .grid-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    .grid-middle{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;margin-bottom:12px}
+    .grid-bottom{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    .panel{padding:14px;min-height:260px;overflow:hidden;position:relative}
+    .panel-title{color:var(--orange);font-weight:900;font-size:14px;margin-bottom:12px;text-align:center}
+    .panel-subtitle{color:#cdd6e0;font-size:11px;margin-bottom:10px}
+    .chart-box{height:250px;position:relative}
+    .chart-box.line{height:290px}
+    .wide-panel{padding:14px;margin-bottom:14px}
+    .detail-wrap{overflow:auto;max-height:520px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+    .detail-table{width:100%;border-collapse:collapse;min-width:1100px;font-size:12px;background:#091322}
+    .detail-table th,.detail-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;white-space:nowrap}
+    .detail-table th{position:sticky;top:0;background:var(--th);z-index:1;color:#d6d6d6}
+    .pager{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    .pager-info{margin-right:auto;color:var(--muted);font-size:12px;display:flex;align-items:center}
+    @media (max-width:1280px){
+      .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
+      .search-span-2{grid-column:span 1}
+    }
+    @media (max-width:768px){
+      .filters-grid,.kpis{grid-template-columns:1fr}
+      .hero-right{text-align:left}
+      .kpi-value{font-size:20px}
+      .topbar,.hero{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="topbar">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Logo" class="brand-logo" />
+      <div class="brand-text">
+        <h1>PRESENTEÍSMO</h1>
+        <p>Dashboard operacional de absenteísmo e coberturas</p>
+      </div>
+    </div>
+    <a href="/portal" class="btn">Voltar ao Portal</a>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h2>Dashboard de Presenteísmo de Agentes</h2>
+      <p>Monitoramento consolidado de horas de absenteísmo, coberturas, descontos, unidades, plantões e evolução diária.</p>
+    </div>
+    <div class="hero-right">
+      <div class="small">Última atualização</div>
+      <div class="time" id="ultimaAtualizacao">--:--</div>
+    </div>
+  </section>
+
+  <section class="filters">
+    <div class="filters-grid">
+      <div class="field">
+        <label>Período</label>
+        <select id="filtroPeriodoTipo">
+          <option value="mes">Mês</option>
+          <option value="dia">Dia</option>
+          <option value="semana">Semana</option>
+          <option value="ano">Ano</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Data de referência</label>
+        <input type="date" id="filtroDataRef" />
+      </div>
+      <div class="field">
+        <label>Unidade</label>
+        <div class="multi-select" id="multiUnidade">
+          <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
+          <div class="multi-menu" id="menuUnidade"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Empresa</label>
+        <div class="multi-select" id="multiEmpresa">
+          <button type="button" class="multi-trigger" id="triggerEmpresa">Todas</button>
+          <div class="multi-menu" id="menuEmpresa"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Plantão</label>
+        <div class="multi-select" id="multiPlantao">
+          <button type="button" class="multi-trigger" id="triggerPlantao">Todos</button>
+          <div class="multi-menu" id="menuPlantao"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Turno</label>
+        <div class="multi-select" id="multiTurno">
+          <button type="button" class="multi-trigger" id="triggerTurno">Todos</button>
+          <div class="multi-menu" id="menuTurno"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-grid" style="margin-top:10px;">
+      <div class="field">
+        <label>Agente</label>
+        <div class="multi-select" id="multiAgente">
+          <button type="button" class="multi-trigger" id="triggerAgente">Todos</button>
+          <div class="multi-menu" id="menuAgente"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <div class="multi-select" id="multiStatus">
+          <button type="button" class="multi-trigger" id="triggerStatus">Todos</button>
+          <div class="multi-menu" id="menuStatus"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Status de cobertura</label>
+        <div class="multi-select" id="multiCobertura">
+          <button type="button" class="multi-trigger" id="triggerCobertura">Todos</button>
+          <div class="multi-menu" id="menuCobertura"></div>
+        </div>
+      </div>
+      <div class="field search-span-2">
+        <label>Busca geral</label>
+        <input type="text" id="filtroBusca" placeholder="Buscar por agente, plantão, unidade, colaborador cobrindo..." />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
+      <button class="btn-ghost" id="btnLimpar">Limpar filtros</button>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi">
+      <div class="kpi-title">Total de registros</div>
+      <div class="kpi-value orange" id="cardTotal">0</div>
+      <div class="kpi-sub">Registros filtrados</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Horas de ABS</div>
+      <div class="kpi-value red" id="cardHoras">0h</div>
+      <div class="kpi-sub">Soma do absenteísmo</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Desconto total</div>
+      <div class="kpi-value orange" id="cardDesconto">R$ 0,00</div>
+      <div class="kpi-sub">Impacto financeiro</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Cobertura integral</div>
+      <div class="kpi-value green" id="cardIntegral">0</div>
+      <div class="kpi-sub">Registros com cobertura integral</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Cobertura parcial</div>
+      <div class="kpi-value orange" id="cardParcial">0</div>
+      <div class="kpi-sub">Registros com cobertura parcial</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Sem cobertura</div>
+      <div class="kpi-value purple" id="cardSemCobertura">0</div>
+      <div class="kpi-sub">Registros sem cobertura</div>
+    </div>
+  </section>
+
+  <section class="grid-top">
+    <div class="panel">
+      <div class="panel-title">Horas ABS por Plantão</div>
+      <div class="panel-subtitle">Soma de horas por plantão</div>
+      <div class="chart-box">
+        <canvas id="chartPlantao"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Registros por Unidade</div>
+      <div class="panel-subtitle">Distribuição por unidade</div>
+      <div class="chart-box">
+        <canvas id="chartUnidade"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Status de Cobertura</div>
+      <div class="panel-subtitle">Integral, parcial e sem cobertura</div>
+      <div class="chart-box">
+        <canvas id="chartCobertura"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-middle">
+    <div class="panel">
+      <div class="panel-title">Horas ABS por Dia</div>
+      <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
+      <div class="chart-box line">
+        <canvas id="chartDia"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Comparativo do Período</div>
+      <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
+      <div class="chart-box">
+        <canvas id="chartComparativo"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-bottom">
+    <div class="panel">
+      <div class="panel-title">Horas ABS por Agente</div>
+      <div class="panel-subtitle">Top agentes com mais horas</div>
+      <div class="chart-box">
+        <canvas id="chartAgente"></canvas>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Desconto por Plantão</div>
+      <div class="panel-subtitle">Top plantões por desconto</div>
+      <div class="chart-box">
+        <canvas id="chartDesconto"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="wide-panel">
+    <div class="panel-title">Detalhamento</div>
+    <div class="detail-wrap">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Mês</th>
+            <th>Data</th>
+            <th>Unidade</th>
+            <th>Empresa</th>
+            <th>Plantão</th>
+            <th>Turno</th>
+            <th>Agente</th>
+            <th>Status</th>
+            <th>Cobertura</th>
+            <th>ABS</th>
+            <th>Desconto</th>
+            <th>Cobrindo posto</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyDetalhes"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
+      <button class="btn-ghost" id="btnPrev">Anterior</button>
+      <button class="btn-ghost" id="btnNext">Próxima</button>
+    </div>
+  </section>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+let currentPage = 1;
+let totalPages = 1;
+
+let chartPlantao = null;
+let chartUnidade = null;
+let chartCobertura = null;
+let chartDia = null;
+let chartComparativo = null;
+let chartAgente = null;
+let chartDesconto = null;
+
+function esc(v){return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+function fmt(n){return new Intl.NumberFormat("pt-BR").format(Number(n||0));}
+function fmtCurrency(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
+function fmtHours(hours){
+  const total = Number(hours||0);
+  const hh = Math.floor(total);
+  const mm = Math.round((total - hh) * 60);
+  return `${hh}h${String(mm).padStart(2,"0")}`;
+}
+
+function destroyCharts() {
+  [chartPlantao, chartUnidade, chartCobertura, chartDia, chartComparativo, chartAgente, chartDesconto]
+    .forEach(c => { if (c) c.destroy(); });
+  chartPlantao = chartUnidade = chartCobertura = chartDia = chartComparativo = chartAgente = chartDesconto = null;
+}
+
+function horizontalBarOptions(formatterType="number"){
+  return {
+    indexAxis:"y",
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      datalabels:{
+        color:"#ffffff",
+        anchor:"end",
+        align:"right",
+        font:{size:10,weight:"700"},
+        formatter:(v)=>{
+          if(v<=0) return "";
+          if(formatterType==="hours") return fmtHours(v);
+          if(formatterType==="currency") return fmtCurrency(v);
+          return fmt(v);
+        }
+      }
+    },
+    scales:{
+      x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true},
+      y:{ticks:{color:"#ffffff",font:{size:10}},grid:{display:false}}
+    }
+  };
+}
+
+function createMultiSelect(menuId, triggerId, values, placeholder){
+  const menu = document.getElementById(menuId);
+  const trigger = document.getElementById(triggerId);
+  if(!menu || !trigger) return;
+
+  menu.innerHTML = `
+    <div class="multi-actions">
+      <button type="button" data-action="all">Todos</button>
+      <button type="button" data-action="clear">Limpar</button>
+    </div>
+  `;
+
+  values.forEach(value => {
+    const label = document.createElement("label");
+    label.className = "multi-option";
+    label.innerHTML = `<input type="checkbox" value="${esc(value)}" /><span>${esc(value)}</span>`;
+    menu.appendChild(label);
+  });
+
+  function updateTrigger(){
+    const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+    if(!checked.length) trigger.textContent = placeholder;
+    else if(checked.length === 1) trigger.textContent = checked[0];
+    else trigger.textContent = `${checked.length} selecionados`;
+  }
+
+  trigger.onclick = () => {
+    document.querySelectorAll(".multi-select").forEach(wrap => {
+      if(wrap !== trigger.closest(".multi-select")) wrap.classList.remove("open");
+    });
+    trigger.closest(".multi-select").classList.toggle("open");
+  };
+
+  menu.addEventListener("click", (e) => {
+    const action = e.target.dataset.action;
+    if(action === "all"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+      updateTrigger();
+      return;
+    }
+    if(action === "clear"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+      updateTrigger();
+      return;
+    }
+    if(e.target.matches('input[type="checkbox"]')) updateTrigger();
+  });
+
+  updateTrigger();
+}
+
+document.addEventListener("click", (e) => {
+  document.querySelectorAll(".multi-select").forEach(wrap => {
+    if(!wrap.contains(e.target)) wrap.classList.remove("open");
+  });
+});
+
+function getMultiValues(menuId){
+  return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)].map(el => el.value).join("|");
+}
+
+function getFiltersQuery(page=1){
+  const qs = new URLSearchParams();
+  qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
+  qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
+  qs.set("unidade", getMultiValues("menuUnidade"));
+  qs.set("empresa", getMultiValues("menuEmpresa"));
+  qs.set("plantao", getMultiValues("menuPlantao"));
+  qs.set("turno", getMultiValues("menuTurno"));
+  qs.set("agente", getMultiValues("menuAgente"));
+  qs.set("status", getMultiValues("menuStatus"));
+  qs.set("cobertura", getMultiValues("menuCobertura"));
+  qs.set("busca", document.getElementById("filtroBusca").value || "");
+  qs.set("page", page);
+  qs.set("limit", 20);
+  return qs.toString();
+}
+
+async function loadFiltros(){
+  const res = await fetch("/api/presenteismo-filtros", { credentials:"same-origin" });
+  const data = await res.json();
+
+  createMultiSelect("menuUnidade","triggerUnidade",data.unidade||[],"Todas");
+  createMultiSelect("menuEmpresa","triggerEmpresa",data.empresa||[],"Todas");
+  createMultiSelect("menuPlantao","triggerPlantao",data.plantao||[],"Todos");
+  createMultiSelect("menuTurno","triggerTurno",data.turno||[],"Todos");
+  createMultiSelect("menuAgente","triggerAgente",data.agente||[],"Todos");
+  createMultiSelect("menuStatus","triggerStatus",data.status||[],"Todos");
+  createMultiSelect("menuCobertura","triggerCobertura",data.cobertura||[],"Todos");
+}
+
+async function loadResumo(page=1){
+  const res = await fetch(`/api/presenteismo-resumo?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
+
+  document.getElementById("cardTotal").textContent = fmt(data.total);
+  document.getElementById("cardHoras").textContent = fmtHours(data.horasAbs);
+  document.getElementById("cardDesconto").textContent = fmtCurrency(data.descontoTotal);
+  document.getElementById("cardIntegral").textContent = fmt(data.coberturaIntegral);
+  document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
+  document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
+  document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+  document.getElementById("subComparativo").textContent = `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
+}
+
+async function loadGraficos(page=1){
+  const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
+
+  destroyCharts();
+
+  chartPlantao = new Chart(document.getElementById("chartPlantao"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.horasPorPlantao || {}),
+      datasets:[{label:"Horas ABS",data:Object.values(data.horasPorPlantao || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
+    },
+    options: horizontalBarOptions("hours")
+  });
+
+  chartUnidade = new Chart(document.getElementById("chartUnidade"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.registrosPorUnidade || {}),
+      datasets:[{label:"Registros",data:Object.values(data.registrosPorUnidade || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartCobertura = new Chart(document.getElementById("chartCobertura"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.cobertura || {}),
+      datasets:[{label:"Cobertura",data:Object.values(data.cobertura || {}),backgroundColor:"#58a6ff",borderRadius:8}]
+    },
+    options: horizontalBarOptions()
+  });
+
+  const dias = Array.from({length:31}, (_,i)=>String(i+1).padStart(2,"0"));
+  const valoresDia = dias.map((_, idx) => data.horasPorDia?.[idx+1] || 0);
+
+  chartDia = new Chart(document.getElementById("chartDia"), {
+    type:"line",
+    data:{
+      labels:dias,
+      datasets:[{
+        label:"Horas ABS por dia",
+        data:valoresDia,
+        borderColor:"#58a6ff",
+        backgroundColor:"rgba(88,166,255,0.18)",
+        fill:true,
+        tension:.35,
+        pointRadius:3
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:"#fff"}},
+        datalabels:{
+          color:"#ffffff",
+          anchor:"end",
+          align:"top",
+          font:{size:10,weight:"700"},
+          formatter:(v)=>v>0?fmtHours(v):""
+        }
+      },
+      scales:{
+        x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
+      }
+    }
+  });
+
+  chartComparativo = new Chart(document.getElementById("chartComparativo"), {
+    type:"bar",
+    data:{
+      labels:["Período atual", data.comparativo?.label || "Base anterior"],
+      datasets:[{
+        label:"Horas ABS",
+        data:[data.comparativo?.atual || 0, data.comparativo?.anterior || 0],
+        backgroundColor:["#ff7a1a","#58a6ff"],
+        borderRadius:8
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:"#fff"}},
+        datalabels:{
+          color:"#ffffff",
+          anchor:"end",
+          align:"top",
+          font:{size:10,weight:"700"},
+          formatter:(v)=>v>0?fmtHours(v):""
+        }
+      },
+      scales:{
+        x:{ticks:{color:"#fff",font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
+      }
+    }
+  });
+
+  chartAgente = new Chart(document.getElementById("chartAgente"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.horasPorAgente || {}),
+      datasets:[{label:"Horas ABS",data:Object.values(data.horasPorAgente || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
+    },
+    options: horizontalBarOptions("hours")
+  });
+
+  chartDesconto = new Chart(document.getElementById("chartDesconto"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.descontoPorPlantao || {}),
+      datasets:[{label:"Desconto",data:Object.values(data.descontoPorPlantao || {}),backgroundColor:"#a855f7",borderRadius:8}]
+    },
+    options: horizontalBarOptions("currency")
+  });
+}
+
+async function loadDetalhes(page=1){
+  const res = await fetch(`/api/presenteismo-detalhes?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
+
+  currentPage = data.page || 1;
+  totalPages = data.totalPages || 1;
+  document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
+
+  document.getElementById("tbodyDetalhes").innerHTML = (data.rows || []).map(row => `
+    <tr>
+      <td>${esc(row.mes)}</td>
+      <td>${esc(row.data)}</td>
+      <td>${esc(row.unidade)}</td>
+      <td>${esc(row.empresa)}</td>
+      <td>${esc(row.plantao)}</td>
+      <td>${esc(row.turno)}</td>
+      <td>${esc(row.agente)}</td>
+      <td>${esc(row.status)}</td>
+      <td>${esc(row.statusCobertura)}</td>
+      <td>${esc(row.abs)}</td>
+      <td>${esc(row.desconto)}</td>
+      <td>${esc(row.cobrindo)}</td>
+    </tr>
+  `).join("");
+}
+
+async function loadAll(page=1){
+  await loadResumo(page);
+  await loadGraficos(page);
+  await loadDetalhes(page);
+}
+
+document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
+document.getElementById("btnLimpar").addEventListener("click", () => {
+  document.getElementById("filtroPeriodoTipo").value = "mes";
+  document.getElementById("filtroDataRef").value = "";
+  document.getElementById("filtroBusca").value = "";
+  document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach(input => input.checked = false);
+  document.getElementById("triggerUnidade").textContent = "Todas";
+  document.getElementById("triggerEmpresa").textContent = "Todas";
+  document.getElementById("triggerPlantao").textContent = "Todos";
+  document.getElementById("triggerTurno").textContent = "Todos";
+  document.getElementById("triggerAgente").textContent = "Todos";
+  document.getElementById("triggerStatus").textContent = "Todos";
+  document.getElementById("triggerCobertura").textContent = "Todos";
+  loadAll(1);
+});
+document.getElementById("btnPrev").addEventListener("click", () => { if(currentPage>1) loadAll(currentPage-1); });
+document.getElementById("btnNext").addEventListener("click", () => { if(currentPage<totalPages) loadAll(currentPage+1); });
+
+(async function init(){
+  await loadFiltros();
+  const today = new Date();
+  document.getElementById("filtroDataRef").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  await loadAll(1);
+})();
+</script>
+</body>
+</html>

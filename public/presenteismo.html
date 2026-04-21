@@ -474,24 +474,29 @@ async function loadFiltros(){
 }
 
 async function loadResumo(page=1){
-  const res = await fetch(`/api/presenteismo-resumo?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const res = await fetch(`/api/presenteismo-resumo?${getFiltersQuery(page)}`, {
+    credentials:"same-origin"
+  });
   const data = await res.json();
 
   document.getElementById("cardTotal").textContent = fmt(data.total);
-document.getElementById("cardHoras").textContent = fmtHours(data.horasAbs);
-document.getElementById("cardPctAbs").textContent =
-  `${Number(data.percentualAbsenteismo || 0).toLocaleString("pt-BR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  })}%`;
-document.getElementById("cardDesconto").textContent = fmtCurrency(data.descontoTotal);
-document.getElementById("cardIntegral").textContent = fmt(data.coberturaIntegral);
-document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
-document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
-},
-  
+  document.getElementById("cardHoras").textContent = fmtHours(data.horasAbs);
+  document.getElementById("cardPctAbs").textContent =
+    `${Number(data.percentualAbsenteismo || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    })}%`;
+  document.getElementById("cardDesconto").textContent = fmtCurrency(data.descontoTotal);
+  document.getElementById("cardIntegral").textContent = fmt(data.coberturaIntegral);
+  document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
+  document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
+  document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+}
+
 async function loadGraficos(page=1){
-  const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, {
+    credentials:"same-origin"
+  });
   const data = await res.json();
 
   destroyCharts();
@@ -500,7 +505,12 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.horasPorPlantao || {}),
-      datasets:[{label:"Horas ABS",data:Object.values(data.horasPorPlantao || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
+      datasets:[{
+        label:"Horas ABS",
+        data:Object.values(data.horasPorPlantao || {}),
+        backgroundColor:"#ff7a1a",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions("hours")
   });
@@ -509,7 +519,12 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.registrosPorUnidade || {}),
-      datasets:[{label:"Registros",data:Object.values(data.registrosPorUnidade || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
+      datasets:[{
+        label:"Registros",
+        data:Object.values(data.registrosPorUnidade || {}),
+        backgroundColor:"#ff7a1a",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions()
   });
@@ -518,7 +533,12 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.cobertura || {}),
-      datasets:[{label:"Cobertura",data:Object.values(data.cobertura || {}),backgroundColor:"#58a6ff",borderRadius:8}]
+      datasets:[{
+        label:"Cobertura",
+        data:Object.values(data.cobertura || {}),
+        backgroundColor:"#58a6ff",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions()
   });
@@ -595,7 +615,12 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.horasPorAgente || {}),
-      datasets:[{label:"Horas ABS",data:Object.values(data.horasPorAgente || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
+      datasets:[{
+        label:"Horas ABS",
+        data:Object.values(data.horasPorAgente || {}),
+        backgroundColor:"#ff7a1a",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions("hours")
   });
@@ -604,12 +629,16 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.descontoPorPlantao || {}),
-      datasets:[{label:"Desconto",data:Object.values(data.descontoPorPlantao || {}),backgroundColor:"#a855f7",borderRadius:8}]
+      datasets:[{
+        label:"Desconto",
+        data:Object.values(data.descontoPorPlantao || {}),
+        backgroundColor:"#a855f7",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions("currency")
   });
 }
-
 async function loadDetalhes(page=1){
   const res = await fetch(`/api/presenteismo-detalhes?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();

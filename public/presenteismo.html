@@ -70,8 +70,7 @@
     .orange{color:var(--orange)} .blue{color:var(--blue)} .green{color:var(--green)} .red{color:var(--red)} .purple{color:var(--purple)}
     .grid-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
     .grid-middle{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;margin-bottom:12px}
-    .grid-bottom{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
-    .grid-bottom {display: grid;grid-template-columns: repeat(3, 1fr);gap: 16px;}
+    .grid-bottom{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
     .panel{padding:14px;min-height:260px;overflow:hidden;position:relative}
     .panel-title{color:var(--orange);font-weight:900;font-size:14px;margin-bottom:12px;text-align:center}
     .panel-subtitle{color:#cdd6e0;font-size:11px;margin-bottom:10px}
@@ -84,13 +83,18 @@
     .detail-table th{position:sticky;top:0;background:var(--th);z-index:1;color:#d6d6d6}
     .pager{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
     .pager-info{margin-right:auto;color:var(--muted);font-size:12px;display:flex;align-items:center}
-    @media (max-width:1400px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    @media (max-width:1400px){
+      .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .grid-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
     @media (max-width:1280px){
       .filters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
       .search-span-2{grid-column:span 1}
     }
-    @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:900px){
+      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
     @media (max-width:768px){
       .filters-grid,.kpis{grid-template-columns:1fr}
       .hero-right{text-align:left}
@@ -258,50 +262,36 @@
     </div>
   </section>
 
-<section class="grid-middle">
-  <div class="panel">
-    <div class="panel-title">Horas ABS por Dia</div>
-    <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
-    <div class="chart-box line">
-      <canvas id="chartDia"></canvas>
+  <section class="grid-middle">
+    <div class="panel">
+      <div class="panel-title">Horas ABS por Dia</div>
+      <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
+      <div class="chart-box line"><canvas id="chartDia"></canvas></div>
     </div>
-  </div>
+    <div class="panel">
+      <div class="panel-title">Comparativo do Período</div>
+      <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
+      <div class="chart-box"><canvas id="chartComparativo"></canvas></div>
+    </div>
+  </section>
 
-  <div class="panel">
-    <div class="panel-title">Comparativo do Período</div>
-    <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
-    <div class="chart-box">
-      <canvas id="chartComparativo"></canvas>
+  <section class="grid-bottom">
+    <div class="panel">
+      <div class="panel-title">Horas ABS por Agente</div>
+      <div class="panel-subtitle">Top agentes com mais horas</div>
+      <div class="chart-box"><canvas id="chartAgente"></canvas></div>
     </div>
-  </div>
-</section>
-
-<section class="grid-bottom">
-  <div class="panel">
-    <div class="panel-title">Horas ABS por Agente</div>
-    <div class="panel-subtitle">Top agentes com mais horas</div>
-    <div class="chart-box">
-      <canvas id="chartAgente"></canvas>
+    <div class="panel">
+      <div class="panel-title">Desconto por Plantão</div>
+      <div class="panel-subtitle">Top plantões por desconto</div>
+      <div class="chart-box"><canvas id="chartDesconto"></canvas></div>
     </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-title">Desconto por Plantão</div>
-    <div class="panel-subtitle">Top plantões por desconto</div>
-    <div class="chart-box">
-      <canvas id="chartDesconto"></canvas>
+    <div class="panel">
+      <div class="panel-title">Registros por Empresa</div>
+      <div class="panel-subtitle">Distribuição por empresa</div>
+      <div class="chart-box"><canvas id="chartEmpresa"></canvas></div>
     </div>
-  </div>
-
-  <!-- 🔥 NOVO CARD DE EMPRESA -->
-  <div class="panel">
-    <div class="panel-title">Registros por Empresa</div>
-    <div class="panel-subtitle">Distribuição por empresa</div>
-    <div class="chart-box">
-      <canvas id="chartEmpresa"></canvas>
-    </div>
-  </div>
-</section>
+  </section>
 
   <section class="wide-panel">
     <div class="panel-title">Detalhamento</div>
@@ -347,6 +337,7 @@ let chartDia = null;
 let chartComparativo = null;
 let chartAgente = null;
 let chartDesconto = null;
+let chartEmpresa = null;
 
 function esc(v){return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
 function fmt(n){return new Intl.NumberFormat("pt-BR").format(Number(n||0));}
@@ -360,9 +351,17 @@ function fmtHours(hours){
 }
 
 function destroyCharts() {
-  [chartPlantao, chartUnidade, chartCobertura, chartDia, chartComparativo, chartAgente, chartDesconto]
+  [chartPlantao, chartUnidade, chartCobertura, chartDia, chartComparativo, chartAgente, chartDesconto, chartEmpresa]
     .forEach(c => { if (c) c.destroy(); });
-  chartPlantao = chartUnidade = chartCobertura = chartDia = chartComparativo = chartAgente = chartDesconto = null;
+
+  chartPlantao = null;
+  chartUnidade = null;
+  chartCobertura = null;
+  chartDia = null;
+  chartComparativo = null;
+  chartAgente = null;
+  chartDesconto = null;
+  chartEmpresa = null;
 }
 
 function horizontalBarOptions(formatterType="number"){
@@ -484,9 +483,7 @@ async function loadFiltros(){
 }
 
 async function loadResumo(page=1){
-  const res = await fetch(`/api/presenteismo-resumo?${getFiltersQuery(page)}`, {
-    credentials:"same-origin"
-  });
+  const res = await fetch(`/api/presenteismo-resumo?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();
 
   console.log("RESUMO PRESENTEISMO:", data);
@@ -508,9 +505,7 @@ async function loadResumo(page=1){
 }
 
 async function loadGraficos(page=1){
-  const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, {
-    credentials:"same-origin"
-  });
+  const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();
 
   console.log("GRAFICOS PRESENTEISMO:", data);
@@ -538,6 +533,20 @@ async function loadGraficos(page=1){
       datasets:[{
         label:"Registros",
         data:Object.values(data.registrosPorUnidade || {}),
+        backgroundColor:"#ff7a1a",
+        borderRadius:8
+      }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartEmpresa = new Chart(document.getElementById("chartEmpresa"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.empresas || {}),
+      datasets:[{
+        label:"Empresas",
+        data:Object.values(data.empresas || {}),
         backgroundColor:"#ff7a1a",
         borderRadius:8
       }]
@@ -657,9 +666,7 @@ async function loadGraficos(page=1){
 }
 
 async function loadDetalhes(page=1){
-  const res = await fetch(`/api/presenteismo-detalhes?${getFiltersQuery(page)}`, {
-    credentials:"same-origin"
-  });
+  const res = await fetch(`/api/presenteismo-detalhes?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();
 
   console.log("DETALHES PRESENTEISMO:", data);

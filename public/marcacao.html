@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marcação</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    :root{
+      --bg1:#4b5563;--bg2:#111827;--bg3:#050c18;--input:#071325;--th:#111c33;
+      --line:rgba(255,255,255,.08);--text:#fff;--muted:#cbd5e1;--orange:#ff7a1a;
+      --blue:#2ea8ff;--green:#45c749;--red:#ef2b2b;--purple:#b23dd6;--yellow:#ffd22b;
+      --card:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+    }
+    html,body{min-height:100%;overflow-x:hidden}
+    body{
+      background:
+        radial-gradient(circle at top,rgba(255,255,255,.14),transparent 35%),
+        linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 24%,var(--bg3) 52%,var(--bg3) 100%);
+      color:var(--text)
+    }
+    .page{max-width:1380px;margin:0 auto;padding:10px 14px 18px}
+    .topbar,.hero,.toolbar,.summary,.person-card,.notice{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:0 10px 24px rgba(0,0,0,.28);
+      backdrop-filter:blur(4px)
+    }
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:12px 16px;margin-bottom:10px
+    }
+    .back-btn,.btn{
+      border:none;border-radius:10px;padding:10px 14px;font-weight:800;
+      color:#fff;cursor:pointer
+    }
+    .back-btn{background:#353535}
+    .title-wrap{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:900}
+    .title-wrap img{width:34px;height:34px;border-radius:50%;background:#1a120d;padding:5px}
+    .hero{
+      display:flex;justify-content:space-between;align-items:center;
+      gap:12px;padding:14px 16px;margin-bottom:10px
+    }
+    .hero h1{font-size:18px}
+    .hero p{font-size:12px;color:var(--muted);margin-top:4px}
+    .hero-date{text-align:right}
+    .hero-date .small{font-size:11px;color:var(--muted)}
+    .hero-date .big{font-size:18px;font-weight:900;color:var(--orange)}
+    .toolbar{padding:12px;margin-bottom:10px}
+    .toolbar-grid{
+      display:grid;
+      grid-template-columns: 1.3fr 0.9fr 0.8fr auto auto auto auto auto auto;
+      gap:10px;
+      align-items:end
+    }
+    .field label{
+      display:block;font-size:11px;font-weight:800;margin-bottom:5px
+    }
+    .field input,.field select{
+      width:100%;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
+      background:var(--input);color:#fff;padding:0 12px;font-size:12px;outline:none
+    }
+    .field input::placeholder{color:#94a3b8}
+    .btn-red{background:var(--red)}
+    .btn-blue{background:var(--blue)}
+    .btn-purple{background:var(--purple)}
+    .btn-green{background:var(--green)}
+    .btn-yellow{background:#84cc16}
+    .btn-save{background:#258be6}
+    .summary{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+      padding:14px;margin-bottom:10px
+    }
+    .sum-card{text-align:center}
+    .sum-card .num{font-size:28px;font-weight:900}
+    .sum-card .lab{font-size:12px;color:#dfe7ef;margin-top:3px}
+    .blue{color:#3c9bff}.green{color:#46d552}.yellow{color:#ffd22b}
+    .notice{
+      padding:10px 14px;margin-bottom:10px;
+      background:linear-gradient(90deg,rgba(12,61,16,.9),rgba(5,35,12,.8));
+      border-color:rgba(69,199,73,.5);color:#d6ffd9;font-size:12px;font-weight:700
+    }
+    .cards{display:flex;flex-direction:column;gap:10px}
+    .person-card{
+      padding:14px 12px;
+      display:grid;
+      grid-template-columns: 1fr 220px;
+      gap:12px;
+      align-items:center
+    }
+    .person-top{
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap
+    }
+    .person-name{font-size:15px;font-weight:900;text-transform:uppercase}
+    .badge{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:82px;height:28px;padding:0 12px;border-radius:6px;
+      font-size:12px;font-weight:900;color:#111
+    }
+    .badge-pendente{background:var(--yellow)}
+    .badge-presente{background:#46d552}
+    .badge-falta{background:#ff4d4f}
+    .badge-ferias{background:#2ea8ff}
+    .badge-fc{background:#b23dd6;color:#fff}
+    .badge-pv{background:#94a3b8}
+    .person-meta{font-size:11px;color:#d5e1ee;margin-top:8px}
+    .person-actions{display:grid;grid-template-columns:1fr;gap:8px}
+    .person-actions select,.person-actions input{
+      width:100%;height:38px;border-radius:8px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.04);color:#fff;padding:0 10px;font-size:12px
+    }
+    .person-inline{
+      display:grid;grid-template-columns: 1fr 1fr 1fr;gap:8px
+    }
+    .muted{opacity:.75}
+    .empty{
+      padding:30px 20px;text-align:center;color:#cbd5e1;
+      border:1px dashed rgba(255,255,255,.15);border-radius:14px
+    }
+    @media (max-width:1280px){
+      .toolbar-grid{grid-template-columns:1fr 1fr 1fr repeat(3,auto);grid-auto-rows:auto}
+    }
+    @media (max-width:980px){
+      .summary{grid-template-columns:1fr}
+      .person-card{grid-template-columns:1fr}
+      .toolbar-grid{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:680px){
+      .toolbar-grid{grid-template-columns:1fr}
+      .person-inline{grid-template-columns:1fr}
+      .hero{flex-direction:column;align-items:flex-start}
+      .hero-date{text-align:left}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <button class="back-btn" onclick="location.href='/portal'">← Calendário</button>
+      <div class="title-wrap">
+        <img src="/images/logo.png" alt="logo">
+        <span>Marcação</span>
+      </div>
+      <div class="muted" id="topDate">--</div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <h1>Lançamento diário de efetivo</h1>
+        <p>Selecione a unidade, depois o líder/plantão. O efetivo será carregado da base de agentes e salvo no registro de presenteísmo.</p>
+      </div>
+      <div class="hero-date">
+        <div class="small">Data selecionada</div>
+        <div class="big" id="heroDate">--</div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="toolbar-grid">
+        <div class="field">
+          <label>Unidade</label>
+          <select id="filtroUnidade">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Líder / Plantão</label>
+          <select id="filtroLider">
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="filtroData">
+        </div>
+
+        <button class="btn btn-red" type="button" onclick="aplicarStatusEmMassa('F')">F</button>
+        <button class="btn btn-blue" type="button" onclick="aplicarStatusEmMassa('FE')">FE</button>
+        <button class="btn btn-purple" type="button" onclick="aplicarStatusEmMassa('FC')">FC</button>
+        <button class="btn btn-yellow" type="button" onclick="aplicarStatusEmMassa('PV')">PV</button>
+        <button class="btn btn-green" type="button" onclick="aplicarStatusEmMassa('P')">P</button>
+        <button class="btn btn-save" type="button" id="btnSalvar">Salvar</button>
+      </div>
+    </section>
+
+    <section class="summary">
+      <div class="sum-card">
+        <div class="num blue" id="sumTotal">0</div>
+        <div class="lab">Total</div>
+      </div>
+      <div class="sum-card">
+        <div class="num green" id="sumMarcados">0</div>
+        <div class="lab">Marcados</div>
+      </div>
+      <div class="sum-card">
+        <div class="num yellow" id="sumPendentes">0</div>
+        <div class="lab">Pendentes</div>
+      </div>
+    </section>
+
+    <div class="notice" id="statusNotice">Selecione uma unidade e um líder para carregar o efetivo.</div>
+
+    <section class="cards" id="cardsContainer">
+      <div class="empty">Nenhum efetivo carregado.</div>
+    </section>
+  </div>
+
+  <script>
+    let efetivo = [];
+
+    const STATUS_META = {
+      P:  { label: "PRESENTE", badge: "badge-presente", status: "PRESENTE", cobertura: "", abs: "00:00:00", desconto: "R$ 0,00", cobrindo: "" },
+      F:  { label: "PENDENTE", badge: "badge-falta", status: "FALTA", cobertura: "Sem cobertura", abs: "12:00:00", desconto: "R$ 0,00", cobrindo: "" },
+      FE: { label: "FÉRIAS", badge: "badge-ferias", status: "FÉRIAS", cobertura: "", abs: "12:00:00", desconto: "R$ 0,00", cobrindo: "" },
+      FC: { label: "FALTA C/ COBERTURA", badge: "badge-fc", status: "FALTA C/ COBERTURA", cobertura: "Cobertura parcial", abs: "12:00:00", desconto: "R$ 0,00", cobrindo: "" },
+      PV: { label: "POSTO VAGO", badge: "badge-pv", status: "POSTO VAGO", cobertura: "", abs: "12:00:00", desconto: "R$ 0,00", cobrindo: "" },
+      "": { label: "PENDENTE", badge: "badge-pendente", status: "", cobertura: "", abs: "00:00:00", desconto: "R$ 0,00", cobrindo: "" }
+    };
+
+    function hojeISO() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    }
+
+    function formatDateBR(iso) {
+      if (!iso) return "--";
+      const [y,m,d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    function formatDateLong(iso) {
+      if (!iso) return "--";
+      const [y,m,d] = iso.split("-");
+      const dt = new Date(Number(y), Number(m)-1, Number(d));
+      return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+    }
+
+    function showNotice(text, ok=true) {
+      const el = document.getElementById("statusNotice");
+      el.textContent = text;
+      el.style.background = ok
+        ? "linear-gradient(90deg,rgba(12,61,16,.9),rgba(5,35,12,.8))"
+        : "linear-gradient(90deg,rgba(95,20,20,.9),rgba(50,8,8,.8))";
+      el.style.borderColor = ok ? "rgba(69,199,73,.5)" : "rgba(239,68,68,.5)";
+      el.style.color = ok ? "#d6ffd9" : "#ffd7d7";
+    }
+
+    async function loadUnidades() {
+      const res = await fetch("/api/marcacao-unidades", { credentials: "same-origin" });
+      const data = await res.json();
+      const sel = document.getElementById("filtroUnidade");
+      sel.innerHTML = `<option value="">Selecione...</option>` + (data.unidades || [])
+        .map(u => `<option value="${u}">${u}</option>`).join("");
+    }
+
+    async function loadLideres() {
+      const unidade = document.getElementById("filtroUnidade").value;
+      const sel = document.getElementById("filtroLider");
+
+      if (!unidade) {
+        sel.innerHTML = `<option value="">Selecione...</option>`;
+        return;
+      }
+
+      const res = await fetch(`/api/marcacao-lideres?unidade=${encodeURIComponent(unidade)}`, {
+        credentials: "same-origin"
+      });
+      const data = await res.json();
+
+      sel.innerHTML = `<option value="">Selecione...</option>` + (data.lideres || [])
+        .map(l => `<option value="${l}">${l}</option>`).join("");
+    }
+
+    function updateResumo() {
+      const total = efetivo.length;
+      const marcados = efetivo.filter(x => x.marcacao).length;
+      const pendentes = total - marcados;
+
+      document.getElementById("sumTotal").textContent = total;
+      document.getElementById("sumMarcados").textContent = marcados;
+      document.getElementById("sumPendentes").textContent = pendentes;
+    }
+
+    function buildCard(item, index) {
+      const meta = STATUS_META[item.marcacao || ""];
+      return `
+        <div class="person-card">
+          <div>
+            <div class="person-top">
+              <div class="person-name">${item.AGENTE || item.PESSOA || "-"}</div>
+              <span class="badge ${meta.badge}">${meta.label}</span>
+            </div>
+            <div class="person-meta">
+              RE: ${item.RE || "-"} |
+              ${item.UNIDADE || "-"} |
+              ${item.CARGO || "-"} |
+              ${item.TURNO || "-"} |
+              Plantão: ${item["PLANTÃO"] || "-"}
+            </div>
+          </div>
+
+          <div class="person-actions">
+            <select onchange="alterarMarcacao(${index}, this.value)">
+              <option value="" ${!item.marcacao ? "selected" : ""}>-- Selecione --</option>
+              <option value="P" ${item.marcacao === "P" ? "selected" : ""}>P - Presente</option>
+              <option value="F" ${item.marcacao === "F" ? "selected" : ""}>F - Falta sem cobertura</option>
+              <option value="FE" ${item.marcacao === "FE" ? "selected" : ""}>FE - Férias</option>
+              <option value="FC" ${item.marcacao === "FC" ? "selected" : ""}>FC - Falta com cobertura</option>
+              <option value="PV" ${item.marcacao === "PV" ? "selected" : ""}>PV - Posto vago</option>
+            </select>
+
+            <div class="person-inline">
+              <input type="text" placeholder="Cobrindo posto" value="${item.cobrindo || ""}" oninput="alterarCampo(${index}, 'cobrindo', this.value)">
+              <input type="text" placeholder="ABS (HH:MM:SS)" value="${item.abs || '00:00:00'}" oninput="alterarCampo(${index}, 'abs', this.value)">
+              <input type="text" placeholder="Desconto (R$)" value="${item.desconto || 'R$ 0,00'}" oninput="alterarCampo(${index}, 'desconto', this.value)">
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderEfetivo() {
+      const container = document.getElementById("cardsContainer");
+
+      if (!efetivo.length) {
+        container.innerHTML = `<div class="empty">Nenhum efetivo carregado.</div>`;
+        updateResumo();
+        return;
+      }
+
+      container.innerHTML = efetivo.map((item, index) => buildCard(item, index)).join("");
+      updateResumo();
+    }
+
+    function alterarCampo(index, campo, valor) {
+      efetivo[index][campo] = valor;
+    }
+
+    function alterarMarcacao(index, codigo) {
+      efetivo[index].marcacao = codigo;
+
+      const meta = STATUS_META[codigo || ""];
+      efetivo[index].status = meta.status;
+      efetivo[index].statusCobertura = meta.cobertura;
+
+      if (!efetivo[index].abs || efetivo[index].abs === "00:00:00" || codigo === "P") {
+        efetivo[index].abs = meta.abs;
+      }
+
+      if (!efetivo[index].desconto || efetivo[index].desconto === "R$ 0,00" || codigo === "P") {
+        efetivo[index].desconto = meta.desconto;
+      }
+
+      if (codigo !== "FC") {
+        efetivo[index].cobrindo = "";
+      }
+
+      renderEfetivo();
+    }
+
+    function aplicarStatusEmMassa(codigo) {
+      efetivo = efetivo.map(item => {
+        const meta = STATUS_META[codigo || ""];
+        return {
+          ...item,
+          marcacao: codigo,
+          status: meta.status,
+          statusCobertura: meta.cobertura,
+          abs: meta.abs,
+          desconto: meta.desconto,
+          cobrindo: codigo === "FC" ? (item.cobrindo || "") : ""
+        };
+      });
+      renderEfetivo();
+    }
+
+    async function carregarEfetivo() {
+      const unidade = document.getElementById("filtroUnidade").value;
+      const lider = document.getElementById("filtroLider").value;
+      const data = document.getElementById("filtroData").value;
+
+      if (!unidade || !lider || !data) {
+        showNotice("Selecione unidade, líder e data antes de carregar.", false);
+        return;
+      }
+
+      const res = await fetch(`/api/marcacao-efetivo?unidade=${encodeURIComponent(unidade)}&lider=${encodeURIComponent(lider)}&data=${encodeURIComponent(data)}`, {
+        credentials: "same-origin"
+      });
+      const json = await res.json();
+
+      if (!json.ok) {
+        showNotice(json.message || "Erro ao carregar efetivo.", false);
+        return;
+      }
+
+      efetivo = (json.rows || []).map(item => ({
+        ...item,
+        marcacao: item.marcacao || "",
+        status: item.status || "",
+        statusCobertura: item.statusCobertura || "",
+        cobrindo: item.cobrindo || "",
+        abs: item.abs || "00:00:00",
+        desconto: item.desconto || "R$ 0,00"
+      }));
+
+      renderEfetivo();
+      showNotice(`${efetivo.length} agentes carregados.`, true);
+    }
+
+    async function salvarMarcacao() {
+      const unidade = document.getElementById("filtroUnidade").value;
+      const lider = document.getElementById("filtroLider").value;
+      const data = document.getElementById("filtroData").value;
+
+      if (!unidade || !lider || !data) {
+        showNotice("Selecione unidade, líder e data antes de salvar.", false);
+        return;
+      }
+
+      if (!efetivo.length) {
+        showNotice("Nenhum efetivo carregado para salvar.", false);
+        return;
+      }
+
+      const payload = {
+        unidade,
+        lider,
+        data,
+        rows: efetivo
+      };
+
+      const res = await fetch("/api/marcacao-salvar", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json();
+
+      if (!json.ok) {
+        showNotice(json.message || "Erro ao salvar marcação.", false);
+        return;
+      }
+
+      showNotice(json.message || "Marcações salvas com sucesso.", true);
+      await carregarEfetivo();
+    }
+
+    document.getElementById("filtroUnidade").addEventListener("change", async () => {
+      await loadLideres();
+      efetivo = [];
+      renderEfetivo();
+    });
+
+    document.getElementById("filtroLider").addEventListener("change", carregarEfetivo);
+    document.getElementById("filtroData").addEventListener("change", carregarEfetivo);
+    document.getElementById("btnSalvar").addEventListener("click", salvarMarcacao);
+
+    (async function init() {
+      const hoje = hojeISO();
+      document.getElementById("filtroData").value = hoje;
+      document.getElementById("heroDate").textContent = formatDateBR(hoje);
+      document.getElementById("topDate").textContent = formatDateLong(hoje);
+      await loadUnidades();
+      renderEfetivo();
+    })();
+  </script>
+</body>
+</html>

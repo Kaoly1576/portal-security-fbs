@@ -6128,607 +6128,178 @@ app.get("/presenteismo", requireAuth, (req, res) => {
 const PRESENTEISMO_SPREADSHEET_ID = "1DivjZdxzDES6Nu_ZJI_1gmrJgKqlrlqYgg3I-ybPr5k";
 const PRESENTEISMO_RANGE = "'REGISTRO DE PRESENTEÍSMO'!A1:L200000";
 
-let presenteismoCache = null;
-let presenteismoCacheTime = 0;
-const PRESENTEISMO_CACHE_TTL = 5 * 60 * 1000;
+let cache = null;
+let cacheTime = 0;
+const TTL = 5 * 60 * 1000;
 
-// ================== HELPERS ==================
+// ================== UTIL ==================
 
-function n(value) {
-  return String(value || "").trim();
+function n(v){ return String(v || "").trim(); }
+
+function parseDate(v){
+  const m = n(v).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if(!m) return null;
+  return new Date(m[3], m[2]-1, m[1]);
 }
 
-function nLower(value) {
-  return n(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+function parseHours(v){
+  const p = n(v).split(":").map(Number);
+  if(p.length !== 3) return 0;
+  return p[0] + (p[1]/60) + (p[2]/3600);
 }
 
-function parseDate(value) {
-  const str = n(value);
-  if (!str) return null;
-
-  const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-  if (!match) return null;
-
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const year = Number(match[3]);
-
-  const dt = new Date(year, month - 1, day);
-  return isNaN(dt) ? null : dt;
-}
-
-function formatBR(date) {
-  if (!date) return "";
-  const dd = String(date.getDate()).padStart(2, "0");
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const yyyy = date.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-}
-
-function splitMulti(value) {
-  if (!value) return [];
-  return String(value).split("|").map(v => n(v)).filter(Boolean);
-}
-
-function matchesMulti(fieldValue, selectedValues) {
-  if (!selectedValues.length) return true;
-  return selectedValues.includes(n(fieldValue));
-}
-
-function parseHours(value) {
-  const str = n(value);
-  if (!str) return 0;
-
-  const parts = str.split(":").map(Number);
-  if (parts.length !== 3 || parts.some(isNaN)) return 0;
-
-  const [hh, mm, ss] = parts;
-  return hh + (mm / 60) + (ss / 3600);
-}
-
-function parseMoney(value) {
-  const str = n(value);
-  if (!str) return 0;
-
-  const cleaned = str
-    .replace(/[R$\s]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-
-  const num = Number(cleaned);
-  return isNaN(num) ? 0 : num;
-}
-
-function startOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-}
-
-function endOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-}
-
-function diffDaysInclusive(start, end) {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.floor((startOfDay(end) - startOfDay(start)) / msPerDay) + 1;
-}
-
-function resolvePeriodFromQuery(query, rows) {
-  const periodoTipo = nLower(query.periodoTipo || "mes");
-  const dataRef = n(query.dataRef);
-
-  if (dataRef) {
-    const ref = new Date(`${dataRef}T00:00:00`);
-
-    if (!isNaN(ref.getTime())) {
-      if (periodoTipo === "dia") {
-        return {
-          start: startOfDay(ref),
-          end: endOfDay(ref),
-        };
-      }
-
-      if (periodoTipo === "semana") {
-        const weekStart = new Date(ref);
-        const day = weekStart.getDay();
-        const diff = day === 0 ? -6 : 1 - day;
-        weekStart.setDate(weekStart.getDate() + diff);
-
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-
-        return {
-          start: startOfDay(weekStart),
-          end: endOfDay(weekEnd),
-        };
-      }
-
-      if (periodoTipo === "ano") {
-        return {
-          start: new Date(ref.getFullYear(), 0, 1),
-          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
-        };
-      }
-
-      return {
-        start: new Date(ref.getFullYear(), ref.getMonth(), 1),
-        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
-      };
-    }
-  }
-
-  const validDates = rows
-    .map(r => r._date)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
-
-  if (!validDates.length) {
-    return { start: null, end: null };
-  }
-
-  return {
-    start: startOfDay(validDates[0]),
-    end: endOfDay(validDates[validDates.length - 1]),
-  };
-}
-
-function getComparisonWindow(startDate, endDate) {
-  if (!startDate || !endDate) {
-    return {
-      currentStart: null,
-      currentEnd: null,
-      previousStart: null,
-      previousEnd: null,
-      label: "base anterior",
-    };
-  }
-
-  const start = startOfDay(startDate);
-  const end = endOfDay(endDate);
-
-  const isSingleDay =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === end.getDate();
-
-  const isFullMonth =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === 1 &&
-    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
-
-  const isFullYear =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === 0 &&
-    start.getDate() === 1 &&
-    end.getMonth() === 11 &&
-    end.getDate() === 31;
-
-  const totalDays = diffDaysInclusive(start, end);
-
-  if (isSingleDay) {
-    const prev = new Date(start);
-    prev.setDate(prev.getDate() - 1);
-
-    return {
-      currentStart: start,
-      currentEnd: end,
-      previousStart: startOfDay(prev),
-      previousEnd: endOfDay(prev),
-      label: "dia anterior",
-    };
-  }
-
-  if (isFullMonth) {
-    return {
-      currentStart: start,
-      currentEnd: end,
-      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
-      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
-      label: "mês anterior",
-    };
-  }
-
-  if (isFullYear) {
-    return {
-      currentStart: start,
-      currentEnd: end,
-      previousStart: new Date(start.getFullYear() - 1, 0, 1),
-      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
-      label: "ano anterior",
-    };
-  }
-
-  const previousEnd = new Date(start);
-  previousEnd.setDate(previousEnd.getDate() - 1);
-  previousEnd.setHours(23, 59, 59, 999);
-
-  const previousStart = new Date(previousEnd);
-  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
-  previousStart.setHours(0, 0, 0, 0);
-
-  return {
-    currentStart: start,
-    currentEnd: end,
-    previousStart,
-    previousEnd,
-    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
-  };
+function parseMoney(v){
+  return Number(
+    n(v)
+    .replace(/[R$\s]/g,"")
+    .replace(/\./g,"")
+    .replace(",",".")
+  ) || 0;
 }
 
 // ================== LOAD ==================
 
-async function loadData() {
-  const now = Date.now();
-  if (presenteismoCache && now - presenteismoCacheTime < PRESENTEISMO_CACHE_TTL) {
-    return presenteismoCache;
-  }
+async function loadData(){
+  if(cache && Date.now() - cacheTime < TTL) return cache;
 
   const sheets = await conectarSheets();
-  const response = await sheets.spreadsheets.values.get({
+  const res = await sheets.spreadsheets.values.get({
     spreadsheetId: PRESENTEISMO_SPREADSHEET_ID,
-    range: PRESENTEISMO_RANGE,
+    range: PRESENTEISMO_RANGE
   });
 
-  const values = response.data.values || [];
-  if (!values.length || values.length < 2) {
-    presenteismoCache = [];
-    presenteismoCacheTime = now;
-    return presenteismoCache;
-  }
+  const values = res.data.values || [];
+  const headers = values[0];
 
-  const headers = values[0].map((h, i) => n(h) || `COL_${i + 1}`);
-  const rows = values.slice(1);
+  const data = values.slice(1).map(r=>{
+    let obj = {};
+    headers.forEach((h,i)=> obj[h] = r[i] || "");
 
-  const filldownColumns = [
-    "MÊS",
-    "DATA",
-    "UNIDADE",
-    "EMPRESA",
-    "PLANTÃO",
-    "TURNO",
-    "AGENTE",
-    "STATUS",
-    "STATUS DE COBERTURA",
-    "ABSENTEISMO",
-    "DESCONTO",
-    "COLABORADOR COBRINDO POSTO"
-  ];
+    obj._date = parseDate(obj["DATA"]);
+    obj._day = obj._date ? obj._date.getDate() : null;
+    obj._abs = parseHours(obj["ABSENTEISMO"]);
+    obj._desconto = parseMoney(obj["DESCONTO"]);
 
-  const lastSeen = {};
+    return obj;
+  });
 
-  presenteismoCache = rows.map((line) => {
-    const row = {};
+  cache = data;
+  cacheTime = Date.now();
 
-    headers.forEach((header, i) => {
-      let value = line[i] ?? "";
-
-      if (!n(value) && filldownColumns.includes(header) && lastSeen[header] !== undefined) {
-        value = lastSeen[header];
-      }
-
-      if (n(value)) {
-        lastSeen[header] = value;
-      }
-
-      row[header] = value;
-    });
-
-    row._date = parseDate(row["DATA"]);
-    row._day = row._date ? row._date.getDate() : null;
-    row._abs = parseHours(row["ABSENTEISMO"]);
-    row._desconto = parseMoney(row["DESCONTO"]);
-
-    return row;
-  }).filter((row) =>
-    n(row["DATA"]) ||
-    n(row["PLANTÃO"]) ||
-    n(row["AGENTE"]) ||
-    n(row["STATUS DE COBERTURA"])
-  );
-
-  presenteismoCacheTime = now;
-
-  console.log("PRESENTEISMO cache atualizado:", presenteismoCache.length);
-
-  return presenteismoCache;
+  return data;
 }
 
 // ================== FILTROS ==================
 
-function applyFilters(rows, query) {
-  const unidade = splitMulti(query.unidade);
-  const empresa = splitMulti(query.empresa);
-  const plantao = splitMulti(query.plantao);
-  const turno = splitMulti(query.turno);
-  const agente = splitMulti(query.agente);
-  const status = splitMulti(query.status);
-  const cobertura = splitMulti(query.cobertura);
-  const busca = nLower(query.busca);
+app.get("/api/presenteismo-filtros", requireAuth, async (req,res)=>{
+  const rows = await loadData();
 
-  return rows.filter((row) => {
-    if (!matchesMulti(row["UNIDADE"], unidade)) return false;
-    if (!matchesMulti(row["EMPRESA"], empresa)) return false;
-    if (!matchesMulti(row["PLANTÃO"], plantao)) return false;
-    if (!matchesMulti(row["TURNO"], turno)) return false;
-    if (!matchesMulti(row["AGENTE"], agente)) return false;
-    if (!matchesMulti(row["STATUS"], status)) return false;
-    if (!matchesMulti(row["STATUS DE COBERTURA"], cobertura)) return false;
+  const uniq = (f)=> [...new Set(rows.map(r=>n(r[f])).filter(Boolean))].sort();
 
-    if (busca) {
-      const text = Object.values(row)
-        .filter((v) => typeof v !== "object")
-        .join(" ")
-        .toLowerCase();
+  res.json({
+    unidade: uniq("UNIDADE"),
+    empresa: uniq("EMPRESA"),
+    plantao: uniq("PLANTÃO"),
+    turno: uniq("TURNO"),
+    agente: uniq("AGENTE"),
+    status: uniq("STATUS"),
+    cobertura: uniq("STATUS DE COBERTURA")
+  });
+});
 
-      if (!text.includes(busca)) return false;
+// ================== RESUMO ==================
+
+app.get("/api/presenteismo-resumo", requireAuth, async (req,res)=>{
+  const rows = await loadData();
+
+  const total = rows.length;
+  const horas = rows.reduce((s,r)=> s + r._abs, 0);
+  const desconto = rows.reduce((s,r)=> s + r._desconto, 0);
+
+  const integral = rows.filter(r=> n(r["STATUS DE COBERTURA"]).toLowerCase().includes("integral")).length;
+  const parcial = rows.filter(r=> n(r["STATUS DE COBERTURA"]).toLowerCase().includes("parcial")).length;
+  const sem = total - integral - parcial;
+
+  res.json({
+    total,
+    horasAbs: horas,
+    descontoTotal: desconto,
+    coberturaIntegral: integral,
+    coberturaParcial: parcial,
+    semCobertura: sem,
+    ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR")
+  });
+});
+
+// ================== GRAFICOS ==================
+
+app.get("/api/presenteismo-graficos", requireAuth, async (req,res)=>{
+  const rows = await loadData();
+
+  let plantao = {};
+  let unidade = {};
+  let cobertura = {};
+  let dia = {};
+  let agente = {};
+  let desconto = {};
+
+  for(let i=1;i<=31;i++) dia[i]=0;
+
+  rows.forEach(r=>{
+    const p = n(r["PLANTÃO"]) || "SEM";
+    const u = n(r["UNIDADE"]) || "SEM";
+    const c = n(r["STATUS DE COBERTURA"]) || "SEM";
+    const a = n(r["AGENTE"]) || "SEM";
+
+    plantao[p] = (plantao[p]||0) + r._abs;
+    unidade[u] = (unidade[u]||0) + 1;
+    cobertura[c] = (cobertura[c]||0) + 1;
+    agente[a] = (agente[a]||0) + r._abs;
+    desconto[p] = (desconto[p]||0) + r._desconto;
+
+    if(r._day) dia[r._day] += r._abs;
+  });
+
+  const top = (o)=> Object.fromEntries(Object.entries(o).sort((a,b)=>b[1]-a[1]).slice(0,10));
+
+  res.json({
+    horasPorPlantao: top(plantao),
+    registrosPorUnidade: top(unidade),
+    cobertura: top(cobertura),
+    horasPorDia: dia,
+    horasPorAgente: top(agente),
+    descontoPorPlantao: top(desconto),
+    comparativo:{
+      atual: Object.values(plantao).reduce((a,b)=>a+b,0),
+      anterior: 0,
+      label:"mês anterior"
     }
-
-    return true;
   });
-}
+});
 
-function applyFiltersWithoutPeriod(rows, query) {
-  return applyFilters(rows, {
-    ...query,
-    periodoTipo: "",
-    dataRef: "",
+// ================== DETALHES ==================
+
+app.get("/api/presenteismo-detalhes", requireAuth, async (req,res)=>{
+  const rows = await loadData();
+
+  res.json({
+    page:1,
+    totalPages:1,
+    rows: rows.slice(0,50).map(r=>({
+      mes:r["MÊS"],
+      data:r["DATA"],
+      unidade:r["UNIDADE"],
+      empresa:r["EMPRESA"],
+      plantao:r["PLANTÃO"],
+      turno:r["TURNO"],
+      agente:r["AGENTE"],
+      status:r["STATUS"],
+      statusCobertura:r["STATUS DE COBERTURA"],
+      abs:r["ABSENTEISMO"],
+      desconto:r["DESCONTO"],
+      cobrindo:r["COLABORADOR COBRINDO POSTO"]
+    }))
   });
-}
-
-function filterByPeriod(rows, query) {
-  const period = resolvePeriodFromQuery(query, rows);
-
-  if (!period.start || !period.end) {
-    return { rows, period };
-  }
-
-  const filtered = rows.filter((row) => {
-    const dt = row._date;
-    return dt && dt >= period.start && dt <= period.end;
-  });
-
-  return { rows: filtered, period };
-}
-
-// ================== FILTROS API ==================
-
-app.get("/api/presenteismo-filtros", requireAuth, async (req, res) => {
-  try {
-    const rows = await loadData();
-
-    const uniq = (field) =>
-      [...new Set(rows.map((r) => n(r[field])).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-    return res.json({
-      unidade: uniq("UNIDADE"),
-      empresa: uniq("EMPRESA"),
-      plantao: uniq("PLANTÃO"),
-      turno: uniq("TURNO"),
-      agente: uniq("AGENTE"),
-      status: uniq("STATUS"),
-      cobertura: uniq("STATUS DE COBERTURA"),
-    });
-  } catch (error) {
-    console.error("Erro /api/presenteismo-filtros:", error);
-    return res.status(500).json({ ok: false, message: error.message });
-  }
-});
-
-// ================== RESUMO API ==================
-
-app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
-  try {
-    const rows = await loadData();
-
-    const filteredRows = applyFilters(rows, req.query);
-    const { rows: periodRows, period } = filterByPeriod(filteredRows, req.query);
-
-    const total = periodRows.length;
-    const horasAbs = periodRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
-    const descontoTotal = periodRows.reduce((sum, row) => sum + Number(row._desconto || 0), 0);
-
-    const registrosComAbs = periodRows.filter((row) => Number(row._abs || 0) > 0).length;
-    const percentualAbsenteismo = total ? (registrosComAbs / total) * 100 : 0;
-
-    const coberturaIntegral = periodRows.filter((row) =>
-      nLower(row["STATUS DE COBERTURA"]).includes("integral")
-    ).length;
-
-    const coberturaParcial = periodRows.filter((row) =>
-      nLower(row["STATUS DE COBERTURA"]).includes("parcial")
-    ).length;
-
-    const semCobertura = periodRows.filter((row) => {
-      const c = nLower(row["STATUS DE COBERTURA"]);
-      return !c || c.includes("sem cobertura") || c.includes("nao coberto") || c.includes("não coberto");
-    }).length;
-
-    const comparison = getComparisonWindow(period.start, period.end);
-    const baseNoPeriod = applyFiltersWithoutPeriod(rows, req.query);
-
-    const anteriorRows = baseNoPeriod.filter((row) => {
-      const dt = row._date;
-      return (
-        dt &&
-        comparison.previousStart &&
-        comparison.previousEnd &&
-        dt >= comparison.previousStart &&
-        dt <= comparison.previousEnd
-      );
-    });
-
-    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
-
-    return res.json({
-      total,
-      horasAbs,
-      descontoTotal,
-      registrosComAbs,
-      percentualAbsenteismo,
-      coberturaIntegral,
-      coberturaParcial,
-      semCobertura,
-      anteriorHoras,
-      comparativoLabel: comparison.label || "base anterior",
-      periodoAtualInicio: comparison.currentStart ? formatBR(comparison.currentStart) : "",
-      periodoAtualFim: comparison.currentEnd ? formatBR(comparison.currentEnd) : "",
-      periodoAnteriorInicio: comparison.previousStart ? formatBR(comparison.previousStart) : "",
-      periodoAnteriorFim: comparison.previousEnd ? formatBR(comparison.previousEnd) : "",
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
-    });
-  } catch (error) {
-    console.error("Erro /api/presenteismo-resumo:", error);
-    return res.status(500).json({ ok: false, message: error.message });
-  }
-});
-
-// ================== GRÁFICOS API ==================
-
-app.get("/api/presenteismo-graficos", requireAuth, async (req, res) => {
-  try {
-    const rows = await loadData();
-
-    const filteredRows = applyFilters(rows, req.query);
-    const { rows: periodRows, period } = filterByPeriod(filteredRows, req.query);
-
-    const horasPorPlantao = {};
-    const registrosPorUnidade = {};
-    const cobertura = {};
-    const horasPorDia = {};
-    const horasPorAgente = {};
-    const descontoPorPlantao = {};
-
-    for (let i = 1; i <= 31; i++) horasPorDia[i] = 0;
-
-    periodRows.forEach((row) => {
-      const plantao = n(row["PLANTÃO"]) || "SEM";
-      const unidade = n(row["UNIDADE"]) || "SEM";
-      const cob = n(row["STATUS DE COBERTURA"]) || "SEM";
-      const agente = n(row["AGENTE"]) || "SEM";
-
-      horasPorPlantao[plantao] = (horasPorPlantao[plantao] || 0) + Number(row._abs || 0);
-      registrosPorUnidade[unidade] = (registrosPorUnidade[unidade] || 0) + 1;
-      cobertura[cob] = (cobertura[cob] || 0) + 1;
-      horasPorAgente[agente] = (horasPorAgente[agente] || 0) + Number(row._abs || 0);
-      descontoPorPlantao[plantao] = (descontoPorPlantao[plantao] || 0) + Number(row._desconto || 0);
-
-      if (row._day) {
-        horasPorDia[row._day] = (horasPorDia[row._day] || 0) + Number(row._abs || 0);
-      }
-    });
-
-    const top = (obj, limit = 10) =>
-      Object.fromEntries(
-        Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, limit)
-      );
-
-    const comparison = getComparisonWindow(period.start, period.end);
-    const baseNoPeriod = applyFiltersWithoutPeriod(rows, req.query);
-
-    const atual = periodRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
-
-    const anterior = baseNoPeriod
-      .filter((row) => {
-        const dt = row._date;
-        return (
-          dt &&
-          comparison.previousStart &&
-          comparison.previousEnd &&
-          dt >= comparison.previousStart &&
-          dt <= comparison.previousEnd
-        );
-      })
-      .reduce((sum, row) => sum + Number(row._abs || 0), 0);
-
-    return res.json({
-      horasPorPlantao: top(horasPorPlantao, 12),
-      registrosPorUnidade: top(registrosPorUnidade, 12),
-      cobertura: top(cobertura, 10),
-      horasPorDia,
-      horasPorAgente: top(horasPorAgente, 12),
-      descontoPorPlantao: top(descontoPorPlantao, 12),
-      comparativo: {
-        atual,
-        anterior,
-        label: comparison.label || "base anterior",
-      },
-    });
-  } catch (error) {
-    console.error("Erro /api/presenteismo-graficos:", error);
-    return res.status(500).json({ ok: false, message: error.message });
-  }
-});
-
-// ================== DETALHES API ==================
-
-app.get("/api/presenteismo-detalhes", requireAuth, async (req, res) => {
-  try {
-    const rows = await loadData();
-
-    const filteredRows = applyFilters(rows, req.query);
-    const { rows: periodRows } = filterByPeriod(filteredRows, req.query);
-
-    const page = Math.max(Number(req.query.page || 1), 1);
-    const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 200);
-
-    const sorted = [...periodRows].sort((a, b) => {
-      const ad = a._date ? a._date.getTime() : 0;
-      const bd = b._date ? b._date.getTime() : 0;
-      return bd - ad;
-    });
-
-    const total = sorted.length;
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * limit;
-
-    return res.json({
-      page: currentPage,
-      totalPages,
-      rows: sorted.slice(start, start + limit).map((r) => ({
-        mes: r["MÊS"] || "",
-        data: r["DATA"] || "",
-        unidade: r["UNIDADE"] || "",
-        empresa: r["EMPRESA"] || "",
-        plantao: r["PLANTÃO"] || "",
-        turno: r["TURNO"] || "",
-        agente: r["AGENTE"] || "",
-        status: r["STATUS"] || "",
-        statusCobertura: r["STATUS DE COBERTURA"] || "",
-        abs: r["ABSENTEISMO"] || "",
-        desconto: r["DESCONTO"] || "",
-        cobrindo: r["COLABORADOR COBRINDO POSTO"] || "",
-      })),
-    });
-  } catch (error) {
-    console.error("Erro /api/presenteismo-detalhes:", error);
-    return res.status(500).json({ ok: false, message: error.message });
-  }
-});
-
-// ================== DEBUG API ==================
-
-app.get("/api/presenteismo-debug", requireAuth, async (req, res) => {
-  try {
-    const rows = await loadData();
-    return res.json({
-      totalLinhas: rows.length,
-      headers: rows.length ? Object.keys(rows[0]).filter((h) => !h.startsWith("_")) : [],
-      sample: rows.slice(0, 5),
-    });
-  } catch (error) {
-    console.error("Erro /api/presenteismo-debug:", error);
-    return res.status(500).json({ ok: false, message: error.message });
-  }
 });
 
 // ================== SERVIDOR ==================

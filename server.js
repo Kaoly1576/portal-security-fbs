@@ -1222,6 +1222,300 @@ app.get("/dados-dashboard", requireAuth, (req, res) => {
   );
 });
 
+// ================== APP MARCACAO DIARIA ==================
+
+app.get("/marcacao", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "marcacao.html"));
+});
+
+const MARCACAO_SPREADSHEET_ID = "1DivjZdxzDES6Nu_ZJI_1gmrJgKqlrlqYgg3I-ybPr5k";
+const MARCACAO_BASE_RANGE = "'BASE DE AGENTES'!A1:H200000";
+const MARCACAO_REGISTRO_RANGE = "'REGISTRO DE PRESENTEÍSMO'!A1:L200000";
+
+function mcNorm(v) {
+  return String(v || "").trim();
+}
+
+function mcNormLower(v) {
+  return mcNorm(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function mcParseDateBR(value) {
+  const m = mcNorm(value).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
+
+function mcFormatDateBR(iso) {
+  if (!iso) return "";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function mcMesNome(dateObj) {
+  return dateObj.toLocaleDateString("pt-BR", { month: "long" }).toUpperCase();
+}
+
+async function mcLoadBaseAgentes() {
+  const sheets = await conectarSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: MARCACAO_SPREADSHEET_ID,
+    range: MARCACAO_BASE_RANGE
+  });
+
+  const values = res.data.values || [];
+  if (!values.length) return [];
+
+  const headers = values[0].map((h, i) => mcNorm(h) || `COL_${i+1}`);
+
+  return values.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i] || "");
+    return obj;
+  }).filter(r => mcNorm(r["UNIDADE"]) && mcNorm(r["PLANTÃO"]));
+}
+
+async function mcLoadRegistro() {
+  const sheets = await conectarSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: MARCACAO_SPREADSHEET_ID,
+    range: MARCACAO_REGISTRO_RANGE
+  });
+
+  const values = res.data.values || [];
+  if (!values.length) return { headers: [], rows: [] };
+
+  const headers = values[0].map((h, i) => mcNorm(h) || `COL_${i+1}`);
+
+  const rows = values.slice(1).map((row, idx) => {
+    const obj = { _sheetRow: idx + 2 };
+    headers.forEach((h, i) => obj[h] = row[i] || "");
+    return obj;
+  });
+
+  return { headers, rows };
+}
+
+function mcStatusMap(codigo) {
+  const map = {
+    P:  { status: "PRESENTE", cobertura: "", abs: "00:00:00", desconto: "R$ 0,00" },
+    F:  { status: "FALTA", cobertura: "Sem cobertura", abs: "12:00:00", desconto: "R$ 0,00" },
+    FE: { status: "FÉRIAS", cobertura: "", abs: "12:00:00", desconto: "R$ 0,00" },
+    FC: { status: "FALTA C/ COBERTURA", cobertura: "Cobertura parcial", abs: "12:00:00", desconto: "R$ 0,00" },
+    PV: { status: "POSTO VAGO", cobertura: "", abs: "12:00:00", desconto: "R$ 0,00" },
+  };
+  return map[codigo] || { status: "", cobertura: "", abs: "00:00:00", desconto: "R$ 0,00" };
+}
+
+// ========= filtros =========
+
+app.get("/api/marcacao-unidades", requireAuth, async (req, res) => {
+  try {
+    const rows = await mcLoadBaseAgentes();
+    const unidades = [...new Set(rows.map(r => mcNorm(r["UNIDADE"])).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return res.json({ ok: true, unidades });
+  } catch (error) {
+    console.error("Erro /api/marcacao-unidades:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/marcacao-lideres", requireAuth, async (req, res) => {
+  try {
+    const unidade = mcNorm(req.query.unidade);
+    const rows = await mcLoadBaseAgentes();
+
+    const lideres = [...new Set(
+      rows
+        .filter(r => mcNorm(r["UNIDADE"]) === unidade)
+        .map(r => mcNorm(r["PLANTÃO"]))
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return res.json({ ok: true, lideres });
+  } catch (error) {
+    console.error("Erro /api/marcacao-lideres:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ========= carregar efetivo =========
+
+app.get("/api/marcacao-efetivo", requireAuth, async (req, res) => {
+  try {
+    const unidade = mcNorm(req.query.unidade);
+    const lider = mcNorm(req.query.lider);
+    const dataISO = mcNorm(req.query.data);
+
+    if (!unidade || !lider || !dataISO) {
+      return res.status(400).json({ ok: false, message: "Informe unidade, líder e data." });
+    }
+
+    const base = await mcLoadBaseAgentes();
+    const registro = await mcLoadRegistro();
+
+    let efetivo = base.filter(r =>
+      mcNorm(r["UNIDADE"]) === unidade &&
+      mcNorm(r["PLANTÃO"]) === lider
+    );
+
+    // incluir o líder caso ele não esteja listado como agente
+    const existeLider = efetivo.some(r => mcNormLower(r["AGENTE"]) === mcNormLower(lider));
+    if (!existeLider) {
+      const first = efetivo[0] || {};
+      efetivo.unshift({
+        "UNIDADE": unidade,
+        "TURNO": first["TURNO"] || "",
+        "PLANTÃO": lider,
+        "AGENTE": lider,
+        "RE": "",
+        "CARGO": "LÍDER",
+        "EMPRESA": first["EMPRESA"] || "",
+        "STATUS": "ATIVO"
+      });
+    }
+
+    const dataBR = mcFormatDateBR(dataISO);
+
+    const rows = efetivo.map(item => {
+      const jaLancado = registro.rows.find(r =>
+        mcNorm(r["DATA"]) === dataBR &&
+        mcNorm(r["UNIDADE"]) === unidade &&
+        mcNorm(r["PLANTÃO"]) === lider &&
+        mcNormLower(r["AGENTE"]) === mcNormLower(item["AGENTE"])
+      );
+
+      let marcacao = "";
+      if (jaLancado) {
+        const status = mcNormLower(jaLancado["STATUS"]);
+        if (status === "presente") marcacao = "P";
+        else if (status === "férias" || status === "ferias") marcacao = "FE";
+        else if (status.includes("c/ cobertura")) marcacao = "FC";
+        else if (status === "posto vago") marcacao = "PV";
+        else if (status === "falta") marcacao = "F";
+      }
+
+      return {
+        ...item,
+        marcacao,
+        status: jaLancado ? jaLancado["STATUS"] : "",
+        statusCobertura: jaLancado ? jaLancado["STATUS DE COBERTURA"] : "",
+        cobrindo: jaLancado ? jaLancado["COLABORADOR COBRINDO POSTO"] : "",
+        abs: jaLancado ? jaLancado["ABSENTEISMO"] : "00:00:00",
+        desconto: jaLancado ? jaLancado["DESCONTO"] : "R$ 0,00"
+      };
+    });
+
+    return res.json({ ok: true, rows });
+  } catch (error) {
+    console.error("Erro /api/marcacao-efetivo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ========= salvar =========
+
+app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
+  try {
+    const { unidade, lider, data, rows } = req.body || {};
+
+    if (!unidade || !lider || !data || !Array.isArray(rows)) {
+      return res.status(400).json({ ok: false, message: "Payload inválido." });
+    }
+
+    const sheets = await conectarSheets();
+    const registro = await mcLoadRegistro();
+
+    const dataObj = new Date(`${data}T00:00:00`);
+    const dataBR = mcFormatDateBR(data);
+    const mesNome = mcMesNome(dataObj);
+
+    const headers = registro.headers.length
+      ? registro.headers
+      : [
+          "MÊS","DATA","UNIDADE","EMPRESA","PLANTÃO","TURNO","AGENTE",
+          "STATUS","STATUS DE COBERTURA","ABSENTEISMO","DESCONTO","COLABORADOR COBRINDO POSTO"
+        ];
+
+    const updates = [];
+    const appends = [];
+
+    for (const row of rows) {
+      const codigo = mcNorm(row.marcacao);
+      if (!codigo) continue;
+
+      const meta = mcStatusMap(codigo);
+
+      const payloadRow = [
+        mesNome,
+        dataBR,
+        mcNorm(row.UNIDADE || unidade),
+        mcNorm(row.EMPRESA || ""),
+        mcNorm(row["PLANTÃO"] || lider),
+        mcNorm(row.TURNO || ""),
+        mcNorm(row.AGENTE || ""),
+        mcNorm(meta.status),
+        mcNorm(codigo === "FC" ? "Cobertura parcial" : meta.cobertura),
+        mcNorm(row.abs || meta.abs),
+        mcNorm(row.desconto || meta.desconto),
+        mcNorm(codigo === "FC" ? (row.cobrindo || "") : "")
+      ];
+
+      const existente = registro.rows.find(r =>
+        mcNorm(r["DATA"]) === dataBR &&
+        mcNorm(r["UNIDADE"]) === mcNorm(row.UNIDADE || unidade) &&
+        mcNorm(r["PLANTÃO"]) === mcNorm(row["PLANTÃO"] || lider) &&
+        mcNormLower(r["AGENTE"]) === mcNormLower(row.AGENTE || "")
+      );
+
+      if (existente) {
+        updates.push({
+          rowNumber: existente._sheetRow,
+          values: payloadRow
+        });
+      } else {
+        appends.push(payloadRow);
+      }
+    }
+
+    for (const upd of updates) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: MARCACAO_SPREADSHEET_ID,
+        range: `'REGISTRO DE PRESENTEÍSMO'!A${upd.rowNumber}:L${upd.rowNumber}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [upd.values]
+        }
+      });
+    }
+
+    if (appends.length) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: MARCACAO_SPREADSHEET_ID,
+        range: `'REGISTRO DE PRESENTEÍSMO'!A:L`,
+        valueInputOption: "USER_ENTERED",
+        insertDataOption: "INSERT_ROWS",
+        requestBody: {
+          values: appends
+        }
+      });
+    }
+
+    return res.json({
+      ok: true,
+      message: `Salvo com sucesso. Atualizados: ${updates.length} | Novos: ${appends.length}`
+    });
+  } catch (error) {
+    console.error("Erro /api/marcacao-salvar:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
 // ================== GOOGLE SHEETS HC ==================
 
 async function buscarPlanilhaHC() {

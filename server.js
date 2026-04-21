@@ -6144,48 +6144,31 @@ app.get("/api/presenteismo-filtros", requireAuth, async (req,res)=>{
 
 // ================== RESUMO ==================
 
+// ================== RESUMO ==================
+
 app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
   try {
-    const rows = await prLoadWithCache();
+    const rows = await loadData();
 
-    const filteredRows = prApplyFilters(rows, req.query);
-    const { rows: periodRows, period } = prFilterRowsByPeriod(filteredRows, req.query);
+    const total = rows.length;
+    const horasAbs = rows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
+    const descontoTotal = rows.reduce((sum, row) => sum + Number(row._desconto || 0), 0);
 
-    const total = periodRows.length;
-    const horasAbs = periodRows.reduce((sum, row) => sum + Number(row._hoursAbs || 0), 0);
-    const descontoTotal = periodRows.reduce((sum, row) => sum + Number(row._descontoNum || 0), 0);
-
-    const registrosComAbs = periodRows.filter(row => Number(row._hoursAbs || 0) > 0).length;
+    const registrosComAbs = rows.filter(row => Number(row._abs || 0) > 0).length;
     const percentualAbsenteismo = total ? (registrosComAbs / total) * 100 : 0;
 
-    const coberturaIntegral = periodRows.filter(row =>
-      prNormLower(row["STATUS DE COBERTURA"]).includes("integral")
+    const coberturaIntegral = rows.filter(row =>
+      n(row["STATUS DE COBERTURA"]).toLowerCase().includes("integral")
     ).length;
 
-    const coberturaParcial = periodRows.filter(row =>
-      prNormLower(row["STATUS DE COBERTURA"]).includes("parcial")
+    const coberturaParcial = rows.filter(row =>
+      n(row["STATUS DE COBERTURA"]).toLowerCase().includes("parcial")
     ).length;
 
-    const semCobertura = periodRows.filter(row => {
-      const c = prNormLower(row["STATUS DE COBERTURA"]);
+    const semCobertura = rows.filter(row => {
+      const c = n(row["STATUS DE COBERTURA"]).toLowerCase();
       return !c || c.includes("sem cobertura") || c.includes("nao coberto") || c.includes("não coberto");
     }).length;
-
-    const comparison = prGetComparisonWindow(period.start, period.end);
-    const baseNoPeriod = prApplyFiltersWithoutPeriod(rows, req.query);
-
-    const anteriorRows = baseNoPeriod.filter(row => {
-      const dt = row._dateObj;
-      return (
-        dt &&
-        comparison.previousStart &&
-        comparison.previousEnd &&
-        dt >= comparison.previousStart &&
-        dt <= comparison.previousEnd
-      );
-    });
-
-    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + Number(row._hoursAbs || 0), 0);
 
     return res.json({
       total,
@@ -6196,14 +6179,7 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
       coberturaIntegral,
       coberturaParcial,
       semCobertura,
-      anteriorHoras,
-      comparativoLabel: comparison.label || "base anterior",
-      periodoAtualInicio: comparison.currentStart ? prFormatBR(comparison.currentStart) : "",
-      periodoAtualFim: comparison.currentEnd ? prFormatBR(comparison.currentEnd) : "",
-      periodoAnteriorInicio: comparison.previousStart ? prFormatBR(comparison.previousStart) : "",
-      periodoAnteriorFim: comparison.previousEnd ? prFormatBR(comparison.previousEnd) : "",
       ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,

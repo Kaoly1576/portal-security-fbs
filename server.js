@@ -5855,23 +5855,20 @@ function clParseDate(value) {
     const [datePart] = str.split(" ");
     const [year, month, day] = datePart.split("-").map(Number);
     const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
+    return isNaN(dt.getTime()) ? null : dt;
   }
 
   if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
     const [datePart] = str.split(" ");
-    const parts = datePart.split("/").map(Number);
-    if (parts.length === 3) {
-      const [a, b, c] = parts;
+    const [a, b, c] = datePart.split("/").map(Number);
 
-      // tenta MM/DD/YYYY primeiro
-      let dt = new Date(c, a - 1, b);
-      if (!isNaN(dt)) return dt;
+    // base do checklist costuma vir MM/DD/YYYY
+    let dt = new Date(c, a - 1, b);
+    if (!isNaN(dt.getTime())) return dt;
 
-      // fallback DD/MM/YYYY
-      dt = new Date(c, b - 1, a);
-      return isNaN(dt) ? null : dt;
-    }
+    // fallback DD/MM/YYYY
+    dt = new Date(c, b - 1, a);
+    return isNaN(dt.getTime()) ? null : dt;
   }
 
   return null;
@@ -6257,23 +6254,25 @@ app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
   try {
     const rows = await clLoadWithCache();
 
-    const payload = {
-      unidade: [...new Set(rows.map((r) => clNorm(r["unidade"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      elaboradoPor: [...new Set(rows.map((r) => clNorm(r["elaborado_por"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      elaborador: [...new Set(rows.map((r) => clNorm(r["elaborado_por"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      funcao: [...new Set(rows.map((r) => clNorm(r["funcao"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      estado: [...new Set(rows.map((r) => clNorm(r["estado"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      cidade: [...new Set(rows.map((r) => clNorm(r["cidade"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      topico: [...new Set(rows.map((r) => clNorm(r["topico"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      geraNc: [...new Set(rows.map((r) => clNorm(r["gera_nc"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      situacaoPrazo: [...new Set(rows.map((r) => clNorm(r["situacao_prazo"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      prazo: [...new Set(rows.map((r) => clNorm(r["situacao_prazo"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      areaResponsavel: [...new Set(rows.map((r) => clNorm(r["area_responsavel"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      area: [...new Set(rows.map((r) => clNorm(r["area_responsavel"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-      ultimaAtualizacao: clGetHoraAtualizacaoBR(),
-    };
+    const uniq = (field) =>
+      [...new Set(rows.map((r) => clNorm(r[field])).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
-    return res.json(payload);
+    return res.json({
+      unidade: uniq("unidade"),
+      elaboradoPor: uniq("elaborado_por"),
+      elaborador: uniq("elaborado_por"),
+      funcao: uniq("funcao"),
+      estado: uniq("estado"),
+      cidade: uniq("cidade"),
+      topico: uniq("topico"),
+      geraNc: uniq("gera_nc"),
+      situacaoPrazo: uniq("situacao_prazo"),
+      prazo: uniq("situacao_prazo"),
+      areaResponsavel: uniq("area_responsavel"),
+      area: uniq("area_responsavel"),
+      ultimaAtualizacao: clGetHoraAtualizacaoBR(),
+    });
   } catch (error) {
     console.error("Erro /api/checklist-filtros:", error);
     return res.status(500).json({ ok: false, message: error.message });
@@ -6338,7 +6337,7 @@ app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
   }
 });
 
-// ================== GRÁFICOS ==================
+// ================== GRAFICOS ==================
 
 app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
   try {

@@ -478,20 +478,16 @@ async function loadResumo(page=1){
   const data = await res.json();
 
   document.getElementById("cardTotal").textContent = fmt(data.total);
-  document.getElementById("cardHoras").textContent = fmtHours(data.horasAbs);
-  document.getElementById("cardDesconto").textContent = fmtCurrency(data.descontoTotal);
-  document.getElementById("cardIntegral").textContent = fmt(data.coberturaIntegral);
-  document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
-  document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
-  document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
-  document.getElementById("subComparativo").textContent = `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
-  document.getElementById("cardPctAbs").textContent =
+document.getElementById("cardHoras").textContent = fmtHours(data.horasAbs);
+document.getElementById("cardPctAbs").textContent =
   `${Number(data.percentualAbsenteismo || 0).toLocaleString("pt-BR", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1
   })}%`;
-}
-
+document.getElementById("cardDesconto").textContent = fmtCurrency(data.descontoTotal);
+document.getElementById("cardIntegral").textContent = fmt(data.coberturaIntegral);
+document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
+document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
 async function loadGraficos(page=1){
   const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();

@@ -6233,6 +6233,69 @@ function clApplyFiltersWithoutPeriod(rows, query) {
     dataRef: "",
   });
 }
+function createMultiSelect(menuId, triggerId, values, placeholder){
+  const menu = document.getElementById(menuId);
+  const trigger = document.getElementById(triggerId);
+  if(!menu || !trigger) return;
+
+  menu.innerHTML = `
+    <div class="multi-actions">
+      <button type="button" data-action="all">Todos</button>
+      <button type="button" data-action="clear">Limpar</button>
+    </div>
+  `;
+
+  values.forEach(value => {
+    const label = document.createElement("label");
+    label.className = "multi-option";
+    label.innerHTML = `<input type="checkbox" value="${String(value).replace(/"/g,'&quot;')}" /><span>${value}</span>`;
+    menu.appendChild(label);
+  });
+
+  function updateTrigger(){
+    const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+    if(!checked.length) trigger.textContent = placeholder;
+    else if(checked.length === 1) trigger.textContent = checked[0];
+    else trigger.textContent = `${checked.length} selecionados`;
+  }
+
+  trigger.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelectorAll(".multi-select").forEach(wrap => {
+      if(wrap !== trigger.closest(".multi-select")) wrap.classList.remove("open");
+    });
+    trigger.closest(".multi-select").classList.toggle("open");
+  };
+
+  menu.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    const action = e.target.dataset.action;
+    if(action === "all"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+      updateTrigger();
+      return;
+    }
+
+    if(action === "clear"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+      updateTrigger();
+      return;
+    }
+
+    if(e.target.matches('input[type="checkbox"]')){
+      updateTrigger();
+    }
+  });
+
+  updateTrigger();
+}
+
+document.addEventListener("click", () => {
+  document.querySelectorAll(".multi-select").forEach(wrap => {
+    wrap.classList.remove("open");
+  });
+});
 
 // ================== PERIOD FILTER ON GROUPS ==================
 

@@ -6191,26 +6191,70 @@ app.get("/api/presenteismo-filtros", requireAuth, async (req,res)=>{
 
 // ================== RESUMO ==================
 
-app.get("/api/presenteismo-resumo", requireAuth, async (req,res)=>{
-  const rows = await loadData();
+app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
+  try {
+    const rows = await loadData();
 
-  const total = rows.length;
-  const horas = rows.reduce((s,r)=> s + r._abs, 0);
-  const desconto = rows.reduce((s,r)=> s + r._desconto, 0);
+    const filteredRows = applyFilters(rows, req.query);
+    const { rows: periodRows, period } = filterByPeriod(filteredRows, req.query);
 
-  const integral = rows.filter(r=> n(r["STATUS DE COBERTURA"]).toLowerCase().includes("integral")).length;
-  const parcial = rows.filter(r=> n(r["STATUS DE COBERTURA"]).toLowerCase().includes("parcial")).length;
-  const sem = total - integral - parcial;
+    const total = periodRows.length;
+    const horasAbs = periodRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
+    const descontoTotal = periodRows.reduce((sum, row) => sum + Number(row._desconto || 0), 0);
 
-  res.json({
-    total,
-    horasAbs: horas,
-    descontoTotal: desconto,
-    coberturaIntegral: integral,
-    coberturaParcial: parcial,
-    semCobertura: sem,
-    ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR")
-  });
+    const registrosComAbs = periodRows.filter((row) => Number(row._abs || 0) > 0).length;
+    const percentualAbsenteismo = total ? (registrosComAbs / total) * 100 : 0;
+
+    const coberturaIntegral = periodRows.filter((row) =>
+      nLower(row["STATUS DE COBERTURA"]).includes("integral")
+    ).length;
+
+    const coberturaParcial = periodRows.filter((row) =>
+      nLower(row["STATUS DE COBERTURA"]).includes("parcial")
+    ).length;
+
+    const semCobertura = periodRows.filter((row) => {
+      const c = nLower(row["STATUS DE COBERTURA"]);
+      return !c || c.includes("sem cobertura") || c.includes("nao coberto") || c.includes("não coberto");
+    }).length;
+
+    const comparison = getComparisonWindow(period.start, period.end);
+    const baseNoPeriod = applyFiltersWithoutPeriod(rows, req.query);
+
+    const anteriorRows = baseNoPeriod.filter((row) => {
+      const dt = row._date;
+      return (
+        dt &&
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
+      );
+    });
+
+    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
+
+    return res.json({
+      total,
+      horasAbs,
+      descontoTotal,
+      registrosComAbs,
+      percentualAbsenteismo,
+      coberturaIntegral,
+      coberturaParcial,
+      semCobertura,
+      anteriorHoras,
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? formatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? formatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? formatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? formatBR(comparison.previousEnd) : "",
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/presenteismo-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
 });
 
 // ================== GRAFICOS ==================

@@ -9,9 +9,9 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
     :root{
-      --bg1:#4b5563;--bg2:#111827;--bg3:#050c18;--input:#071325;--th:#111c33;
-      --line:rgba(255,255,255,.08);--text:#fff;--muted:#cbd5e1;--orange:#ff7a1a;
-      --blue:#58a6ff;--green:#22c55e;--red:#ef4444;--purple:#a855f7;
+      --bg1:#4b5563;--bg2:#111827;--bg3:#050c18;--card:rgba(17,24,39,.78);
+      --input:#071325;--th:#111c33;--line:rgba(255,255,255,.08);--text:#fff;
+      --muted:#cbd5e1;--orange:#ff7a1a;--blue:#58a6ff;--green:#22c55e;--red:#ef4444;--purple:#a855f7;
     }
     html,body{min-height:100%;overflow-x:hidden}
     body{
@@ -62,7 +62,7 @@
     .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     .btn-primary{height:40px;border:none;border-radius:10px;padding:0 16px;background:linear-gradient(90deg,var(--orange),#ff4d4f);color:#fff;font-weight:800;cursor:pointer}
     .btn-ghost{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 16px;background:#242424;color:#fff;font-weight:700;cursor:pointer}
-    .kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:12px}
     .kpi{padding:14px;min-height:96px}
     .kpi-title{font-size:11px;text-transform:uppercase;color:#fff;margin-bottom:10px;font-weight:800}
     .kpi-value{font-size:24px;font-weight:900;line-height:1.1}
@@ -83,16 +83,10 @@
     .detail-table th{position:sticky;top:0;background:var(--th);z-index:1;color:#d6d6d6}
     .pager{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
     .pager-info{margin-right:auto;color:var(--muted);font-size:12px;display:flex;align-items:center}
-    @media (max-width:1400px){
-      .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
-    }
     @media (max-width:1280px){
-      .filters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
       .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
       .search-span-2{grid-column:span 1}
-    }
-    @media (max-width:900px){
-      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width:768px){
       .filters-grid,.kpis{grid-template-columns:1fr}
@@ -213,13 +207,8 @@
     </div>
     <div class="kpi">
       <div class="kpi-title">Horas de ABS</div>
-      <div class="kpi-value red" id="cardHoras">0h00</div>
+      <div class="kpi-value red" id="cardHoras">0h</div>
       <div class="kpi-sub">Soma do absenteísmo</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-title">% de absenteísmo</div>
-      <div class="kpi-value red" id="cardPctAbs">0,0%</div>
-      <div class="kpi-sub">Registros com absenteísmo</div>
     </div>
     <div class="kpi">
       <div class="kpi-title">Desconto total</div>
@@ -352,10 +341,8 @@ function fmtCurrency(v){return Number(v||0).toLocaleString("pt-BR",{style:"curre
 function fmtHours(hours){
   const total = Number(hours||0);
   const hh = Math.floor(total);
-  let mm = Math.round((total - hh) * 60);
-  let finalH = hh;
-  if (mm === 60) { finalH += 1; mm = 0; }
-  return `${finalH}h${String(mm).padStart(2,"0")}`;
+  const mm = Math.round((total - hh) * 60);
+  return `${hh}h${String(mm).padStart(2,"0")}`;
 }
 
 function destroyCharts() {
@@ -483,29 +470,21 @@ async function loadFiltros(){
 }
 
 async function loadResumo(page=1){
-  const res = await fetch(`/api/presenteismo-resumo?${getFiltersQuery(page)}`, {
-    credentials:"same-origin"
-  });
+  const res = await fetch(`/api/presenteismo-resumo?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();
 
   document.getElementById("cardTotal").textContent = fmt(data.total);
   document.getElementById("cardHoras").textContent = fmtHours(data.horasAbs);
-  document.getElementById("cardPctAbs").textContent =
-    `${Number(data.percentualAbsenteismo || 0).toLocaleString("pt-BR", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1
-    })}%`;
   document.getElementById("cardDesconto").textContent = fmtCurrency(data.descontoTotal);
   document.getElementById("cardIntegral").textContent = fmt(data.coberturaIntegral);
   document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
   document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
   document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+  document.getElementById("subComparativo").textContent = `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
 }
 
 async function loadGraficos(page=1){
-  const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, {
-    credentials:"same-origin"
-  });
+  const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();
 
   destroyCharts();
@@ -514,12 +493,7 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.horasPorPlantao || {}),
-      datasets:[{
-        label:"Horas ABS",
-        data:Object.values(data.horasPorPlantao || {}),
-        backgroundColor:"#ff7a1a",
-        borderRadius:8
-      }]
+      datasets:[{label:"Horas ABS",data:Object.values(data.horasPorPlantao || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
     },
     options: horizontalBarOptions("hours")
   });
@@ -528,12 +502,7 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.registrosPorUnidade || {}),
-      datasets:[{
-        label:"Registros",
-        data:Object.values(data.registrosPorUnidade || {}),
-        backgroundColor:"#ff7a1a",
-        borderRadius:8
-      }]
+      datasets:[{label:"Registros",data:Object.values(data.registrosPorUnidade || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
     },
     options: horizontalBarOptions()
   });
@@ -542,12 +511,7 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.cobertura || {}),
-      datasets:[{
-        label:"Cobertura",
-        data:Object.values(data.cobertura || {}),
-        backgroundColor:"#58a6ff",
-        borderRadius:8
-      }]
+      datasets:[{label:"Cobertura",data:Object.values(data.cobertura || {}),backgroundColor:"#58a6ff",borderRadius:8}]
     },
     options: horizontalBarOptions()
   });
@@ -624,12 +588,7 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.horasPorAgente || {}),
-      datasets:[{
-        label:"Horas ABS",
-        data:Object.values(data.horasPorAgente || {}),
-        backgroundColor:"#ff7a1a",
-        borderRadius:8
-      }]
+      datasets:[{label:"Horas ABS",data:Object.values(data.horasPorAgente || {}),backgroundColor:"#ff7a1a",borderRadius:8}]
     },
     options: horizontalBarOptions("hours")
   });
@@ -638,21 +597,14 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.descontoPorPlantao || {}),
-      datasets:[{
-        label:"Desconto",
-        data:Object.values(data.descontoPorPlantao || {}),
-        backgroundColor:"#a855f7",
-        borderRadius:8
-      }]
+      datasets:[{label:"Desconto",data:Object.values(data.descontoPorPlantao || {}),backgroundColor:"#a855f7",borderRadius:8}]
     },
     options: horizontalBarOptions("currency")
   });
 }
 
 async function loadDetalhes(page=1){
-  const res = await fetch(`/api/presenteismo-detalhes?${getFiltersQuery(page)}`, {
-    credentials:"same-origin"
-  });
+  const res = await fetch(`/api/presenteismo-detalhes?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();
 
   currentPage = data.page || 1;
@@ -698,18 +650,13 @@ document.getElementById("btnLimpar").addEventListener("click", () => {
   document.getElementById("triggerCobertura").textContent = "Todos";
   loadAll(1);
 });
-
-document.getElementById("btnPrev").addEventListener("click", () => {
-  if(currentPage > 1) loadAll(currentPage - 1);
-});
-
-document.getElementById("btnNext").addEventListener("click", () => {
-  if(currentPage < totalPages) loadAll(currentPage + 1);
-});
+document.getElementById("btnPrev").addEventListener("click", () => { if(currentPage>1) loadAll(currentPage-1); });
+document.getElementById("btnNext").addEventListener("click", () => { if(currentPage<totalPages) loadAll(currentPage+1); });
 
 (async function init(){
   await loadFiltros();
-  document.getElementById("filtroDataRef").value = "";
+  const today = new Date();
+  document.getElementById("filtroDataRef").value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
   await loadAll(1);
 })();
 </script>

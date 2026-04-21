@@ -487,6 +487,11 @@ async function loadResumo(page=1){
   document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
   document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
   document.getElementById("subComparativo").textContent = `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
+  document.getElementById("cardPctAbs").textContent =
+  `${Number(data.percentualAbsenteismo || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  })}%`;
 }
 
 async function loadGraficos(page=1){

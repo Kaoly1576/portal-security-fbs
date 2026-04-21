@@ -62,7 +62,7 @@
     .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     .btn-primary{height:40px;border:none;border-radius:10px;padding:0 16px;background:linear-gradient(90deg,var(--orange),#ff4d4f);color:#fff;font-weight:800;cursor:pointer}
     .btn-ghost{height:40px;border:1px solid var(--line);border-radius:10px;padding:0 16px;background:#242424;color:#fff;font-weight:700;cursor:pointer}
-    .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    .kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:12px}
     .kpi{padding:14px;min-height:96px}
     .kpi-title{font-size:11px;text-transform:uppercase;color:#fff;margin-bottom:10px;font-weight:800}
     .kpi-value{font-size:24px;font-weight:900;line-height:1.1}
@@ -164,13 +164,6 @@
         </div>
       </div>
     </div>
-
-    <div class="kpi">
-  <div class="kpi-title">% de absenteísmo</div>
-  <div class="kpi-value red" id="cardPctAbs">0,0%</div>
-  <div class="kpi-sub">Registros com absenteísmo</div>
-</div>
-
     <div class="filters-grid" style="margin-top:10px;">
       <div class="field">
         <label>Agente</label>
@@ -216,6 +209,11 @@
       <div class="kpi-value red" id="cardHoras">0h</div>
       <div class="kpi-sub">Soma do absenteísmo</div>
     </div>
+    <div class="kpi">
+    <div class="kpi-title">% de absenteísmo</div>
+    <div class="kpi-value red" id="cardPctAbs">0,0%</div>
+    <div class="kpi-sub">Registros com absenteísmo</div>
+  </div>
     <div class="kpi">
       <div class="kpi-title">Desconto total</div>
       <div class="kpi-value orange" id="cardDesconto">R$ 0,00</div>

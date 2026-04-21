@@ -234,6 +234,13 @@ function detectarLinhaDatas(rows) {
       lateralDates.push({
         colIndex: i,
         date: valor,
+      }
+       function getHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
       });
     }
   }
@@ -1798,9 +1805,7 @@ app.get("/api/access-resumo", requireAuth, async (req, res) => {
       comVeiculo,
       semVeiculo,
       percentualAprovados,
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
       }),
     });
   } catch (error) {
@@ -2269,10 +2274,7 @@ app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
       unidades,
       totalSecurity,
       taxaBloqueio,
-      ultimaAtualizacao: agora.toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
+     ultimaAtualizacao: getHoraAtualizacaoBR(),
       }),
     });
   } catch (error) {
@@ -2953,9 +2955,7 @@ app.get("/api/cco-fbs-resumo", requireAuth, async (req, res) => {
       variacaoMensal: ccoPercentChange(mesAtual, mesAnterior),
       statusDominante: topStatus ? topStatus[0] : "-",
       totalStatusDominante: topStatus ? topStatus[1] : 0,
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
       }),
     });
   } catch (error) {
@@ -3492,11 +3492,7 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
       variacaoMensal: lacrePercentChange(mesAtual, mesAnterior),
       corretos,
       incorretos,
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
       }),
     });
   } catch (error) {
@@ -4164,11 +4160,7 @@ app.get("/api/matriz-consequencia-resumo", requireAuth, async (req, res) => {
       periodoAtualFim: janela.currentEnd ? mcFormatBR(janela.currentEnd) : "",
       periodoAnteriorInicio: janela.previousStart ? mcFormatBR(janela.previousStart) : "",
       periodoAnteriorFim: janela.previousEnd ? mcFormatBR(janela.previousEnd) : "",
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
       }),
     });
   } catch (error) {
@@ -4722,11 +4714,7 @@ app.get("/api/hc-onboarding-resumo", requireAuth, async (req, res) => {
         instrutores: onbInstrutores,
         concordam: onbConcordam,
       }),
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
+      ultimaAtualizacao: getHoraAtualizacaoBR(),,
       }),
     });
   } catch (error) {
@@ -5936,11 +5924,7 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
       periodoAnteriorInicio: comparison.previousStart ? prFormatBR(comparison.previousStart) : "",
       periodoAnteriorFim: comparison.previousEnd ? prFormatBR(comparison.previousEnd) : "",
       variacaoHoras: ((anteriorHoras === 0 && horasAbs === 0) ? 0 : (anteriorHoras === 0 ? 100 : ((horasAbs - anteriorHoras) / anteriorHoras) * 100)),
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
       }),
     });
   } catch (error) {

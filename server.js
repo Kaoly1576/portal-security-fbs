@@ -5851,7 +5851,6 @@ function clParseDate(value) {
   const str = clNorm(value);
   if (!str) return null;
 
-  // formato YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const [datePart] = str.split(" ");
     const [year, month, day] = datePart.split("-").map(Number);
@@ -5859,31 +5858,23 @@ function clParseDate(value) {
     return isNaN(dt) ? null : dt;
   }
 
-  // formato MM/DD/YYYY ou M/D/YYYY  -> BASE DO CHECKLIST
   if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
     const [datePart] = str.split(" ");
-    const [month, day, year] = datePart.split("/").map(Number);
-    const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
-  }
+    const parts = datePart.split("/").map(Number);
+    if (parts.length === 3) {
+      const [a, b, c] = parts;
 
-  // formato DD/MM/YYYY
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [day, month, year] = datePart.split("/").map(Number);
-    const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
+      // tenta MM/DD/YYYY primeiro
+      let dt = new Date(c, a - 1, b);
+      if (!isNaN(dt)) return dt;
+
+      // fallback DD/MM/YYYY
+      dt = new Date(c, b - 1, a);
+      return isNaN(dt) ? null : dt;
+    }
   }
 
   return null;
-}
-
-function clFormatInputDate(date) {
-  if (!date) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function clFormatBR(date) {
@@ -5930,6 +5921,15 @@ function clDiffDaysInclusive(start, end) {
   const s = clStartOfDay(start);
   const e = clStartOfDay(end);
   return Math.floor((e - s) / msPerDay) + 1;
+}
+
+function clGetHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 function clResolvePeriodFromQuery(query, groups) {
@@ -6192,19 +6192,19 @@ function clGroupByChecklist(rows) {
 
 function clApplyFilters(rows, query) {
   const unidade = clSplitMulti(query.unidade);
-  const elaborador = clSplitMulti(query.elaborador);
+  const elaboradoPor = clSplitMulti(query.elaborador || query.elaboradoPor);
   const funcao = clSplitMulti(query.funcao);
   const estado = clSplitMulti(query.estado);
   const cidade = clSplitMulti(query.cidade);
   const topico = clSplitMulti(query.topico);
   const geraNc = clSplitMulti(query.geraNc);
-  const prazo = clSplitMulti(query.prazo);
-  const area = clSplitMulti(query.area);
+  const prazo = clSplitMulti(query.prazo || query.situacaoPrazo);
+  const area = clSplitMulti(query.area || query.areaResponsavel);
   const busca = clNormLower(query.busca);
 
   return rows.filter((row) => {
     if (!clMatchesMulti(row["unidade"], unidade)) return false;
-    if (!clMatchesMulti(row["elaborado_por"], elaborador)) return false;
+    if (!clMatchesMulti(row["elaborado_por"], elaboradoPor)) return false;
     if (!clMatchesMulti(row["funcao"], funcao)) return false;
     if (!clMatchesMulti(row["estado"], estado)) return false;
     if (!clMatchesMulti(row["cidade"], cidade)) return false;
@@ -6234,7 +6234,6 @@ function clApplyFiltersWithoutPeriod(rows, query) {
   });
 }
 
-
 // ================== PERIOD FILTER ON GROUPS ==================
 
 function clFilterGroupsByPeriod(groups, query) {
@@ -6258,17 +6257,23 @@ app.get("/api/checklist-filtros", requireAuth, async (req, res) => {
   try {
     const rows = await clLoadWithCache();
 
-    return res.json({
+    const payload = {
       unidade: [...new Set(rows.map((r) => clNorm(r["unidade"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      elaboradoPor: [...new Set(rows.map((r) => clNorm(r["elaborado_por"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       elaborador: [...new Set(rows.map((r) => clNorm(r["elaborado_por"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       funcao: [...new Set(rows.map((r) => clNorm(r["funcao"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       estado: [...new Set(rows.map((r) => clNorm(r["estado"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       cidade: [...new Set(rows.map((r) => clNorm(r["cidade"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       topico: [...new Set(rows.map((r) => clNorm(r["topico"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       geraNc: [...new Set(rows.map((r) => clNorm(r["gera_nc"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      situacaoPrazo: [...new Set(rows.map((r) => clNorm(r["situacao_prazo"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       prazo: [...new Set(rows.map((r) => clNorm(r["situacao_prazo"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      areaResponsavel: [...new Set(rows.map((r) => clNorm(r["area_responsavel"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
       area: [...new Set(rows.map((r) => clNorm(r["area_responsavel"])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")),
-    });
+      ultimaAtualizacao: clGetHoraAtualizacaoBR(),
+    };
+
+    return res.json(payload);
   } catch (error) {
     console.error("Erro /api/checklist-filtros:", error);
     return res.status(500).json({ ok: false, message: error.message });
@@ -6325,12 +6330,7 @@ app.get("/api/checklist-resumo", requireAuth, async (req, res) => {
       periodoAnteriorInicio: comparison.previousStart ? clFormatBR(comparison.previousStart) : "",
       periodoAnteriorFim: comparison.previousEnd ? clFormatBR(comparison.previousEnd) : "",
       variacao: clPercentChange(total, anterior),
-      ultimaAtualizacao: new Date().toLocaleTimeString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
+      ultimaAtualizacao: clGetHoraAtualizacaoBR(),
     });
   } catch (error) {
     console.error("Erro /api/checklist-resumo:", error);
@@ -6428,6 +6428,7 @@ app.get("/api/checklist-graficos", requireAuth, async (req, res) => {
         mesAnterior,
         label: comparison.label || "base anterior",
       },
+      ultimaAtualizacao: clGetHoraAtualizacaoBR(),
     });
   } catch (error) {
     console.error("Erro /api/checklist-graficos:", error);
@@ -6481,6 +6482,7 @@ app.get("/api/checklist-detalhes", requireAuth, async (req, res) => {
       limit,
       totalPages,
       rows: rowsOut,
+      ultimaAtualizacao: clGetHoraAtualizacaoBR(),
     });
   } catch (error) {
     console.error("Erro /api/checklist-detalhes:", error);
@@ -6498,6 +6500,7 @@ app.get("/api/checklist-debug", requireAuth, async (req, res) => {
       totalLinhas: rows.length,
       headers: rows.length ? Object.keys(rows[0]).filter((h) => !h.startsWith("_")) : [],
       sample: rows.slice(0, 5),
+      ultimaAtualizacao: clGetHoraAtualizacaoBR(),
     });
   } catch (error) {
     console.error("Erro /api/checklist-debug:", error);

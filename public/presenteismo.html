@@ -488,6 +488,8 @@ document.getElementById("cardDesconto").textContent = fmtCurrency(data.descontoT
 document.getElementById("cardIntegral").textContent = fmt(data.coberturaIntegral);
 document.getElementById("cardParcial").textContent = fmt(data.coberturaParcial);
 document.getElementById("cardSemCobertura").textContent = fmt(data.semCobertura);
+},
+  
 async function loadGraficos(page=1){
   const res = await fetch(`/api/presenteismo-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();

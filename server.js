@@ -6307,10 +6307,26 @@ app.get("/api/presenteismo-graficos", requireAuth, async (req,res)=>{
 app.get("/api/presenteismo-detalhes", requireAuth, async (req,res)=>{
   const rows = await loadData();
 
+  const filtered = filterByPeriod(applyFilters(rows, req.query), req.query);
+
+  const page = Math.max(Number(req.query.page || 1), 1);
+  const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 200);
+
+  const sorted = [...filtered].sort((a,b)=>{
+    const ad = a._date ? a._date.getTime() : 0;
+    const bd = b._date ? b._date.getTime() : 0;
+    return bd - ad;
+  });
+
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const currentPage = Math.min(page, totalPages);
+  const start = (currentPage - 1) * limit;
+
   res.json({
-    page:1,
-    totalPages:1,
-    rows: rows.slice(0,50).map(r=>({
+    page: currentPage,
+    totalPages,
+    rows: sorted.slice(start, start + limit).map(r=>({
       mes:r["MÊS"],
       data:r["DATA"],
       unidade:r["UNIDADE"],

@@ -1806,7 +1806,6 @@ app.get("/api/access-resumo", requireAuth, async (req, res) => {
       semVeiculo,
       percentualAprovados,
       ultimaAtualizacao: getHoraAtualizacaoBR(),
-      }),
     });
   } catch (error) {
     return res.status(500).json({
@@ -2275,7 +2274,6 @@ app.get("/api/desligados-resumo", requireAuth, async (req, res) => {
       totalSecurity,
       taxaBloqueio,
      ultimaAtualizacao: getHoraAtualizacaoBR(),
-      }),
     });
   } catch (error) {
     return res.status(500).json({
@@ -2956,7 +2954,6 @@ app.get("/api/cco-fbs-resumo", requireAuth, async (req, res) => {
       statusDominante: topStatus ? topStatus[0] : "-",
       totalStatusDominante: topStatus ? topStatus[1] : 0,
       ultimaAtualizacao: getHoraAtualizacaoBR(),
-      }),
     });
   } catch (error) {
     return res.status(500).json({
@@ -3493,7 +3490,6 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
       corretos,
       incorretos,
       ultimaAtualizacao: getHoraAtualizacaoBR(),
-      }),
     });
   } catch (error) {
     console.error("Erro /api/registro-lacres-resumo:", error);
@@ -4161,7 +4157,6 @@ app.get("/api/matriz-consequencia-resumo", requireAuth, async (req, res) => {
       periodoAnteriorInicio: janela.previousStart ? mcFormatBR(janela.previousStart) : "",
       periodoAnteriorFim: janela.previousEnd ? mcFormatBR(janela.previousEnd) : "",
       ultimaAtualizacao: getHoraAtualizacaoBR(),
-      }),
     });
   } catch (error) {
     console.error("Erro /api/matriz-consequencia-resumo:", error);
@@ -4715,8 +4710,7 @@ app.get("/api/hc-onboarding-resumo", requireAuth, async (req, res) => {
         concordam: onbConcordam,
       }),
       ultimaAtualizacao: getHoraAtualizacaoBR(),,
-      }),
-    });
+  });
   } catch (error) {
     console.error("Erro /api/hc-onboarding-resumo:", error);
     return res.status(500).json({ error: error.message });
@@ -5925,8 +5919,7 @@ app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
       periodoAnteriorFim: comparison.previousEnd ? prFormatBR(comparison.previousEnd) : "",
       variacaoHoras: ((anteriorHoras === 0 && horasAbs === 0) ? 0 : (anteriorHoras === 0 ? 100 : ((horasAbs - anteriorHoras) / anteriorHoras) * 100)),
       ultimaAtualizacao: getHoraAtualizacaoBR(),
-      }),
-    });
+      });
   } catch (error) {
     console.error("Erro /api/presenteismo-resumo:", error);
     return res.status(500).json({ ok: false, message: error.message });

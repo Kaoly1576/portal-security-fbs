@@ -152,21 +152,34 @@
     }
 
     .filters{
-  padding:14px;
-  margin-bottom:12px;
+  padding:16px;
+  margin-bottom:14px;
   position:relative;
-  z-index:50;
+  z-index:200;
   overflow:visible !important;
+  background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  box-shadow:0 10px 24px rgba(0,0,0,.28);
+  backdrop-filter:blur(4px);
 }
 
 .filters-grid{
   display:grid;
-  grid-template-columns:repeat(5,minmax(160px,1fr));
+  grid-template-columns:repeat(5,minmax(170px,1fr));
   gap:10px;
   align-items:end;
   overflow:visible !important;
   position:relative;
-  z-index:60;
+  z-index:210;
+}
+
+.filters-grid + .filters-grid{
+  margin-top:10px;
+}
+
+.filters-grid-third{
+  grid-template-columns: 1fr 2fr;
 }
 
 .field{
@@ -175,10 +188,39 @@
   overflow:visible !important;
 }
 
+.field label{
+  display:block;
+  margin-bottom:6px;
+  font-size:12px;
+  color:#fff;
+  font-weight:800;
+}
+
+.field input,
+.field select{
+  width:100%;
+  height:40px;
+  background:#071325;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  color:#fff;
+  padding:0 12px;
+  outline:none;
+  font-size:12px;
+}
+
+.field input::placeholder{
+  color:#94a3b8;
+}
+
+input[type="date"]{
+  color-scheme:dark;
+}
+
 .multi-select{
   position:relative;
   width:100%;
-  z-index:70;
+  z-index:220;
 }
 
 .multi-select.open{
@@ -187,7 +229,7 @@
 
 .multi-trigger{
   width:100%;
-  background:var(--input);
+  background:#071325;
   border:1px solid rgba(255,255,255,.08);
   color:#fff;
   border-radius:10px;
@@ -217,14 +259,14 @@
   top:44px;
   left:0;
   width:100%;
-  background:var(--input);
+  background:#071325;
   border:1px solid rgba(255,255,255,.08);
   border-radius:12px;
-  max-height:220px;
+  max-height:240px;
   overflow-y:auto;
   display:none;
   z-index:10000 !important;
-  box-shadow:0 10px 24px rgba(0,0,0,.35);
+  box-shadow:0 10px 24px rgba(0,0,0,.38);
   padding:6px;
 }
 
@@ -250,7 +292,7 @@
 .multi-option input{
   width:auto;
   height:auto;
-  accent-color:var(--orange);
+  accent-color:#ff7a1a;
 }
 
 .multi-actions{
@@ -262,7 +304,7 @@
   margin-bottom:4px;
   position:sticky;
   top:0;
-  background:var(--input);
+  background:#071325;
   z-index:2;
 }
 
@@ -277,215 +319,63 @@
   cursor:pointer;
 }
 
-    .multi-actions button:hover{
-      background:#243756;
-    }
+.multi-actions button:hover{
+  background:#243756;
+}
 
-    .search-span-2{
-      grid-column:span 2;
-    }
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  flex-wrap:wrap;
+}
 
-    .actions{
-      display:flex;
-      gap:8px;
-      margin-top:10px;
-      flex-wrap:wrap;
-    }
+.btn-primary{
+  height:40px;
+  border:none;
+  border-radius:10px;
+  padding:0 16px;
+  background:linear-gradient(90deg,#ff7a1a,#ff4d4f);
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
 
-    .btn-primary{
-      height:40px;
-      border:none;
-      border-radius:10px;
-      padding:0 16px;
-      background:linear-gradient(90deg,var(--orange),#ff4d4f);
-      color:#fff;
-      font-weight:800;
-      cursor:pointer;
-    }
+.btn-ghost{
+  height:40px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  padding:0 16px;
+  background:#242424;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
 
-    .btn-ghost{
-      height:40px;
-      border:1px solid var(--line);
-      border-radius:10px;
-      padding:0 16px;
-      background:#242424;
-      color:#fff;
-      font-weight:700;
-      cursor:pointer;
-    }
+.kpis,
+.grid-top,
+.grid-middle,
+.grid-bottom,
+.wide-panel{
+  position:relative;
+  z-index:1;
+}
 
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(6,minmax(0,1fr));
-      gap:12px;
-      margin-bottom:12px;
-      position:relative;
-      z-index:1;
-    }
+@media (max-width:1280px){
+  .filters-grid{
+    grid-template-columns:repeat(2,minmax(180px,1fr));
+  }
 
-    .kpi{
-      padding:14px;
-      min-height:92px;
-      position:relative;
-      z-index:1;
-    }
+  .filters-grid-third{
+    grid-template-columns:1fr;
+  }
+}
 
-    .kpi-title{
-      font-size:11px;
-      text-transform:uppercase;
-      color:#fff;
-      margin-bottom:10px;
-      font-weight:800;
-    }
-
-    .kpi-value{
-      font-size:24px;
-      font-weight:900;
-      line-height:1.1;
-    }
-
-    .kpi-sub{
-      font-size:12px;
-      color:var(--muted);
-      margin-top:4px;
-      line-height:1.35;
-    }
-
-    .orange{color:var(--orange)}
-    .blue{color:var(--blue)}
-    .green{color:var(--green)}
-    .red{color:var(--red)}
-    .purple{color:var(--purple)}
-    .yellow{color:var(--yellow)}
-
-    .grid-top{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:12px;
-      margin-bottom:12px;
-      position:relative;
-      z-index:1;
-    }
-
-    .grid-middle{
-      display:grid;
-      grid-template-columns:1.2fr 1fr;
-      gap:12px;
-      margin-bottom:12px;
-      position:relative;
-      z-index:1;
-    }
-
-    .grid-bottom{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:12px;
-      margin-bottom:12px;
-      position:relative;
-      z-index:1;
-    }
-
-    .panel{
-      padding:14px;
-      min-height:250px;
-      overflow:hidden;
-      position:relative;
-      z-index:1;
-    }
-
-    .panel-title{
-      color:var(--orange);
-      font-weight:900;
-      font-size:14px;
-      margin-bottom:12px;
-      text-align:center;
-    }
-
-    .panel-subtitle{
-      color:#cdd6e0;
-      font-size:11px;
-      margin-bottom:10px;
-    }
-
-    .chart-box{
-      height:250px;
-      position:relative;
-    }
-
-    .chart-box.tall{
-      height:320px;
-    }
-
-    .chart-box.line{
-      height:280px;
-    }
-
-    .wide-panel{
-      padding:14px;
-      margin-bottom:14px;
-      position:relative;
-      z-index:1;
-    }
-
-    .detail-wrap{
-      overflow:auto;
-      max-height:520px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,0.06);
-    }
-
-    .detail-table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:1350px;
-      font-size:12px;
-      background:#091322;
-    }
-
-    .detail-table th,.detail-table td{
-      padding:8px 10px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      text-align:left;
-      white-space:nowrap;
-    }
-
-    .detail-table th{
-      position:sticky;
-      top:0;
-      background:var(--th);
-      z-index:1;
-      color:#d6d6d6;
-    }
-
-    .pager{
-      margin-top:12px;
-      display:flex;
-      justify-content:flex-end;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-
-    .pager-info{
-      margin-right:auto;
-      color:var(--muted);
-      font-size:12px;
-      display:flex;
-      align-items:center;
-    }
-
-    @media (max-width:1280px){
-      .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
-      .search-span-2{grid-column:span 1}
-    }
-
-    @media (max-width:768px){
-      .filters-grid,.kpis{grid-template-columns:1fr}
-      .hero-right{text-align:left}
-      .kpi-value{font-size:20px}
-      .topbar,.hero{flex-direction:column;align-items:flex-start}
-    }
-  </style>
+@media (max-width:768px){
+  .filters-grid{
+    grid-template-columns:1fr;
+  }
+}  </style>
 </head>
 <body>
   <div class="page">
@@ -512,107 +402,109 @@
     </section>
 
     <section class="filters">
-      <div class="filters-grid">
-        <div class="field">
-          <label>Período</label>
-          <select id="filtroPeriodoTipo">
-            <option value="mes">Mês</option>
-            <option value="dia">Dia</option>
-            <option value="semana">Semana</option>
-            <option value="ano">Ano</option>
-          </select>
-        </div>
+  <div class="filters-grid">
+    <div class="field">
+      <label>Período</label>
+      <select id="filtroPeriodoTipo">
+        <option value="mes">Mês</option>
+        <option value="dia">Dia</option>
+        <option value="semana">Semana</option>
+        <option value="ano">Ano</option>
+      </select>
+    </div>
 
-        <div class="field">
-          <label>Data de referência</label>
-          <input type="date" id="filtroDataRef" />
-        </div>
+    <div class="field">
+      <label>Data de referência</label>
+      <input type="date" id="filtroDataRef" />
+    </div>
 
-        <div class="field">
-          <label>Unidade</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
-            <div class="multi-menu" id="menuUnidade"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Elaborado por</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerElaborador">Todos</button>
-            <div class="multi-menu" id="menuElaborador"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Função</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerFuncao">Todas</button>
-            <div class="multi-menu" id="menuFuncao"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Estado</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerEstado">Todos</button>
-            <div class="multi-menu" id="menuEstado"></div>
-          </div>
-        </div>
+    <div class="field">
+      <label>Unidade</label>
+      <div class="multi-select" id="multiUnidade">
+        <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
+        <div class="multi-menu" id="menuUnidade"></div>
       </div>
+    </div>
 
-      <div class="filters-grid" style="margin-top:10px;">
-        <div class="field">
-          <label>Cidade</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerCidade">Todas</button>
-            <div class="multi-menu" id="menuCidade"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Tópico</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerTopico">Todos</button>
-            <div class="multi-menu" id="menuTopico"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Gera NC</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerGeraNc">Todos</button>
-            <div class="multi-menu" id="menuGeraNc"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Situação do prazo</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerPrazo">Todos</button>
-            <div class="multi-menu" id="menuPrazo"></div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Área responsável</label>
-          <div class="multi-select">
-            <button type="button" class="multi-trigger" id="triggerArea">Todas</button>
-            <div class="multi-menu" id="menuArea"></div>
-          </div>
-        </div>
-
-        <div class="field search-span-2">
-          <label>Busca geral</label>
-          <input type="text" id="filtroBusca" placeholder="Buscar por registro, unidade, tópico, pergunta, responsável..." />
-        </div>
+    <div class="field">
+      <label>Elaborado por</label>
+      <div class="multi-select" id="multiElaborado">
+        <button type="button" class="multi-trigger" id="triggerElaborado">Todos</button>
+        <div class="multi-menu" id="menuElaborado"></div>
       </div>
+    </div>
 
-      <div class="actions">
-        <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
-        <button class="btn-ghost" id="btnLimpar">Limpar filtros</button>
+    <div class="field">
+      <label>Função</label>
+      <div class="multi-select" id="multiFuncao">
+        <button type="button" class="multi-trigger" id="triggerFuncao">Todas</button>
+        <div class="multi-menu" id="menuFuncao"></div>
       </div>
-    </section>
+    </div>
+  </div>
+
+  <div class="filters-grid filters-grid-second">
+    <div class="field">
+      <label>Estado</label>
+      <div class="multi-select" id="multiEstado">
+        <button type="button" class="multi-trigger" id="triggerEstado">Todos</button>
+        <div class="multi-menu" id="menuEstado"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Cidade</label>
+      <div class="multi-select" id="multiCidade">
+        <button type="button" class="multi-trigger" id="triggerCidade">Todas</button>
+        <div class="multi-menu" id="menuCidade"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Tópico</label>
+      <div class="multi-select" id="multiTopico">
+        <button type="button" class="multi-trigger" id="triggerTopico">Todos</button>
+        <div class="multi-menu" id="menuTopico"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Gera NC</label>
+      <div class="multi-select" id="multiGeraNc">
+        <button type="button" class="multi-trigger" id="triggerGeraNc">Todos</button>
+        <div class="multi-menu" id="menuGeraNc"></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Situação do prazo</label>
+      <div class="multi-select" id="multiSituacaoPrazo">
+        <button type="button" class="multi-trigger" id="triggerSituacaoPrazo">Todos</button>
+        <div class="multi-menu" id="menuSituacaoPrazo"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters-grid filters-grid-third">
+    <div class="field">
+      <label>Área responsável</label>
+      <div class="multi-select" id="multiAreaResponsavel">
+        <button type="button" class="multi-trigger" id="triggerAreaResponsavel">Todas</button>
+        <div class="multi-menu" id="menuAreaResponsavel"></div>
+      </div>
+    </div>
+
+    <div class="field field-busca">
+      <label>Busca geral</label>
+      <input type="text" id="filtroBusca" placeholder="Buscar por registro, unidade, tópico, responsável..." />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
+    <button class="btn-ghost" id="btnLimpar">Limpar filtros</button>
+  </div>
+</section>
 
     <section class="kpis">
       <div class="kpi">

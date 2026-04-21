@@ -6,717 +6,445 @@
   <title>CHECKLIST</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial, Helvetica, sans-serif}
-
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
     :root{
-      --bg1:#4b5563;
-      --bg2:#111827;
-      --bg3:#050c18;
-      --input:#071325;
-      --th:#111c33;
-      --line:rgba(255,255,255,0.08);
-      --text:#ffffff;
-      --muted:#cbd5e1;
-      --orange:#ff7a1a;
-      --blue:#58a6ff;
-      --green:#22c55e;
-      --red:#ef4444;
-      --purple:#8b5cf6;
-      --yellow:#f59e0b;
+      --bg1:#4b5563;--bg2:#111827;--bg3:#050c18;--input:#071325;--th:#111c33;
+      --line:rgba(255,255,255,.08);--text:#fff;--muted:#cbd5e1;--orange:#ff7a1a;
+      --blue:#58a6ff;--green:#22c55e;--red:#ef4444;--purple:#a855f7;
     }
-
-    html,body{
-      min-height:100%;
-      overflow-x:hidden;
-    }
-
+    html,body{min-height:100%;overflow-x:hidden}
     body{
       background:
-        radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
-        linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 24%, var(--bg3) 52%, var(--bg3) 100%);
-      color:var(--text);
+        radial-gradient(circle at top,rgba(255,255,255,.14),transparent 35%),
+        linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 24%,var(--bg3) 52%,var(--bg3) 100%);
+      color:var(--text)
     }
-
-    .page{
-      max-width:1550px;
-      margin:0 auto;
-      padding:14px;
-    }
-
+    .page{max-width:1500px;margin:0 auto;padding:14px}
     .topbar,.hero,.filters,.panel,.wide-panel,.kpi{
-      background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-      border:1px solid var(--line);
-      border-radius:16px;
-      box-shadow:0 10px 24px rgba(0,0,0,0.28);
-      backdrop-filter: blur(4px);
+      background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+      border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.28);backdrop-filter:blur(4px)
     }
-
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:16px;
-      margin-bottom:12px;
-      padding:14px 16px;
-      flex-wrap:wrap;
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-
-    .brand-logo{
-      width:44px;
-      height:44px;
-      object-fit:contain;
-      border-radius:50%;
-      background:#1a120d;
-      padding:6px;
-      border:1px solid rgba(255,255,255,0.08);
-    }
-
-    .brand-text h1{
-      color:var(--orange);
-      font-size:18px;
-      font-weight:900;
-      line-height:1;
-    }
-
-    .brand-text p{
-      font-size:11px;
-      color:var(--muted);
-      margin-top:4px;
-    }
-
-    .btn{
-      background:rgba(255,255,255,0.08);
-      border:1px solid var(--line);
-      color:#fff;
-      padding:10px 16px;
-      border-radius:12px;
-      text-decoration:none;
-      font-size:12px;
-      font-weight:800;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      transition:.2s ease;
-    }
-
-    .btn:hover{
-      background:rgba(255,255,255,0.14);
-    }
-
-    .hero{
-      padding:16px 18px;
-      display:flex;
-      justify-content:space-between;
-      gap:16px;
-      align-items:center;
-      margin-bottom:12px;
-      flex-wrap:wrap;
-    }
-
-    .hero h2{
-      font-size:18px;
-      margin-bottom:6px;
-    }
-
-    .hero p{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.5;
-      max-width:980px;
-    }
-
-    .hero-right{
-      text-align:right;
-      min-width:160px;
-    }
-
-    .hero-right .small{
-      color:var(--muted);
-      font-size:11px;
-      margin-bottom:6px;
-    }
-
-    .hero-right .time{
-      color:var(--orange);
-      font-weight:900;
-      font-size:22px;
-    }
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:12px;padding:14px 16px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:14px}
+    .brand-logo{width:44px;height:44px;object-fit:contain;border-radius:50%;background:#1a120d;padding:6px;border:1px solid rgba(255,255,255,.08)}
+    .brand-text h1{color:var(--orange);font-size:18px;font-weight:900;line-height:1}
+    .brand-text p{font-size:11px;color:var(--muted);margin-top:4px}
+    .btn{background:rgba(255,255,255,.08);border:1px solid var(--line);color:#fff;padding:10px 16px;border-radius:12px;text-decoration:none;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.2s ease}
+    .btn:hover{background:rgba(255,255,255,.14)}
+    .hero{padding:16px 18px;display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+    .hero h2{font-size:18px;margin-bottom:6px}
+    .hero p{color:var(--muted);font-size:12px;line-height:1.5;max-width:860px}
+    .hero-right{text-align:right;min-width:170px}
+    .hero-right .small{color:var(--muted);font-size:11px;margin-bottom:6px}
+    .hero-right .time{color:var(--orange);font-weight:900;font-size:22px}
 
     .filters{
-  padding:16px;
-  margin-bottom:14px;
-  position:relative;
-  z-index:200;
-  overflow:visible !important;
-  background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;
-  box-shadow:0 10px 24px rgba(0,0,0,.28);
-  backdrop-filter:blur(4px);
-}
+      padding:16px;
+      margin-bottom:14px;
+      position:relative;
+      z-index:200;
+      overflow:visible !important;
+    }
+    .filters-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(170px,1fr));
+      gap:10px;
+      align-items:end;
+      overflow:visible !important;
+      position:relative;
+      z-index:210;
+    }
+    .filters-grid + .filters-grid{margin-top:10px}
+    .filters-grid-third{grid-template-columns:1fr 2fr}
+    .field{min-width:0;position:relative;overflow:visible !important}
+    .field label{display:block;margin-bottom:6px;font-size:12px;color:#fff;font-weight:800}
+    .field input,.field select{
+      width:100%;height:40px;background:var(--input);border:1px solid rgba(255,255,255,.08);
+      border-radius:10px;color:#fff;padding:0 12px;outline:none;font-size:12px
+    }
+    .field input::placeholder{color:#94a3b8}
+    input[type="date"]{color-scheme:dark}
 
-.filters-grid{
-  display:grid;
-  grid-template-columns:repeat(5,minmax(170px,1fr));
-  gap:10px;
-  align-items:end;
-  overflow:visible !important;
-  position:relative;
-  z-index:210;
-}
+    .multi-select{position:relative;width:100%;z-index:220}
+    .multi-select.open{z-index:9999 !important}
+    .multi-trigger{
+      width:100%;background:var(--input);border:1px solid rgba(255,255,255,.08);color:#fff;
+      border-radius:10px;padding:0 34px 0 12px;font-size:12px;height:40px;display:flex;
+      align-items:center;cursor:pointer;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    .multi-trigger::after{
+      content:"▼";position:absolute;right:12px;font-size:10px;color:#cbd5e1;pointer-events:none
+    }
+    .multi-menu{
+      position:absolute;top:44px;left:0;width:100%;background:var(--input);
+      border:1px solid rgba(255,255,255,.08);border-radius:12px;max-height:240px;
+      overflow-y:auto;display:none;z-index:10000 !important;box-shadow:0 10px 24px rgba(0,0,0,.38);padding:6px
+    }
+    .multi-select.open .multi-menu{display:block}
+    .multi-option{
+      display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;
+      cursor:pointer;font-size:12px;color:#fff
+    }
+    .multi-option:hover{background:#1a2942}
+    .multi-option input{width:auto;height:auto;accent-color:var(--orange)}
+    .multi-actions{
+      display:flex;justify-content:space-between;gap:6px;padding:6px;border-bottom:1px solid rgba(255,255,255,.06);
+      margin-bottom:4px;position:sticky;top:0;background:var(--input);z-index:2
+    }
+    .multi-actions button{
+      flex:1;background:#1a2942;color:#fff;border:none;border-radius:8px;padding:6px 8px;font-size:11px;cursor:pointer
+    }
+    .multi-actions button:hover{background:#243756}
 
-.filters-grid + .filters-grid{
-  margin-top:10px;
-}
+    .actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+    .btn-primary{
+      height:40px;border:none;border-radius:10px;padding:0 16px;
+      background:linear-gradient(90deg,var(--orange),#ff4d4f);color:#fff;font-weight:800;cursor:pointer
+    }
+    .btn-ghost{
+      height:40px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:0 16px;
+      background:#242424;color:#fff;font-weight:700;cursor:pointer
+    }
 
-.filters-grid-third{
-  grid-template-columns: 1fr 2fr;
-}
+    .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:12px;position:relative;z-index:1}
+    .kpi{padding:14px;min-height:96px}
+    .kpi-title{font-size:11px;text-transform:uppercase;color:#fff;margin-bottom:10px;font-weight:800}
+    .kpi-value{font-size:24px;font-weight:900;line-height:1.1}
+    .kpi-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+    .orange{color:var(--orange)} .blue{color:var(--blue)} .green{color:var(--green)} .red{color:var(--red)} .purple{color:var(--purple)}
 
-.field{
-  min-width:0;
-  position:relative;
-  overflow:visible !important;
-}
+    .grid-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;position:relative;z-index:1}
+    .grid-middle{display:grid;grid-template-columns:1.15fr 1fr;gap:12px;margin-bottom:12px;position:relative;z-index:1}
+    .grid-bottom{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px;position:relative;z-index:1}
 
-.field label{
-  display:block;
-  margin-bottom:6px;
-  font-size:12px;
-  color:#fff;
-  font-weight:800;
-}
+    .panel{padding:14px;min-height:260px;overflow:hidden;position:relative}
+    .panel-title{color:var(--orange);font-weight:900;font-size:14px;margin-bottom:12px;text-align:center}
+    .panel-subtitle{color:#cdd6e0;font-size:11px;margin-bottom:10px}
+    .chart-box{height:250px;position:relative}
+    .chart-box.line{height:290px}
 
-.field input,
-.field select{
-  width:100%;
-  height:40px;
-  background:#071325;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:10px;
-  color:#fff;
-  padding:0 12px;
-  outline:none;
-  font-size:12px;
-}
+    .wide-panel{padding:14px;margin-bottom:14px;position:relative;z-index:1}
+    .detail-wrap{overflow:auto;max-height:520px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+    .detail-table{width:100%;border-collapse:collapse;min-width:1100px;font-size:12px;background:#091322}
+    .detail-table th,.detail-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;white-space:nowrap}
+    .detail-table th{position:sticky;top:0;background:var(--th);z-index:1;color:#d6d6d6}
+    .pager{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    .pager-info{margin-right:auto;color:var(--muted);font-size:12px;display:flex;align-items:center}
 
-.field input::placeholder{
-  color:#94a3b8;
-}
-
-input[type="date"]{
-  color-scheme:dark;
-}
-
-.multi-select{
-  position:relative;
-  width:100%;
-  z-index:220;
-}
-
-.multi-select.open{
-  z-index:9999 !important;
-}
-
-.multi-trigger{
-  width:100%;
-  background:#071325;
-  border:1px solid rgba(255,255,255,.08);
-  color:#fff;
-  border-radius:10px;
-  padding:0 34px 0 12px;
-  font-size:12px;
-  height:40px;
-  display:flex;
-  align-items:center;
-  cursor:pointer;
-  position:relative;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.multi-trigger::after{
-  content:"▼";
-  position:absolute;
-  right:12px;
-  font-size:10px;
-  color:#cbd5e1;
-  pointer-events:none;
-}
-
-.multi-menu{
-  position:absolute;
-  top:44px;
-  left:0;
-  width:100%;
-  background:#071325;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:12px;
-  max-height:240px;
-  overflow-y:auto;
-  display:none;
-  z-index:10000 !important;
-  box-shadow:0 10px 24px rgba(0,0,0,.38);
-  padding:6px;
-}
-
-.multi-select.open .multi-menu{
-  display:block;
-}
-
-.multi-option{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:12px;
-  color:#fff;
-}
-
-.multi-option:hover{
-  background:#1a2942;
-}
-
-.multi-option input{
-  width:auto;
-  height:auto;
-  accent-color:#ff7a1a;
-}
-
-.multi-actions{
-  display:flex;
-  justify-content:space-between;
-  gap:6px;
-  padding:6px;
-  border-bottom:1px solid rgba(255,255,255,.06);
-  margin-bottom:4px;
-  position:sticky;
-  top:0;
-  background:#071325;
-  z-index:2;
-}
-
-.multi-actions button{
-  flex:1;
-  background:#1a2942;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  padding:6px 8px;
-  font-size:11px;
-  cursor:pointer;
-}
-
-.multi-actions button:hover{
-  background:#243756;
-}
-
-.actions{
-  display:flex;
-  gap:10px;
-  margin-top:12px;
-  flex-wrap:wrap;
-}
-
-.btn-primary{
-  height:40px;
-  border:none;
-  border-radius:10px;
-  padding:0 16px;
-  background:linear-gradient(90deg,#ff7a1a,#ff4d4f);
-  color:#fff;
-  font-weight:800;
-  cursor:pointer;
-}
-
-.btn-ghost{
-  height:40px;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:10px;
-  padding:0 16px;
-  background:#242424;
-  color:#fff;
-  font-weight:700;
-  cursor:pointer;
-}
-
-.kpis,
-.grid-top,
-.grid-middle,
-.grid-bottom,
-.wide-panel{
-  position:relative;
-  z-index:1;
-}
-
-@media (max-width:1280px){
-  .filters-grid{
-    grid-template-columns:repeat(2,minmax(180px,1fr));
-  }
-
-  .filters-grid-third{
-    grid-template-columns:1fr;
-  }
-}
-
-@media (max-width:768px){
-  .filters-grid{
-    grid-template-columns:1fr;
-  }
-}  </style>
+    @media (max-width:1400px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media (max-width:1280px){
+      .filters-grid{grid-template-columns:repeat(2,minmax(180px,1fr))}
+      .filters-grid-third{grid-template-columns:1fr}
+      .grid-top,.grid-middle,.grid-bottom{grid-template-columns:1fr}
+    }
+    @media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:768px){
+      .filters-grid,.kpis{grid-template-columns:1fr}
+      .hero-right{text-align:left}
+      .kpi-value{font-size:20px}
+      .topbar,.hero{flex-direction:column;align-items:flex-start}
+    }
+  </style>
 </head>
 <body>
-  <div class="page">
-    <header class="topbar">
-      <div class="brand">
-        <img src="/images/logo.png" alt="Logo" class="brand-logo" />
-        <div class="brand-text">
-          <h1>CHECKLIST</h1>
-          <p>Dashboard operacional de checklists e conformidade</p>
-        </div>
-      </div>
-      <a href="/portal" class="btn">Voltar ao Portal</a>
-    </header>
-
-    <section class="hero">
-      <div>
-        <h2>Dashboard de Checklist</h2>
-        <p>Monitoramento consolidado por checklist, conformidade, não conformidades, responsáveis, tópicos, prazos e evolução diária.</p>
-      </div>
-      <div class="hero-right">
-        <div class="small">Última atualização</div>
-        <div class="time" id="ultimaAtualizacao">--:--</div>
-      </div>
-    </section>
-
-    <section class="filters">
-  <div class="filters-grid">
-    <div class="field">
-      <label>Período</label>
-      <select id="filtroPeriodoTipo">
-        <option value="mes">Mês</option>
-        <option value="dia">Dia</option>
-        <option value="semana">Semana</option>
-        <option value="ano">Ano</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>Data de referência</label>
-      <input type="date" id="filtroDataRef" />
-    </div>
-
-    <div class="field">
-      <label>Unidade</label>
-      <div class="multi-select" id="multiUnidade">
-        <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
-        <div class="multi-menu" id="menuUnidade"></div>
+<div class="page">
+  <header class="topbar">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Logo" class="brand-logo" />
+      <div class="brand-text">
+        <h1>CHECKLIST</h1>
+        <p>Dashboard operacional de checklists e conformidade</p>
       </div>
     </div>
+    <a href="/portal" class="btn">Voltar ao Portal</a>
+  </header>
 
-    <div class="field">
-      <label>Elaborado por</label>
-      <div class="multi-select" id="multiElaborado">
-        <button type="button" class="multi-trigger" id="triggerElaborado">Todos</button>
-        <div class="multi-menu" id="menuElaborado"></div>
-      </div>
+  <section class="hero">
+    <div>
+      <h2>Dashboard de Checklist</h2>
+      <p>Monitoramento consolidado por checklist, conformidade, não conformidades, responsáveis, tópicos, prazos e evolução diária.</p>
     </div>
-
-    <div class="field">
-      <label>Função</label>
-      <div class="multi-select" id="multiFuncao">
-        <button type="button" class="multi-trigger" id="triggerFuncao">Todas</button>
-        <div class="multi-menu" id="menuFuncao"></div>
-      </div>
+    <div class="hero-right">
+      <div class="small">Última atualização</div>
+      <div class="time" id="ultimaAtualizacao">--:--</div>
     </div>
-  </div>
+  </section>
 
-  <div class="filters-grid filters-grid-second">
-    <div class="field">
-      <label>Estado</label>
-      <div class="multi-select" id="multiEstado">
-        <button type="button" class="multi-trigger" id="triggerEstado">Todos</button>
-        <div class="multi-menu" id="menuEstado"></div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Cidade</label>
-      <div class="multi-select" id="multiCidade">
-        <button type="button" class="multi-trigger" id="triggerCidade">Todas</button>
-        <div class="multi-menu" id="menuCidade"></div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Tópico</label>
-      <div class="multi-select" id="multiTopico">
-        <button type="button" class="multi-trigger" id="triggerTopico">Todos</button>
-        <div class="multi-menu" id="menuTopico"></div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Gera NC</label>
-      <div class="multi-select" id="multiGeraNc">
-        <button type="button" class="multi-trigger" id="triggerGeraNc">Todos</button>
-        <div class="multi-menu" id="menuGeraNc"></div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Situação do prazo</label>
-      <div class="multi-select" id="multiSituacaoPrazo">
-        <button type="button" class="multi-trigger" id="triggerSituacaoPrazo">Todos</button>
-        <div class="multi-menu" id="menuSituacaoPrazo"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="filters-grid filters-grid-third">
-    <div class="field">
-      <label>Área responsável</label>
-      <div class="multi-select" id="multiAreaResponsavel">
-        <button type="button" class="multi-trigger" id="triggerAreaResponsavel">Todas</button>
-        <div class="multi-menu" id="menuAreaResponsavel"></div>
-      </div>
-    </div>
-
-    <div class="field field-busca">
-      <label>Busca geral</label>
-      <input type="text" id="filtroBusca" placeholder="Buscar por registro, unidade, tópico, responsável..." />
-    </div>
-  </div>
-
-  <div class="actions">
-    <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
-    <button class="btn-ghost" id="btnLimpar">Limpar filtros</button>
-  </div>
-</section>
-
-    <section class="kpis">
-      <div class="kpi">
-        <div class="kpi-title">Total de checklists</div>
-        <div class="kpi-value orange" id="kpiTotal">0</div>
-        <div class="kpi-sub">Total consolidado</div>
+  <section class="filters">
+    <div class="filters-grid">
+      <div class="field">
+        <label>Período</label>
+        <select id="filtroPeriodoTipo">
+          <option value="mes">Mês</option>
+          <option value="dia">Dia</option>
+          <option value="semana">Semana</option>
+          <option value="ano">Ano</option>
+        </select>
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Checklists conformes</div>
-        <div class="kpi-value green" id="kpiConformes">0</div>
-        <div class="kpi-sub">Sem não conformidade</div>
+      <div class="field">
+        <label>Data de referência</label>
+        <input type="date" id="filtroDataRef" />
       </div>
 
-      <div class="kpi">
-        <div class="kpi-title">Checklists com NC</div>
-        <div class="kpi-value red" id="kpiNc">0</div>
-        <div class="kpi-sub">Com pelo menos uma NC</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Taxa de conformidade</div>
-        <div class="kpi-value orange" id="kpiTaxa">0,0%</div>
-        <div class="kpi-sub">Base do período</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Pendências em aberto</div>
-        <div class="kpi-value yellow" id="kpiPendencias">0</div>
-        <div class="kpi-sub">Itens fora do prazo / pendentes</div>
-      </div>
-
-      <div class="kpi">
-        <div class="kpi-title">Média de pontuação</div>
-        <div class="kpi-value purple" id="kpiPontuacao">0,0</div>
-        <div class="kpi-sub">Média por checklist</div>
-      </div>
-    </section>
-
-    <section class="grid-top">
-      <div class="panel">
-        <div class="panel-title">Checklists por Unidade</div>
-        <div class="panel-subtitle">Top unidades</div>
-        <div class="chart-box">
-          <canvas id="chartUnidade"></canvas>
+      <div class="field">
+        <label>Unidade</label>
+        <div class="multi-select" id="multiUnidade">
+          <button type="button" class="multi-trigger" id="triggerUnidade">Todas</button>
+          <div class="multi-menu" id="menuUnidade"></div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">Checklists por Tópico</div>
-        <div class="panel-subtitle">Distribuição por tema</div>
-        <div class="chart-box">
-          <canvas id="chartTopico"></canvas>
+      <div class="field">
+        <label>Elaborado por</label>
+        <div class="multi-select" id="multiElaborado">
+          <button type="button" class="multi-trigger" id="triggerElaborado">Todos</button>
+          <div class="multi-menu" id="menuElaborado"></div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">Situação dos Prazos</div>
-        <div class="panel-subtitle">Controle das ações</div>
-        <div class="chart-box">
-          <canvas id="chartPrazo"></canvas>
+      <div class="field">
+        <label>Função</label>
+        <div class="multi-select" id="multiFuncao">
+          <button type="button" class="multi-trigger" id="triggerFuncao">Todas</button>
+          <div class="multi-menu" id="menuFuncao"></div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="grid-middle">
-      <div class="panel">
-        <div class="panel-title">Checklists por Dia</div>
-        <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
-        <div class="chart-box line">
-          <canvas id="chartDia"></canvas>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title">Comparativo do Período</div>
-        <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
-        <div class="chart-box">
-          <canvas id="chartComparativo"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <section class="grid-bottom">
-      <div class="panel">
-        <div class="panel-title">Perguntas com Mais NC</div>
-        <div class="panel-subtitle">Top não conformidades</div>
-        <div class="chart-box tall">
-          <canvas id="chartPerguntas"></canvas>
+    <div class="filters-grid">
+      <div class="field">
+        <label>Estado</label>
+        <div class="multi-select" id="multiEstado">
+          <button type="button" class="multi-trigger" id="triggerEstado">Todos</button>
+          <div class="multi-menu" id="menuEstado"></div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">Checklists por Elaborador</div>
-        <div class="panel-subtitle">Top responsáveis pela elaboração</div>
-        <div class="chart-box tall">
-          <canvas id="chartElaborador"></canvas>
+      <div class="field">
+        <label>Cidade</label>
+        <div class="multi-select" id="multiCidade">
+          <button type="button" class="multi-trigger" id="triggerCidade">Todas</button>
+          <div class="multi-menu" id="menuCidade"></div>
         </div>
       </div>
-    </section>
 
-    <section class="wide-panel">
-      <div class="panel-title">Detalhamento por Checklist</div>
-      <div class="detail-wrap" id="detailWrap"></div>
-      <div class="pager">
-        <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
-        <button class="btn-ghost" id="btnPrev">Anterior</button>
-        <button class="btn-ghost" id="btnNext">Próxima</button>
+      <div class="field">
+        <label>Tópico</label>
+        <div class="multi-select" id="multiTopico">
+          <button type="button" class="multi-trigger" id="triggerTopico">Todos</button>
+          <div class="multi-menu" id="menuTopico"></div>
+        </div>
       </div>
-    </section>
-  </div>
 
-  <script>
+      <div class="field">
+        <label>Gera NC</label>
+        <div class="multi-select" id="multiGeraNc">
+          <button type="button" class="multi-trigger" id="triggerGeraNc">Todos</button>
+          <div class="multi-menu" id="menuGeraNc"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Situação do prazo</label>
+        <div class="multi-select" id="multiSituacaoPrazo">
+          <button type="button" class="multi-trigger" id="triggerSituacaoPrazo">Todos</button>
+          <div class="multi-menu" id="menuSituacaoPrazo"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-grid filters-grid-third">
+      <div class="field">
+        <label>Área responsável</label>
+        <div class="multi-select" id="multiAreaResponsavel">
+          <button type="button" class="multi-trigger" id="triggerAreaResponsavel">Todas</button>
+          <div class="multi-menu" id="menuAreaResponsavel"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Busca geral</label>
+        <input type="text" id="filtroBusca" placeholder="Buscar por registro, unidade, tópico, responsável..." />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
+      <button class="btn-ghost" id="btnLimpar">Limpar filtros</button>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi">
+      <div class="kpi-title">Total de checklists</div>
+      <div class="kpi-value orange" id="cardTotal">0</div>
+      <div class="kpi-sub">Total consolidado</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Checklists conformes</div>
+      <div class="kpi-value green" id="cardOk">0</div>
+      <div class="kpi-sub">Sem não conformidade</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Checklists com NC</div>
+      <div class="kpi-value red" id="cardNok">0</div>
+      <div class="kpi-sub">Com pelo menos uma NC</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Taxa de conformidade</div>
+      <div class="kpi-value orange" id="cardTaxa">0,0%</div>
+      <div class="kpi-sub">Base do período</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Pendências em aberto</div>
+      <div class="kpi-value orange" id="cardPendencias">0</div>
+      <div class="kpi-sub">Itens fora do prazo / pendentes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-title">Média de pontuação</div>
+      <div class="kpi-value purple" id="cardMedia">0,0</div>
+      <div class="kpi-sub">Média por checklist</div>
+    </div>
+  </section>
+
+  <section class="grid-top">
+    <div class="panel">
+      <div class="panel-title">Checklists por Unidade</div>
+      <div class="panel-subtitle">Top unidades</div>
+      <div class="chart-box"><canvas id="chartUnidade"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Checklists por Tópico</div>
+      <div class="panel-subtitle">Distribuição por tema</div>
+      <div class="chart-box"><canvas id="chartTopico"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Situação dos Prazos</div>
+      <div class="panel-subtitle">Controle das ações</div>
+      <div class="chart-box"><canvas id="chartPrazo"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid-middle">
+    <div class="panel">
+      <div class="panel-title">Checklists por Dia</div>
+      <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
+      <div class="chart-box line"><canvas id="chartDia"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Comparativo do Período</div>
+      <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
+      <div class="chart-box"><canvas id="chartComparativo"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid-bottom">
+    <div class="panel">
+      <div class="panel-title">Perguntas com Mais NC</div>
+      <div class="panel-subtitle">Top perguntas críticas</div>
+      <div class="chart-box"><canvas id="chartPerguntasNc"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Checklists por Elaborador</div>
+      <div class="panel-subtitle">Responsáveis com mais checklists</div>
+      <div class="chart-box"><canvas id="chartElaborador"></canvas></div>
+    </div>
+  </section>
+
+  <section class="wide-panel">
+    <div class="panel-title">Detalhamento</div>
+    <div class="detail-wrap">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Registro ID</th>
+            <th>Data</th>
+            <th>Elaborador</th>
+            <th>Unidade</th>
+            <th>Função</th>
+            <th>Estado</th>
+            <th>Cidade</th>
+            <th>Total Itens</th>
+            <th>Total NC</th>
+            <th>Pendências</th>
+            <th>Conformidade</th>
+            <th>Média</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyDetalhes"></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
+      <button class="btn-ghost" id="btnPrev">Anterior</button>
+      <button class="btn-ghost" id="btnNext">Próxima</button>
+    </div>
+  </section>
+</div>
+
+<script>
 Chart.register(ChartDataLabels);
+
+let currentPage = 1;
+let totalPages = 1;
 
 let chartUnidade = null;
 let chartTopico = null;
 let chartPrazo = null;
 let chartDia = null;
 let chartComparativo = null;
-let chartPerguntas = null;
+let chartPerguntasNc = null;
 let chartElaborador = null;
 
-let currentPage = 1;
-let totalPages = 1;
-
-// ========================= HELPERS =========================
-function fmt(v) {
-  return new Intl.NumberFormat("pt-BR").format(Number(v || 0));
-}
-
-function fmtPct(v) {
-  return `${Number(v || 0).toLocaleString("pt-BR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  })}%`;
-}
-
-function fmtNum1(v) {
-  return Number(v || 0).toLocaleString("pt-BR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  });
-}
-
-function esc(v) {
-  return String(v ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+function esc(v){return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+function fmt(n){return new Intl.NumberFormat("pt-BR").format(Number(n||0));}
 
 function destroyCharts() {
-  if (chartUnidade) chartUnidade.destroy();
-  if (chartTopico) chartTopico.destroy();
-  if (chartPrazo) chartPrazo.destroy();
-  if (chartDia) chartDia.destroy();
-  if (chartComparativo) chartComparativo.destroy();
-  if (chartPerguntas) chartPerguntas.destroy();
-  if (chartElaborador) chartElaborador.destroy();
+  [chartUnidade, chartTopico, chartPrazo, chartDia, chartComparativo, chartPerguntasNc, chartElaborador]
+    .forEach(c => { if (c) c.destroy(); });
 
   chartUnidade = null;
   chartTopico = null;
   chartPrazo = null;
   chartDia = null;
   chartComparativo = null;
-  chartPerguntas = null;
+  chartPerguntasNc = null;
   chartElaborador = null;
 }
 
 function horizontalBarOptions() {
   return {
-    indexAxis: "y",
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: { color: "#fff" }
-      },
-      datalabels: {
-        color: "#fff",
-        anchor: "end",
-        align: "right",
-        formatter: (v) => v > 0 ? fmt(v) : "",
-        font: {
-          weight: "700",
-          size: 10
-        }
+    indexAxis:"y",
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      datalabels:{
+        color:"#ffffff",
+        anchor:"end",
+        align:"right",
+        font:{size:10,weight:"700"},
+        formatter:(v)=>v>0?fmt(v):""
       }
     },
-    scales: {
-      x: {
-        ticks: { color: "#cbd5e1" },
-        grid: { color: "rgba(255,255,255,0.05)" },
-        beginAtZero: true
-      },
-      y: {
-        ticks: { color: "#fff" },
-        grid: { display: false }
-      }
+    scales:{
+      x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true},
+      y:{ticks:{color:"#ffffff",font:{size:10}},grid:{display:false}}
     }
   };
 }
 
-// ========================= MULTISELECT =========================
-function createMultiSelect(menuId, triggerId, values, emptyLabel) {
+function createMultiSelect(menuId, triggerId, values, placeholder){
   const menu = document.getElementById(menuId);
   const trigger = document.getElementById(triggerId);
-
-  if (!menu || !trigger) return;
+  if(!menu || !trigger) return;
 
   menu.innerHTML = `
     <div class="multi-actions">
@@ -725,31 +453,26 @@ function createMultiSelect(menuId, triggerId, values, emptyLabel) {
     </div>
   `;
 
-  values.forEach((value) => {
+  values.forEach(value => {
     const label = document.createElement("label");
     label.className = "multi-option";
-    label.innerHTML = `
-      <input type="checkbox" value="${esc(value)}" />
-      <span>${esc(value)}</span>
-    `;
+    label.innerHTML = `<input type="checkbox" value="${String(value).replace(/"/g,'&quot;')}" /><span>${value}</span>`;
     menu.appendChild(label);
   });
 
-  function updateTrigger() {
+  function updateTrigger(){
     const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
-
-    if (!checked.length) {
-      trigger.textContent = emptyLabel;
-    } else if (checked.length === 1) {
-      trigger.textContent = checked[0];
-    } else {
-      trigger.textContent = `${checked.length} selecionados`;
-    }
+    if(!checked.length) trigger.textContent = placeholder;
+    else if(checked.length === 1) trigger.textContent = checked[0];
+    else trigger.textContent = `${checked.length} selecionados`;
   }
 
-  trigger.onclick = () => {
-    document.querySelectorAll(".multi-select").forEach((wrap) => {
-      if (wrap !== trigger.closest(".multi-select")) {
+  trigger.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    document.querySelectorAll(".multi-select").forEach(wrap => {
+      if(wrap !== trigger.closest(".multi-select")) {
         wrap.classList.remove("open");
       }
     });
@@ -758,25 +481,23 @@ function createMultiSelect(menuId, triggerId, values, emptyLabel) {
   };
 
   menu.addEventListener("click", (e) => {
+    e.stopPropagation();
+
     const action = e.target.dataset.action;
 
-    if (action === "all") {
-      menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-        input.checked = true;
-      });
+    if(action === "all"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
       updateTrigger();
       return;
     }
 
-    if (action === "clear") {
-      menu.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-        input.checked = false;
-      });
+    if(action === "clear"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
       updateTrigger();
       return;
     }
 
-    if (e.target.matches('input[type="checkbox"]')) {
+    if(e.target.matches('input[type="checkbox"]')){
       updateTrigger();
     }
   });
@@ -784,361 +505,254 @@ function createMultiSelect(menuId, triggerId, values, emptyLabel) {
   updateTrigger();
 }
 
-function closeAllMultiSelects() {
-  document.querySelectorAll(".multi-select").forEach((wrap) => {
+document.addEventListener("click", () => {
+  document.querySelectorAll(".multi-select").forEach(wrap => {
     wrap.classList.remove("open");
-  });
-}
-
-document.addEventListener("click", (e) => {
-  document.querySelectorAll(".multi-select").forEach((wrap) => {
-    if (!wrap.contains(e.target)) {
-      wrap.classList.remove("open");
-    }
   });
 });
 
-function getMultiValues(menuId) {
+function getMultiValues(menuId){
   return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
-    .map((el) => el.value)
+    .map(el => el.value)
     .join("|");
 }
 
-// ========================= QUERY =========================
-function getFiltersQuery(page = 1) {
+function getFiltersQuery(page=1){
   const qs = new URLSearchParams();
-
-  qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo")?.value || "mes");
-  qs.set("dataRef", document.getElementById("filtroDataRef")?.value || "");
+  qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
+  qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
   qs.set("unidade", getMultiValues("menuUnidade"));
-  qs.set("elaborador", getMultiValues("menuElaborador"));
+  qs.set("elaboradoPor", getMultiValues("menuElaborado"));
   qs.set("funcao", getMultiValues("menuFuncao"));
   qs.set("estado", getMultiValues("menuEstado"));
   qs.set("cidade", getMultiValues("menuCidade"));
   qs.set("topico", getMultiValues("menuTopico"));
   qs.set("geraNc", getMultiValues("menuGeraNc"));
-  qs.set("prazo", getMultiValues("menuPrazo"));
-  qs.set("area", getMultiValues("menuArea"));
-  qs.set("busca", document.getElementById("filtroBusca")?.value || "");
+  qs.set("situacaoPrazo", getMultiValues("menuSituacaoPrazo"));
+  qs.set("areaResponsavel", getMultiValues("menuAreaResponsavel"));
+  qs.set("busca", document.getElementById("filtroBusca").value || "");
   qs.set("page", page);
-  qs.set("limit", 20);
-
+  qs.set("limit", 25);
   return qs.toString();
 }
 
-// ========================= LOAD FILTROS =========================
-async function loadFiltros() {
-  const res = await fetch("/api/checklist-filtros", { credentials: "same-origin" });
+async function loadFiltros(){
+  const res = await fetch("/api/checklist-filtros", { credentials:"same-origin" });
   const data = await res.json();
 
-  createMultiSelect("menuUnidade", "triggerUnidade", data.unidade || [], "Todas");
-  createMultiSelect("menuElaborador", "triggerElaborador", data.elaborador || [], "Todos");
-  createMultiSelect("menuFuncao", "triggerFuncao", data.funcao || [], "Todas");
-  createMultiSelect("menuEstado", "triggerEstado", data.estado || [], "Todos");
-  createMultiSelect("menuCidade", "triggerCidade", data.cidade || [], "Todas");
-  createMultiSelect("menuTopico", "triggerTopico", data.topico || [], "Todos");
-  createMultiSelect("menuGeraNc", "triggerGeraNc", data.geraNc || [], "Todos");
-  createMultiSelect("menuPrazo", "triggerPrazo", data.prazo || [], "Todos");
-  createMultiSelect("menuArea", "triggerArea", data.area || [], "Todas");
-}
+  createMultiSelect("menuUnidade","triggerUnidade",data.unidade||[],"Todas");
+  createMultiSelect("menuElaborado","triggerElaborado",data.elaboradoPor||data.elaborador||[],"Todos");
+  createMultiSelect("menuFuncao","triggerFuncao",data.funcao||[],"Todas");
+  createMultiSelect("menuEstado","triggerEstado",data.estado||[],"Todos");
+  createMultiSelect("menuCidade","triggerCidade",data.cidade||[],"Todas");
+  createMultiSelect("menuTopico","triggerTopico",data.topico||[],"Todos");
+  createMultiSelect("menuGeraNc","triggerGeraNc",data.geraNc||[],"Todos");
+  createMultiSelect("menuSituacaoPrazo","triggerSituacaoPrazo",data.situacaoPrazo||data.prazo||[],"Todos");
+  createMultiSelect("menuAreaResponsavel","triggerAreaResponsavel",data.areaResponsavel||data.area||[],"Todas");
 
-// ========================= RESUMO =========================
-async function loadResumo(page = 1) {
-  const query = getFiltersQuery(page);
-  const resumo = await fetch(`/api/checklist-resumo?${query}`).then(r => r.json());
-
-  document.getElementById("kpiTotal").innerText = fmt(resumo.total);
-  document.getElementById("kpiConformes").innerText = fmt(resumo.ok);
-  document.getElementById("kpiNc").innerText = fmt(resumo.nok);
-  document.getElementById("kpiTaxa").innerText = fmtPct(resumo.taxa);
-  document.getElementById("kpiPendencias").innerText = fmt(resumo.pendencias || 0);
-  document.getElementById("kpiPontuacao").innerText = fmtNum1(resumo.media || 0);
-
-  const ultima = document.getElementById("ultimaAtualizacao");
-  if (ultima) {
-    ultima.innerText = resumo.ultimaAtualizacao || "--:--";
-  }
-
-  const subComparativo = document.getElementById("subComparativo");
-  if (subComparativo) {
-    subComparativo.innerText = resumo.comparativoLabel || "Atual x base anterior";
+  if (data.ultimaAtualizacao) {
+    document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao;
   }
 }
 
-// ========================= GRÁFICOS =========================
-async function loadGraficos(page = 1) {
-  const query = getFiltersQuery(page);
-  const graficos = await fetch(`/api/checklist-graficos?${query}`).then(r => r.json());
+async function loadResumo(page=1){
+  const res = await fetch(`/api/checklist-resumo?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
+
+  document.getElementById("cardTotal").textContent = fmt(data.total);
+  document.getElementById("cardOk").textContent = fmt(data.ok);
+  document.getElementById("cardNok").textContent = fmt(data.nok);
+  document.getElementById("cardTaxa").textContent = `${Number(data.taxa || 0).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}%`;
+  document.getElementById("cardPendencias").textContent = fmt(data.pendencias);
+  document.getElementById("cardMedia").textContent = Number(data.media || 0).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1});
+  document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+  document.getElementById("subComparativo").textContent =
+    `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
+}
+
+async function loadGraficos(page=1){
+  const res = await fetch(`/api/checklist-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
 
   destroyCharts();
 
-  const dias = Array.from({ length: 31 }, (_, i) => i + 1);
-  const valoresDia = dias.map(d => graficos.porDia?.[d] || 0);
-
-  chartDia = new Chart(document.getElementById("chartDia"), {
-    type: "bar",
-    data: {
-      labels: dias.map(d => String(d).padStart(2, "0")),
-      datasets: [{
-        label: "Checklists",
-        data: valoresDia,
-        backgroundColor: "#ff7a1a",
-        borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: "#fff" } },
-        datalabels: {
-          color: "#fff",
-          align: "top",
-          anchor: "end",
-          formatter: v => v > 0 ? fmt(v) : ""
-        }
-      },
-      scales: {
-        x: { ticks: { color: "#cbd5e1" }, grid: { display: false } },
-        y: { ticks: { color: "#cbd5e1" }, grid: { color: "rgba(255,255,255,0.05)" }, beginAtZero: true }
-      }
-    }
-  });
-
   chartUnidade = new Chart(document.getElementById("chartUnidade"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.unidade || {}),
-      datasets: [{
-        label: "Checklists",
-        data: Object.values(graficos.unidade || {}),
-        backgroundColor: "#ff7a1a",
-        borderRadius: 8
-      }]
+    type:"bar",
+    data:{
+      labels:Object.keys(data.unidade || {}),
+      datasets:[{ label:"Checklists", data:Object.values(data.unidade || {}), backgroundColor:"#ff7a1a", borderRadius:8 }]
     },
     options: horizontalBarOptions()
   });
 
   chartTopico = new Chart(document.getElementById("chartTopico"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.topico || {}),
-      datasets: [{
-        label: "Tópicos",
-        data: Object.values(graficos.topico || {}),
-        backgroundColor: "#ff7a1a",
-        borderRadius: 8
-      }]
+    type:"bar",
+    data:{
+      labels:Object.keys(data.topico || {}),
+      datasets:[{ label:"Tópicos", data:Object.values(data.topico || {}), backgroundColor:"#ff7a1a", borderRadius:8 }]
     },
     options: horizontalBarOptions()
   });
 
   chartPrazo = new Chart(document.getElementById("chartPrazo"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.prazo || {}),
-      datasets: [{
-        label: "Prazos",
-        data: Object.values(graficos.prazo || {}),
-        backgroundColor: "#ff7a1a",
-        borderRadius: 8
-      }]
+    type:"bar",
+    data:{
+      labels:Object.keys(data.prazo || {}),
+      datasets:[{ label:"Prazos", data:Object.values(data.prazo || {}), backgroundColor:"#ff7a1a", borderRadius:8 }]
     },
     options: horizontalBarOptions()
   });
 
-  chartPerguntas = new Chart(document.getElementById("chartPerguntas"), {
-    type: "bar",
-    data: {
-      labels: (graficos.perguntasErro || []).map(x => x[0]),
-      datasets: [{
-        label: "NC",
-        data: (graficos.perguntasErro || []).map(x => x[1]),
-        backgroundColor: "#ef4444",
-        borderRadius: 8
+  const dias = Array.from({length:31}, (_,i)=>String(i+1).padStart(2,"0"));
+  const valoresDia = dias.map((_, idx) => data.porDia?.[idx+1] || 0);
+
+  chartDia = new Chart(document.getElementById("chartDia"), {
+    type:"bar",
+    data:{
+      labels:dias,
+      datasets:[{ label:"Checklists", data:valoresDia, backgroundColor:"#ff7a1a", borderRadius:4 }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:"#fff"}},
+        datalabels:{
+          color:"#ffffff",
+          anchor:"end",
+          align:"top",
+          font:{size:10,weight:"700"},
+          formatter:(v)=>v>0?fmt(v):""
+        }
+      },
+      scales:{
+        x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
+      }
+    }
+  });
+
+  chartComparativo = new Chart(document.getElementById("chartComparativo"), {
+    type:"bar",
+    data:{
+      labels:["Período atual", data.comparativoMensal?.label || "Base anterior"],
+      datasets:[{
+        label:"Checklists",
+        data:[data.comparativoMensal?.mesAtual || 0, data.comparativoMensal?.mesAnterior || 0],
+        backgroundColor:["#ff7a1a","#58a6ff"],
+        borderRadius:8
       }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:"#fff"}},
+        datalabels:{
+          color:"#ffffff",
+          anchor:"end",
+          align:"top",
+          font:{size:10,weight:"700"},
+          formatter:(v)=>v>0?fmt(v):""
+        }
+      },
+      scales:{
+        x:{ticks:{color:"#fff",font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
+      }
+    }
+  });
+
+  const perguntas = data.perguntasErro || [];
+  chartPerguntasNc = new Chart(document.getElementById("chartPerguntasNc"), {
+    type:"bar",
+    data:{
+      labels:perguntas.map(x => x[0]),
+      datasets:[{ label:"NC", data:perguntas.map(x => x[1]), backgroundColor:"#ff7a1a", borderRadius:8 }]
     },
     options: horizontalBarOptions()
   });
 
   chartElaborador = new Chart(document.getElementById("chartElaborador"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(graficos.elaborador || {}),
-      datasets: [{
-        label: "Checklists",
-        data: Object.values(graficos.elaborador || {}),
-        backgroundColor: "#60a5fa",
-        borderRadius: 8
-      }]
+    type:"bar",
+    data:{
+      labels:Object.keys(data.elaborador || {}),
+      datasets:[{ label:"Elaboradores", data:Object.values(data.elaborador || {}), backgroundColor:"#58a6ff", borderRadius:8 }]
     },
     options: horizontalBarOptions()
   });
-
-  chartComparativo = new Chart(document.getElementById("chartComparativo"), {
-    type: "bar",
-    data: {
-      labels: ["Período atual", graficos.comparativoMensal?.label || "Base anterior"],
-      datasets: [{
-        label: "Checklists",
-        data: [
-          graficos.comparativoMensal?.mesAtual || 0,
-          graficos.comparativoMensal?.mesAnterior || 0
-        ],
-        backgroundColor: ["#ff7a1a", "#60a5fa"],
-        borderRadius: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: "#fff" } },
-        datalabels: {
-          color: "#fff",
-          align: "top",
-          anchor: "end",
-          formatter: v => fmt(v)
-        }
-      },
-      scales: {
-        x: { ticks: { color: "#cbd5e1" }, grid: { display: false } },
-        y: { ticks: { color: "#cbd5e1" }, grid: { color: "rgba(255,255,255,0.05)" }, beginAtZero: true }
-      }
-    }
-  });
 }
 
-// ========================= DETALHES =========================
-async function loadDetalhes(page = 1) {
-  currentPage = page;
+async function loadDetalhes(page=1){
+  const res = await fetch(`/api/checklist-detalhes?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
 
-  const query = getFiltersQuery(page);
-  const data = await fetch(`/api/checklist-detalhes?${query}`).then(r => r.json());
-
+  currentPage = data.page || 1;
   totalPages = data.totalPages || 1;
+  document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
 
-  const detailWrap = document.getElementById("detailWrap");
-  if (!detailWrap) return;
-
-  let html = `
-    <table class="detail-table">
-      <thead>
-        <tr>
-          <th>Registro ID</th>
-          <th>Data</th>
-          <th>Elaborador</th>
-          <th>Unidade</th>
-          <th>Função</th>
-          <th>Estado</th>
-          <th>Cidade</th>
-          <th>Total Itens</th>
-          <th>Total NC</th>
-          <th>Pendências</th>
-          <th>Conformidade</th>
-          <th>Média Pontuação</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  (data.rows || []).forEach((row) => {
-    html += `
-      <tr>
-        <td>${esc(row.registroId)}</td>
-        <td>${esc(row.data)}</td>
-        <td>${esc(row.elaborador)}</td>
-        <td>${esc(row.unidade)}</td>
-        <td>${esc(row.funcao)}</td>
-        <td>${esc(row.estado)}</td>
-        <td>${esc(row.cidade)}</td>
-        <td>${fmt(row.totalItens)}</td>
-        <td>${fmt(row.totalNc)}</td>
-        <td>${fmt(row.pendencias)}</td>
-        <td>${esc(row.conformidade)}</td>
-        <td>${esc(row.mediaPontuacao)}</td>
-      </tr>
-    `;
-  });
-
-  if (!(data.rows || []).length) {
-    html += `
-      <tr>
-        <td colspan="12" style="text-align:center;color:#cbd5e1;">Sem dados para os filtros aplicados.</td>
-      </tr>
-    `;
-  }
-
-  html += `</tbody></table>`;
-  detailWrap.innerHTML = html;
-
-  const pager = document.getElementById("pagerInfo");
-  if (pager) {
-    pager.innerText = `Página ${data.page || 1} de ${totalPages}`;
-  }
+  document.getElementById("tbodyDetalhes").innerHTML = (data.rows || []).map(row => `
+    <tr>
+      <td>${esc(row.registroId)}</td>
+      <td>${esc(row.data)}</td>
+      <td>${esc(row.elaborador)}</td>
+      <td>${esc(row.unidade)}</td>
+      <td>${esc(row.funcao)}</td>
+      <td>${esc(row.estado)}</td>
+      <td>${esc(row.cidade)}</td>
+      <td>${esc(row.totalItens)}</td>
+      <td>${esc(row.totalNc)}</td>
+      <td>${esc(row.pendencias)}</td>
+      <td>${esc(row.conformidade)}</td>
+      <td>${esc(row.mediaPontuacao)}</td>
+    </tr>
+  `).join("");
 }
 
-// ========================= LOAD ALL =========================
-async function carregarDashboard(page = 1) {
+async function loadAll(page=1){
   await loadResumo(page);
   await loadGraficos(page);
   await loadDetalhes(page);
 }
 
-// ========================= BOTÕES =========================
-document.getElementById("btnAplicar")?.addEventListener("click", () => {
-  carregarDashboard(1);
-});
+document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
 
-document.getElementById("btnLimpar")?.addEventListener("click", () => {
+document.getElementById("btnLimpar").addEventListener("click", () => {
   document.getElementById("filtroPeriodoTipo").value = "mes";
   document.getElementById("filtroDataRef").value = "";
   document.getElementById("filtroBusca").value = "";
 
-  document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach((input) => {
-    input.checked = false;
-  });
+  document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach(input => input.checked = false);
 
-  const resetMap = [
-    ["triggerUnidade", "Todas"],
-    ["triggerElaborador", "Todos"],
-    ["triggerFuncao", "Todas"],
-    ["triggerEstado", "Todos"],
-    ["triggerCidade", "Todas"],
-    ["triggerTopico", "Todos"],
-    ["triggerGeraNc", "Todos"],
-    ["triggerPrazo", "Todos"],
-    ["triggerArea", "Todas"],
-  ];
+  document.getElementById("triggerUnidade").textContent = "Todas";
+  document.getElementById("triggerElaborado").textContent = "Todos";
+  document.getElementById("triggerFuncao").textContent = "Todas";
+  document.getElementById("triggerEstado").textContent = "Todos";
+  document.getElementById("triggerCidade").textContent = "Todas";
+  document.getElementById("triggerTopico").textContent = "Todos";
+  document.getElementById("triggerGeraNc").textContent = "Todos";
+  document.getElementById("triggerSituacaoPrazo").textContent = "Todos";
+  document.getElementById("triggerAreaResponsavel").textContent = "Todas";
 
-  resetMap.forEach(([id, label]) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = label;
-  });
-
-  closeAllMultiSelects();
-  carregarDashboard(1);
+  loadAll(1);
 });
 
-document.getElementById("btnPrev")?.addEventListener("click", () => {
-  if (currentPage > 1) {
-    carregarDashboard(currentPage - 1);
-  }
+document.getElementById("btnPrev").addEventListener("click", () => {
+  if(currentPage > 1) loadAll(currentPage - 1);
 });
 
-document.getElementById("btnNext")?.addEventListener("click", () => {
-  if (currentPage < totalPages) {
-    carregarDashboard(currentPage + 1);
-  }
+document.getElementById("btnNext").addEventListener("click", () => {
+  if(currentPage < totalPages) loadAll(currentPage + 1);
 });
 
-// ========================= INIT =========================
-(async function initChecklist() {
+(async function init(){
   try {
     await loadFiltros();
-    await carregarDashboard(1);
+    await loadAll(1);
   } catch (error) {
-    console.error("Erro ao iniciar checklist:", error);
+    console.error("Erro no init do checklist:", error);
   }
 })();
 </script>
+</body>
+</html>

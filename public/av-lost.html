@@ -238,7 +238,7 @@ body{
 
 .kpi-grid{
   display:grid;
-  grid-template-columns:repeat(5, minmax(0, 1fr));
+  grid-template-columns:repeat(6, minmax(0, 1fr));
   gap:8px;
   margin-bottom:8px;
 }
@@ -517,10 +517,9 @@ tr:hover td{
     grid-template-columns:repeat(4, minmax(0, 1fr));
   }
 
-  .kpi-grid,
-  .kpi-grid-extra{
-    grid-template-columns:repeat(3, minmax(0, 1fr));
-  }
+  .kpi-grid{
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+}
 
   .chart-grid-middle{
     grid-template-columns:1fr;
@@ -539,10 +538,9 @@ tr:hover td{
   }
 
   .filters-grid,
-  .kpi-grid,
-  .kpi-grid-extra{
-    grid-template-columns:1fr;
-  }
+.kpi-grid{
+  grid-template-columns:1fr;
+}
 
   .toolbar{
     flex-direction:column;
@@ -668,44 +666,42 @@ tr:hover td{
   </section>
 
   <section class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-label">ENDEREÇOS CONTADOS</div>
-      <div class="kpi-value" id="kpiRegistros">0</div>
-      <div class="kpi-sub" id="kpiRegistrosSub">Sem comparativo</div>
-    </div>
+  <div class="kpi-card">
+    <div class="kpi-label">ENDEREÇOS CONTADOS</div>
+    <div class="kpi-value" id="kpiRegistros">0</div>
+    <div class="kpi-sub" id="kpiRegistrosSub">Sem comparativo</div>
+  </div>
 
-    <div class="kpi-card">
-      <div class="kpi-label">QUANTIDADE ENCONTRADA</div>
-      <div class="kpi-value" id="kpiQtdEncontrada">0</div>
-      <div class="kpi-sub" id="kpiQtdEncontradaSub">Sem comparativo</div>
-    </div>
+  <div class="kpi-card">
+    <div class="kpi-label">QUANTIDADE ENCONTRADA</div>
+    <div class="kpi-value" id="kpiQtdEncontrada">0</div>
+    <div class="kpi-sub" id="kpiQtdEncontradaSub">Sem comparativo</div>
+  </div>
 
-    <div class="kpi-card">
-      <div class="kpi-label">QUANTIDADE DE ITENS EM AV</div>
-      <div class="kpi-value" id="kpiAv">0</div>
-      <div class="kpi-sub" id="kpiAvSub">Sem comparativo</div>
-    </div>
+  <div class="kpi-card">
+    <div class="kpi-label">QUANTIDADE DE ITENS EM AV</div>
+    <div class="kpi-value" id="kpiAv">0</div>
+    <div class="kpi-sub" id="kpiAvSub">Sem comparativo</div>
+  </div>
 
-    <div class="kpi-card">
-      <div class="kpi-label">US$ Encontrado</div>
-      <div class="kpi-value" id="kpiUsd">$0.00</div>
-      <div class="kpi-sub" id="kpiUsdSub">Sem comparativo</div>
-    </div>
+  <div class="kpi-card">
+    <div class="kpi-label">DIFERENÇA AV x ENCONTRADA</div>
+    <div class="kpi-value" id="kpiDiferenca">0</div>
+    <div class="kpi-sub" id="kpiDiferencaSub">AV - Encontrada</div>
+  </div>
 
-    <div class="kpi-card">
-      <div class="kpi-label">R$ Encontrado</div>
-      <div class="kpi-value" id="kpiBrl">R$ 0,00</div>
-      <div class="kpi-sub" id="kpiBrlSub">Sem comparativo</div>
-    </div>
-  </section>
+  <div class="kpi-card">
+    <div class="kpi-label">US$ Encontrado</div>
+    <div class="kpi-value" id="kpiUsd">$0.00</div>
+    <div class="kpi-sub" id="kpiUsdSub">Sem comparativo</div>
+  </div>
 
-  <section class="kpi-grid-extra">
-    <div class="kpi-card">
-      <div class="kpi-label">DIFERENÇA AV x ENCONTRADA</div>
-      <div class="kpi-value" id="kpiDiferenca">0</div>
-      <div class="kpi-sub" id="kpiDiferencaSub">AV - Encontrada</div>
-    </div>
-  </section>
+  <div class="kpi-card">
+    <div class="kpi-label">R$ Encontrado</div>
+    <div class="kpi-value" id="kpiBrl">R$ 0,00</div>
+    <div class="kpi-sub" id="kpiBrlSub">Sem comparativo</div>
+  </div>
+</section>
 
   <section class="chart-grid-middle">
     <div class="chart-card">
@@ -889,11 +885,35 @@ function parseDateBR(value) {
   const parts = str.split("/");
   if (parts.length !== 3) return null;
 
-  const [day, month, year] = parts.map(Number);
-  if (!day || !month || !year) return null;
+  let [p1, p2, p3] = parts.map(Number);
+  if (!p1 || !p2 || !p3) return null;
+
+  let day, month, year;
+
+  if (String(p3).length === 4) {
+    year = p3;
+
+    // se a primeira parte for > 12, então é dd/mm/yyyy
+    if (p1 > 12) {
+      day = p1;
+      month = p2;
+    }
+    // se a segunda parte for > 12, então é mm/dd/yyyy
+    else if (p2 > 12) {
+      month = p1;
+      day = p2;
+    }
+    // fallback: assume dd/mm/yyyy
+    else {
+      day = p1;
+      month = p2;
+    }
+  } else {
+    return null;
+  }
 
   const dt = new Date(year, month - 1, day);
-  return isNaN(dt) ? null : dt;
+  return isNaN(dt.getTime()) ? null : dt;
 }
 
 function getWeekNumber(date) {

@@ -595,42 +595,42 @@
   </section>
 
   <section class="kpis">
-    <div class="kpi">
-      <div class="kpi-title">Qtd de faltas</div>
-      <div class="kpi-value orange" id="cardQtd">0</div>
-      <div class="kpi-sub" id="cardQtdSub">Sem comparativo</div>
-    </div>
+  <div class="kpi">
+    <div class="kpi-title">Qtd de faltas</div>
+    <div class="kpi-value orange" id="cardQtd">0</div>
+    <div class="kpi-sub" id="cardQtdSub">Sem comparativo</div>
+  </div>
 
-    <div class="kpi">
-      <div class="kpi-title">Ocorrências</div>
-      <div class="kpi-value blue" id="cardOcorrencias">0</div>
-      <div class="kpi-sub">Linhas no período</div>
-    </div>
+  <div class="kpi">
+    <div class="kpi-title">ABS</div>
+    <div class="kpi-value red" id="cardAbs">0,0%</div>
+    <div class="kpi-sub" id="cardAbsSub">Base do período</div>
+  </div>
 
-    <div class="kpi">
-      <div class="kpi-title">Horas abs</div>
-      <div class="kpi-value red" id="cardHorasAbs">0h00</div>
-      <div class="kpi-sub">Absenteísmo consolidado</div>
-    </div>
+  <div class="kpi">
+    <div class="kpi-title">Horas não cobertas</div>
+    <div class="kpi-value orange" id="cardHorasNaoCobertas">0h00</div>
+    <div class="kpi-sub">Tempo não coberto</div>
+  </div>
 
-    <div class="kpi">
-      <div class="kpi-title">Horas não cobertas</div>
-      <div class="kpi-value orange" id="cardHorasNaoCobertas">0h00</div>
-      <div class="kpi-sub">Tempo não coberto</div>
-    </div>
+  <div class="kpi">
+    <div class="kpi-title">Ocorrências</div>
+    <div class="kpi-value blue" id="cardOcorrencias">0</div>
+    <div class="kpi-sub">Linhas no período</div>
+  </div>
 
-    <div class="kpi">
-      <div class="kpi-title">Colaboradores</div>
-      <div class="kpi-value green" id="cardColaboradores">0</div>
-      <div class="kpi-sub">Pessoas distintas</div>
-    </div>
+  <div class="kpi">
+    <div class="kpi-title">Colaboradores</div>
+    <div class="kpi-value green" id="cardColaboradores">0</div>
+    <div class="kpi-sub">Pessoas distintas</div>
+  </div>
 
-    <div class="kpi">
-      <div class="kpi-title">Unidades</div>
-      <div class="kpi-value purple" id="cardUnidades">0</div>
-      <div class="kpi-sub">Unidades distintas</div>
-    </div>
-  </section>
+  <div class="kpi">
+    <div class="kpi-title">Unidades</div>
+    <div class="kpi-value purple" id="cardUnidades">0</div>
+    <div class="kpi-sub">Unidades distintas</div>
+  </div>
+</section>
 
   <section class="grid-top">
     <div class="panel">
@@ -868,22 +868,32 @@ async function loadResumo(page=1){
 
   document.getElementById("cardQtd").textContent = fmt(data.totalQtd);
   document.getElementById("cardOcorrencias").textContent = fmt(data.totalOcorrencias);
-  document.getElementById("cardHorasAbs").textContent = data.totalHorasAbsFmt || "0h00";
   document.getElementById("cardHorasNaoCobertas").textContent = data.totalHorasNaoCobertasFmt || "0h00";
   document.getElementById("cardColaboradores").textContent = fmt(data.totalColaboradores);
   document.getElementById("cardUnidades").textContent = fmt(data.totalUnidades);
 
-  const varNum = Number(data.variacaoQtd || 0);
-  const cls = varNum > 0 ? "green" : varNum < 0 ? "red" : "";
-  const arrow = varNum > 0 ? "↑" : varNum < 0 ? "↓" : "→";
+  document.getElementById("cardAbs").textContent =
+    `${Number(data.absPercentual || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    })}%`;
+
+  const varQtd = Number(data.variacaoQtd || 0);
+  const clsQtd = varQtd > 0 ? "green" : varQtd < 0 ? "red" : "";
+  const arrowQtd = varQtd > 0 ? "↑" : varQtd < 0 ? "↓" : "→";
   document.getElementById("cardQtdSub").innerHTML =
-    `<span class="${cls}">${arrow} ${Math.abs(varNum).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}% vs base anterior</span>`;
+    `<span class="${clsQtd}">${arrowQtd} ${Math.abs(varQtd).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}% vs base anterior</span>`;
+
+  const varAbs = Number(data.variacaoAbs || 0);
+  const clsAbs = varAbs > 0 ? "green" : varAbs < 0 ? "red" : "";
+  const arrowAbs = varAbs > 0 ? "↑" : varAbs < 0 ? "↓" : "→";
+  document.getElementById("cardAbsSub").innerHTML =
+    `<span class="${clsAbs}">${arrowAbs} ${Math.abs(varAbs).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}% vs base anterior</span>`;
 
   document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
   document.getElementById("subComparativo").textContent =
     `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
 }
-
 async function loadGraficos(page=1){
   const res = await fetch(`/api/faltas-altum-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
   const data = await res.json();

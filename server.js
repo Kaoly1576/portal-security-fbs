@@ -7090,8 +7090,6 @@ app.get("/api/presenteismo-detalhes", requireAuth, async (req, res) => {
 
 // ================== HC FBS DASHBOARD ==================
 
-// ================== HC FBS DASHBOARD ==================
-
 app.get("/hc-fbs", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "hc-fbs.html"));
 });
@@ -7342,16 +7340,6 @@ async function hcLoadRaw() {
   const rows = values.slice(1);
 
   return rows.map((line) => {
-    // Colunas:
-    // A = data
-    // B = bpo
-    // C = qtd_admitidos
-    // D = qtd_desligados (ignorar)
-    // E = num_semana
-    // F = num_mes
-    // G = turno (ignorar)
-    // H = turno correto
-
     const obj = {
       data: line[0] ?? "",
       bpo: line[1] ?? "",
@@ -7359,8 +7347,8 @@ async function hcLoadRaw() {
       qtd_desligados: line[3] ?? "",
       num_semana: line[4] ?? "",
       num_mes: line[5] ?? "",
-      turno_base: line[6] ?? "",
-      turno: line[7] ?? "", // COLUNA H CORRETA
+      turno_g: line[6] ?? "",
+      turno: line[7] ?? "", // coluna H
     };
 
     obj._dateObj = hcParseDate(obj.data);
@@ -7441,8 +7429,6 @@ function hcFilterRowsByPeriod(rows, query) {
   return { rows: filtered, period };
 }
 
-// ================== FILTROS ==================
-
 app.get("/api/hc-fbs-filtros", requireAuth, async (req, res) => {
   try {
     const rows = await hcLoadWithCache();
@@ -7469,8 +7455,6 @@ app.get("/api/hc-fbs-filtros", requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
-// ================== RESUMO ==================
 
 app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
   try {
@@ -7519,8 +7503,6 @@ app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
-// ================== GRAFICOS ==================
 
 app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
   try {
@@ -7586,8 +7568,6 @@ app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
-// ================== DETALHES ==================
 
 app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
   try {

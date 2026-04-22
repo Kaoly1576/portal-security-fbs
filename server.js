@@ -7613,6 +7613,566 @@ app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== FALTAS ALTUM DASHBOARD ==================
+
+app.get("/faltas-altum", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "faltas-altum.html"));
+});
+
+const FALTAS_ALTUM_SPREADSHEET_ID = "1XtP5ylCpA42aLE1EklytzHH2hUzik5JdY8meAg84Et4";
+const FALTAS_ALTUM_RANGE = "'CONTROLE DE FALTAS FBS'!A:M";
+
+let faltasAltumCache = null;
+let faltasAltumCacheTime = 0;
+const FALTAS_ALTUM_CACHE_TTL = 5 * 60 * 1000;
+
+function faNorm(v) {
+  return String(v || "").trim();
+}
+
+function faNormLower(v) {
+  return faNorm(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function faGetHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function faParseDate(value) {
+  const str = faNorm(value);
+  if (!str) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const [d, m, y] = str.split("/").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  return null;
+}
+
+function faFormatBR(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function faSplitMulti(value) {
+  if (!value) return [];
+  return String(value).split("|").map(v => faNorm(v)).filter(Boolean);
+}
+
+function faMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(faNorm(fieldValue));
+}
+
+function faPercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+
+  return ((current - previous) / previous) * 100;
+}
+
+function faStartOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function faEndOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function faDiffDaysInclusive(start, end) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const s = faStartOfDay(start);
+  const e = faStartOfDay(end);
+  return Math.floor((e - s) / msPerDay) + 1;
+}
+
+function faResolvePeriodFromQuery(query, rows) {
+  const periodoTipo = faNormLower(query.periodoTipo || "mes");
+  const dataRef = faNorm(query.dataRef);
+
+  if (dataRef) {
+    const ref = new Date(`${dataRef}T00:00:00`);
+
+    if (!isNaN(ref.getTime())) {
+      if (periodoTipo === "dia") {
+        return { start: faStartOfDay(ref), end: faEndOfDay(ref) };
+      }
+
+      if (periodoTipo === "semana") {
+        const weekStart = new Date(ref);
+        const day = weekStart.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        weekStart.setDate(weekStart.getDate() + diff);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return { start: faStartOfDay(weekStart), end: faEndOfDay(weekEnd) };
+      }
+
+      if (periodoTipo === "ano") {
+        return {
+          start: new Date(ref.getFullYear(), 0, 1),
+          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
+        };
+      }
+
+      return {
+        start: new Date(ref.getFullYear(), ref.getMonth(), 1),
+        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
+      };
+    }
+  }
+
+  const validDates = rows.map(r => r._dateObj).filter(Boolean).sort((a, b) => a - b);
+  if (!validDates.length) return { start: null, end: null };
+
+  const latest = validDates[validDates.length - 1];
+  return {
+    start: new Date(latest.getFullYear(), latest.getMonth(), 1),
+    end: new Date(latest.getFullYear(), latest.getMonth() + 1, 0, 23, 59, 59, 999),
+  };
+}
+
+function faGetComparisonWindow(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return {
+      currentStart: null,
+      currentEnd: null,
+      previousStart: null,
+      previousEnd: null,
+      label: "base anterior",
+    };
+  }
+
+  const start = faStartOfDay(startDate);
+  const end = faEndOfDay(endDate);
+
+  const isSingleDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const isFullMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === 1 &&
+    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+  const isFullYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === 0 &&
+    start.getDate() === 1 &&
+    end.getMonth() === 11 &&
+    end.getDate() === 31;
+
+  const totalDays = faDiffDaysInclusive(start, end);
+
+  if (isSingleDay) {
+    const prev = new Date(start);
+    prev.setDate(prev.getDate() - 1);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: faStartOfDay(prev),
+      previousEnd: faEndOfDay(prev),
+      label: "dia anterior",
+    };
+  }
+
+  if (isFullMonth) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
+      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
+      label: "mês anterior",
+    };
+  }
+
+  if (isFullYear) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear() - 1, 0, 1),
+      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
+      label: "ano anterior",
+    };
+  }
+
+  const previousEnd = new Date(start);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  previousEnd.setHours(23, 59, 59, 999);
+
+  const previousStart = new Date(previousEnd);
+  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
+  previousStart.setHours(0, 0, 0, 0);
+
+  return {
+    currentStart: start,
+    currentEnd: end,
+    previousStart,
+    previousEnd,
+    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
+  };
+}
+
+function faParseHoursToDecimal(value) {
+  const str = faNorm(value);
+  if (!str || !/^\d{1,2}:\d{2}:\d{2}$/.test(str)) return 0;
+
+  const [h, m, s] = str.split(":").map(Number);
+  return h + (m / 60) + (s / 3600);
+}
+
+function faFormatHoursDecimal(value) {
+  const total = Number(value || 0);
+  const hours = Math.floor(total);
+  const minutes = Math.round((total - hours) * 60);
+
+  return `${hours}h${String(minutes).padStart(2, "0")}`;
+}
+
+async function faLoadRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: FALTAS_ALTUM_SPREADSHEET_ID,
+    range: FALTAS_ALTUM_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const rows = values.slice(1);
+
+  return rows.map((line) => {
+    const obj = {
+      mes: line[0] ?? "",
+      data: line[1] ?? "",
+      unidade: line[2] ?? "",
+      plantao: line[3] ?? "",
+      turno: line[4] ?? "",
+      ocorrencia: line[5] ?? "",
+      qtd: Number(line[6] || 0),
+      tempoNaoCoberto: line[7] ?? "",
+      absenteismo: line[8] ?? "",
+      desconto: line[9] ?? "",
+      colaborador: line[10] ?? "",
+      cobertura: line[11] ?? "",
+      pctAbs: line[12] ?? "",
+    };
+
+    obj._dateObj = faParseDate(obj.data);
+    obj._day = obj._dateObj ? obj._dateObj.getDate() : null;
+    obj._year = obj._dateObj ? obj._dateObj.getFullYear() : null;
+    obj._month = obj._dateObj ? obj._dateObj.getMonth() + 1 : null;
+    obj._absHours = faParseHoursToDecimal(obj.absenteismo);
+    obj._naoCobertoHours = faParseHoursToDecimal(obj.tempoNaoCoberto);
+
+    return obj;
+  });
+}
+
+async function faLoadWithCache() {
+  const now = Date.now();
+
+  if (faltasAltumCache && now - faltasAltumCacheTime < FALTAS_ALTUM_CACHE_TTL) {
+    return faltasAltumCache;
+  }
+
+  const rows = await faLoadRaw();
+  faltasAltumCache = rows;
+  faltasAltumCacheTime = now;
+
+  console.log("FALTAS ALTUM cache atualizado:", rows.length);
+
+  return faltasAltumCache;
+}
+
+function faApplyFilters(rows, query) {
+  const unidade = faSplitMulti(query.unidade);
+  const plantao = faSplitMulti(query.plantao);
+  const turno = faSplitMulti(query.turno);
+  const ocorrencia = faSplitMulti(query.ocorrencia);
+  const colaborador = faSplitMulti(query.colaborador);
+  const cobertura = faSplitMulti(query.cobertura);
+  const ano = faSplitMulti(query.ano);
+  const mes = faSplitMulti(query.mes);
+  const dia = faSplitMulti(query.dia);
+  const busca = faNormLower(query.busca);
+
+  return rows.filter((row) => {
+    if (!faMatchesMulti(row.unidade, unidade)) return false;
+    if (!faMatchesMulti(row.plantao, plantao)) return false;
+    if (!faMatchesMulti(row.turno, turno)) return false;
+    if (!faMatchesMulti(row.ocorrencia, ocorrencia)) return false;
+    if (!faMatchesMulti(row.colaborador, colaborador)) return false;
+    if (!faMatchesMulti(row.cobertura, cobertura)) return false;
+    if (ano.length && !ano.includes(String(row._year || ""))) return false;
+    if (mes.length && !mes.includes(String(row._month || ""))) return false;
+    if (dia.length && !dia.includes(String(row._day || ""))) return false;
+
+    if (busca) {
+      const text = Object.values(row)
+        .filter((v) => typeof v !== "object")
+        .join(" ")
+        .toLowerCase();
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function faApplyFiltersWithoutPeriod(rows, query) {
+  return faApplyFilters(rows, {
+    ...query,
+    periodoTipo: "",
+    dataRef: "",
+  });
+}
+
+function faFilterRowsByPeriod(rows, query) {
+  const period = faResolvePeriodFromQuery(query, rows);
+
+  if (!period.start || !period.end) {
+    return { rows, period };
+  }
+
+  const filtered = rows.filter((row) => {
+    const dt = row._dateObj;
+    return dt && dt >= period.start && dt <= period.end;
+  });
+
+  return { rows: filtered, period };
+}
+
+app.get("/api/faltas-altum-filtros", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const uniq = (getter) =>
+      [...new Set(rows.map(getter).map(v => faNorm(v)).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const uniqNum = (getter) =>
+      [...new Set(rows.map(getter).map(v => String(v || "")).filter(Boolean))]
+        .sort((a, b) => Number(a) - Number(b));
+
+    return res.json({
+      unidade: uniq(r => r.unidade),
+      plantao: uniq(r => r.plantao),
+      turno: uniq(r => r.turno),
+      ocorrencia: uniq(r => r.ocorrencia),
+      colaborador: uniq(r => r.colaborador),
+      cobertura: uniq(r => r.cobertura),
+      ano: uniqNum(r => r._year),
+      mes: uniqNum(r => r._month),
+      dia: uniqNum(r => r._day),
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-filtros:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const filteredRows = faApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = faFilterRowsByPeriod(filteredRows, req.query);
+
+    const totalOcorrencias = periodRows.length;
+    const totalQtd = periodRows.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const totalHorasAbs = periodRows.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
+    const totalHorasNaoCobertas = periodRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
+    const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
+    const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
+
+    const comparison = faGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
+
+    const previousRows = baseNoPeriodRows.filter((row) => {
+      const dt = row._dateObj;
+      return (
+        dt &&
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
+      );
+    });
+
+    const qtdAnterior = previousRows.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+
+    return res.json({
+      totalOcorrencias,
+      totalQtd,
+      totalHorasAbs,
+      totalHorasAbsFmt: faFormatHoursDecimal(totalHorasAbs),
+      totalHorasNaoCobertas,
+      totalHorasNaoCobertasFmt: faFormatHoursDecimal(totalHorasNaoCobertas),
+      totalColaboradores,
+      totalUnidades,
+      qtdAnterior,
+      variacaoQtd: faPercentChange(totalQtd, qtdAnterior),
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? faFormatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? faFormatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? faFormatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? faFormatBR(comparison.previousEnd) : "",
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/faltas-altum-graficos", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const filteredRows = faApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = faFilterRowsByPeriod(filteredRows, req.query);
+
+    const porDia = {};
+    for (let i = 1; i <= 31; i++) porDia[i] = 0;
+
+    const porOcorrencia = {};
+    const porUnidade = {};
+    const porTurno = {};
+    const porPlantao = {};
+
+    periodRows.forEach((row) => {
+      const qtd = Number(row.qtd || 0);
+
+      if (row._day) porDia[row._day] += qtd;
+
+      const ocorrencia = faNorm(row.ocorrencia) || "Sem ocorrência";
+      porOcorrencia[ocorrencia] = (porOcorrencia[ocorrencia] || 0) + qtd;
+
+      const unidade = faNorm(row.unidade) || "Sem unidade";
+      porUnidade[unidade] = (porUnidade[unidade] || 0) + qtd;
+
+      const turno = faNorm(row.turno) || "Sem turno";
+      porTurno[turno] = (porTurno[turno] || 0) + qtd;
+
+      const plantao = faNorm(row.plantao) || "Sem plantão";
+      porPlantao[plantao] = (porPlantao[plantao] || 0) + qtd;
+    });
+
+    const comparison = faGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
+
+    const atual = periodRows.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+
+    const anterior = baseNoPeriodRows
+      .filter((row) => {
+        const dt = row._dateObj;
+        return (
+          dt &&
+          comparison.previousStart &&
+          comparison.previousEnd &&
+          dt >= comparison.previousStart &&
+          dt <= comparison.previousEnd
+        );
+      })
+      .reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+
+    return res.json({
+      porDia,
+      porOcorrencia,
+      porUnidade,
+      porTurno,
+      porPlantao,
+      comparativo: {
+        atual,
+        anterior,
+        label: comparison.label || "base anterior",
+      },
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-graficos:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/faltas-altum-detalhes", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const filteredRows = faApplyFilters(rows, req.query);
+    const { rows: periodRows } = faFilterRowsByPeriod(filteredRows, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 30), 1), 200);
+
+    const sorted = [...periodRows].sort((a, b) => {
+      const ad = a._dateObj ? a._dateObj.getTime() : 0;
+      const bd = b._dateObj ? b._dateObj.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    const rowsOut = sorted.slice(start, start + limit).map((row) => ({
+      data: row._dateObj ? faFormatBR(row._dateObj) : row.data || "",
+      unidade: row.unidade || "",
+      plantao: row.plantao || "",
+      turno: row.turno || "",
+      ocorrencia: row.ocorrencia || "",
+      qtd: Number(row.qtd || 0),
+      absenteismo: row.absenteismo || "",
+      colaborador: row.colaborador || "",
+      cobertura: row.cobertura || "",
+    }));
+
+    return res.json({
+      total,
+      page: currentPage,
+      limit,
+      totalPages,
+      rows: rowsOut,
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-detalhes:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
 // ================== SERVIDOR ==================
 
 const PORT = process.env.PORT || 3000;

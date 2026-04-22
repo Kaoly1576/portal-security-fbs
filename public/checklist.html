@@ -160,6 +160,7 @@
       position:relative;
       width:100%;
       z-index:20;
+      overflow:visible !important;
     }
 
     .multi-select.open{
@@ -480,10 +481,38 @@
     }
 
     @media (max-width:768px){
-      .filters-grid,.kpis{grid-template-columns:1fr}
+      .filters-grid,
+      .kpis{
+        grid-template-columns:1fr;
+      }
+
       .hero-right{text-align:left}
       .kpi-value{font-size:20px}
       .topbar,.hero{flex-direction:column;align-items:flex-start}
+
+      .filters{
+        overflow:visible !important;
+      }
+
+      .filters-grid,
+      .field,
+      .multi-select{
+        overflow:visible !important;
+      }
+
+      .multi-menu{
+        position:relative !important;
+        top:8px !important;
+        left:0 !important;
+        width:100% !important;
+        max-height:220px;
+        margin-bottom:8px;
+        z-index:1 !important;
+      }
+
+      .multi-select.open{
+        z-index:auto !important;
+      }
     }
   </style>
 </head>
@@ -812,17 +841,16 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
     e.stopPropagation();
 
     const wrapper = trigger.closest(".multi-select");
-    const willOpen = !wrapper.classList.contains("open");
+    const isOpen = wrapper.classList.contains("open");
 
     document.querySelectorAll(".multi-select").forEach(wrap => {
-      wrap.classList.remove("open");
+      if (wrap !== wrapper) wrap.classList.remove("open");
     });
 
-    if (willOpen) {
-      wrapper.classList.add("open");
-      document.body.classList.add("dropdown-open");
+    if (isOpen) {
+      wrapper.classList.remove("open");
     } else {
-      document.body.classList.remove("dropdown-open");
+      wrapper.classList.add("open");
     }
   };
 
@@ -851,11 +879,12 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
   updateTrigger();
 }
 
-document.addEventListener("click", () => {
+document.addEventListener("click", (e) => {
   document.querySelectorAll(".multi-select").forEach(wrap => {
-    wrap.classList.remove("open");
+    if (!wrap.contains(e.target)) {
+      wrap.classList.remove("open");
+    }
   });
-  document.body.classList.remove("dropdown-open");
 });
 
 function getMultiValues(menuId){

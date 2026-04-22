@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HC FBS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    :root{
+      --bg1:#4b5563;--bg2:#111827;--bg3:#050c18;--input:#071325;--th:#111c33;
+      --line:rgba(255,255,255,.08);--text:#fff;--muted:#cbd5e1;--orange:#ff7a1a;
+      --blue:#58a6ff;--green:#22c55e;--red:#ef4444;--purple:#a855f7;
+    }
+    html,body{min-height:100%;overflow-x:hidden}
+    body{
+      background:
+        radial-gradient(circle at top,rgba(255,255,255,.14),transparent 35%),
+        linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 24%,var(--bg3) 52%,var(--bg3) 100%);
+      color:var(--text)
+    }
+    .page{max-width:1500px;margin:0 auto;padding:14px;position:relative;isolation:isolate}
+    .topbar,.hero,.filters,.panel,.wide-panel,.kpi{
+      background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:0 10px 24px rgba(0,0,0,.28);
+      backdrop-filter:blur(4px)
+    }
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;gap:16px;
+      margin-bottom:12px;padding:14px 16px;flex-wrap:wrap
+    }
+    .brand{display:flex;align-items:center;gap:14px}
+    .brand-logo{
+      width:44px;height:44px;object-fit:contain;border-radius:50%;
+      background:#1a120d;padding:6px;border:1px solid rgba(255,255,255,.08)
+    }
+    .brand-text h1{color:var(--orange);font-size:18px;font-weight:900;line-height:1}
+    .brand-text p{font-size:11px;color:var(--muted);margin-top:4px}
+    .btn{
+      background:rgba(255,255,255,.08);border:1px solid var(--line);color:#fff;
+      padding:10px 16px;border-radius:12px;text-decoration:none;font-size:12px;font-weight:800;
+      cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.2s ease
+    }
+    .btn:hover{background:rgba(255,255,255,.14)}
+    .hero{
+      padding:16px 18px;display:flex;justify-content:space-between;gap:16px;
+      align-items:center;margin-bottom:12px;flex-wrap:wrap
+    }
+    .hero h2{font-size:18px;margin-bottom:6px}
+    .hero p{color:var(--muted);font-size:12px;line-height:1.5;max-width:860px}
+    .hero-right{text-align:right;min-width:170px}
+    .hero-right .small{color:var(--muted);font-size:11px;margin-bottom:6px}
+    .hero-right .time{color:var(--orange);font-weight:900;font-size:22px}
+
+    .filters{
+      padding:16px;margin-bottom:14px;position:relative;z-index:9990;overflow:visible !important;
+    }
+    .filters-grid{
+      display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:10px;
+      align-items:start;position:relative;overflow:visible !important;z-index:5001;
+    }
+    .filters-grid + .filters-grid{margin-top:10px}
+    .filters-grid-third{grid-template-columns:1.2fr 2.3fr}
+    .field{min-width:0;position:relative;overflow:visible !important;z-index:1}
+    .field label{display:block;margin-bottom:6px;font-size:12px;color:#fff;font-weight:800}
+    .field input,.field select{
+      width:100%;height:40px;background:var(--input);border:1px solid rgba(255,255,255,.08);
+      border-radius:10px;color:#fff;padding:0 12px;outline:none;font-size:12px
+    }
+    .field input::placeholder{color:#94a3b8}
+    input[type="date"]{color-scheme:dark}
+    .multi-select{position:relative;width:100%;z-index:20}
+    .multi-select.open{z-index:99999 !important}
+    .multi-trigger{
+      width:100%;background:var(--input);border:1px solid rgba(255,255,255,.08);color:#fff;
+      border-radius:10px;padding:0 34px 0 12px;font-size:12px;height:40px;display:flex;
+      align-items:center;cursor:pointer;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .multi-trigger::after{
+      content:"▼";position:absolute;right:12px;font-size:10px;color:#cbd5e1;pointer-events:none;
+    }
+    .multi-menu{
+      position:absolute;top:44px;left:0;width:100%;background:#071325;
+      border:1px solid rgba(255,255,255,.08);border-radius:12px;max-height:240px;
+      overflow-y:auto;display:none;z-index:100000 !important;box-shadow:0 16px 32px rgba(0,0,0,.45);padding:6px;
+    }
+    .multi-select.open .multi-menu{display:block}
+    .multi-option{
+      display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;
+      cursor:pointer;font-size:12px;color:#fff;
+    }
+    .multi-option:hover{background:#1a2942}
+    .multi-option input{width:auto;height:auto;accent-color:var(--orange)}
+    .multi-actions{
+      display:flex;justify-content:space-between;gap:6px;padding:6px;
+      border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px;position:sticky;
+      top:0;background:#071325;z-index:2;
+    }
+    .multi-actions button{
+      flex:1;background:#1a2942;color:#fff;border:none;border-radius:8px;
+      padding:6px 8px;font-size:11px;cursor:pointer;
+    }
+    .actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;position:relative;z-index:1}
+    .btn-primary{
+      height:40px;border:none;border-radius:10px;padding:0 16px;
+      background:linear-gradient(90deg,var(--orange),#ff4d4f);color:#fff;font-weight:800;cursor:pointer;
+    }
+    .btn-ghost{
+      height:40px;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:0 16px;
+      background:#242424;color:#fff;font-weight:700;cursor:pointer;
+    }
+
+    .kpis{
+      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px;position:relative;z-index:1;
+    }
+    .kpi{padding:14px;min-height:96px;position:relative;z-index:1}
+    .kpi-title{font-size:11px;text-transform:uppercase;color:#fff;margin-bottom:10px;font-weight:800}
+    .kpi-value{font-size:24px;font-weight:900;line-height:1.1}
+    .kpi-sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+    .orange{color:var(--orange)} .blue{color:var(--blue)} .green{color:var(--green)} .red{color:var(--red)} .purple{color:var(--purple)}
+
+    .grid-top,.grid-middle,.wide-panel{position:relative;z-index:1}
+    .grid-top{
+      display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px;
+    }
+    .grid-middle{
+      display:grid;grid-template-columns:1.15fr 1fr;gap:12px;margin-bottom:12px;
+    }
+    .panel{padding:14px;min-height:260px;position:relative;z-index:1;overflow:hidden}
+    .panel-title{color:var(--orange);font-weight:900;font-size:14px;margin-bottom:12px;text-align:center}
+    .panel-subtitle{color:#cdd6e0;font-size:11px;margin-bottom:10px}
+    .chart-box{height:250px;position:relative;z-index:1}
+    .chart-box.line{height:290px;position:relative;z-index:1}
+    canvas{position:relative !important;z-index:1 !important}
+
+    .wide-panel{padding:14px;margin-bottom:14px;position:relative;z-index:1}
+    .detail-wrap{overflow:auto;max-height:520px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+    .detail-table{width:100%;border-collapse:collapse;min-width:900px;font-size:12px;background:#091322}
+    .detail-table th,.detail-table td{
+      padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;white-space:nowrap
+    }
+    .detail-table th{
+      position:sticky;top:0;background:var(--th);z-index:1;color:#d6d6d6
+    }
+    .pager{margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    .pager-info{margin-right:auto;color:var(--muted);font-size:12px;display:flex;align-items:center}
+
+    body.dropdown-open .filters{z-index:99999 !important}
+    body.dropdown-open .kpis,
+    body.dropdown-open .grid-top,
+    body.dropdown-open .grid-middle,
+    body.dropdown-open .wide-panel{
+      z-index:1 !important;
+    }
+
+    @media (max-width:1400px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:1280px){
+      .filters-grid{grid-template-columns:repeat(2,minmax(180px,1fr))}
+      .filters-grid-third{grid-template-columns:1fr}
+      .grid-top,.grid-middle{grid-template-columns:1fr}
+    }
+    @media (max-width:768px){
+      .filters-grid,.kpis{grid-template-columns:1fr}
+      .hero-right{text-align:left}
+      .kpi-value{font-size:20px}
+      .topbar,.hero{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="topbar">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Logo" class="brand-logo" />
+      <div class="brand-text">
+        <h1>HC FBS</h1>
+        <p>Dashboard operacional de admissões</p>
+      </div>
+    </div>
+    <a href="/portal" class="btn">Voltar ao Portal</a>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h2>Dashboard HC FBS</h2>
+      <p>Monitoramento consolidado de admitidos por período, BPO, turno, semana e evolução diária.</p>
+    </div>
+    <div class="hero-right">
+      <div class="small">Última atualização</div>
+      <div class="time" id="ultimaAtualizacao">--:--</div>
+    </div>
+  </section>
+
+  <section class="filters">
+    <div class="filters-grid">
+      <div class="field">
+        <label>Período</label>
+        <select id="filtroPeriodoTipo">
+          <option value="mes">Mês</option>
+          <option value="dia">Dia</option>
+          <option value="semana">Semana</option>
+          <option value="ano">Ano</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Data de referência</label>
+        <input type="date" id="filtroDataRef" />
+      </div>
+
+      <div class="field">
+        <label>BPO</label>
+        <div class="multi-select" id="multiBpo">
+          <button type="button" class="multi-trigger" id="triggerBpo">Todos</button>
+          <div class="multi-menu" id="menuBpo"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Turno</label>
+        <div class="multi-select" id="multiTurno">
+          <button type="button" class="multi-trigger" id="triggerTurno">Todos</button>
+          <div class="multi-menu" id="menuTurno"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Ano</label>
+        <div class="multi-select" id="multiAno">
+          <button type="button" class="multi-trigger" id="triggerAno">Todos</button>
+          <div class="multi-menu" id="menuAno"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-grid">
+      <div class="field">
+        <label>Mês</label>
+        <div class="multi-select" id="multiMes">
+          <button type="button" class="multi-trigger" id="triggerMes">Todos</button>
+          <div class="multi-menu" id="menuMes"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Semana</label>
+        <div class="multi-select" id="multiSemana">
+          <button type="button" class="multi-trigger" id="triggerSemana">Todas</button>
+          <div class="multi-menu" id="menuSemana"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Dia</label>
+        <div class="multi-select" id="multiDia">
+          <button type="button" class="multi-trigger" id="triggerDia">Todos</button>
+          <div class="multi-menu" id="menuDia"></div>
+        </div>
+      </div>
+
+      <div class="field" style="grid-column: span 2;">
+        <label>Busca geral</label>
+        <input type="text" id="filtroBusca" placeholder="Buscar por data, bpo, turno..." />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" id="btnAplicar">Aplicar filtros</button>
+      <button class="btn-ghost" id="btnLimpar">Limpar filtros</button>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi">
+      <div class="kpi-title">Admitidos</div>
+      <div class="kpi-value orange" id="cardAdmitidos">0</div>
+      <div class="kpi-sub" id="cardAdmitidosSub">Sem comparativo</div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-title">Registros</div>
+      <div class="kpi-value blue" id="cardRegistros">0</div>
+      <div class="kpi-sub">Linhas no período</div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-title">BPOs</div>
+      <div class="kpi-value green" id="cardBpos">0</div>
+      <div class="kpi-sub">BPOs distintos</div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-title">Turnos</div>
+      <div class="kpi-value purple" id="cardTurnos">0</div>
+      <div class="kpi-sub">Turnos distintos</div>
+    </div>
+  </section>
+
+  <section class="grid-top">
+    <div class="panel">
+      <div class="panel-title">Admitidos por BPO</div>
+      <div class="panel-subtitle">Distribuição por parceiro</div>
+      <div class="chart-box"><canvas id="chartBpo"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Admitidos por Turno</div>
+      <div class="panel-subtitle">Distribuição por turno (coluna H)</div>
+      <div class="chart-box"><canvas id="chartTurno"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Admitidos por Semana</div>
+      <div class="panel-subtitle">Distribuição semanal</div>
+      <div class="chart-box"><canvas id="chartSemana"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid-middle">
+    <div class="panel">
+      <div class="panel-title">Admitidos por Dia</div>
+      <div class="panel-subtitle">Distribuição diária de 01 a 31</div>
+      <div class="chart-box line"><canvas id="chartDia"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Comparativo do Período</div>
+      <div class="panel-subtitle" id="subComparativo">Atual x base anterior</div>
+      <div class="chart-box"><canvas id="chartComparativo"></canvas></div>
+    </div>
+  </section>
+
+  <section class="wide-panel">
+    <div class="panel-title">Detalhamento</div>
+    <div class="detail-wrap">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>BPO</th>
+            <th>QTD Admitidos</th>
+            <th>Semana</th>
+            <th>Mês</th>
+            <th>Turno</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyDetalhes"></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <div class="pager-info" id="pagerInfo">Página 1 de 1</div>
+      <button class="btn-ghost" id="btnPrev">Anterior</button>
+      <button class="btn-ghost" id="btnNext">Próxima</button>
+    </div>
+  </section>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+let currentPage = 1;
+let totalPages = 1;
+
+let chartBpo = null;
+let chartTurno = null;
+let chartSemana = null;
+let chartDia = null;
+let chartComparativo = null;
+
+function esc(v){return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+function fmt(n){return new Intl.NumberFormat("pt-BR").format(Number(n||0));}
+
+function destroyCharts() {
+  [chartBpo, chartTurno, chartSemana, chartDia, chartComparativo].forEach(c => { if (c) c.destroy(); });
+  chartBpo = null;
+  chartTurno = null;
+  chartSemana = null;
+  chartDia = null;
+  chartComparativo = null;
+}
+
+function horizontalBarOptions() {
+  return {
+    indexAxis:"y",
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      datalabels:{
+        color:"#ffffff",
+        anchor:"end",
+        align:"right",
+        font:{size:10,weight:"700"},
+        formatter:(v)=>v>0?fmt(v):""
+      }
+    },
+    scales:{
+      x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true},
+      y:{ticks:{color:"#ffffff",font:{size:10}},grid:{display:false}}
+    }
+  };
+}
+
+function createMultiSelect(menuId, triggerId, values, placeholder){
+  const menu = document.getElementById(menuId);
+  const trigger = document.getElementById(triggerId);
+  if(!menu || !trigger) return;
+
+  menu.innerHTML = `
+    <div class="multi-actions">
+      <button type="button" data-action="all">Todos</button>
+      <button type="button" data-action="clear">Limpar</button>
+    </div>
+  `;
+
+  values.forEach(value => {
+    const label = document.createElement("label");
+    label.className = "multi-option";
+    label.innerHTML = `<input type="checkbox" value="${String(value).replace(/"/g,'&quot;')}" /><span>${value}</span>`;
+    menu.appendChild(label);
+  });
+
+  function updateTrigger(){
+    const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
+    if(!checked.length) trigger.textContent = placeholder;
+    else if(checked.length === 1) trigger.textContent = checked[0];
+    else trigger.textContent = `${checked.length} selecionados`;
+  }
+
+  trigger.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const wrapper = trigger.closest(".multi-select");
+    const willOpen = !wrapper.classList.contains("open");
+
+    document.querySelectorAll(".multi-select").forEach(wrap => {
+      wrap.classList.remove("open");
+    });
+
+    if (willOpen) {
+      wrapper.classList.add("open");
+      document.body.classList.add("dropdown-open");
+    } else {
+      document.body.classList.remove("dropdown-open");
+    }
+  };
+
+  menu.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    const action = e.target.dataset.action;
+
+    if(action === "all"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+      updateTrigger();
+      return;
+    }
+
+    if(action === "clear"){
+      menu.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+      updateTrigger();
+      return;
+    }
+
+    if(e.target.matches('input[type="checkbox"]')){
+      updateTrigger();
+    }
+  });
+
+  updateTrigger();
+}
+
+document.addEventListener("click", () => {
+  document.querySelectorAll(".multi-select").forEach(wrap => {
+    wrap.classList.remove("open");
+  });
+  document.body.classList.remove("dropdown-open");
+});
+
+function getMultiValues(menuId){
+  return [...document.querySelectorAll(`#${menuId} input[type="checkbox"]:checked`)]
+    .map(el => el.value)
+    .join("|");
+}
+
+function getFiltersQuery(page=1){
+  const qs = new URLSearchParams();
+  qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
+  qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
+  qs.set("bpo", getMultiValues("menuBpo"));
+  qs.set("turno", getMultiValues("menuTurno"));
+  qs.set("ano", getMultiValues("menuAno"));
+  qs.set("mes", getMultiValues("menuMes"));
+  qs.set("semana", getMultiValues("menuSemana"));
+  qs.set("dia", getMultiValues("menuDia"));
+  qs.set("busca", document.getElementById("filtroBusca").value || "");
+  qs.set("page", page);
+  qs.set("limit", 30);
+  return qs.toString();
+}
+
+async function loadFiltros(){
+  const res = await fetch("/api/hc-fbs-filtros", { credentials:"same-origin" });
+  const data = await res.json();
+
+  createMultiSelect("menuBpo","triggerBpo",data.bpo||[],"Todos");
+  createMultiSelect("menuTurno","triggerTurno",data.turno||[],"Todos");
+  createMultiSelect("menuAno","triggerAno",data.ano||[],"Todos");
+  createMultiSelect("menuMes","triggerMes",data.mes||[],"Todos");
+  createMultiSelect("menuSemana","triggerSemana",data.semana||[],"Todas");
+  createMultiSelect("menuDia","triggerDia",data.dia||[],"Todos");
+
+  if (data.ultimaAtualizacao) {
+    document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao;
+  }
+}
+
+async function loadResumo(page=1){
+  const res = await fetch(`/api/hc-fbs-resumo?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
+
+  document.getElementById("cardAdmitidos").textContent = fmt(data.totalAdmitidos);
+  document.getElementById("cardRegistros").textContent = fmt(data.totalRegistros);
+  document.getElementById("cardBpos").textContent = fmt(data.totalBpos);
+  document.getElementById("cardTurnos").textContent = fmt(data.totalTurnos);
+
+  const varNum = Number(data.variacaoAdmitidos || 0);
+  const cls = varNum > 0 ? "green" : varNum < 0 ? "red" : "";
+  const arrow = varNum > 0 ? "↑" : varNum < 0 ? "↓" : "→";
+  document.getElementById("cardAdmitidosSub").innerHTML =
+    `<span class="${cls}">${arrow} ${Math.abs(varNum).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}% vs base anterior</span>`;
+
+  document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+  document.getElementById("subComparativo").textContent =
+    `${data.comparativoLabel || "base anterior"} • ${data.periodoAtualInicio || ""} até ${data.periodoAtualFim || ""}`;
+}
+
+async function loadGraficos(page=1){
+  const res = await fetch(`/api/hc-fbs-graficos?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
+
+  destroyCharts();
+
+  chartBpo = new Chart(document.getElementById("chartBpo"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.porBpo || {}),
+      datasets:[{ label:"Admitidos", data:Object.values(data.porBpo || {}), backgroundColor:"#ff7a1a", borderRadius:8 }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartTurno = new Chart(document.getElementById("chartTurno"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.porTurno || {}),
+      datasets:[{ label:"Admitidos", data:Object.values(data.porTurno || {}), backgroundColor:"#58a6ff", borderRadius:8 }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  chartSemana = new Chart(document.getElementById("chartSemana"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.porSemana || {}),
+      datasets:[{ label:"Admitidos", data:Object.values(data.porSemana || {}), backgroundColor:"#a855f7", borderRadius:8 }]
+    },
+    options: horizontalBarOptions()
+  });
+
+  const dias = Array.from({length:31}, (_,i)=>String(i+1).padStart(2,"0"));
+  const valoresDia = dias.map((_, idx) => data.porDia?.[idx+1] || 0);
+
+  chartDia = new Chart(document.getElementById("chartDia"), {
+    type:"bar",
+    data:{
+      labels:dias,
+      datasets:[{ label:"Admitidos", data:valoresDia, backgroundColor:"#ff7a1a", borderRadius:4 }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:"#fff"}},
+        datalabels:{
+          color:"#ffffff",
+          anchor:"end",
+          align:"top",
+          font:{size:10,weight:"700"},
+          formatter:(v)=>v>0?fmt(v):""
+        }
+      },
+      scales:{
+        x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
+      }
+    }
+  });
+
+  chartComparativo = new Chart(document.getElementById("chartComparativo"), {
+    type:"bar",
+    data:{
+      labels:["Período atual", data.comparativo?.label || "Base anterior"],
+      datasets:[{
+        label:"Admitidos",
+        data:[data.comparativo?.atual || 0, data.comparativo?.anterior || 0],
+        backgroundColor:["#ff7a1a","#58a6ff"],
+        borderRadius:8
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:"#fff"}},
+        datalabels:{
+          color:"#ffffff",
+          anchor:"end",
+          align:"top",
+          font:{size:10,weight:"700"},
+          formatter:(v)=>v>0?fmt(v):""
+        }
+      },
+      scales:{
+        x:{ticks:{color:"#fff",font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
+      }
+    }
+  });
+}
+
+async function loadDetalhes(page=1){
+  const res = await fetch(`/api/hc-fbs-detalhes?${getFiltersQuery(page)}`, { credentials:"same-origin" });
+  const data = await res.json();
+
+  currentPage = data.page || 1;
+  totalPages = data.totalPages || 1;
+  document.getElementById("pagerInfo").textContent = `Página ${currentPage} de ${totalPages}`;
+
+  document.getElementById("tbodyDetalhes").innerHTML = (data.rows || []).map(row => `
+    <tr>
+      <td>${esc(row.data)}</td>
+      <td>${esc(row.bpo)}</td>
+      <td>${esc(row.qtdAdmitidos)}</td>
+      <td>${esc(row.semana)}</td>
+      <td>${esc(row.mes)}</td>
+      <td>${esc(row.turno)}</td>
+    </tr>
+  `).join("");
+}
+
+async function loadAll(page=1){
+  await loadResumo(page);
+  await loadGraficos(page);
+  await loadDetalhes(page);
+}
+
+document.getElementById("btnAplicar").addEventListener("click", () => loadAll(1));
+
+document.getElementById("btnLimpar").addEventListener("click", () => {
+  document.getElementById("filtroPeriodoTipo").value = "mes";
+  document.getElementById("filtroDataRef").value = "";
+  document.getElementById("filtroBusca").value = "";
+
+  document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach(input => input.checked = false);
+
+  document.getElementById("triggerBpo").textContent = "Todos";
+  document.getElementById("triggerTurno").textContent = "Todos";
+  document.getElementById("triggerAno").textContent = "Todos";
+  document.getElementById("triggerMes").textContent = "Todos";
+  document.getElementById("triggerSemana").textContent = "Todas";
+  document.getElementById("triggerDia").textContent = "Todos";
+
+  loadAll(1);
+});
+
+document.getElementById("btnPrev").addEventListener("click", () => {
+  if(currentPage > 1) loadAll(currentPage - 1);
+});
+
+document.getElementById("btnNext").addEventListener("click", () => {
+  if(currentPage < totalPages) loadAll(currentPage + 1);
+});
+
+(async function init(){
+  try {
+    await loadFiltros();
+    await loadAll(1);
+  } catch (error) {
+    console.error("Erro no init do HC FBS:", error);
+  }
+})();
+</script>
+</body>
+</html>

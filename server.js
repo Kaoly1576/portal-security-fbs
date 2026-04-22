@@ -7088,6 +7088,534 @@ app.get("/api/presenteismo-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== HC FBS DASHBOARD ==================
+
+app.get("/hc-fbs", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "hc-fbs.html"));
+});
+
+const HCFBS_SPREADSHEET_ID = "1s7ZG9N7pS0pafmYb-4QfQXZPily21gp16_-Vzdy7m5I";
+const HCFBS_RANGE = "'People KPIs Report - BRASIL - Query Balance'!A1:H200000";
+
+let hcfbsCache = null;
+let hcfbsCacheTime = 0;
+const HCFBS_CACHE_TTL = 5 * 60 * 1000;
+
+function hcNorm(v) {
+  return String(v || "").trim();
+}
+
+function hcNormLower(v) {
+  return hcNorm(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function hcGetHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function hcParseDate(value) {
+  const str = hcNorm(value);
+  if (!str) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const [d, m, y] = str.split("/").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  return null;
+}
+
+function hcFormatBR(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function hcSplitMulti(value) {
+  if (!value) return [];
+  return String(value).split("|").map(v => hcNorm(v)).filter(Boolean);
+}
+
+function hcMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(hcNorm(fieldValue));
+}
+
+function hcPercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+
+  return ((current - previous) / previous) * 100;
+}
+
+function hcStartOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function hcEndOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function hcDiffDaysInclusive(start, end) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const s = hcStartOfDay(start);
+  const e = hcStartOfDay(end);
+  return Math.floor((e - s) / msPerDay) + 1;
+}
+
+function hcResolvePeriodFromQuery(query, rows) {
+  const periodoTipo = hcNormLower(query.periodoTipo || "mes");
+  const dataRef = hcNorm(query.dataRef);
+
+  if (dataRef) {
+    const ref = new Date(`${dataRef}T00:00:00`);
+
+    if (!isNaN(ref.getTime())) {
+      if (periodoTipo === "dia") {
+        return {
+          start: hcStartOfDay(ref),
+          end: hcEndOfDay(ref),
+        };
+      }
+
+      if (periodoTipo === "semana") {
+        const weekStart = new Date(ref);
+        const day = weekStart.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        weekStart.setDate(weekStart.getDate() + diff);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return {
+          start: hcStartOfDay(weekStart),
+          end: hcEndOfDay(weekEnd),
+        };
+      }
+
+      if (periodoTipo === "ano") {
+        return {
+          start: new Date(ref.getFullYear(), 0, 1),
+          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
+        };
+      }
+
+      return {
+        start: new Date(ref.getFullYear(), ref.getMonth(), 1),
+        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
+      };
+    }
+  }
+
+  const validDates = rows
+    .map((r) => r._dateObj)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!validDates.length) return { start: null, end: null };
+
+  const latest = validDates[validDates.length - 1];
+
+  return {
+    start: new Date(latest.getFullYear(), latest.getMonth(), 1),
+    end: new Date(latest.getFullYear(), latest.getMonth() + 1, 0, 23, 59, 59, 999),
+  };
+}
+
+function hcGetComparisonWindow(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return {
+      currentStart: null,
+      currentEnd: null,
+      previousStart: null,
+      previousEnd: null,
+      label: "base anterior",
+    };
+  }
+
+  const start = hcStartOfDay(startDate);
+  const end = hcEndOfDay(endDate);
+
+  const isSingleDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const isFullMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === 1 &&
+    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+  const isFullYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === 0 &&
+    start.getDate() === 1 &&
+    end.getMonth() === 11 &&
+    end.getDate() === 31;
+
+  const totalDays = hcDiffDaysInclusive(start, end);
+
+  if (isSingleDay) {
+    const prev = new Date(start);
+    prev.setDate(prev.getDate() - 1);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: hcStartOfDay(prev),
+      previousEnd: hcEndOfDay(prev),
+      label: "dia anterior",
+    };
+  }
+
+  if (isFullMonth) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
+      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
+      label: "mês anterior",
+    };
+  }
+
+  if (isFullYear) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear() - 1, 0, 1),
+      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
+      label: "ano anterior",
+    };
+  }
+
+  const previousEnd = new Date(start);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  previousEnd.setHours(23, 59, 59, 999);
+
+  const previousStart = new Date(previousEnd);
+  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
+  previousStart.setHours(0, 0, 0, 0);
+
+  return {
+    currentStart: start,
+    currentEnd: end,
+    previousStart,
+    previousEnd,
+    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
+  };
+}
+
+async function hcLoadRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: HCFBS_SPREADSHEET_ID,
+    range: HCFBS_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const headers = values[0].map((h, i) => hcNorm(h) || `COL_${i + 1}`);
+  const rows = values.slice(1);
+
+  return rows.map((line) => {
+    const obj = {};
+    headers.forEach((header, i) => {
+      obj[header] = line[i] ?? "";
+    });
+
+    obj._dateObj = hcParseDate(obj["data"]);
+    obj._day = obj._dateObj ? obj._dateObj.getDate() : null;
+    obj._year = obj._dateObj ? obj._dateObj.getFullYear() : null;
+    obj._month = obj._dateObj ? obj._dateObj.getMonth() + 1 : null;
+
+    return obj;
+  });
+}
+
+async function hcLoadWithCache() {
+  const now = Date.now();
+
+  if (hcfbsCache && now - hcfbsCacheTime < HCFBS_CACHE_TTL) {
+    return hcfbsCache;
+  }
+
+  const rows = await hcLoadRaw();
+  hcfbsCache = rows;
+  hcfbsCacheTime = now;
+
+  console.log("HC FBS cache atualizado:", rows.length);
+
+  return hcfbsCache;
+}
+
+function hcApplyFilters(rows, query) {
+  const bpo = hcSplitMulti(query.bpo);
+  const turno = hcSplitMulti(query.turno);
+  const ano = hcSplitMulti(query.ano);
+  const mes = hcSplitMulti(query.mes);
+  const semana = hcSplitMulti(query.semana);
+  const dia = hcSplitMulti(query.dia);
+  const busca = hcNormLower(query.busca);
+
+  return rows.filter((row) => {
+    if (!hcMatchesMulti(row["bpo"], bpo)) return false;
+    if (!hcMatchesMulti(row["turno.1"], turno)) return false;
+    if (ano.length && !ano.includes(String(row._year || ""))) return false;
+    if (mes.length && !mes.includes(String(row._month || ""))) return false;
+    if (semana.length && !semana.includes(String(row["num_semana"] || ""))) return false;
+    if (dia.length && !dia.includes(String(row._day || ""))) return false;
+
+    if (busca) {
+      const text = Object.values(row)
+        .filter((v) => typeof v !== "object")
+        .join(" ")
+        .toLowerCase();
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function hcApplyFiltersWithoutPeriod(rows, query) {
+  return hcApplyFilters(rows, {
+    ...query,
+    periodoTipo: "",
+    dataRef: "",
+  });
+}
+
+function hcFilterRowsByPeriod(rows, query) {
+  const period = hcResolvePeriodFromQuery(query, rows);
+
+  if (!period.start || !period.end) {
+    return { rows, period };
+  }
+
+  const filtered = rows.filter((row) => {
+    const dt = row._dateObj;
+    return dt && dt >= period.start && dt <= period.end;
+  });
+
+  return { rows: filtered, period };
+}
+
+// ================== FILTROS ==================
+
+app.get("/api/hc-fbs-filtros", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const uniq = (field) =>
+      [...new Set(rows.map((r) => hcNorm(r[field])).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const uniqNum = (field) =>
+      [...new Set(rows.map((r) => String(r[field] || "")).filter(Boolean))]
+        .sort((a, b) => Number(a) - Number(b));
+
+    return res.json({
+      bpo: uniq("bpo"),
+      turno: uniq("turno.1"),
+      ano: uniqNum("_year"),
+      mes: uniqNum("_month"),
+      semana: uniqNum("num_semana"),
+      dia: uniqNum("_day"),
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-filtros:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== RESUMO ==================
+
+app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const filteredRows = hcApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = hcFilterRowsByPeriod(filteredRows, req.query);
+
+    const totalAdmitidos = periodRows.reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+    const totalRegistros = periodRows.length;
+    const totalBpos = new Set(periodRows.map(r => hcNorm(r["bpo"])).filter(Boolean)).size;
+    const totalTurnos = new Set(periodRows.map(r => hcNorm(r["turno.1"])).filter(Boolean)).size;
+
+    const comparison = hcGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
+
+    const previousRows = baseNoPeriodRows.filter((row) => {
+      const dt = row._dateObj;
+      return (
+        dt &&
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
+      );
+    });
+
+    const admitidosAnterior = previousRows.reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+
+    return res.json({
+      totalAdmitidos,
+      totalRegistros,
+      totalBpos,
+      totalTurnos,
+      admitidosAnterior,
+      variacaoAdmitidos: hcPercentChange(totalAdmitidos, admitidosAnterior),
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? hcFormatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? hcFormatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? hcFormatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? hcFormatBR(comparison.previousEnd) : "",
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== GRAFICOS ==================
+
+app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const filteredRows = hcApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = hcFilterRowsByPeriod(filteredRows, req.query);
+
+    const porDia = {};
+    for (let i = 1; i <= 31; i++) porDia[i] = 0;
+
+    const porBpo = {};
+    const porTurno = {};
+    const porSemana = {};
+
+    periodRows.forEach((row) => {
+      const qtd = Number(row["qtd_admitidos"] || 0);
+
+      if (row._day) porDia[row._day] += qtd;
+
+      const bpo = hcNorm(row["bpo"]) || "Sem BPO";
+      porBpo[bpo] = (porBpo[bpo] || 0) + qtd;
+
+      const turno = hcNorm(row["turno.1"]) || "Sem Turno";
+      porTurno[turno] = (porTurno[turno] || 0) + qtd;
+
+      const semana = `Semana ${row["num_semana"] || "?"}`;
+      porSemana[semana] = (porSemana[semana] || 0) + qtd;
+    });
+
+    const comparison = hcGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
+
+    const atual = periodRows.reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+
+    const anterior = baseNoPeriodRows
+      .filter((row) => {
+        const dt = row._dateObj;
+        return (
+          dt &&
+          comparison.previousStart &&
+          comparison.previousEnd &&
+          dt >= comparison.previousStart &&
+          dt <= comparison.previousEnd
+        );
+      })
+      .reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+
+    return res.json({
+      porDia,
+      porBpo,
+      porTurno,
+      porSemana,
+      comparativo: {
+        atual,
+        anterior,
+        label: comparison.label || "base anterior",
+      },
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-graficos:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== DETALHES ==================
+
+app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const filteredRows = hcApplyFilters(rows, req.query);
+    const { rows: periodRows } = hcFilterRowsByPeriod(filteredRows, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 30), 1), 200);
+
+    const sorted = [...periodRows].sort((a, b) => {
+      const ad = a._dateObj ? a._dateObj.getTime() : 0;
+      const bd = b._dateObj ? b._dateObj.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    const rowsOut = sorted.slice(start, start + limit).map((row) => ({
+      data: row._dateObj ? hcFormatBR(row._dateObj) : row["data"] || "",
+      bpo: row["bpo"] || "",
+      qtdAdmitidos: Number(row["qtd_admitidos"] || 0),
+      semana: row["num_semana"] || "",
+      mes: row["num_mes"] || "",
+      turno: row["turno.1"] || "",
+    }));
+
+    return res.json({
+      total,
+      page: currentPage,
+      limit,
+      totalPages,
+      rows: rowsOut,
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-detalhes:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
 
 // ================== SERVIDOR ==================
 

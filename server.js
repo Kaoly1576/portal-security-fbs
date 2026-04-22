@@ -7095,7 +7095,7 @@ app.get("/hc-fbs", requireAuth, (req, res) => {
 });
 
 const HCFBS_SPREADSHEET_ID = "1s7ZG9N7pS0pafmYb-4QfQXZPily21gp16_-Vzdy7m5I";
-const HCFBS_RANGE = "'People KPIs Report - BRASIL - Query Balance'!A1:H200000";
+const HCFBS_RANGE = "'Query Balance'!A1:H200000";
 
 let hcfbsCache = null;
 let hcfbsCacheTime = 0;

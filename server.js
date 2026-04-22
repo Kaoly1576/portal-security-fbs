@@ -8016,6 +8016,10 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
     const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
 
+    // ABS % = horas abs / (qtd pessoas * 12h)
+    const horasPrevistas = totalQtd * 12;
+    const absPercentual = horasPrevistas > 0 ? (totalHorasAbs / horasPrevistas) * 100 : 0;
+
     const comparison = faGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
 
@@ -8031,18 +8035,24 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     });
 
     const qtdAnterior = previousRows.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const horasAbsAnterior = previousRows.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
+    const horasPrevistasAnterior = qtdAnterior * 12;
+    const absPercentualAnterior =
+      horasPrevistasAnterior > 0 ? (horasAbsAnterior / horasPrevistasAnterior) * 100 : 0;
 
     return res.json({
       totalOcorrencias,
       totalQtd,
       totalHorasAbs,
-      totalHorasAbsFmt: faFormatHoursDecimal(totalHorasAbs),
       totalHorasNaoCobertas,
       totalHorasNaoCobertasFmt: faFormatHoursDecimal(totalHorasNaoCobertas),
       totalColaboradores,
       totalUnidades,
-      qtdAnterior,
-      variacaoQtd: faPercentChange(totalQtd, qtdAnterior),
+
+      absPercentual,
+      absPercentualAnterior,
+      variacaoAbs: faPercentChange(absPercentual, absPercentualAnterior),
+
       comparativoLabel: comparison.label || "base anterior",
       periodoAtualInicio: comparison.currentStart ? faFormatBR(comparison.currentStart) : "",
       periodoAtualFim: comparison.currentEnd ? faFormatBR(comparison.currentEnd) : "",

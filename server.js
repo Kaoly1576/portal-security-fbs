@@ -5860,15 +5860,16 @@ function clParseDate(value) {
 
   if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
     const [datePart] = str.split(" ");
-    const [a, b, c] = datePart.split("/").map(Number);
+    const parts = datePart.split("/").map(Number);
+    if (parts.length === 3) {
+      const [a, b, c] = parts;
 
-    // base do checklist costuma vir MM/DD/YYYY
-    let dt = new Date(c, a - 1, b);
-    if (!isNaN(dt.getTime())) return dt;
+      let dt = new Date(c, a - 1, b);
+      if (!isNaN(dt.getTime())) return dt;
 
-    // fallback DD/MM/YYYY
-    dt = new Date(c, b - 1, a);
-    return isNaN(dt.getTime()) ? null : dt;
+      dt = new Date(c, b - 1, a);
+      if (!isNaN(dt.getTime())) return dt;
+    }
   }
 
   return null;
@@ -6185,7 +6186,7 @@ function clGroupByChecklist(rows) {
   });
 }
 
-// ================== FILTERS ON RAW ROWS ==================
+// ================== FILTERS ==================
 
 function clApplyFilters(rows, query) {
   const unidade = clSplitMulti(query.unidade);
@@ -6230,8 +6231,6 @@ function clApplyFiltersWithoutPeriod(rows, query) {
     dataRef: "",
   });
 }
-
-// ================== PERIOD FILTER ON GROUPS ==================
 
 function clFilterGroupsByPeriod(groups, query) {
   const period = clResolvePeriodFromQuery(query, groups);

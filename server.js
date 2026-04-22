@@ -7090,12 +7090,14 @@ app.get("/api/presenteismo-detalhes", requireAuth, async (req, res) => {
 
 // ================== HC FBS DASHBOARD ==================
 
+// ================== HC FBS DASHBOARD ==================
+
 app.get("/hc-fbs", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "hc-fbs.html"));
 });
 
 const HCFBS_SPREADSHEET_ID = "1s7ZG9N7pS0pafmYb-4QfQXZPily21gp16_-Vzdy7m5I";
-const HCFBS_RANGE = "'Query Balance'!A1:H200000";
+const HCFBS_RANGE = "A:H";
 
 let hcfbsCache = null;
 let hcfbsCacheTime = 0;
@@ -7337,16 +7339,31 @@ async function hcLoadRaw() {
   const values = response.data.values || [];
   if (!values.length || values.length < 2) return [];
 
-  const headers = values[0].map((h, i) => hcNorm(h) || `COL_${i + 1}`);
   const rows = values.slice(1);
 
   return rows.map((line) => {
-    const obj = {};
-    headers.forEach((header, i) => {
-      obj[header] = line[i] ?? "";
-    });
+    // Colunas:
+    // A = data
+    // B = bpo
+    // C = qtd_admitidos
+    // D = qtd_desligados (ignorar)
+    // E = num_semana
+    // F = num_mes
+    // G = turno (ignorar)
+    // H = turno correto
 
-    obj._dateObj = hcParseDate(obj["data"]);
+    const obj = {
+      data: line[0] ?? "",
+      bpo: line[1] ?? "",
+      qtd_admitidos: Number(line[2] || 0),
+      qtd_desligados: line[3] ?? "",
+      num_semana: line[4] ?? "",
+      num_mes: line[5] ?? "",
+      turno_base: line[6] ?? "",
+      turno: line[7] ?? "", // COLUNA H CORRETA
+    };
+
+    obj._dateObj = hcParseDate(obj.data);
     obj._day = obj._dateObj ? obj._dateObj.getDate() : null;
     obj._year = obj._dateObj ? obj._dateObj.getFullYear() : null;
     obj._month = obj._dateObj ? obj._dateObj.getMonth() + 1 : null;
@@ -7381,11 +7398,11 @@ function hcApplyFilters(rows, query) {
   const busca = hcNormLower(query.busca);
 
   return rows.filter((row) => {
-    if (!hcMatchesMulti(row["bpo"], bpo)) return false;
-    if (!hcMatchesMulti(row["turno.2"], turno)) return false;
+    if (!hcMatchesMulti(row.bpo, bpo)) return false;
+    if (!hcMatchesMulti(row.turno, turno)) return false;
     if (ano.length && !ano.includes(String(row._year || ""))) return false;
     if (mes.length && !mes.includes(String(row._month || ""))) return false;
-    if (semana.length && !semana.includes(String(row["num_semana"] || ""))) return false;
+    if (semana.length && !semana.includes(String(row.num_semana || ""))) return false;
     if (dia.length && !dia.includes(String(row._day || ""))) return false;
 
     if (busca) {
@@ -7430,21 +7447,21 @@ app.get("/api/hc-fbs-filtros", requireAuth, async (req, res) => {
   try {
     const rows = await hcLoadWithCache();
 
-    const uniq = (field) =>
-      [...new Set(rows.map((r) => hcNorm(r[field])).filter(Boolean))]
+    const uniq = (getter) =>
+      [...new Set(rows.map(getter).map(v => hcNorm(v)).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, "pt-BR"));
 
-    const uniqNum = (field) =>
-      [...new Set(rows.map((r) => String(r[field] || "")).filter(Boolean))]
+    const uniqNum = (getter) =>
+      [...new Set(rows.map(getter).map(v => String(v || "")).filter(Boolean))]
         .sort((a, b) => Number(a) - Number(b));
 
     return res.json({
-      bpo: uniq("bpo"),
-      turno: uniq("turno.2"),
-      ano: uniqNum("_year"),
-      mes: uniqNum("_month"),
-      semana: uniqNum("num_semana"),
-      dia: uniqNum("_day"),
+      bpo: uniq(r => r.bpo),
+      turno: uniq(r => r.turno),
+      ano: uniqNum(r => r._year),
+      mes: uniqNum(r => r._month),
+      semana: uniqNum(r => r.num_semana),
+      dia: uniqNum(r => r._day),
       ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
     });
   } catch (error) {
@@ -7462,10 +7479,10 @@ app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
     const filteredRows = hcApplyFilters(rows, req.query);
     const { rows: periodRows, period } = hcFilterRowsByPeriod(filteredRows, req.query);
 
-    const totalAdmitidos = periodRows.reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+    const totalAdmitidos = periodRows.reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
     const totalRegistros = periodRows.length;
-    const totalBpos = new Set(periodRows.map(r => hcNorm(r["bpo"])).filter(Boolean)).size;
-    const totalTurnos = new Set(periodRows.map(r => hcNorm(r["turno.2"])).filter(Boolean)).size;
+    const totalBpos = new Set(periodRows.map(r => hcNorm(r.bpo)).filter(Boolean)).size;
+    const totalTurnos = new Set(periodRows.map(r => hcNorm(r.turno)).filter(Boolean)).size;
 
     const comparison = hcGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
@@ -7481,7 +7498,7 @@ app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
       );
     });
 
-    const admitidosAnterior = previousRows.reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+    const admitidosAnterior = previousRows.reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
 
     return res.json({
       totalAdmitidos,
@@ -7520,24 +7537,24 @@ app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
     const porSemana = {};
 
     periodRows.forEach((row) => {
-      const qtd = Number(row["qtd_admitidos"] || 0);
+      const qtd = Number(row.qtd_admitidos || 0);
 
       if (row._day) porDia[row._day] += qtd;
 
-      const bpo = hcNorm(row["bpo"]) || "Sem BPO";
+      const bpo = hcNorm(row.bpo) || "Sem BPO";
       porBpo[bpo] = (porBpo[bpo] || 0) + qtd;
 
-      const turno = hcNorm(row["turno.2"]) || "Sem Turno";
+      const turno = hcNorm(row.turno) || "Sem Turno";
       porTurno[turno] = (porTurno[turno] || 0) + qtd;
 
-      const semana = `Semana ${row["num_semana"] || "?"}`;
+      const semana = `Semana ${row.num_semana || "?"}`;
       porSemana[semana] = (porSemana[semana] || 0) + qtd;
     });
 
     const comparison = hcGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
 
-    const atual = periodRows.reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+    const atual = periodRows.reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
 
     const anterior = baseNoPeriodRows
       .filter((row) => {
@@ -7550,7 +7567,7 @@ app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
           dt <= comparison.previousEnd
         );
       })
-      .reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
+      .reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
 
     return res.json({
       porDia,
@@ -7594,12 +7611,12 @@ app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
     const start = (currentPage - 1) * limit;
 
     const rowsOut = sorted.slice(start, start + limit).map((row) => ({
-      data: row._dateObj ? hcFormatBR(row._dateObj) : row["data"] || "",
-      bpo: row["bpo"] || "",
-      qtdAdmitidos: Number(row["qtd_admitidos"] || 0),
-      semana: row["num_semana"] || "",
-      mes: row["num_mes"] || "",
-      turno: row["turno.2"] || "",
+      data: row._dateObj ? hcFormatBR(row._dateObj) : row.data || "",
+      bpo: row.bpo || "",
+      qtdAdmitidos: Number(row.qtd_admitidos || 0),
+      semana: row.num_semana || "",
+      mes: row.num_mes || "",
+      turno: row.turno || "",
     }));
 
     return res.json({
@@ -7615,7 +7632,6 @@ app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
 
 // ================== SERVIDOR ==================
 

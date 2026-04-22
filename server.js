@@ -7856,6 +7856,15 @@ function faFormatHoursDecimal(value) {
   return `${hours}h${String(minutes).padStart(2, "0")}`;
 }
 
+function faIsFaltaOuPostoVago(row) {
+  const ocorrencia = faNormLower(row.ocorrencia);
+
+  return (
+    ocorrencia === "falta" ||
+    ocorrencia === "posto vago"
+  );
+}
+
 async function faLoadRaw() {
   const sheets = await conectarSheets();
 
@@ -8009,14 +8018,15 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     const filteredRows = faApplyFilters(rows, req.query);
     const { rows: periodRows, period } = faFilterRowsByPeriod(filteredRows, req.query);
 
+    const baseFalta = periodRows.filter(faIsFaltaOuPostoVago);
+
     const totalOcorrencias = periodRows.length;
-    const totalQtd = periodRows.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const totalHorasAbs = periodRows.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
+    const totalQtd = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const totalHorasAbs = baseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
     const totalHorasNaoCobertas = periodRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
     const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
     const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
 
-    // ABS % = horas abs / (qtd pessoas * 12h)
     const horasPrevistas = totalQtd * 12;
     const absPercentual = horasPrevistas > 0 ? (totalHorasAbs / horasPrevistas) * 100 : 0;
 
@@ -8034,8 +8044,10 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
       );
     });
 
-    const qtdAnterior = previousRows.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const horasAbsAnterior = previousRows.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
+    const previousBaseFalta = previousRows.filter(faIsFaltaOuPostoVago);
+
+    const qtdAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const horasAbsAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
     const horasPrevistasAnterior = qtdAnterior * 12;
     const absPercentualAnterior =
       horasPrevistasAnterior > 0 ? (horasAbsAnterior / horasPrevistasAnterior) * 100 : 0;
@@ -8044,6 +8056,7 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
       totalOcorrencias,
       totalQtd,
       totalHorasAbs,
+      totalHorasAbsFmt: faFormatHoursDecimal(totalHorasAbs),
       totalHorasNaoCobertas,
       totalHorasNaoCobertasFmt: faFormatHoursDecimal(totalHorasNaoCobertas),
       totalColaboradores,
@@ -8051,6 +8064,7 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
 
       absPercentual,
       absPercentualAnterior,
+      variacaoQtd: faPercentChange(totalQtd, qtdAnterior),
       variacaoAbs: faPercentChange(absPercentual, absPercentualAnterior),
 
       comparativoLabel: comparison.label || "base anterior",
@@ -8073,6 +8087,8 @@ app.get("/api/faltas-altum-graficos", requireAuth, async (req, res) => {
     const filteredRows = faApplyFilters(rows, req.query);
     const { rows: periodRows, period } = faFilterRowsByPeriod(filteredRows, req.query);
 
+    const baseFalta = periodRows.filter(faIsFaltaOuPostoVago);
+
     const porDia = {};
     for (let i = 1; i <= 31; i++) porDia[i] = 0;
 
@@ -8081,7 +8097,7 @@ app.get("/api/faltas-altum-graficos", requireAuth, async (req, res) => {
     const porTurno = {};
     const porPlantao = {};
 
-    periodRows.forEach((row) => {
+    baseFalta.forEach((row) => {
       const qtd = Number(row.qtd || 0);
 
       if (row._day) porDia[row._day] += qtd;
@@ -8101,10 +8117,7 @@ app.get("/api/faltas-altum-graficos", requireAuth, async (req, res) => {
 
     const comparison = faGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
-
-    const atual = periodRows.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-
-    const anterior = baseNoPeriodRows
+    const previousBaseFalta = baseNoPeriodRows
       .filter((row) => {
         const dt = row._dateObj;
         return (
@@ -8115,7 +8128,10 @@ app.get("/api/faltas-altum-graficos", requireAuth, async (req, res) => {
           dt <= comparison.previousEnd
         );
       })
-      .reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+      .filter(faIsFaltaOuPostoVago);
+
+    const atual = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const anterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
 
     return res.json({
       porDia,

@@ -1067,7 +1067,11 @@ function buildFilters() {
 }
 
 function setDefaultDates() {
-  const validDates = rawData.map(r => r._date).filter(Boolean).sort((a,b) => a - b);
+  const validDates = rawData
+    .map(r => r._date)
+    .filter(Boolean)
+    .sort((a,b) => a - b);
+
   if (!validDates.length) return;
 
   document.getElementById("dateStart").value = formatDateToInput(validDates[0]);

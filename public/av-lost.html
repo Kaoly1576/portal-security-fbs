@@ -243,6 +243,13 @@ body{
   margin-bottom:8px;
 }
 
+.kpi-grid-extra{
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0, 1fr));
+  gap:8px;
+  margin-bottom:8px;
+}
+
 .kpi-card{
   background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
   border:1px solid rgba(255,255,255,0.10);
@@ -290,14 +297,6 @@ body{
 
 .variation.neutral{
   color:#e5e7eb;
-}
-
-.chart-grid-top{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:8px;
-  margin-bottom:8px;
-  align-items:stretch;
 }
 
 .chart-grid-middle{
@@ -518,11 +517,11 @@ tr:hover td{
     grid-template-columns:repeat(4, minmax(0, 1fr));
   }
 
-  .kpi-grid{
+  .kpi-grid,
+  .kpi-grid-extra{
     grid-template-columns:repeat(3, minmax(0, 1fr));
   }
 
-  .chart-grid-top,
   .chart-grid-middle{
     grid-template-columns:1fr;
   }
@@ -540,7 +539,8 @@ tr:hover td{
   }
 
   .filters-grid,
-  .kpi-grid{
+  .kpi-grid,
+  .kpi-grid-extra{
     grid-template-columns:1fr;
   }
 
@@ -699,12 +699,11 @@ tr:hover td{
     </div>
   </section>
 
-  <section class="chart-grid-top">
-    <div class="chart-card">
-      <div class="chart-title">Resumo por Status</div>
-      <div class="chart-wrap tall">
-        <canvas id="chartStatus"></canvas>
-      </div>
+  <section class="kpi-grid-extra">
+    <div class="kpi-card">
+      <div class="kpi-label">DIFERENÇA AV x ENCONTRADA</div>
+      <div class="kpi-value" id="kpiDiferenca">0</div>
+      <div class="kpi-sub" id="kpiDiferencaSub">AV - Encontrada</div>
     </div>
   </section>
 
@@ -751,7 +750,6 @@ let rawData = [];
 let filteredData = [];
 let headers = [];
 
-let chartStatus;
 let chartResumoStatus;
 let chartValidacao;
 let chartDia;
@@ -1213,12 +1211,14 @@ function updateKpis() {
   const totalItensAv = sumByRows(filteredData, AV_COLUMN, parseNumeric);
   const totalUsd = sumByRows(filteredData, USD_COLUMN, parseMoney);
   const totalBrl = sumByRows(filteredData, BRL_COLUMN, parseMoney);
+  const totalDiferenca = totalItensAv - totalQtdEncontrada;
 
   document.getElementById("kpiRegistros").textContent = formatNumber(totalRegistros);
   document.getElementById("kpiQtdEncontrada").textContent = formatNumber(totalQtdEncontrada);
   document.getElementById("kpiAv").textContent = formatNumber(totalItensAv);
   document.getElementById("kpiUsd").textContent = formatUsd(totalUsd);
   document.getElementById("kpiBrl").textContent = formatBrl(totalBrl);
+  document.getElementById("kpiDiferenca").textContent = formatNumber(totalDiferenca);
 
   const ref = getSelectedReferenceMonth();
 
@@ -1233,6 +1233,8 @@ function updateKpis() {
       const el = document.getElementById(id);
       if (el) el.textContent = "Sem comparativo";
     });
+
+    document.getElementById("kpiDiferencaSub").textContent = "AV - Encontrada";
     return;
   }
 
@@ -1258,16 +1260,21 @@ function updateKpis() {
     sumByRows(currentRows, BRL_COLUMN, parseMoney),
     sumByRows(previousRows, BRL_COLUMN, parseMoney)
   );
+  const diferencaVar = getVariation(
+    sumByRows(currentRows, AV_COLUMN, parseNumeric) - sumByRows(currentRows, QTD_COLUMN, parseNumeric),
+    sumByRows(previousRows, AV_COLUMN, parseNumeric) - sumByRows(previousRows, QTD_COLUMN, parseNumeric)
+  );
 
   setVariationText("kpiRegistrosSub", registrosVar);
   setVariationText("kpiQtdEncontradaSub", qtdVar);
   setVariationText("kpiAvSub", avVar);
   setVariationText("kpiUsdSub", usdVar);
   setVariationText("kpiBrlSub", brlVar);
+  setVariationText("kpiDiferencaSub", diferencaVar);
 }
 
 function destroyCharts() {
-  [chartStatus, chartResumoStatus, chartValidacao, chartDia].forEach(chart => {
+  [chartResumoStatus, chartValidacao, chartDia].forEach(chart => {
     if (chart) chart.destroy();
   });
 }
@@ -1356,20 +1363,6 @@ function renderCharts() {
   });
 
   const statusTop = mapTop(statusMap, 10);
-
-  chartStatus = new Chart(document.getElementById("chartStatus"), {
-    type: "bar",
-    data: {
-      labels: statusTop.map(([label]) => label),
-      datasets: [{
-        label: "Registros",
-        data: statusTop.map(([, value]) => value),
-        backgroundColor: "#ff7a1a",
-        borderRadius: 8
-      }]
-    },
-    options: baseBarOptions(true, false)
-  });
 
   chartResumoStatus = new Chart(document.getElementById("chartResumoStatus"), {
     type: "bar",

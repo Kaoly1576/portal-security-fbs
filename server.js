@@ -7382,7 +7382,7 @@ function hcApplyFilters(rows, query) {
 
   return rows.filter((row) => {
     if (!hcMatchesMulti(row["bpo"], bpo)) return false;
-    if (!hcMatchesMulti(row["turno.1"], turno)) return false;
+    if (!hcMatchesMulti(row["turno.2"], turno)) return false;
     if (ano.length && !ano.includes(String(row._year || ""))) return false;
     if (mes.length && !mes.includes(String(row._month || ""))) return false;
     if (semana.length && !semana.includes(String(row["num_semana"] || ""))) return false;
@@ -7440,7 +7440,7 @@ app.get("/api/hc-fbs-filtros", requireAuth, async (req, res) => {
 
     return res.json({
       bpo: uniq("bpo"),
-      turno: uniq("turno.1"),
+      turno: uniq("turno.2"),
       ano: uniqNum("_year"),
       mes: uniqNum("_month"),
       semana: uniqNum("num_semana"),
@@ -7465,7 +7465,7 @@ app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
     const totalAdmitidos = periodRows.reduce((sum, row) => sum + Number(row["qtd_admitidos"] || 0), 0);
     const totalRegistros = periodRows.length;
     const totalBpos = new Set(periodRows.map(r => hcNorm(r["bpo"])).filter(Boolean)).size;
-    const totalTurnos = new Set(periodRows.map(r => hcNorm(r["turno.1"])).filter(Boolean)).size;
+    const totalTurnos = new Set(periodRows.map(r => hcNorm(r["turno.2"])).filter(Boolean)).size;
 
     const comparison = hcGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
@@ -7527,7 +7527,7 @@ app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
       const bpo = hcNorm(row["bpo"]) || "Sem BPO";
       porBpo[bpo] = (porBpo[bpo] || 0) + qtd;
 
-      const turno = hcNorm(row["turno.1"]) || "Sem Turno";
+      const turno = hcNorm(row["turno.2"]) || "Sem Turno";
       porTurno[turno] = (porTurno[turno] || 0) + qtd;
 
       const semana = `Semana ${row["num_semana"] || "?"}`;
@@ -7599,7 +7599,7 @@ app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
       qtdAdmitidos: Number(row["qtd_admitidos"] || 0),
       semana: row["num_semana"] || "",
       mes: row["num_mes"] || "",
-      turno: row["turno.1"] || "",
+      turno: row["turno.2"] || "",
     }));
 
     return res.json({

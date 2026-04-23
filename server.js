@@ -1,5 +1,7 @@
 require("dotenv").config();
 
+console.log("SERVER NOVO CARREGADO");
+
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { google } = require("googleapis");

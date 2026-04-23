@@ -23,23 +23,6 @@ const GOOGLE_CALLBACK_URL =
 const googleOAuthEnabled =
   Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);
 
-const CADASTRO_SHEET_ID = "1iDkB1uHIIXv7qnVGAWYYPrabl_g1-V_435lYdx66Crc";
-const CADASTRO_USUARIOS_RANGE = "usuarios!A1:Z5000";
-const CADASTRO_CARGOS_RANGE = "cargos!A1:Z500";const TOTAL_AGENTES = 168;
-const HORAS_TURNO = 12;
-
-const horasBase = TOTAL_AGENTES * HORAS_TURNO;
-
-const totalFaltas = dados.filter(r =>
-  ["FALTA", "POSTO VAGO"].includes(r.STATUS)
-).length;
-
-const horasDescobertas = somarHoras(dados.map(r => r.HORAS_DESCOBERTAS || "00:00:00"));
-
-const absHoras = (totalFaltas * 12) + horasDescobertas;
-
-const absPercent = (absHoras / horasBase) * 100;
-const CADASTRO_NIVEIS_RANGE = "niveis_acesso!A1:Z500";
 
 // ================== MIDDLEWARES ==================
 

@@ -25,7 +25,20 @@ const googleOAuthEnabled =
 
 const CADASTRO_SHEET_ID = "1iDkB1uHIIXv7qnVGAWYYPrabl_g1-V_435lYdx66Crc";
 const CADASTRO_USUARIOS_RANGE = "usuarios!A1:Z5000";
-const CADASTRO_CARGOS_RANGE = "cargos!A1:Z500";
+const CADASTRO_CARGOS_RANGE = "cargos!A1:Z500";const TOTAL_AGENTES = 168;
+const HORAS_TURNO = 12;
+
+const horasBase = TOTAL_AGENTES * HORAS_TURNO;
+
+const totalFaltas = dados.filter(r =>
+  ["FALTA", "POSTO VAGO"].includes(r.STATUS)
+).length;
+
+const horasDescobertas = somarHoras(dados.map(r => r.HORAS_DESCOBERTAS || "00:00:00"));
+
+const absHoras = (totalFaltas * 12) + horasDescobertas;
+
+const absPercent = (absHoras / horasBase) * 100;
 const CADASTRO_NIVEIS_RANGE = "niveis_acesso!A1:Z500";
 
 // ================== MIDDLEWARES ==================
@@ -7291,6 +7304,16 @@ let faltasAltumCache = null;
 let faltasAltumCacheTime = 0;
 const FALTAS_ALTUM_CACHE_TTL = 5 * 60 * 1000;
 
+// Base fixa de efetivo
+const FA_BASE_EFETIVO = {
+  "FBS - SP9": { DIURNO: 22, NOTURNO: 22 },
+  "FBS - SP20": { DIURNO: 12, NOTURNO: 12 },
+  "FBS - MG5": { DIURNO: 10, NOTURNO: 10 },
+  "FBS - PE3": { DIURNO: 19, NOTURNO: 19 },
+  "FBS - GO3": { DIURNO: 13, NOTURNO: 13 },
+  "FBS - RS3": { DIURNO: 8, NOTURNO: 8 },
+};
+
 function faNorm(v) {
   return String(v || "").trim();
 }
@@ -7523,11 +7546,62 @@ function faFormatHoursDecimal(value) {
 
 function faIsFaltaOuPostoVago(row) {
   const ocorrencia = faNormLower(row.ocorrencia);
+  return ocorrencia === "falta" || ocorrencia === "posto vago";
+}
 
-  return (
-    ocorrencia === "falta" ||
-    ocorrencia === "posto vago"
-  );
+function faNormalizeUnidadeBase(unidade) {
+  const u = faNormLower(unidade)
+    .replace(/\s+/g, " ")
+    .replace(/\s*-\s*/g, " - ")
+    .toUpperCase();
+
+  const aliases = {
+    "FBS - SP9": "FBS - SP9",
+    "FBS - SP09": "FBS - SP9",
+    "FBS - SP20": "FBS - SP20",
+    "FBS - MG5": "FBS - MG5",
+    "FBS - MG05": "FBS - MG5",
+    "FBS - PE3": "FBS - PE3",
+    "FBS - PE03": "FBS - PE3",
+    "FBS - GO3": "FBS - GO3",
+    "FBS - GO03": "FBS - GO3",
+    "FBS - RS3": "FBS - RS3",
+    "FBS - RS03": "FBS - RS3",
+  };
+
+  return aliases[u] || faNorm(unidade);
+}
+
+function faNormalizeTurnoBase(turno) {
+  const t = faNormLower(turno);
+
+  if (t.includes("dia")) return "DIURNO";
+  if (t.includes("not")) return "NOTURNO";
+
+  return "";
+}
+
+function faGetBaseAgentesFromQuery(query) {
+  const unidadesSelecionadas = faSplitMulti(query.unidade).map(faNormalizeUnidadeBase);
+  const turnosSelecionados = faSplitMulti(query.turno).map(faNormalizeTurnoBase).filter(Boolean);
+
+  const unidadesBase = unidadesSelecionadas.length
+    ? unidadesSelecionadas.filter(u => FA_BASE_EFETIVO[u])
+    : Object.keys(FA_BASE_EFETIVO);
+
+  const turnosBase = turnosSelecionados.length
+    ? turnosSelecionados
+    : ["DIURNO", "NOTURNO"];
+
+  let total = 0;
+
+  for (const unidade of unidadesBase) {
+    for (const turno of turnosBase) {
+      total += Number(FA_BASE_EFETIVO[unidade]?.[turno] || 0);
+    }
+  }
+
+  return total;
 }
 
 async function faLoadRaw() {
@@ -7687,13 +7761,16 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
 
     const totalOcorrencias = periodRows.length;
     const totalQtd = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const totalHorasAbs = baseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
     const totalHorasNaoCobertas = periodRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
     const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
     const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
 
-    const horasPrevistas = totalQtd * 12;
-    const absPercentual = horasPrevistas > 0 ? (totalHorasAbs / horasPrevistas) * 100 : 0;
+    const baseAgentes = faGetBaseAgentesFromQuery(req.query);
+    const baseHoras = baseAgentes * 12;
+
+    // ABS = (faltas/posto vago * 12h + horas descobertas) / base planejada
+    const horasImpactadas = (totalQtd * 12) + totalHorasNaoCobertas;
+    const absPercentual = baseHoras > 0 ? (horasImpactadas / baseHoras) * 100 : 0;
 
     const comparison = faGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
@@ -7712,20 +7789,21 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     const previousBaseFalta = previousRows.filter(faIsFaltaOuPostoVago);
 
     const qtdAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const horasAbsAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
-    const horasPrevistasAnterior = qtdAnterior * 12;
-    const absPercentualAnterior =
-      horasPrevistasAnterior > 0 ? (horasAbsAnterior / horasPrevistasAnterior) * 100 : 0;
+    const horasNaoCobertasAnterior = previousRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
+    const horasImpactadasAnterior = (qtdAnterior * 12) + horasNaoCobertasAnterior;
+    const absPercentualAnterior = baseHoras > 0 ? (horasImpactadasAnterior / baseHoras) * 100 : 0;
 
     return res.json({
       totalOcorrencias,
       totalQtd,
-      totalHorasAbs,
-      totalHorasAbsFmt: faFormatHoursDecimal(totalHorasAbs),
       totalHorasNaoCobertas,
       totalHorasNaoCobertasFmt: faFormatHoursDecimal(totalHorasNaoCobertas),
       totalColaboradores,
       totalUnidades,
+      baseAgentes,
+      baseHoras,
+      horasImpactadas,
+      horasImpactadasFmt: faFormatHoursDecimal(horasImpactadas),
 
       absPercentual,
       absPercentualAnterior,

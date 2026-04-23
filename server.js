@@ -285,6 +285,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando: http://localhost:${PORT}`);
+});
 
-
-  //====================== NÃO MEXER DAQUI PARA CIMA ==============

@@ -5334,138 +5334,136 @@ app.get("/api/hc-onboarding-debug", requireAuth, async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
-
-// ================== FIRST MILE ACCESS DASHBOARD ==================
+// ================== FIRST MILE ACCESS ==================
 
 app.get("/first-mile-access", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "first-mile-access.html"));
 });
 
-const FM_ACCESS_SPREADSHEET_ID = "1kxePCOZeaVh48C7tP7Ua_iUpYg7EJttRvC7VAkEfQBo";
-const FM_ACCESS_SHEET_NAME = "Painel Operacional";
+const FM_SPREADSHEET_ID = "1kxePCOZeaVh48C7tP7Ua_iUpYg7EJttRvC7VAkEfQBo";
+const FM_RANGE = "'Painel Operacional'!A:AO";
 
-let fmAccessCache = null;
-let fmAccessCacheTime = 0;
-const FM_ACCESS_CACHE_TTL = 5 * 60 * 1000;
+let fmCache = null;
+let fmCacheTime = 0;
+const FM_CACHE_TTL = 5 * 60 * 1000;
 
-// ---------- helpers ----------
-function fmNormalize(value) {
-  return String(value || "").trim();
+function fmNorm(v) {
+  return String(v || "").trim();
 }
 
-function fmNormalizeLower(value) {
-  return fmNormalize(value)
+function fmNormLower(v) {
+  return fmNorm(v)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 }
 
-function fmIsUsefulHeader(header) {
-  const h = fmNormalize(header);
-  return h && !/^unnamed/i.test(h);
+function fmHoraAtualizacao() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
-function fmFindHeader(headers, possibilities) {
-  for (const possibility of possibilities) {
-    const found = headers.find((h) => fmNormalizeLower(h) === fmNormalizeLower(possibility));
-    if (found) return found;
+function fmParseDate(value) {
+  const str = fmNorm(value);
+  if (!str) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
   }
 
-  for (const possibility of possibilities) {
-    const found = headers.find((h) => fmNormalizeLower(h).includes(fmNormalizeLower(possibility)));
-    if (found) return found;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const [d, m, y] = str.split("/").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
   }
 
   return null;
 }
 
-function fmParseDate(value) {
-  const str = fmNormalize(value);
-  if (!str) return null;
-
-  if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [day, month, year] = datePart.split("/").map(Number);
-    const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [year, month, day] = datePart.split("-").map(Number);
-    const dt = new Date(year, month - 1, day);
-    return isNaN(dt) ? null : dt;
-  }
-
-  const tryNative = new Date(str);
-  return isNaN(tryNative) ? null : tryNative;
-}
-
-function fmFormatInputDate(date) {
+function fmFormatBR(date) {
   if (!date) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
 }
 
-function fmParseMulti(value) {
+function fmSplitMulti(value) {
   if (!value) return [];
-  return String(value)
-    .split("|")
-    .map((v) => fmNormalize(v))
-    .filter(Boolean);
+  return String(value).split("|").map(v => fmNorm(v)).filter(Boolean);
 }
 
-function fmGroupCount(data, header) {
-  const map = {};
-  data.forEach((row) => {
-    const key = fmNormalize(row[header]) || "Sem valor";
-    map[key] = (map[key] || 0) + 1;
-  });
-  return map;
+function fmMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(fmNorm(fieldValue));
 }
 
-function fmTopEntries(data, header, limit = 10, onlyFilled = true) {
-  if (!header) return [];
-  let base = data;
+function fmResolveHeader(headers, aliases) {
+  const normalized = headers.map(h => ({
+    original: h,
+    norm: fmNormLower(h),
+  }));
 
-  if (onlyFilled) {
-    base = data.filter((row) => fmNormalize(row[header]));
+  for (const alias of aliases) {
+    const aliasNorm = fmNormLower(alias);
+    const exact = normalized.find(h => h.norm === aliasNorm);
+    if (exact) return exact.original;
   }
 
-  return Object.entries(fmGroupCount(base, header))
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([nome, total]) => ({ nome, total }));
+  for (const alias of aliases) {
+    const aliasNorm = fmNormLower(alias);
+    const partial = normalized.find(h => h.norm.includes(aliasNorm));
+    if (partial) return partial.original;
+  }
+
+  return null;
 }
 
-function fmGetMonthKey(date) {
-  if (!date) return "";
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+function fmGetValue(row, key) {
+  return fmNorm(row?.[key] || "");
 }
 
-// ---------- load raw ----------
-async function fmAccessLoadRaw() {
+function fmCountDistinct(rows, key) {
+  return new Set(
+    rows.map(r => fmGetValue(r, key)).filter(Boolean)
+  ).size;
+}
+
+function fmGroupCount(rows, key) {
+  const map = {};
+  rows.forEach(row => {
+    const val = fmGetValue(row, key) || "Sem informação";
+    map[val] = (map[val] || 0) + 1;
+  });
+
+  return Object.entries(map)
+    .map(([nome, total]) => ({ nome, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+async function fmLoadRaw() {
   const sheets = await conectarSheets();
 
   const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: FM_ACCESS_SPREADSHEET_ID,
-    range: `'${FM_ACCESS_SHEET_NAME}'!A1:AO200000`,
+    spreadsheetId: FM_SPREADSHEET_ID,
+    range: FM_RANGE,
   });
 
   const values = response.data.values || [];
-
   if (!values.length || values.length < 2) {
-    return { headers: [], rows: [], sheetTitle: FM_ACCESS_SHEET_NAME };
+    return { headers: [], rows: [], map: {} };
   }
 
-  const headers = values[0].map((h, idx) => {
-    const name = fmNormalize(h);
-    return name || `COL_${idx + 1}`;
-  });
+  const headers = values[0].map((h, i) => fmNorm(h) || `COL_${i + 1}`);
+  const dataRows = values.slice(1);
 
-  const rows = values.slice(1).map((line) => {
+  const rows = dataRows.map(line => {
     const obj = {};
     headers.forEach((header, i) => {
       obj[header] = line[i] ?? "";
@@ -5473,257 +5471,157 @@ async function fmAccessLoadRaw() {
     return obj;
   });
 
-  return {
-    headers,
-    rows,
-    sheetTitle: FM_ACCESS_SHEET_NAME,
-  };
-}
-
-// ---------- cache + column detection ----------
-async function fmAccessLoadWithCache() {
-  const now = Date.now();
-
-  if (fmAccessCache && now - fmAccessCacheTime < FM_ACCESS_CACHE_TTL) {
-    return fmAccessCache;
-  }
-
-  const { headers, rows, sheetTitle } = await fmAccessLoadRaw();
-
-  const cleanHeaders = headers.filter((header) => fmIsUsefulHeader(header));
-
-  const cleanRows = rows
-    .map((row) => {
-      const obj = {};
-      cleanHeaders.forEach((header) => {
-        obj[header] = row[header] ?? "";
-      });
-      return obj;
-    })
-    .filter((row) => cleanHeaders.some((header) => fmNormalize(row[header])));
-
-  const dateHeader =
-    fmFindHeader(cleanHeaders, ["Data", "Date", "Creation Date", "Created At"]) ||
-    cleanHeaders.find((header) => /data|date|dia/i.test(header)) ||
-    null;
-
-  const agencyHeader =
-    fmFindHeader(cleanHeaders, ["Agency", "Agência", "Agencia"]) ||
-    null;
-
-  const regionalHeader =
-    fmFindHeader(cleanHeaders, ["Regional", "Região", "Regiao"]) ||
-    null;
-
-  const cityHeader =
-    fmFindHeader(cleanHeaders, ["City", "Cidade"]) ||
-    null;
-
-  const vehicleHeader =
-    fmFindHeader(cleanHeaders, ["Vehicle", "Veículo", "Veiculo"]) ||
-    null;
-
-  const monitorHeader =
-    fmFindHeader(cleanHeaders, ["Monitor", "Monitora", "Monitoring"]) ||
-    null;
-
-  const sellerHeader =
-    fmFindHeader(cleanHeaders, ["Seller", "Sellers", "Vendedor", "Loja"]) ||
-    null;
-
-  const driverHeader =
-    fmFindHeader(cleanHeaders, ["Driver", "Motorista"]) ||
-    null;
-
-  const ocorrenciaHeader =
-    fmFindHeader(cleanHeaders, ["Ocorrência", "Ocorrencia", "Occurrence", "Issue"]) ||
-    null;
-
-  const statusFinalHeader =
-    fmFindHeader(cleanHeaders, ["Status Final", "Final Status", "Status"]) ||
-    null;
-
-  const validacaoHeader =
-    fmFindHeader(cleanHeaders, ["Validação", "Validacao", "Validação da Ocorrência", "Validation"]) ||
-    null;
-
-  const enrichedRows = cleanRows.map((row) => ({
-    ...row,
-    _primaryDate: dateHeader ? fmParseDate(row[dateHeader]) : null,
-  }));
-
-  fmAccessCache = {
-    sheetTitle,
-    headers: cleanHeaders,
-    rows: enrichedRows,
-    dateHeader,
-    agencyHeader,
-    regionalHeader,
-    cityHeader,
-    vehicleHeader,
-    monitorHeader,
-    sellerHeader,
-    driverHeader,
-    ocorrenciaHeader,
-    statusFinalHeader,
-    validacaoHeader,
+  const map = {
+    data: fmResolveHeader(headers, ["Date", "Data", "Created At"]),
+    agency: fmResolveHeader(headers, ["Agency", "Hub", "Station", "Origin Agency"]),
+    regional: fmResolveHeader(headers, ["Regional", "Region"]),
+    city: fmResolveHeader(headers, ["City", "Cidade"]),
+    vehicle: fmResolveHeader(headers, ["Vehicle", "Vehicle Type", "Tipo de Veículo"]),
+    monitor: fmResolveHeader(headers, ["Monitor", "Monitors", "Monitoring"]),
+    shopName: fmResolveHeader(headers, ["Shop Name", "Seller", "Seller Name"]),
+    driver: fmResolveHeader(headers, ["Driver", "Driver Name", "Motorista"]),
+    statusFinal: fmResolveHeader(headers, ["Final Status", "Status Final"]),
+    ocorrenciaValidacao: fmResolveHeader(headers, ["Validation of Occurrence", "Occurrence Validation", "Validação da Ocorrência"]),
+    rota: fmResolveHeader(headers, ["Route ID", "Route", "Rota", "Route Code"]),
   };
 
-  fmAccessCacheTime = now;
-
-  console.log("FM Access cache atualizado:", {
-    aba: sheetTitle,
-    totalLinhas: enrichedRows.length,
-    totalColunas: cleanHeaders.length,
-    dateHeader,
-    agencyHeader,
-    regionalHeader,
-    cityHeader,
-    vehicleHeader,
-    monitorHeader,
-    sellerHeader,
-    driverHeader,
-    ocorrenciaHeader,
-    statusFinalHeader,
-    validacaoHeader,
+  const enriched = rows.map(row => {
+    const dt = fmParseDate(fmGetValue(row, map.data));
+    return {
+      ...row,
+      _dateObj: dt,
+      _day: dt ? dt.getDate() : null,
+      _month: dt ? dt.getMonth() + 1 : null,
+      _year: dt ? dt.getFullYear() : null,
+    };
   });
 
-  return fmAccessCache;
+  return { headers, rows: enriched, map };
 }
 
-// ---------- filters ----------
-function fmAccessApplyFilters(rows, query, meta) {
-  const dataInicio = fmNormalize(query.dataInicio);
-  const dataFim = fmNormalize(query.dataFim);
-  const busca = fmNormalizeLower(query.busca);
+async function fmLoadWithCache() {
+  const now = Date.now();
 
-  const agencies = fmParseMulti(query.agency);
-  const regionals = fmParseMulti(query.regional);
-  const cities = fmParseMulti(query.city);
-  const vehicles = fmParseMulti(query.vehicle);
-  const monitors = fmParseMulti(query.monitor);
+  if (fmCache && now - fmCacheTime < FM_CACHE_TTL) {
+    return fmCache;
+  }
+
+  fmCache = await fmLoadRaw();
+  fmCacheTime = now;
+
+  console.log("FIRST MILE ACCESS cache atualizado:", fmCache.rows.length);
+
+  return fmCache;
+}
+
+function fmApplyFilters(rows, query, map) {
+  const agency = fmSplitMulti(query.agency);
+  const regional = fmSplitMulti(query.regional);
+  const city = fmSplitMulti(query.city);
+  const vehicle = fmSplitMulti(query.vehicle);
+  const monitor = fmSplitMulti(query.monitor);
+  const busca = fmNormLower(query.busca);
+
+  const dataInicio = query.dataInicio ? new Date(`${query.dataInicio}T00:00:00`) : null;
+  const dataFim = query.dataFim ? new Date(`${query.dataFim}T23:59:59`) : null;
 
   return rows.filter((row) => {
-    const dt = row._primaryDate;
+    if (dataInicio && (!row._dateObj || row._dateObj < dataInicio)) return false;
+    if (dataFim && (!row._dateObj || row._dateObj > dataFim)) return false;
 
-    const okDataInicio = !dataInicio || (dt && fmFormatInputDate(dt) >= dataInicio);
-    const okDataFim = !dataFim || (dt && fmFormatInputDate(dt) <= dataFim);
-
-    if (!okDataInicio || !okDataFim) return false;
-
-    if (agencies.length && meta.agencyHeader && !agencies.includes(fmNormalize(row[meta.agencyHeader]))) {
-      return false;
-    }
-
-    if (regionals.length && meta.regionalHeader && !regionals.includes(fmNormalize(row[meta.regionalHeader]))) {
-      return false;
-    }
-
-    if (cities.length && meta.cityHeader && !cities.includes(fmNormalize(row[meta.cityHeader]))) {
-      return false;
-    }
-
-    if (vehicles.length && meta.vehicleHeader && !vehicles.includes(fmNormalize(row[meta.vehicleHeader]))) {
-      return false;
-    }
-
-    if (monitors.length && meta.monitorHeader && !monitors.includes(fmNormalize(row[meta.monitorHeader]))) {
-      return false;
-    }
+    if (map.agency && !fmMatchesMulti(fmGetValue(row, map.agency), agency)) return false;
+    if (map.regional && !fmMatchesMulti(fmGetValue(row, map.regional), regional)) return false;
+    if (map.city && !fmMatchesMulti(fmGetValue(row, map.city), city)) return false;
+    if (map.vehicle && !fmMatchesMulti(fmGetValue(row, map.vehicle), vehicle)) return false;
+    if (map.monitor && !fmMatchesMulti(fmGetValue(row, map.monitor), monitor)) return false;
 
     if (busca) {
-      const searchable = Object.entries(row)
-        .filter(([key]) => !key.startsWith("_"))
-        .map(([, value]) => fmNormalizeLower(value))
-        .join(" ");
+      const text = Object.values(row)
+        .filter(v => typeof v !== "object")
+        .join(" ")
+        .toLowerCase();
 
-      if (!searchable.includes(busca)) return false;
+      if (!text.includes(busca)) return false;
     }
 
     return true;
   });
 }
 
-// ---------- filtros ----------
+function fmMonthLabel(month) {
+  const labels = {
+    1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+    7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"
+  };
+  return labels[month] || String(month);
+}
+
+// FILTROS
 app.get("/api/fm-access-filtros", requireAuth, async (req, res) => {
   try {
-    const meta = await fmAccessLoadWithCache();
+    const { rows, map } = await fmLoadWithCache();
+
+    const uniq = (key) => {
+      if (!key) return [];
+      return [...new Set(rows.map(r => fmGetValue(r, key)).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    };
 
     return res.json({
-      agencies: meta.agencyHeader
-        ? [...new Set(meta.rows.map((r) => fmNormalize(r[meta.agencyHeader])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"))
-        : [],
-      regionals: meta.regionalHeader
-        ? [...new Set(meta.rows.map((r) => fmNormalize(r[meta.regionalHeader])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"))
-        : [],
-      cities: meta.cityHeader
-        ? [...new Set(meta.rows.map((r) => fmNormalize(r[meta.cityHeader])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"))
-        : [],
-      vehicles: meta.vehicleHeader
-        ? [...new Set(meta.rows.map((r) => fmNormalize(r[meta.vehicleHeader])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"))
-        : [],
-      monitors: meta.monitorHeader
-        ? [...new Set(meta.rows.map((r) => fmNormalize(r[meta.monitorHeader])).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"))
-        : [],
+      agencies: uniq(map.agency),
+      regionals: uniq(map.regional),
+      cities: uniq(map.city),
+      vehicles: uniq(map.vehicle),
+      monitors: uniq(map.monitor),
+      ultimaAtualizacao: fmHoraAtualizacao(),
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/fm-access-filtros:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
 
-// ---------- graficos + resumo ----------
+// GRAFICOS E KPIS
 app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
   try {
-    const meta = await fmAccessLoadWithCache();
-    const filtrados = fmAccessApplyFilters(meta.rows, req.query, meta);
+    const { rows, map } = await fmLoadWithCache();
+    const filtered = fmApplyFilters(rows, req.query, map);
 
-    const totalRotas = filtrados.length;
+    const totalRotas = map.rota
+      ? fmCountDistinct(filtered, map.rota)
+      : filtered.length;
 
-    const totalSellers = meta.sellerHeader
-      ? new Set(filtrados.map((r) => fmNormalize(r[meta.sellerHeader])).filter(Boolean)).size
+    const totalSellers = map.shopName
+      ? fmCountDistinct(filtered, map.shopName)
       : 0;
 
-    const totalCities = meta.cityHeader
-      ? new Set(filtrados.map((r) => fmNormalize(r[meta.cityHeader])).filter(Boolean)).size
+    const totalCities = map.city
+      ? fmCountDistinct(filtered, map.city)
       : 0;
 
-    const totalDrivers = meta.driverHeader
-      ? new Set(filtrados.map((r) => fmNormalize(r[meta.driverHeader])).filter(Boolean)).size
+    const totalDrivers = map.driver
+      ? fmCountDistinct(filtered, map.driver)
       : 0;
 
-    const totalOcorrencias = meta.ocorrenciaHeader
-      ? filtrados.filter((r) => fmNormalize(r[meta.ocorrenciaHeader])).length
-      : 0;
+    const totalOcorrencias = filtered.length;
 
-    const porAgency = meta.agencyHeader ? fmTopEntries(filtrados, meta.agencyHeader, 12, true) : [];
-    const porRegional = meta.regionalHeader ? fmTopEntries(filtrados, meta.regionalHeader, 10, true) : [];
-    const porStatusFinal = meta.statusFinalHeader ? fmTopEntries(filtrados, meta.statusFinalHeader, 10, true) : [];
-    const porMonitor = meta.monitorHeader ? fmTopEntries(filtrados, meta.monitorHeader, 10, true) : [];
-    const porCity = meta.cityHeader ? fmTopEntries(filtrados, meta.cityHeader, 10, true) : [];
-    const distribuicao = meta.validacaoHeader ? fmTopEntries(filtrados, meta.validacaoHeader, 10, true) : [];
+    const porAgency = map.agency ? fmGroupCount(filtered, map.agency).slice(0, 12) : [];
+    const porRegional = map.regional ? fmGroupCount(filtered, map.regional).slice(0, 10) : [];
+    const porStatusFinal = map.statusFinal ? fmGroupCount(filtered, map.statusFinal).slice(0, 10) : [];
+    const porMonitor = map.monitor ? fmGroupCount(filtered, map.monitor).slice(0, 10) : [];
+    const porCity = map.city ? fmGroupCount(filtered, map.city).slice(0, 10) : [];
+    const distribuicao = map.ocorrenciaValidacao ? fmGroupCount(filtered, map.ocorrenciaValidacao).slice(0, 12) : [];
 
-    // por dia 1..31
-    const byDayMap = {};
-    for (let i = 1; i <= 31; i++) byDayMap[i] = 0;
-
-    filtrados.forEach((row) => {
-      if (!row._primaryDate) return;
-      const day = row._primaryDate.getDate();
-      byDayMap[day] = (byDayMap[day] || 0) + 1;
+    const diaMap = {};
+    for (let i = 1; i <= 31; i++) diaMap[i] = 0;
+    filtered.forEach(r => {
+      if (r._day) diaMap[r._day] += 1;
     });
 
-    // por mês
-    const byMonthMap = {};
-    filtrados.forEach((row) => {
-      if (!row._primaryDate) return;
-      const key = fmGetMonthKey(row._primaryDate);
-      byMonthMap[key] = (byMonthMap[key] || 0) + 1;
+    const mesMap = {};
+    filtered.forEach(r => {
+      if (r._month) mesMap[r._month] = (mesMap[r._month] || 0) + 1;
     });
-
-    const monthKeys = Object.keys(byMonthMap).sort((a, b) => a.localeCompare(b));
 
     return res.json({
       resumo: {
@@ -5741,85 +5639,69 @@ app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
       distribuicao,
       porDia: {
         labels: Array.from({ length: 31 }, (_, i) => String(i + 1)),
-        values: Array.from({ length: 31 }, (_, i) => byDayMap[i + 1] || 0),
+        values: Array.from({ length: 31 }, (_, i) => diaMap[i + 1] || 0),
       },
       porMes: {
-        labels: monthKeys.map((key) => {
-          const [year, month] = key.split("-");
-          return `${month}/${year}`;
-        }),
-        values: monthKeys.map((key) => byMonthMap[key]),
+        labels: Object.keys(mesMap)
+          .map(Number)
+          .sort((a, b) => a - b)
+          .map(fmMonthLabel),
+        values: Object.keys(mesMap)
+          .map(Number)
+          .sort((a, b) => a - b)
+          .map(m => mesMap[m] || 0),
       },
+      ultimaAtualizacao: fmHoraAtualizacao(),
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/fm-access-graficos:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
 
-// ---------- detalhes ----------
+// DETALHES
 app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
   try {
-    const meta = await fmAccessLoadWithCache();
-    const filtrados = fmAccessApplyFilters(meta.rows, req.query, meta);
+    const { headers, rows, map } = await fmLoadWithCache();
+    const filtered = fmApplyFilters(rows, req.query, map);
 
     const page = Math.max(Number(req.query.page || 1), 1);
-    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 500);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
 
-    const sorted = [...filtrados].sort((a, b) => {
-      const ad = a._primaryDate ? a._primaryDate.getTime() : 0;
-      const bd = b._primaryDate ? b._primaryDate.getTime() : 0;
+    const sorted = [...filtered].sort((a, b) => {
+      const ad = a._dateObj ? a._dateObj.getTime() : 0;
+      const bd = b._dateObj ? b._dateObj.getTime() : 0;
       return bd - ad;
     });
 
     const total = sorted.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
-    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const currentPage = Math.min(page, totalPages);
     const start = (currentPage - 1) * limit;
+    const pageRows = sorted.slice(start, start + limit);
 
-    const preferredHeaders = [
-      meta.dateHeader,
-      meta.agencyHeader,
-      meta.regionalHeader,
-      meta.cityHeader,
-      meta.vehicleHeader,
-      meta.monitorHeader,
-      meta.sellerHeader,
-      meta.driverHeader,
-      meta.ocorrenciaHeader,
-      meta.statusFinalHeader,
-      meta.validacaoHeader,
-    ].filter(Boolean);
-
-    const safeHeaders = [...new Set(
-      preferredHeaders.length ? preferredHeaders : meta.headers.slice(0, 12)
-    )];
-
-    const rows = sorted.slice(start, start + limit).map((row) => {
-      const obj = {};
-      safeHeaders.forEach((header) => {
-        obj[header] = row[header] || "";
-      });
-      return obj;
-    });
+    const cleanHeaders = headers.filter(h => !String(h).startsWith("_"));
 
     return res.json({
-      headers: safeHeaders,
+      headers: cleanHeaders,
+      rows: pageRows.map(row => {
+        const obj = {};
+        cleanHeaders.forEach(h => {
+          obj[h] = row[h] ?? "";
+        });
+        return obj;
+      }),
       total,
       page: currentPage,
-      limit,
       totalPages,
-      rows,
+      ultimaAtualizacao: fmHoraAtualizacao(),
     });
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      message: error.message,
-    });
+    console.error("Erro /api/fm-access-detalhes:", error);
+    return res.status(500).json({ ok: false, message: error.message });
   }
 });
+
 
 // ================== CHECKLIST DASHBOARD ==================
 

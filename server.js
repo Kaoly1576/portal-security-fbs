@@ -1,7 +1,5 @@
 require("dotenv").config();
 
-console.log("SERVER NOVO CARREGADO");
-
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { google } = require("googleapis");
@@ -25,6 +23,10 @@ const GOOGLE_CALLBACK_URL =
 const googleOAuthEnabled =
   Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);
 
+const CADASTRO_SHEET_ID = "1iDkB1uHIIXv7qnVGAWYYPrabl_g1-V_435lYdx66Crc";
+const CADASTRO_USUARIOS_RANGE = "usuarios!A1:Z5000";
+const CADASTRO_CARGOS_RANGE = "cargos!A1:Z500";
+const CADASTRO_NIVEIS_RANGE = "niveis_acesso!A1:Z500";
 
 // ================== MIDDLEWARES ==================
 
@@ -56,56 +58,50 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const db = new sqlite3.Database("./database.db");
 
-function initDatabase() {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
+db.run(`
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT,
+  email TEXT UNIQUE,
+  senha TEXT,
+  perfil TEXT DEFAULT 'usuario',
+  status TEXT DEFAULT 'pendente',
+  cargo TEXT DEFAULT 'Não definido',
+  nivel_acesso INTEGER DEFAULT 1,
+  area TEXT DEFAULT 'Security',
+  foto TEXT DEFAULT '',
+  google_id TEXT DEFAULT '',
+  permissoes TEXT DEFAULT '{}',
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+`);
 
-      db.run(`
-        CREATE TABLE IF NOT EXISTS usuarios (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          nome TEXT,
-          email TEXT UNIQUE,
-          senha TEXT,
-          perfil TEXT DEFAULT 'usuario',
-          status TEXT DEFAULT 'pendente',
-          cargo TEXT DEFAULT 'Não definido',
-          nivel_acesso INTEGER DEFAULT 1,
-          area TEXT DEFAULT 'Security',
-          foto TEXT DEFAULT '',
-          google_id TEXT DEFAULT '',
-          permissoes TEXT DEFAULT '{}',
-          criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-          atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+db.run(`
+CREATE TABLE IF NOT EXISTS registros (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  valor_usd REAL DEFAULT 0,
+  valor_brl REAL DEFAULT 0
+)
+`);
 
-      db.run(`
-        CREATE TABLE IF NOT EXISTS registros (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          valor_usd REAL DEFAULT 0,
-          valor_brl REAL DEFAULT 0
-        )
-      `);
+// ================== CRIAR APROVADOR LEGADO SQLITE ==================
 
-      // 🔴 FORÇA garantir que a tabela existe antes de continuar
-      db.get(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'`,
-        (err, row) => {
-          if (err) return reject(err);
+const senhaHashAdmin = bcrypt.hashSync("Kaoly1576;", 10);
 
-          if (!row) {
-            return reject(new Error("Tabela usuarios não foi criada."));
-          }
-
-          console.log("Banco inicializado com sucesso ✔");
-          resolve();
-        }
-      );
-
-    });
-  });
-}
-
+db.run(
+  `
+  INSERT OR IGNORE INTO usuarios (nome, email, senha, perfil, status)
+  VALUES (?, ?, ?, ?, ?)
+  `,
+  [
+    "Caique Nascimento",
+    "caique.nascimento@shopee.com",
+    senhaHashAdmin,
+    "aprovador",
+    "aprovado",
+  ]
+);
 
 // ================== HELPERS GERAIS ==================
 
@@ -167,6 +163,20 @@ async function conectarSheetsWrite() {
   });
 }
 
+
+async function conectarSheetsEdicao() {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: "credentials.json",
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+
+  const client = await auth.getClient();
+
+  return google.sheets({
+    version: "v4",
+    auth: client,
+  });
+}
 
 function normalizeText(value = "") {
   return String(value)
@@ -7281,16 +7291,6 @@ let faltasAltumCache = null;
 let faltasAltumCacheTime = 0;
 const FALTAS_ALTUM_CACHE_TTL = 5 * 60 * 1000;
 
-// Base fixa de efetivo
-const FA_BASE_EFETIVO = {
-  "FBS - SP9": { DIURNO: 22, NOTURNO: 22 },
-  "FBS - SP20": { DIURNO: 12, NOTURNO: 12 },
-  "FBS - MG5": { DIURNO: 10, NOTURNO: 10 },
-  "FBS - PE3": { DIURNO: 19, NOTURNO: 19 },
-  "FBS - GO3": { DIURNO: 13, NOTURNO: 13 },
-  "FBS - RS3": { DIURNO: 8, NOTURNO: 8 },
-};
-
 function faNorm(v) {
   return String(v || "").trim();
 }
@@ -7523,62 +7523,11 @@ function faFormatHoursDecimal(value) {
 
 function faIsFaltaOuPostoVago(row) {
   const ocorrencia = faNormLower(row.ocorrencia);
-  return ocorrencia === "falta" || ocorrencia === "posto vago";
-}
 
-function faNormalizeUnidadeBase(unidade) {
-  const u = faNormLower(unidade)
-    .replace(/\s+/g, " ")
-    .replace(/\s*-\s*/g, " - ")
-    .toUpperCase();
-
-  const aliases = {
-    "FBS - SP9": "FBS - SP9",
-    "FBS - SP09": "FBS - SP9",
-    "FBS - SP20": "FBS - SP20",
-    "FBS - MG5": "FBS - MG5",
-    "FBS - MG05": "FBS - MG5",
-    "FBS - PE3": "FBS - PE3",
-    "FBS - PE03": "FBS - PE3",
-    "FBS - GO3": "FBS - GO3",
-    "FBS - GO03": "FBS - GO3",
-    "FBS - RS3": "FBS - RS3",
-    "FBS - RS03": "FBS - RS3",
-  };
-
-  return aliases[u] || faNorm(unidade);
-}
-
-function faNormalizeTurnoBase(turno) {
-  const t = faNormLower(turno);
-
-  if (t.includes("dia")) return "DIURNO";
-  if (t.includes("not")) return "NOTURNO";
-
-  return "";
-}
-
-function faGetBaseAgentesFromQuery(query) {
-  const unidadesSelecionadas = faSplitMulti(query.unidade).map(faNormalizeUnidadeBase);
-  const turnosSelecionados = faSplitMulti(query.turno).map(faNormalizeTurnoBase).filter(Boolean);
-
-  const unidadesBase = unidadesSelecionadas.length
-    ? unidadesSelecionadas.filter(u => FA_BASE_EFETIVO[u])
-    : Object.keys(FA_BASE_EFETIVO);
-
-  const turnosBase = turnosSelecionados.length
-    ? turnosSelecionados
-    : ["DIURNO", "NOTURNO"];
-
-  let total = 0;
-
-  for (const unidade of unidadesBase) {
-    for (const turno of turnosBase) {
-      total += Number(FA_BASE_EFETIVO[unidade]?.[turno] || 0);
-    }
-  }
-
-  return total;
+  return (
+    ocorrencia === "falta" ||
+    ocorrencia === "posto vago"
+  );
 }
 
 async function faLoadRaw() {
@@ -7738,21 +7687,13 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
 
     const totalOcorrencias = periodRows.length;
     const totalQtd = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const totalHorasAbs = baseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
     const totalHorasNaoCobertas = periodRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
-    const totalColaboradores = new Set(
-      periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)
-    ).size;
-    const totalUnidades = new Set(
-      periodRows.map(r => faNorm(r.unidade)).filter(Boolean)
-    ).size;
+    const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
+    const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
 
-    const baseAgentes = faGetBaseAgentesFromQuery(req.query);
-    const baseHoras = baseAgentes * 12;
-
-    // ABS correto:
-    // (faltas/posto vago * 12h + horas não cobertas) / base total planejada
-    const horasImpactadas = (totalQtd * 12) + totalHorasNaoCobertas;
-    const absPercentual = baseHoras > 0 ? (horasImpactadas / baseHoras) * 100 : 0;
+    const horasPrevistas = totalQtd * 12;
+    const absPercentual = horasPrevistas > 0 ? (totalHorasAbs / horasPrevistas) * 100 : 0;
 
     const comparison = faGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
@@ -7771,27 +7712,20 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     const previousBaseFalta = previousRows.filter(faIsFaltaOuPostoVago);
 
     const qtdAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const horasNaoCobertasAnterior = previousRows.reduce(
-      (sum, row) => sum + Number(row._naoCobertoHours || 0),
-      0
-    );
-
-    const horasImpactadasAnterior = (qtdAnterior * 12) + horasNaoCobertasAnterior;
-    const absPercentualAnterior = baseHoras > 0
-      ? (horasImpactadasAnterior / baseHoras) * 100
-      : 0;
+    const horasAbsAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
+    const horasPrevistasAnterior = qtdAnterior * 12;
+    const absPercentualAnterior =
+      horasPrevistasAnterior > 0 ? (horasAbsAnterior / horasPrevistasAnterior) * 100 : 0;
 
     return res.json({
       totalOcorrencias,
       totalQtd,
+      totalHorasAbs,
+      totalHorasAbsFmt: faFormatHoursDecimal(totalHorasAbs),
       totalHorasNaoCobertas,
       totalHorasNaoCobertasFmt: faFormatHoursDecimal(totalHorasNaoCobertas),
       totalColaboradores,
       totalUnidades,
-      baseAgentes,
-      baseHoras,
-      horasImpactadas,
-      horasImpactadasFmt: faFormatHoursDecimal(horasImpactadas),
 
       absPercentual,
       absPercentualAnterior,
@@ -7932,32 +7866,9 @@ app.get("/api/faltas-altum-detalhes", requireAuth, async (req, res) => {
 
 // ================== SERVIDOR ==================
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
-initDatabase()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log("Servidor rodando:");
-      console.log(`http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("ERRO AO INICIAR BANCO:", err);
-    process.exit(1);
-  });
-
-const senhaHashAdmin = bcrypt.hashSync("Kaoly1576;", 10);
-
-db.run(
-  `
-  INSERT OR IGNORE INTO usuarios (nome, email, senha, perfil, status)
-  VALUES (?, ?, ?, ?, ?)
-  `,
-  [
-    "Caique Nascimento",
-    "caique.nascimento@shopee.com",
-    senhaHashAdmin,
-    "aprovador",
-    "aprovado",
-  ]
-);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("Servidor rodando:");
+  console.log(`http://localhost:${PORT}`);
+});

@@ -1220,9 +1220,7 @@ app.get("/dados-dashboard", requireAuth, (req, res) => {
       });
     }
   );
-});
-
-// ================== APP MARCACAO DIARIA ==================
+});// ================== APP MARCACAO DIARIA ==================
 
 app.get("/marcacao", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "marcacao.html"));
@@ -1247,12 +1245,13 @@ function mcNormLower(v) {
 
 function mcFormatDateBR(iso) {
   if (!iso) return "";
-  const [y, m, d] = iso.split("-");
+  const [y, m, d] = String(iso).split("-");
   if (!y || !m || !d) return "";
   return `${d}/${m}/${y}`;
 }
 
 function mcMesNome(dateObj) {
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
   return dateObj.toLocaleDateString("pt-BR", { month: "long" }).toUpperCase();
 }
 
@@ -1488,7 +1487,6 @@ app.get("/api/marcacao-efetivo", requireAuth, async (req, res) => {
         STATUS_BASE: mcNorm(hBaseStatus ? r[hBaseStatus] : ""),
       }));
 
-    // inclui o líder caso ele não exista na lista
     const existeLider = efetivo.some(r => mcNormLower(r.AGENTE) === mcNormLower(lider));
     if (!existeLider) {
       const ref = efetivo[0] || {};
@@ -1592,6 +1590,9 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
         valueInputOption: "USER_ENTERED",
         requestBody: { values: [headers] }
       });
+
+      registro.headers = headers;
+      registro.rows = [];
     }
 
     const hRegData = mcFindHeader(headers, ["DATA"]);
@@ -1600,6 +1601,13 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
     const hRegAgente = mcFindHeader(headers, ["AGENTE"]);
 
     const dataObj = new Date(`${data}T00:00:00`);
+    if (isNaN(dataObj.getTime())) {
+      return res.status(400).json({
+        ok: false,
+        message: "Data inválida."
+      });
+    }
+
     const dataBR = mcFormatDateBR(data);
     const mesNome = mcMesNome(dataObj);
 
@@ -1622,7 +1630,7 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
         mcNorm(row.AGENTE || ""),
         mcNorm(meta.status),
         mcNorm(codigo === "FC" ? "Cobertura parcial" : meta.cobertura),
-        mcNorm(row.abs || meta.abs),
+        mcNorm(codigo === "FC" ? (row.abs || meta.abs) : (row.abs || meta.abs)),
         mcNorm(codigo === "FC" ? (row.cobrindo || "") : ""),
         mcNorm(codigo === "FC" ? (row.horaCobertura || "") : "")
       ];
@@ -1672,10 +1680,15 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
       message: `Salvo com sucesso. Atualizados: ${updates.length} | Novos: ${appends.length}`
     });
   } catch (error) {
-    console.error("Erro /api/marcacao-salvar:", error);
-    return res.status(500).json({ ok: false, message: error.message });
+    console.error("Erro /api/marcacao-salvar:", error?.response?.data || error.message || error);
+    return res.status(500).json({
+      ok: false,
+      message: error?.response?.data?.error?.message || error.message || "Erro ao salvar marcação."
+    });
   }
 });
+
+
 
 // ================== GOOGLE SHEETS HC ==================
 

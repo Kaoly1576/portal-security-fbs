@@ -7762,13 +7762,18 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     const totalOcorrencias = periodRows.length;
     const totalQtd = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
     const totalHorasNaoCobertas = periodRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
-    const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
-    const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
+    const totalColaboradores = new Set(
+      periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)
+    ).size;
+    const totalUnidades = new Set(
+      periodRows.map(r => faNorm(r.unidade)).filter(Boolean)
+    ).size;
 
     const baseAgentes = faGetBaseAgentesFromQuery(req.query);
     const baseHoras = baseAgentes * 12;
 
-    // ABS = (faltas/posto vago * 12h + horas descobertas) / base planejada
+    // ABS correto:
+    // (faltas/posto vago * 12h + horas não cobertas) / base total planejada
     const horasImpactadas = (totalQtd * 12) + totalHorasNaoCobertas;
     const absPercentual = baseHoras > 0 ? (horasImpactadas / baseHoras) * 100 : 0;
 
@@ -7789,9 +7794,15 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     const previousBaseFalta = previousRows.filter(faIsFaltaOuPostoVago);
 
     const qtdAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const horasNaoCobertasAnterior = previousRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
+    const horasNaoCobertasAnterior = previousRows.reduce(
+      (sum, row) => sum + Number(row._naoCobertoHours || 0),
+      0
+    );
+
     const horasImpactadasAnterior = (qtdAnterior * 12) + horasNaoCobertasAnterior;
-    const absPercentualAnterior = baseHoras > 0 ? (horasImpactadasAnterior / baseHoras) * 100 : 0;
+    const absPercentualAnterior = baseHoras > 0
+      ? (horasImpactadasAnterior / baseHoras) * 100
+      : 0;
 
     return res.json({
       totalOcorrencias,

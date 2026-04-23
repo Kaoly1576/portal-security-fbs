@@ -56,32 +56,48 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const db = new sqlite3.Database("./database.db");
 
-db.run(`
-CREATE TABLE IF NOT EXISTS usuarios (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  nome TEXT,
-  email TEXT UNIQUE,
-  senha TEXT,
-  perfil TEXT DEFAULT 'usuario',
-  status TEXT DEFAULT 'pendente',
-  cargo TEXT DEFAULT 'Não definido',
-  nivel_acesso INTEGER DEFAULT 1,
-  area TEXT DEFAULT 'Security',
-  foto TEXT DEFAULT '',
-  google_id TEXT DEFAULT '',
-  permissoes TEXT DEFAULT '{}',
-  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-  atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-)
-`);
+function initDatabase() {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nome TEXT,
+          email TEXT UNIQUE,
+          senha TEXT,
+          perfil TEXT DEFAULT 'usuario',
+          status TEXT DEFAULT 'pendente',
+          cargo TEXT DEFAULT 'Não definido',
+          nivel_acesso INTEGER DEFAULT 1,
+          area TEXT DEFAULT 'Security',
+          foto TEXT DEFAULT '',
+          google_id TEXT DEFAULT '',
+          permissoes TEXT DEFAULT '{}',
+          criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+          atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => {
+        if (err) return reject(err);
+      });
 
-db.run(`
-CREATE TABLE IF NOT EXISTS registros (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  valor_usd REAL DEFAULT 0,
-  valor_brl REAL DEFAULT 0
-)
-`);
+      db.run(`
+        CREATE TABLE IF NOT EXISTS registros (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          valor_usd REAL DEFAULT 0,
+          valor_brl REAL DEFAULT 0
+        )
+      `, (err) => {
+        if (err) return reject(err);
+      });
+
+      db.get(`SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'`, (err, row) => {
+        if (err) return reject(err);
+        if (!row) return reject(new Error("Tabela usuarios não foi criada."));
+        resolve();
+      });
+    });
+  });
+}
 
 // ================== CRIAR APROVADOR LEGADO SQLITE ==================
 

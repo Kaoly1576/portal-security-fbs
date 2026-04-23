@@ -881,28 +881,32 @@
     }
 
     async function loadGraficos() {
-      const distRows = data.distribuicao || [];
-const distWrap = document.getElementById("chartDistribuicaoWrap");
+  const res = await fetch(`/api/fm-access-graficos?${getFiltersQuery(currentPage)}`, {
+    credentials: "same-origin"
+  });
+  const data = await res.json();
 
-if (chartDistribuicaoInstance) {
-  chartDistribuicaoInstance.destroy();
-  chartDistribuicaoInstance = null;
-}
+  destroyCharts();
 
-if (!distRows.length) {
-  distWrap.innerHTML = `<div class="chart-empty">Sem dados para Validação da Ocorrência</div>`;
-} else {
-  distWrap.innerHTML = `<canvas id="chartDistribuicao"></canvas>`;
+  document.getElementById("kpiRotas").textContent = fmt(data.resumo?.totalRotas || 0);
+  document.getElementById("kpiSellers").textContent = fmt(data.resumo?.totalSellers || 0);
+  document.getElementById("kpiCities").textContent = fmt(data.resumo?.totalCities || 0);
+  document.getElementById("kpiDrivers").textContent = fmt(data.resumo?.totalDrivers || 0);
+  document.getElementById("kpiOcorrencias").textContent = fmt(data.resumo?.totalOcorrencias || 0);
 
-  chartDistribuicaoInstance = new Chart(document.getElementById("chartDistribuicao"), {
+  renderCompactCard("cardRegional", data.porRegional || [], 8);
+  renderCompactCard("cardStatus", data.porStatusFinal || [], 8);
+  renderCompactCard("cardMonitor", data.porMonitor || [], 10);
+  renderCompactCard("cardCity", data.porCity || [], 10);
+
+  chartAgencyInstance = new Chart(document.getElementById("chartAgency"), {
     type: "bar",
     data: {
-      labels: distRows.map(x => x.nome),
+      labels: (data.porAgency || []).map(x => x.nome),
       datasets: [{
-        data: distRows.map(x => x.total),
+        data: (data.porAgency || []).map(x => x.total),
         backgroundColor: "#ff7a1a",
-        borderRadius: 6,
-        barThickness: 28
+        borderRadius: 8
       }]
     },
     options: {
@@ -915,114 +919,116 @@ if (!distRows.length) {
           anchor: "end",
           align: "end",
           font: { size: 10, weight: "700" },
-          formatter: (value) => value > 0 ? fmt(value) : ""
+          formatter: (value) => fmt(value)
         }
       },
       scales: {
         x: {
-          ticks: {
-            color: "#cfcfcf",
-            font: { size: 10 },
-            maxRotation: 40,
-            minRotation: 40
-          },
+          ticks: { color: "#cfcfcf", font: { size: 10 } },
           grid: { display: false }
         },
         y: {
-          ticks: {
-            color: "#cfcfcf",
-            font: { size: 10 }
-          },
-          grid: {
-            color: "rgba(255,255,255,0.05)"
-          },
+          ticks: { color: "#cfcfcf", font: { size: 10 } },
+          grid: { color: "rgba(255,255,255,0.05)" },
           beginAtZero: true
         }
       }
     }
   });
-}
 
-      chartDiaInstance = new Chart(document.getElementById("chartDia"), {
-        type: "line",
-        data: {
-          labels: data.porDia?.labels || [],
-          datasets: [{
-            data: data.porDia?.values || [],
-            borderColor: "#58a6ff",
-            backgroundColor: "rgba(88,166,255,0.15)",
-            fill: false,
-            tension: 0.35,
-            pointRadius: 3,
-            pointBackgroundColor: "#58a6ff"
-          }]
-        },
-        options: lineOptions()
-      });
+  chartDiaInstance = new Chart(document.getElementById("chartDia"), {
+    type: "line",
+    data: {
+      labels: data.porDia?.labels || [],
+      datasets: [{
+        data: data.porDia?.values || [],
+        borderColor: "#58a6ff",
+        backgroundColor: "rgba(88,166,255,0.15)",
+        fill: false,
+        tension: 0.35,
+        pointRadius: 3,
+        pointBackgroundColor: "#58a6ff"
+      }]
+    },
+    options: lineOptions()
+  });
 
-      chartMesInstance = new Chart(document.getElementById("chartMes"), {
-        type: "line",
-        data: {
-          labels: data.porMes?.labels || [],
-          datasets: [{
-            data: data.porMes?.values || [],
-            borderColor: "#22c55e",
-            backgroundColor: "rgba(34,197,94,0.15)",
-            fill: false,
-            tension: 0.35,
-            pointRadius: 3,
-            pointBackgroundColor: "#22c55e"
-          }]
-        },
-        options: lineOptions()
-      });
+  chartMesInstance = new Chart(document.getElementById("chartMes"), {
+    type: "line",
+    data: {
+      labels: data.porMes?.labels || [],
+      datasets: [{
+        data: data.porMes?.values || [],
+        borderColor: "#22c55e",
+        backgroundColor: "rgba(34,197,94,0.15)",
+        fill: false,
+        tension: 0.35,
+        pointRadius: 3,
+        pointBackgroundColor: "#22c55e"
+      }]
+    },
+    options: lineOptions()
+  });
 
-      chartDistribuicaoInstance = new Chart(document.getElementById("chartDistribuicao"), {
-        type: "bar",
-        data: {
-          labels: (data.distribuicao || []).map(x => x.nome),
-          datasets: [{
-            data: (data.distribuicao || []).map(x => x.total),
-            backgroundColor: "#ff7a1a",
-            borderRadius: 6,
-            barThickness: 28
-          }]
+  const distRows = data.distribuicao || [];
+  const distWrap = document.getElementById("chartDistribuicaoWrap");
+
+  if (!distRows.length) {
+    distWrap.innerHTML = `<div class="chart-empty">Sem dados para Validação da Ocorrência</div>`;
+  } else {
+    distWrap.innerHTML = `<canvas id="chartDistribuicao"></canvas>`;
+
+    chartDistribuicaoInstance = new Chart(document.getElementById("chartDistribuicao"), {
+      type: "bar",
+      data: {
+        labels: distRows.map(x => x.nome),
+        datasets: [{
+          data: distRows.map(x => x.total),
+          backgroundColor: "#ff7a1a",
+          borderRadius: 6,
+          barThickness: 28
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            color: "#ffffff",
+            anchor: "end",
+            align: "end",
+            font: { size: 10, weight: "700" },
+            formatter: (value) => value > 0 ? fmt(value) : ""
+          }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            datalabels: {
-              color: "#ffffff",
-              anchor: "end",
-              align: "end",
-              font: { size: 10, weight: "700" },
-              formatter: (value) => value > 0 ? fmt(value) : ""
-            }
-          },
-          scales: {
-            x: {
-              ticks: {
-                color: "#cfcfcf",
-                font: { size: 10 },
-                maxRotation: 40,
-                minRotation: 40
-              },
-              grid: { display: false }
+        scales: {
+          x: {
+            ticks: {
+              color: "#cfcfcf",
+              font: { size: 10 },
+              maxRotation: 40,
+              minRotation: 40
             },
-            y: {
-              ticks: { color: "#cfcfcf", font: { size: 10 } },
-              grid: { color: "rgba(255,255,255,0.05)" },
-              beginAtZero: true
-            }
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              color: "#cfcfcf",
+              font: { size: 10 }
+            },
+            grid: {
+              color: "rgba(255,255,255,0.05)"
+            },
+            beginAtZero: true
           }
         }
-      });
+      }
+    });
+  }
 
-      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
-    }
-
+  document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
+}
     async function loadDetalhes() {
       const res = await fetch(`/api/fm-access-detalhes?${getFiltersQuery(currentPage)}`, {
         credentials: "same-origin"

@@ -14,8 +14,6 @@
       --bg1:#4b5563;
       --bg2:#111827;
       --bg3:#050c18;
-      --card:rgba(17,24,39,0.78);
-      --card-2:rgba(10,15,28,0.96);
       --input:#0b1220;
       --th:#111c33;
       --line:rgba(255,255,255,0.08);
@@ -29,11 +27,7 @@
       --purple:#8b5cf6;
     }
 
-    html,body{
-      min-height:100%;
-      overflow-x:hidden;
-    }
-
+    html,body{min-height:100%;overflow-x:hidden}
     body{
       background:
         radial-gradient(circle at top, rgba(255,255,255,0.14), transparent 35%),
@@ -45,6 +39,8 @@
       max-width:1500px;
       margin:0 auto;
       padding:14px;
+      position:relative;
+      isolation:isolate;
     }
 
     .topbar,.hero,.filters,.panel,.wide-panel,.kpi{
@@ -65,29 +61,17 @@
       flex-wrap:wrap;
     }
 
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-
+    .brand{display:flex;align-items:center;gap:14px}
     .brand-logo{
-      width:44px;
-      height:44px;
-      object-fit:contain;
-      border-radius:50%;
-      background:#1a120d;
-      padding:6px;
-      border:1px solid rgba(255,255,255,0.08);
+      width:44px;height:44px;object-fit:contain;border-radius:50%;
+      background:#1a120d;padding:6px;border:1px solid rgba(255,255,255,0.08);
     }
-
     .brand-text h1{
       color:var(--orange);
       font-size:18px;
       font-weight:900;
       line-height:1;
     }
-
     .brand-text p{
       font-size:11px;
       color:var(--muted);
@@ -109,10 +93,7 @@
       justify-content:center;
       transition:.2s ease;
     }
-
-    .btn:hover{
-      background:rgba(255,255,255,0.14);
-    }
+    .btn:hover{background:rgba(255,255,255,0.14)}
 
     .hero{
       padding:16px 18px;
@@ -123,12 +104,7 @@
       margin-bottom:12px;
       flex-wrap:wrap;
     }
-
-    .hero h2{
-      font-size:18px;
-      margin-bottom:6px;
-    }
-
+    .hero h2{font-size:18px;margin-bottom:6px}
     .hero p{
       color:var(--muted);
       font-size:12px;
@@ -136,26 +112,16 @@
       max-width:860px;
     }
 
-    .hero-right{
-      text-align:right;
-      min-width:150px;
-    }
-
-    .hero-right .small{
-      color:var(--muted);
-      font-size:11px;
-      margin-bottom:6px;
-    }
-
-    .hero-right .time{
-      color:var(--orange);
-      font-weight:900;
-      font-size:22px;
-    }
+    .hero-right{text-align:right;min-width:150px}
+    .hero-right .small{color:var(--muted);font-size:11px;margin-bottom:6px}
+    .hero-right .time{color:var(--orange);font-weight:900;font-size:22px}
 
     .filters{
       padding:14px;
       margin-bottom:12px;
+      position:relative;
+      z-index:9000;
+      overflow:visible !important;
     }
 
     .filters-grid{
@@ -163,10 +129,18 @@
       grid-template-columns:repeat(6,minmax(120px,1fr));
       gap:10px;
       align-items:end;
+      position:relative;
+      overflow:visible !important;
     }
+
+    .filters-grid.row-1{z-index:9001}
+    .filters-grid.row-2{z-index:9000}
 
     .field{
       min-width:0;
+      position:relative;
+      overflow:visible !important;
+      z-index:1;
     }
 
     .field label{
@@ -189,13 +163,17 @@
       font-size:12px;
     }
 
-    .field input::placeholder{
-      color:#94a3b8;
-    }
+    .field input::placeholder{color:#94a3b8}
+    input[type="date"]{color-scheme:dark}
 
     .multi-select{
       position:relative;
       width:100%;
+      z-index:20;
+    }
+
+    .multi-select.open{
+      z-index:99999 !important;
     }
 
     .multi-trigger{
@@ -236,7 +214,7 @@
       max-height:220px;
       overflow-y:auto;
       display:none;
-      z-index:50;
+      z-index:100000 !important;
       box-shadow:0 10px 24px rgba(0,0,0,0.35);
       padding:6px;
     }
@@ -256,10 +234,7 @@
       color:#fff;
     }
 
-    .multi-option:hover{
-      background:#1a2942;
-    }
-
+    .multi-option:hover{background:#1a2942}
     .multi-option input{
       width:auto;
       height:auto;
@@ -273,6 +248,10 @@
       padding:6px;
       border-bottom:1px solid rgba(255,255,255,0.06);
       margin-bottom:4px;
+      position:sticky;
+      top:0;
+      background:var(--input);
+      z-index:2;
     }
 
     .multi-actions button{
@@ -286,19 +265,15 @@
       cursor:pointer;
     }
 
-    .multi-actions button:hover{
-      background:#243756;
-    }
-
-    .search-span-2{
-      grid-column: span 2;
-    }
+    .search-span-2{grid-column:span 2}
 
     .actions{
       display:flex;
       gap:8px;
       margin-top:10px;
       flex-wrap:wrap;
+      position:relative;
+      z-index:1;
     }
 
     .btn-primary{
@@ -328,13 +303,11 @@
       grid-template-columns:repeat(5,minmax(0,1fr));
       gap:12px;
       margin-bottom:12px;
+      position:relative;
+      z-index:1 !important;
     }
 
-    .kpi{
-      padding:14px;
-      min-height:92px;
-    }
-
+    .kpi{padding:14px;min-height:92px}
     .kpi-title{
       font-size:11px;
       text-transform:uppercase;
@@ -342,7 +315,6 @@
       margin-bottom:10px;
       font-weight:800;
     }
-
     .kpi-value{
       font-size:24px;
       font-weight:900;
@@ -360,12 +332,16 @@
       grid-template-columns:2fr 1fr;
       gap:12px;
       margin-bottom:12px;
+      position:relative;
+      z-index:1 !important;
     }
 
     .panel{
       padding:14px;
       min-height:250px;
       overflow:hidden;
+      position:relative;
+      z-index:1;
     }
 
     .panel-title{
@@ -389,10 +365,7 @@
       align-items:center;
     }
 
-    .compact-left{
-      min-width:0;
-    }
-
+    .compact-left{min-width:0}
     .compact-name{
       font-size:12px;
       color:#fff;
@@ -426,15 +399,16 @@
     .chart-box{
       height:240px;
       position:relative;
+      z-index:1;
     }
 
-    .chart-box.line{
-      height:260px;
-    }
+    .chart-box.line{height:260px}
 
     .wide-panel{
       padding:14px;
       margin-bottom:14px;
+      position:relative;
+      z-index:1 !important;
     }
 
     .detail-wrap{
@@ -493,9 +467,14 @@
       font-size:13px;
     }
 
-    canvas{
-      max-width:100% !important;
-    }
+    body.dropdown-open .filters{z-index:99999 !important}
+    body.dropdown-open .kpis,
+    body.dropdown-open .grid-top,
+    body.dropdown-open .grid-middle,
+    body.dropdown-open .grid-bottom,
+    body.dropdown-open .wide-panel{z-index:1 !important}
+
+    canvas{max-width:100% !important}
 
     @media (max-width:1280px){
       .filters-grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -536,7 +515,7 @@
     </section>
 
     <section class="filters">
-      <div class="filters-grid">
+      <div class="filters-grid row-1">
         <div class="field">
           <label>Data inicial</label>
           <input type="date" id="filtroDataInicio" />
@@ -580,7 +559,7 @@
         </div>
       </div>
 
-      <div class="filters-grid" style="margin-top:10px;">
+      <div class="filters-grid row-2" style="margin-top:10px;">
         <div class="field">
           <label>Monitor</label>
           <div class="multi-select" id="multiMonitor">
@@ -723,37 +702,44 @@
       `;
 
       values.forEach((value) => {
-        const safeValue = esc(value);
         const label = document.createElement("label");
         label.className = "multi-option";
         label.innerHTML = `
-          <input type="checkbox" value="${safeValue}" />
-          <span>${safeValue}</span>
+          <input type="checkbox" value="${esc(value)}" />
+          <span>${esc(value)}</span>
         `;
         menu.appendChild(label);
       });
 
       function updateTrigger() {
         const checked = [...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i => i.value);
-        if (!checked.length) {
-          trigger.textContent = placeholder;
-        } else if (checked.length === 1) {
-          trigger.textContent = checked[0];
-        } else {
-          trigger.textContent = `${checked.length} selecionados`;
-        }
+        if (!checked.length) trigger.textContent = placeholder;
+        else if (checked.length === 1) trigger.textContent = checked[0];
+        else trigger.textContent = `${checked.length} selecionados`;
       }
 
-      trigger.onclick = () => {
+      trigger.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const wrapper = trigger.closest(".multi-select");
+        const willOpen = !wrapper.classList.contains("open");
+
         document.querySelectorAll(".multi-select").forEach((wrap) => {
-          if (wrap !== trigger.closest(".multi-select")) {
-            wrap.classList.remove("open");
-          }
+          wrap.classList.remove("open");
         });
-        trigger.closest(".multi-select").classList.toggle("open");
+
+        if (willOpen) {
+          wrapper.classList.add("open");
+          document.body.classList.add("dropdown-open");
+        } else {
+          document.body.classList.remove("dropdown-open");
+        }
       };
 
       menu.addEventListener("click", (e) => {
+        e.stopPropagation();
+
         const action = e.target.dataset.action;
 
         if (action === "all") {
@@ -792,6 +778,7 @@
           wrap.classList.remove("open");
         }
       });
+      document.body.classList.remove("dropdown-open");
     });
 
     function getFiltersQuery(page = 1) {
@@ -974,55 +961,49 @@
       });
 
       chartDistribuicaoInstance = new Chart(document.getElementById("chartDistribuicao"), {
-  type: "bar",
-  data: {
-    labels: (data.distribuicao || []).map(x => x.nome),
-    datasets: [{
-      data: (data.distribuicao || []).map(x => x.total),
-      backgroundColor: "#ff7a1a",
-      borderRadius: 6,
-      barThickness: 28
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      datalabels: {
-        color: "#ffffff",
-        anchor: "end",
-        align: "end",
-        font: { size: 10, weight: "700" },
-        formatter: (value) => value > 0 ? fmt(value) : ""
-      }
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: "#cfcfcf",
-          font: { size: 10 },
-          maxRotation: 40,
-          minRotation: 40
+        type: "bar",
+        data: {
+          labels: (data.distribuicao || []).map(x => x.nome),
+          datasets: [{
+            data: (data.distribuicao || []).map(x => x.total),
+            backgroundColor: "#ff7a1a",
+            borderRadius: 6,
+            barThickness: 28
+          }]
         },
-        grid: { display: false }
-      },
-      y: {
-        ticks: {
-          color: "#cfcfcf",
-          font: { size: 10 }
-        },
-        grid: {
-          color: "rgba(255,255,255,0.05)"
-        },
-        beginAtZero: true
-      }
-    }
-  }
-});
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              color: "#ffffff",
+              anchor: "end",
+              align: "end",
+              font: { size: 10, weight: "700" },
+              formatter: (value) => value > 0 ? fmt(value) : ""
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: "#cfcfcf",
+                font: { size: 10 },
+                maxRotation: 40,
+                minRotation: 40
+              },
+              grid: { display: false }
+            },
+            y: {
+              ticks: { color: "#cfcfcf", font: { size: 10 } },
+              grid: { color: "rgba(255,255,255,0.05)" },
+              beginAtZero: true
+            }
+          }
+        }
+      });
 
-      document.getElementById("ultimaAtualizacao").textContent =
-        new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao || "--:--";
     }
 
     async function loadDetalhes() {

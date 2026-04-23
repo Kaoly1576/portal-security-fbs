@@ -7963,9 +7963,16 @@ app.get("/api/faltas-altum-detalhes", requireAuth, async (req, res) => {
 
 // ================== SERVIDOR ==================
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("Servidor rodando:");
-  console.log(`http://localhost:${PORT}`);
-});
+initDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log("Servidor rodando:");
+      console.log(`http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("ERRO AO INICIAR BANCO:", err);
+    process.exit(1);
+  });

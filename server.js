@@ -168,20 +168,6 @@ async function conectarSheetsWrite() {
 }
 
 
-async function conectarSheetsEdicao() {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: "credentials.json",
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-
-  const client = await auth.getClient();
-
-  return google.sheets({
-    version: "v4",
-    auth: client,
-  });
-}
-
 function normalizeText(value = "") {
   return String(value)
     .normalize("NFD")

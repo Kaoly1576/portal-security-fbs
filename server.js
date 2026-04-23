@@ -147,6 +147,22 @@ async function conectarSheets() {
     auth: client,
   });
 }
+async function conectarSheetsWrite() {
+  const auth = new google.auth.GoogleAuth({
+    keyFile: path.join(__dirname, "credentials.json"),
+    scopes: [
+      "https://www.googleapis.com/auth/spreadsheets"
+    ]
+  });
+
+  const client = await auth.getClient();
+
+  return google.sheets({
+    version: "v4",
+    auth: client
+  });
+}
+
 
 async function conectarSheetsEdicao() {
   const auth = new google.auth.GoogleAuth({

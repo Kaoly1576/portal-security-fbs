@@ -106,23 +106,6 @@ function initDatabase() {
   });
 }
 
-// ================== CRIAR APROVADOR LEGADO SQLITE ==================
-
-const senhaHashAdmin = bcrypt.hashSync("Kaoly1576;", 10);
-
-db.run(
-  `
-  INSERT OR IGNORE INTO usuarios (nome, email, senha, perfil, status)
-  VALUES (?, ?, ?, ?, ?)
-  `,
-  [
-    "Caique Nascimento",
-    "caique.nascimento@shopee.com",
-    senhaHashAdmin,
-    "aprovador",
-    "aprovado",
-  ]
-);
 
 // ================== HELPERS GERAIS ==================
 
@@ -7976,3 +7959,19 @@ initDatabase()
     console.error("ERRO AO INICIAR BANCO:", err);
     process.exit(1);
   });
+
+const senhaHashAdmin = bcrypt.hashSync("Kaoly1576;", 10);
+
+db.run(
+  `
+  INSERT OR IGNORE INTO usuarios (nome, email, senha, perfil, status)
+  VALUES (?, ?, ?, ?, ?)
+  `,
+  [
+    "Caique Nascimento",
+    "caique.nascimento@shopee.com",
+    senhaHashAdmin,
+    "aprovador",
+    "aprovado",
+  ]
+);

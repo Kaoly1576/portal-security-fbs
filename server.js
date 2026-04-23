@@ -137,7 +137,7 @@ function requireAprovador(req, res, next) {
 async function conectarSheets() {
   const auth = new google.auth.GoogleAuth({
     keyFile: "credentials.json",
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
   const client = await auth.getClient();
@@ -151,7 +151,7 @@ async function conectarSheets() {
 async function conectarSheetsEdicao() {
   const auth = new google.auth.GoogleAuth({
     keyFile: "credentials.json",
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
   const client = await auth.getClient();

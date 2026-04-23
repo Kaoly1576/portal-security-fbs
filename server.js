@@ -5363,6 +5363,7 @@ app.get("/api/hc-onboarding-debug", requireAuth, async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
 // ================== FIRST MILE ACCESS ==================
 
 app.get("/first-mile-access", requireAuth, (req, res) => {
@@ -5415,14 +5416,6 @@ function fmParseDate(value) {
   return null;
 }
 
-function fmFormatBR(date) {
-  if (!date) return "";
-  const d = String(date.getDate()).padStart(2, "0");
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
-}
-
 function fmSplitMulti(value) {
   if (!value) return [];
   return String(value).split("|").map(v => fmNorm(v)).filter(Boolean);
@@ -5433,19 +5426,19 @@ function fmMatchesMulti(fieldValue, selectedValues) {
   return selectedValues.includes(fmNorm(fieldValue));
 }
 
-function fmResolveHeader(headers, aliases) {
+function fmResolveHeader(headers, possibilities) {
   const normalized = headers.map(h => ({
     original: h,
     norm: fmNormLower(h),
   }));
 
-  for (const alias of aliases) {
+  for (const alias of possibilities) {
     const aliasNorm = fmNormLower(alias);
     const exact = normalized.find(h => h.norm === aliasNorm);
     if (exact) return exact.original;
   }
 
-  for (const alias of aliases) {
+  for (const alias of possibilities) {
     const aliasNorm = fmNormLower(alias);
     const partial = normalized.find(h => h.norm.includes(aliasNorm));
     if (partial) return partial.original;
@@ -5507,10 +5500,18 @@ async function fmLoadRaw() {
     city: fmResolveHeader(headers, ["City", "Cidade"]),
     vehicle: fmResolveHeader(headers, ["Vehicle", "Vehicle Type", "Tipo de Veículo"]),
     monitor: fmResolveHeader(headers, ["Monitor", "Monitors", "Monitoring"]),
+    // SELLERS agora pelo Shop ID
+    shopId: fmResolveHeader(headers, ["Shop ID"]),
     shopName: fmResolveHeader(headers, ["Shop Name", "Seller", "Seller Name"]),
     driver: fmResolveHeader(headers, ["Driver", "Driver Name", "Motorista"]),
     statusFinal: fmResolveHeader(headers, ["Final Status", "Status Final"]),
-    ocorrenciaValidacao: fmResolveHeader(headers, ["Validation of Occurrence", "Occurrence Validation", "Validação da Ocorrência"]),
+    // Validação da ocorrência agora bem amarrada
+    ocorrenciaValidacao: fmResolveHeader(headers, [
+      "Validação da Ocorrência",
+      "Validacao da Ocorrencia",
+      "Validation of Occurrence",
+      "Occurrence Validation"
+    ]),
     rota: fmResolveHeader(headers, ["Route ID", "Route", "Rota", "Route Code"]),
   };
 
@@ -5620,8 +5621,9 @@ app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
       ? fmCountDistinct(filtered, map.rota)
       : filtered.length;
 
-    const totalSellers = map.shopName
-      ? fmCountDistinct(filtered, map.shopName)
+    // SELLERS pelo Shop ID
+    const totalSellers = map.shopId
+      ? fmCountDistinct(filtered, map.shopId)
       : 0;
 
     const totalCities = map.city
@@ -5639,7 +5641,14 @@ app.get("/api/fm-access-graficos", requireAuth, async (req, res) => {
     const porStatusFinal = map.statusFinal ? fmGroupCount(filtered, map.statusFinal).slice(0, 10) : [];
     const porMonitor = map.monitor ? fmGroupCount(filtered, map.monitor).slice(0, 10) : [];
     const porCity = map.city ? fmGroupCount(filtered, map.city).slice(0, 10) : [];
-    const distribuicao = map.ocorrenciaValidacao ? fmGroupCount(filtered, map.ocorrenciaValidacao).slice(0, 12) : [];
+
+    // Validação da ocorrência corrigida
+    const distribuicao = map.ocorrenciaValidacao
+      ? fmGroupCount(
+          filtered.filter(r => fmGetValue(r, map.ocorrenciaValidacao)),
+          map.ocorrenciaValidacao
+        ).slice(0, 12)
+      : [];
 
     const diaMap = {};
     for (let i = 1; i <= 31; i++) diaMap[i] = 0;
@@ -5730,261 +5739,6 @@ app.get("/api/fm-access-detalhes", requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
-
-// ================== CHECKLIST DASHBOARD ==================
-
-app.get("/checklist", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "checklist.html"));
-});
-
-const CHECKLIST_SPREADSHEET_ID = "1vUv0AJ_bASBkkzxUWOyheJSASb4VDsaRKAl40EzRKsk";
-const CHECKLIST_RANGE = "'Respostas'!A1:Z200000";
-
-let checklistCache = null;
-let checklistCacheTime = 0;
-const CHECKLIST_CACHE_TTL = 5 * 60 * 1000;
-
-// ================== HELPERS ==================
-
-function clNorm(value) {
-  return String(value || "").trim();
-}
-
-function clNormLower(value) {
-  return clNorm(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function clParseDate(value) {
-  const str = clNorm(value);
-  if (!str) return null;
-
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const [year, month, day] = datePart.split("-").map(Number);
-    const dt = new Date(year, month - 1, day);
-    return isNaN(dt.getTime()) ? null : dt;
-  }
-
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
-    const [datePart] = str.split(" ");
-    const parts = datePart.split("/").map(Number);
-    if (parts.length === 3) {
-      const [a, b, c] = parts;
-
-      let dt = new Date(c, a - 1, b);
-      if (!isNaN(dt.getTime())) return dt;
-
-      dt = new Date(c, b - 1, a);
-      if (!isNaN(dt.getTime())) return dt;
-    }
-  }
-
-  return null;
-}
-
-function clFormatBR(date) {
-  if (!date) return "";
-  const d = String(date.getDate()).padStart(2, "0");
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
-}
-
-function clSplitMulti(value) {
-  if (!value) return [];
-  return String(value)
-    .split("|")
-    .map((v) => clNorm(v))
-    .filter(Boolean);
-}
-
-function clMatchesMulti(fieldValue, selectedValues) {
-  if (!selectedValues.length) return true;
-  return selectedValues.includes(clNorm(fieldValue));
-}
-
-function clPercentChange(current, previous) {
-  current = Number(current || 0);
-  previous = Number(previous || 0);
-
-  if (previous === 0 && current === 0) return 0;
-  if (previous === 0) return 100;
-
-  return ((current - previous) / previous) * 100;
-}
-
-function clStartOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-}
-
-function clEndOfDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-}
-
-function clDiffDaysInclusive(start, end) {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const s = clStartOfDay(start);
-  const e = clStartOfDay(end);
-  return Math.floor((e - s) / msPerDay) + 1;
-}
-
-function clGetHoraAtualizacaoBR() {
-  return new Date().toLocaleTimeString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
-function clResolvePeriodFromQuery(query, groups) {
-  const periodoTipo = clNormLower(query.periodoTipo || "mes");
-  const dataRef = clNorm(query.dataRef);
-
-  if (dataRef) {
-    const ref = new Date(`${dataRef}T00:00:00`);
-
-    if (!isNaN(ref.getTime())) {
-      if (periodoTipo === "dia") {
-        return {
-          start: clStartOfDay(ref),
-          end: clEndOfDay(ref),
-        };
-      }
-
-      if (periodoTipo === "semana") {
-        const weekStart = new Date(ref);
-        const day = weekStart.getDay();
-        const diff = day === 0 ? -6 : 1 - day;
-        weekStart.setDate(weekStart.getDate() + diff);
-
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-
-        return {
-          start: clStartOfDay(weekStart),
-          end: clEndOfDay(weekEnd),
-        };
-      }
-
-      if (periodoTipo === "ano") {
-        return {
-          start: new Date(ref.getFullYear(), 0, 1),
-          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
-        };
-      }
-
-      return {
-        start: new Date(ref.getFullYear(), ref.getMonth(), 1),
-        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
-      };
-    }
-  }
-
-  const validDates = groups
-    .map((g) => g._dateObj)
-    .filter(Boolean)
-    .sort((a, b) => a - b);
-
-  if (!validDates.length) {
-    return { start: null, end: null };
-  }
-
-  const latest = validDates[validDates.length - 1];
-
-  return {
-    start: new Date(latest.getFullYear(), latest.getMonth(), 1),
-    end: new Date(latest.getFullYear(), latest.getMonth() + 1, 0, 23, 59, 59, 999),
-  };
-}
-
-function clGetComparisonWindow(startDate, endDate) {
-  if (!startDate || !endDate) {
-    return {
-      currentStart: null,
-      currentEnd: null,
-      previousStart: null,
-      previousEnd: null,
-      label: "base anterior",
-    };
-  }
-
-  const start = clStartOfDay(startDate);
-  const end = clEndOfDay(endDate);
-
-  const isSingleDay =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === end.getDate();
-
-  const isFullMonth =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === 1 &&
-    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
-
-  const isFullYear =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === 0 &&
-    start.getDate() === 1 &&
-    end.getMonth() === 11 &&
-    end.getDate() === 31;
-
-  const totalDays = clDiffDaysInclusive(start, end);
-
-  if (isSingleDay) {
-    const prev = new Date(start);
-    prev.setDate(prev.getDate() - 1);
-
-    return {
-      currentStart: start,
-      currentEnd: end,
-      previousStart: clStartOfDay(prev),
-      previousEnd: clEndOfDay(prev),
-      label: "dia anterior",
-    };
-  }
-
-  if (isFullMonth) {
-    return {
-      currentStart: start,
-      currentEnd: end,
-      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
-      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
-      label: "mês anterior",
-    };
-  }
-
-  if (isFullYear) {
-    return {
-      currentStart: start,
-      currentEnd: end,
-      previousStart: new Date(start.getFullYear() - 1, 0, 1),
-      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
-      label: "ano anterior",
-    };
-  }
-
-  const previousEnd = new Date(start);
-  previousEnd.setDate(previousEnd.getDate() - 1);
-  previousEnd.setHours(23, 59, 59, 999);
-
-  const previousStart = new Date(previousEnd);
-  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
-  previousStart.setHours(0, 0, 0, 0);
-
-  return {
-    currentStart: start,
-    currentEnd: end,
-    previousStart,
-    previousEnd,
-    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
-  };
-}
 
 // ================== LOAD RAW ==================
 

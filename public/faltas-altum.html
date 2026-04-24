@@ -281,6 +281,12 @@
     }
 
     .kpis{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+}
+
+    .kpis{
       display:grid;
       grid-template-columns:repeat(6,minmax(0,1fr));
       gap:12px;
@@ -605,18 +611,6 @@
       <div class="kpi-title">ABS</div>
       <div class="kpi-value red" id="cardAbs">0,0%</div>
       <div class="kpi-sub" id="cardAbsSub">Base do período</div>
-    </div>
-
-    <div class="kpi">
-      <div class="kpi-title">Horas ABS</div>
-      <div class="kpi-value red" id="cardHorasAbs">0h00</div>
-      <div class="kpi-sub">Somente falta e posto vago</div>
-    </div>
-
-    <div class="kpi">
-      <div class="kpi-title">Horas não cobertas</div>
-      <div class="kpi-value orange" id="cardHorasNaoCobertas">0h00</div>
-      <div class="kpi-sub">Tempo não coberto</div>
     </div>
 
     <div class="kpi">

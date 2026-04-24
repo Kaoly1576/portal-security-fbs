@@ -85,7 +85,7 @@
       padding:16px;
       margin-bottom:14px;
       position:relative;
-      z-index:9990;
+      z-index:99999 !important;
       overflow:visible !important;
     }
 
@@ -96,8 +96,11 @@
       align-items:end;
       overflow:visible !important;
       position:relative;
-      z-index:9991;
     }
+
+    .filters-grid.row-1{z-index:30}
+    .filters-grid.row-2{z-index:20}
+    .filters-grid.row-3{z-index:10}
 
     .filters-grid + .filters-grid{margin-top:10px}
     .filters-grid-third{grid-template-columns:1fr 2fr}
@@ -106,6 +109,11 @@
       min-width:0;
       position:relative;
       overflow:visible !important;
+      z-index:1;
+    }
+
+    .field.field-open{
+      z-index:999999 !important;
     }
 
     .field label{
@@ -134,10 +142,12 @@
     .multi-select{
       position:relative;
       width:100%;
-      z-index:9992;
+      z-index:2;
     }
 
-    .multi-select.open{z-index:99999 !important}
+    .multi-select.open{
+      z-index:999999 !important;
+    }
 
     .multi-trigger{
       width:100%;
@@ -177,8 +187,8 @@
       max-height:240px;
       overflow-y:auto;
       display:none;
-      z-index:100000 !important;
-      box-shadow:0 16px 32px rgba(0,0,0,.45);
+      z-index:999999 !important;
+      box-shadow:0 16px 32px rgba(0,0,0,.65);
       padding:6px;
     }
 
@@ -398,16 +408,17 @@
       align-items:center;
     }
 
+    body.dropdown-open .filters{
+      z-index:999999 !important;
+    }
+
     body.dropdown-open .kpis,
     body.dropdown-open .grid-top,
     body.dropdown-open .grid-middle,
     body.dropdown-open .grid-bottom,
     body.dropdown-open .wide-panel{
+      position:relative;
       z-index:1 !important;
-    }
-
-    body.dropdown-open .filters{
-      z-index:99999 !important;
     }
 
     @media (max-width:1400px){
@@ -457,7 +468,7 @@
   </section>
 
   <section class="filters">
-    <div class="filters-grid">
+    <div class="filters-grid row-1">
       <div class="field">
         <label>Período</label>
         <select id="filtroPeriodoTipo">
@@ -498,7 +509,7 @@
       </div>
     </div>
 
-    <div class="filters-grid">
+    <div class="filters-grid row-2">
       <div class="field">
         <label>Estado</label>
         <div class="multi-select" id="multiEstado">
@@ -540,7 +551,7 @@
       </div>
     </div>
 
-    <div class="filters-grid filters-grid-third">
+    <div class="filters-grid filters-grid-third row-3">
       <div class="field">
         <label>Área responsável</label>
         <div class="multi-select" id="multiAreaResponsavel">
@@ -757,14 +768,20 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
     e.stopPropagation();
 
     const wrapper = trigger.closest(".multi-select");
+    const field = trigger.closest(".field");
     const willOpen = !wrapper.classList.contains("open");
 
     document.querySelectorAll(".multi-select").forEach(wrap => {
       wrap.classList.remove("open");
     });
 
+    document.querySelectorAll(".field").forEach(f => {
+      f.classList.remove("field-open");
+    });
+
     if (willOpen) {
       wrapper.classList.add("open");
+      if (field) field.classList.add("field-open");
       document.body.classList.add("dropdown-open");
     } else {
       document.body.classList.remove("dropdown-open");
@@ -800,6 +817,11 @@ document.addEventListener("click", () => {
   document.querySelectorAll(".multi-select").forEach(wrap => {
     wrap.classList.remove("open");
   });
+
+  document.querySelectorAll(".field").forEach(f => {
+    f.classList.remove("field-open");
+  });
+
   document.body.classList.remove("dropdown-open");
 });
 

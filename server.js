@@ -12,21 +12,39 @@ const PORT = Number(process.env.PORT || 8080);
 
 // ================== ENV ==================
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  process.env.ID_DO_CLIENTE_DO_GOOGLE ||
+  "";
+
+const GOOGLE_CLIENT_SECRET =
+  process.env.GOOGLE_CLIENT_SECRET || "";
+
 const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL ||
+  process.env.URL_DE_RETORNO_DE_CHAMADA_DO_GOOGLE ||
   "https://portal-security-fbs-production.up.railway.app/auth/google/callback";
 
-const SESSION_SECRET = process.env.SESSION_SECRET || "troque_essa_chave";
+const SESSION_SECRET =
+  process.env.SESSION_SECRET ||
+  "troque_essa_chave";
 
-const CADASTRO_SHEET_ID = process.env.CADASTRO_SHEET_ID || "";
+const CADASTRO_SHEET_ID =
+  process.env.CADASTRO_SHEET_ID ||
+  process.env.ID_DA_FOLHA_CADASTRO ||
+  "";
+
 const CADASTRO_USUARIOS_RANGE =
-  process.env.CADASTRO_USUARIOS_RANGE || "usuarios!A:R";
+  process.env.CADASTRO_USUARIOS_RANGE ||
+  "usuarios!A:R";
+
 const CADASTRO_CARGOS_RANGE =
-  process.env.CADASTRO_CARGOS_RANGE || "cargos!A:Z";
+  process.env.CADASTRO_CARGOS_RANGE ||
+  "cargos!A:Z";
+
 const CADASTRO_NIVEIS_RANGE =
-  process.env.CADASTRO_NIVEIS_RANGE || "niveis_acesso!A:Z";
+  process.env.CADASTRO_NIVEIS_RANGE ||
+  "niveis_acesso!A:Z";
 
 const googleOAuthEnabled =
   Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);

@@ -6615,7 +6615,7 @@ function mcStatusMap(codigo) {
 // ================== LOAD BASE DE AGENTES ==================
 
 async function mcLoadBaseAgentes() {
-  const sheets = await conectarSheetsEdicao()();
+  const sheets = await conectarSheetsEdicao();
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: MARCACAO_SPREADSHEET_ID,
@@ -6643,7 +6643,7 @@ async function mcLoadBaseAgentes() {
 // ================== LOAD REGISTRO ==================
 
 async function mcLoadRegistro() {
-  const sheets = await conectarSheetsEdicao()();
+  const sheets = await conectarSheetsEdicao();
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: MARCACAO_SPREADSHEET_ID,
@@ -6864,7 +6864,7 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
       });
     }
 
-    const sheets = await conectarSheetsEdicao()();
+    const sheets = await conectarSheetsEdicao();
     const registro = await mcLoadRegistro();
 
     let headers = registro.headers;

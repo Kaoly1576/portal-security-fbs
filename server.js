@@ -16,25 +16,17 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL ||
-  "http://localhost:3000/auth/google/callback";
-
-const CADASTRO_SHEET_ID = process.env.CADASTRO_SHEET_ID || "";
-
-const CADASTRO_USUARIOS_RANGE =
-  process.env.CADASTRO_USUARIOS_RANGE || "usuarios!A:R";
-
-const CADASTRO_CARGOS_RANGE =
-  process.env.CADASTRO_CARGOS_RANGE || "cargos!A:Z";
-
-const CADASTRO_NIVEIS_RANGE =
-  process.env.CADASTRO_NIVEIS_RANGE || "niveis_acesso!A:Z";
+  "https://portal-security-fbs-production.up.railway.app/auth/google/callback";
 
 const SESSION_SECRET = process.env.SESSION_SECRET || "troque_essa_chave";
 
 const CADASTRO_SHEET_ID = process.env.CADASTRO_SHEET_ID || "";
-const CADASTRO_USUARIOS_RANGE = process.env.CADASTRO_USUARIOS_RANGE || "usuarios!A:R";
-const CADASTRO_CARGOS_RANGE = process.env.CADASTRO_CARGOS_RANGE || "cargos!A:Z";
-const CADASTRO_NIVEIS_RANGE = process.env.CADASTRO_NIVEIS_RANGE || "niveis_acesso!A:Z";
+const CADASTRO_USUARIOS_RANGE =
+  process.env.CADASTRO_USUARIOS_RANGE || "usuarios!A:R";
+const CADASTRO_CARGOS_RANGE =
+  process.env.CADASTRO_CARGOS_RANGE || "cargos!A:Z";
+const CADASTRO_NIVEIS_RANGE =
+  process.env.CADASTRO_NIVEIS_RANGE || "niveis_acesso!A:Z";
 
 const googleOAuthEnabled =
   Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);
@@ -63,6 +55,8 @@ app.use(
 );
 
 app.use(passport.initialize());
+
+// Arquivos públicos como CSS, JS, imagens etc.
 app.use(express.static(path.join(__dirname, "public")));
 
 // ================== GOOGLE SHEETS ==================
@@ -173,7 +167,7 @@ function findHeaderIndex(headers, headerName) {
 
 async function getCadastroSheetObjects(range, writable = false) {
   if (!CADASTRO_SHEET_ID) {
-    throw new Error("CADASTRO_SHEET_ID não configurado.");
+    throw new Error("CADASTRO_SHEET_ID não configurado no Railway.");
   }
 
   const sheets = writable ? await conectarSheetsEdicao() : await conectarSheets();
@@ -213,7 +207,7 @@ async function findUsuarioCadastroByEmail(email) {
 
 async function getUsuariosSheetRaw() {
   if (!CADASTRO_SHEET_ID) {
-    throw new Error("CADASTRO_SHEET_ID não configurado.");
+    throw new Error("CADASTRO_SHEET_ID não configurado no Railway.");
   }
 
   const sheets = await conectarSheetsEdicao();
@@ -398,12 +392,12 @@ if (googleOAuthEnabled) {
 // ================== ROTAS PÚBLICAS ==================
 
 app.get("/", (req, res) => {
-  if (req.session?.userId) return res.redirect("/portal");
+  if (req.session?.userId) return res.redirect("/porta.html");
   return res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 app.get("/login", (req, res) => {
-  if (req.session?.userId) return res.redirect("/portal");
+  if (req.session?.userId) return res.redirect("/porta.html");
   return res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
@@ -417,6 +411,7 @@ app.get("/auth/google", (req, res, next) => {
   return passport.authenticate("google", {
     scope: ["openid", "profile", "email"],
     session: false,
+    prompt: "select_account",
   })(req, res, next);
 });
 
@@ -429,6 +424,7 @@ app.get("/auth/google/register", (req, res, next) => {
     scope: ["openid", "profile", "email"],
     session: false,
     state: "register",
+    prompt: "select_account",
   })(req, res, next);
 });
 
@@ -441,13 +437,20 @@ app.get("/auth/google/callback", (req, res, next) => {
   return passport.authenticate("google", { session: false }, (err, user, info) => {
     if (err) {
       console.error("Erro no callback Google:", err);
-      req.session.loginError = "Erro ao autenticar com Google.";
-      return res.redirect("/login");
+
+      if (String(err.message || "").includes("CADASTRO_SHEET_ID")) {
+        req.session.loginError =
+          "CADASTRO_SHEET_ID não configurado no Railway.";
+      } else {
+        req.session.loginError = "Erro ao autenticar com Google.";
+      }
+
+      return req.session.save(() => res.redirect("/login"));
     }
 
     if (!user) {
       req.session.loginError = info?.message || "Acesso não autorizado.";
-      return res.redirect("/login");
+      return req.session.save(() => res.redirect("/login"));
     }
 
     if (user._registerFlow) {
@@ -483,7 +486,7 @@ app.get("/auth/google/callback", (req, res, next) => {
     req.session.aprovador = user.aprovador || "0";
 
     return req.session.save(() => {
-      return res.redirect("/portal");
+      return res.redirect("/porta.html");
     });
   })(req, res, next);
 });
@@ -584,7 +587,9 @@ app.post("/api/usuarios/cadastrar", async (req, res) => {
 app.get("/api/login-status", (req, res) => {
   const erro = req.session?.loginError || "";
   req.session.loginError = "";
-  return res.json({ erro });
+  return req.session.save(() => {
+    return res.json({ erro });
+  });
 });
 
 app.get("/api/me", (req, res) => {
@@ -613,7 +618,7 @@ app.get("/api/me", (req, res) => {
   return res.status(401).json({ erro: "Não autenticado" });
 });
 
-// ================== APIs CADASTRO AUXILIARES ==================
+// ================== APIs AUXILIARES ==================
 
 app.get("/api/cargos", async (req, res) => {
   try {
@@ -647,8 +652,16 @@ app.get("/api/niveis-acesso", async (req, res) => {
 
 // ================== ROTAS PROTEGIDAS ==================
 
+app.get("/porta.html", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "porta.html"));
+});
+
 app.get("/portal", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "portal.html"));
+  return res.redirect("/porta.html");
+});
+
+app.get("/portal.html", requireAuth, (req, res) => {
+  return res.redirect("/porta.html");
 });
 
 app.get("/dashboard", requireAuth, (req, res) => {
@@ -667,7 +680,7 @@ app.get("/chamada-agentes", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "chamada-agentes.html"));
 });
 
-// ================== APROVAÇÕES / GESTÃO USUÁRIOS ==================
+// ================== APROVAÇÕES ==================
 
 app.get("/aprovacoes", requireAprovador, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "aprovacoes.html"));
@@ -871,7 +884,7 @@ app.get("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Erro ao destruir sessão:", err);
-      return res.redirect("/portal");
+      return res.redirect("/porta.html");
     }
 
     res.clearCookie("portal_security_sid");
@@ -894,4 +907,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+  console.log("Google OAuth:", googleOAuthEnabled ? "habilitado" : "desabilitado");
+  console.log("Callback Google:", GOOGLE_CALLBACK_URL);
+  console.log("Cadastro Sheet ID:", CADASTRO_SHEET_ID ? "configurado" : "não configurado");
 });

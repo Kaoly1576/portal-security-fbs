@@ -287,3 +287,269 @@ app.listen(PORT, () => {
   console.log(`Servidor rodando: http://localhost:${PORT}`);
 });
 
+// ================== ROTAS PÚBLICAS ==================
+
+app.get("/", (req, res) => {
+  if (req.session.userId) return res.redirect("/portal");
+  return res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+app.get("/login", (req, res) => {
+  if (req.session.userId) return res.redirect("/portal");
+  return res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+// ================== LOGIN / CADASTRO / GOOGLE ==================
+
+app.get("/cadastro", (req, res) => {
+  if (!req.session?.preCadastroUser) {
+    return res.redirect("/auth/google/register");
+  }
+
+  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
+});
+
+app.get("/api/login-status", (req, res) => {
+  const erro = req.session?.loginError || "";
+  req.session.loginError = "";
+  return res.json({ erro });
+});
+
+app.get("/api/cargos", async (req, res) => {
+  try {
+    const cargos = await getCargosCadastroSheet();
+    const ativos = cargos.filter(
+      (item) => cadastroNormalizeLower(item.status) === "ativo"
+    );
+    return res.json(ativos);
+  } catch (err) {
+    console.error("Erro ao buscar cargos:", err);
+    return res.status(500).json({ erro: "Erro ao buscar cargos" });
+  }
+});
+
+app.get("/api/niveis-acesso", async (req, res) => {
+  try {
+    const niveis = await getNiveisCadastroSheet();
+    const ativos = niveis.filter(
+      (item) => cadastroNormalizeLower(item.status) === "ativo"
+    );
+    return res.json(ativos);
+  } catch (err) {
+    console.error("Erro ao buscar níveis de acesso:", err);
+    return res.status(500).json({ erro: "Erro ao buscar níveis de acesso" });
+  }
+});
+
+app.get("/api/pre-cadastro-user", (req, res) => {
+  const preUser = req.session?.preCadastroUser || null;
+  if (!preUser) {
+    return res.status(401).json({ erro: "Usuário de pré-cadastro não autenticado." });
+  }
+  return res.json(preUser);
+});
+
+app.post("/api/usuarios/cadastrar", async (req, res) => {
+  try {
+    const dados = req.body || {};
+    const now = new Date().toISOString();
+
+    if (!cadastroNormalize(dados.nome) || !cadastroNormalize(dados.email)) {
+      return res.status(400).json({ erro: "Nome e e-mail são obrigatórios." });
+    }
+
+    if (!cadastroNormalize(dados.cargo)) {
+      return res.status(400).json({ erro: "Cargo é obrigatório." });
+    }
+
+    if (!cadastroNormalize(dados.nivel_acesso)) {
+      return res.status(400).json({ erro: "Nível de acesso é obrigatório." });
+    }
+
+    const existente = await findUsuarioCadastroByEmail(dados.email);
+    if (existente) {
+      return res.status(400).json({
+        erro: "Já existe um cadastro para este e-mail.",
+      });
+    }
+
+    const sheets = await conectarSheetsEdicao();
+    const novoId = String(Date.now());
+
+    const novaLinha = [
+      novoId,                     // id
+      dados.nome || "",           // nome
+      dados.email || "",          // email
+      dados.login || "",          // login
+      "",                         // senha
+      dados.cargo || "",          // cargo
+      dados.area || "",           // area
+      "pendente",                 // status
+      dados.nivel_acesso || "",   // nivel_acesso
+      dados.unidade || "",        // unidade
+      dados.google_id || "",      // google_id
+      "",                         // permissoes
+      0,                          // aprovador
+      dados.foto || "",           // foto
+      1,                          // cadastro_pendente
+      now,                        // criado_em
+      dados.empresa || "",        // empresa
+      now                         // atualizado_em
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CADASTRO_SHEET_ID,
+      range: "usuarios!A1",
+      valueInputOption: "USER_ENTERED",
+      resource: {
+        values: [novaLinha],
+      },
+    });
+
+    req.session.preCadastroUser = null;
+
+    return res.json({ sucesso: true });
+  } catch (err) {
+    console.error("Erro ao cadastrar usuário:", err);
+    return res.status(500).json({ erro: "Erro ao cadastrar usuário" });
+  }
+});
+
+app.get("/auth/google", (req, res, next) => {
+  if (!googleOAuthEnabled) {
+    return res.status(503).send("Login Google não configurado no servidor.");
+  }
+
+  return passport.authenticate("google", {
+    scope: ["openid", "profile", "email"],
+    session: false,
+  })(req, res, next);
+});
+
+app.get("/auth/google/register", (req, res, next) => {
+  if (!googleOAuthEnabled) {
+    return res.status(503).send("Login Google não configurado no servidor.");
+  }
+
+  return passport.authenticate("google", {
+    scope: ["openid", "profile", "email"],
+    session: false,
+    state: "register",
+  })(req, res, next);
+});
+
+app.get("/auth/google/callback", (req, res, next) => {
+  if (!googleOAuthEnabled) {
+    return res.redirect("/login");
+  }
+
+  return passport.authenticate("google", { session: false }, (err, user, info) => {
+    if (err) {
+      console.error("Erro no callback Google:", err);
+      req.session.loginError = "Erro ao autenticar com Google.";
+      return res.redirect("/login");
+    }
+
+    if (!user) {
+      req.session.loginError = info?.message || "Acesso não autorizado.";
+      return res.redirect("/login");
+    }
+
+    if (user._registerFlow) {
+      req.session.preCadastroUser = {
+        nome: user.nome || "",
+        email: user.email || "",
+        foto: user.foto || "",
+        google_id: user.google_id || "",
+      };
+      req.session.loginError = "";
+      return res.redirect("/cadastro");
+    }
+
+    req.session.loginError = "";
+    req.session.preCadastroUser = null;
+    req.session.userId = user.id;
+    req.session.nome = user.nome;
+    req.session.email = user.email;
+    req.session.perfil = user.perfil;
+    req.session.foto = user.foto || "";
+    req.session.google_id = user.google_id || "";
+    req.session.cargo = user.cargo || "";
+    req.session.nivel_acesso = user.nivel_acesso || "";
+    req.session.area = user.area || "";
+    req.session.unidade = user.unidade || "";
+    req.session.empresa = user.empresa || "";
+    req.session.permissoes = user.permissoes || "";
+    req.session.aprovador = user.aprovador || "0";
+
+    return res.redirect("/portal");
+  })(req, res, next);
+});
+
+// ================== LOGIN LOCAL LEGADO ==================
+
+app.post("/cadastro", async (req, res) => {
+  const { nome, email, senha } = req.body;
+
+  if (!email || !senha || !nome) {
+    return res.send("Preencha nome, e-mail e senha.");
+  }
+
+  if (!email.endsWith("@shopee.com")) {
+    return res.send("Somente e-mails @shopee.com permitidos.");
+  }
+
+  const senhaHash = await bcrypt.hash(senha, 10);
+
+  db.run(
+    `INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)`,
+    [nome, email, senhaHash],
+    function (err) {
+      if (err) return res.send("Usuário já existe ou erro no cadastro.");
+      return res.send("Cadastro realizado! Aguarde aprovação do Security.");
+    }
+  );
+});
+
+app.post("/login", (req, res) => {
+  const { email, senha } = req.body;
+
+  if (!email || !senha) {
+    return res.send("Informe e-mail e senha.");
+  }
+
+  db.get("SELECT * FROM usuarios WHERE email = ?", [email], async (err, user) => {
+    if (err) return res.send("Erro no servidor.");
+    if (!user) return res.send("Usuário não encontrado.");
+
+    if (user.status !== "aprovado") {
+      return res.send("Usuário ainda não aprovado pelo Security.");
+    }
+
+    const senhaValida = await bcrypt.compare(senha, user.senha || "");
+    if (!senhaValida) return res.send("Senha incorreta.");
+
+    req.session.userId = user.id;
+    req.session.nome = user.nome;
+    req.session.email = user.email;
+    req.session.perfil = user.perfil;
+    req.session.foto = user.foto || "";
+
+    return res.redirect("/portal");
+  });
+});
+
+// ================== LOGOUT =================
+
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Erro ao destruir sessão:", err);
+      return res.redirect("/portal");
+    }
+
+    res.clearCookie("connect.sid");
+    return res.redirect("/login");
+  });
+});
+

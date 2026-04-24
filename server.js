@@ -6615,7 +6615,7 @@ function mcStatusMap(codigo) {
 // ================== LOAD BASE DE AGENTES ==================
 
 async function mcLoadBaseAgentes() {
-  const sheets = await conectarSheetsWrite();
+  const sheets = await conectarSheets();
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: MARCACAO_SPREADSHEET_ID,
@@ -6643,7 +6643,7 @@ async function mcLoadBaseAgentes() {
 // ================== LOAD REGISTRO ==================
 
 async function mcLoadRegistro() {
-  const sheets = await conectarSheetsWrite();
+  const sheets = await conectarSheets();
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: MARCACAO_SPREADSHEET_ID,
@@ -6864,7 +6864,7 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
       });
     }
 
-    const sheets = await conectarSheetsWrite();
+    const sheets = await conectarSheets();
     const registro = await mcLoadRegistro();
 
     let headers = registro.headers;
@@ -6930,7 +6930,7 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
         mcNorm(row.AGENTE || ""),
         mcNorm(meta.status),
         mcNorm(codigo === "FC" ? "Cobertura parcial" : meta.cobertura),
-        mcNorm(row.abs || meta.abs),
+        mcNorm(codigo === "FC" ? (row.abs || meta.abs) : (row.abs || meta.abs)),
         mcNorm(codigo === "FC" ? (row.cobrindo || "") : ""),
         mcNorm(codigo === "FC" ? (row.horaCobertura || "") : "")
       ];
@@ -6987,7 +6987,6 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
     });
   }
 });
-
 
 
 

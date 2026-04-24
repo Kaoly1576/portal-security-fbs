@@ -18,6 +18,17 @@ const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL ||
   "http://localhost:3000/auth/google/callback";
 
+const CADASTRO_SHEET_ID = process.env.CADASTRO_SHEET_ID || "";
+
+const CADASTRO_USUARIOS_RANGE =
+  process.env.CADASTRO_USUARIOS_RANGE || "usuarios!A:R";
+
+const CADASTRO_CARGOS_RANGE =
+  process.env.CADASTRO_CARGOS_RANGE || "cargos!A:Z";
+
+const CADASTRO_NIVEIS_RANGE =
+  process.env.CADASTRO_NIVEIS_RANGE || "niveis_acesso!A:Z";
+
 const SESSION_SECRET = process.env.SESSION_SECRET || "troque_essa_chave";
 
 const CADASTRO_SHEET_ID = process.env.CADASTRO_SHEET_ID || "";

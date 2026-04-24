@@ -59,10 +59,1041 @@
 
     .topbar{
       display:grid;
-      grid-template-columns:280px 320px 1fr 58px;
+      grid-template-columns:300px 1fr 72px 360px;
       align-items:center;
       gap:12px;
       background:rgba(10,10,10,.82);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      min-height:72px;
+      padding:0 12px 0 0;
+      overflow:visible;
+      position:relative;
+      z-index:50;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-height:72px;
+      padding:10px 16px;
+      background:
+        linear-gradient(90deg, rgba(9,9,9,.92), rgba(9,9,9,.80)),
+        radial-gradient(circle at 20% 50%, rgba(58,99,255,.18), transparent 55%);
+      border-right:1px solid rgba(255,255,255,.06);
+      border-radius:18px 0 0 18px;
+    }
+
+    .brand img{
+      width:42px;
+      height:42px;
+      object-fit:contain;
+      border-radius:8px;
+      flex:0 0 auto;
+    }
+
+    .brand span{
+      color:var(--orange);
+      font-size:18px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .top-spacer{
+      min-width:0;
+    }
+
+    .icon-btn{
+      width:54px;
+      height:54px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:#fff;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      cursor:pointer;
+      transition:.2s ease;
+      flex:0 0 auto;
+    }
+
+    .icon-btn:hover{
+      background:rgba(255,255,255,.09);
+      transform:translateY(-1px);
+      border-color:rgba(255,122,26,.22);
+    }
+
+    .profile-menu{
+      position:relative;
+      min-width:0;
+      justify-self:end;
+      width:100%;
+      max-width:360px;
+    }
+
+    .profile-trigger{
+      width:100%;
+      height:52px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:5px 12px 5px 6px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:#fff;
+      cursor:pointer;
+      overflow:hidden;
+      transition:.2s ease;
+    }
+
+    .profile-trigger:hover{
+      background:rgba(255,255,255,.07);
+      border-color:rgba(255,122,26,.18);
+    }
+
+    .profile-trigger img{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      object-fit:cover;
+      background:#161616;
+      border:2px solid rgba(255,255,255,.10);
+      flex:0 0 auto;
+    }
+
+    .mini-user-info{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      line-height:1.12;
+      text-align:left;
+      flex:1;
+    }
+
+    .mini-user-info strong{
+      font-size:13px;
+      font-weight:800;
+      color:#fff;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .mini-user-info span{
+      font-size:11px;
+      color:#ffbf8c;
+      font-weight:700;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      margin-top:2px;
+    }
+
+    .mini-user-info small{
+      font-size:10px;
+      color:#c9d3e6;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      margin-top:2px;
+    }
+
+    .profile-arrow{
+      color:#cfd6e4;
+      font-size:13px;
+      flex:0 0 auto;
+      transition:.2s ease;
+    }
+
+    .profile-menu.open .profile-arrow{
+      transform:rotate(180deg);
+    }
+
+    .profile-dropdown{
+      position:absolute;
+      top:calc(100% + 10px);
+      right:0;
+      width:100%;
+      min-width:300px;
+      padding:10px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(13,13,13,.98);
+      box-shadow:0 18px 42px rgba(0,0,0,.55);
+      display:none;
+      z-index:9999;
+    }
+
+    .profile-menu.open .profile-dropdown{
+      display:block;
+    }
+
+    .profile-option{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px;
+      border-radius:12px;
+      color:#fff;
+      background:rgba(255,255,255,.035);
+      border:1px solid rgba(255,255,255,.06);
+      cursor:pointer;
+      transition:.2s ease;
+      margin-bottom:8px;
+    }
+
+    .profile-option:hover{
+      background:rgba(255,255,255,.07);
+      border-color:rgba(255,122,26,.20);
+    }
+
+    .profile-option strong{
+      display:block;
+      font-size:13px;
+      font-weight:800;
+    }
+
+    .profile-option span{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:3px;
+    }
+
+    .profile-option.danger{
+      color:#ffe7e7;
+      background:rgba(255,77,79,.10);
+      border-color:rgba(255,77,79,.20);
+      margin-bottom:0;
+    }
+
+    .profile-option.danger:hover{
+      background:rgba(255,77,79,.16);
+    }
+
+    .search-panel{
+      display:none;
+      margin-top:14px;
+      padding:14px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:rgba(10,10,10,.82);
+      box-shadow:var(--shadow);
+      position:relative;
+      z-index:40;
+    }
+
+    .search-panel.active{
+      display:block;
+    }
+
+    .search-box{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:15px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.03);
+    }
+
+    .search-box span{
+      font-size:18px;
+      color:#d7deea;
+      flex:0 0 auto;
+    }
+
+    .search-box input{
+      flex:1;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:#fff;
+      font-size:13px;
+    }
+
+    .search-box input::placeholder{
+      color:#9da7b7;
+    }
+
+    .search-tip{
+      margin-top:9px;
+      color:#aab4c5;
+      font-size:11px;
+    }
+
+    .portal-layout{
+      display:grid;
+      grid-template-columns:260px minmax(0, 1fr) 260px;
+      gap:14px;
+      margin-top:14px;
+      align-items:start;
+    }
+
+    .side-column,
+    .side-column-right{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-width:0;
+    }
+
+    .center-column{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-width:0;
+      width:100%;
+    }
+
+    .hero{
+      width:100%;
+      position:relative;
+      min-height:250px;
+      border-radius:22px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      background:
+        linear-gradient(90deg, rgba(9,11,18,.92) 0%, rgba(9,11,18,.78) 38%, rgba(9,11,18,.18) 100%),
+        url("/images/plano de fundo.png") center/cover no-repeat;
+      padding:30px;
+      display:flex;
+      align-items:center;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 72% 35%, rgba(255,122,26,.20), transparent 18%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.14));
+      pointer-events:none;
+    }
+
+    .hero-content{
+      position:relative;
+      z-index:2;
+      max-width:520px;
+    }
+
+    .hero h1{
+      font-size:22px;
+      font-weight:800;
+      margin-bottom:14px;
+    }
+
+    .hero p{
+      font-size:13px;
+      line-height:1.6;
+      color:#d7deea;
+      max-width:470px;
+    }
+
+    .hero-image{
+      position:absolute;
+      right:34px;
+      top:50%;
+      transform:translateY(-50%);
+      width:280px;
+      max-width:36%;
+      z-index:1;
+      object-fit:contain;
+      filter:drop-shadow(0 10px 24px rgba(0,0,0,.35));
+    }
+
+    .module-card,
+    .promo-card{
+      background:linear-gradient(180deg, rgba(37,37,37,.95), rgba(28,28,28,.96));
+      border:1px solid var(--line);
+      border-radius:20px;
+      box-shadow:var(--shadow);
+    }
+
+    .accordion-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:14px;
+      align-items:start;
+      width:100%;
+    }
+
+    .module-card{
+      overflow:hidden;
+      transition:.25s ease;
+      width:100%;
+    }
+
+    .module-card:hover{
+      border-color:rgba(255,122,26,.14);
+    }
+
+    .module-header{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:17px 16px;
+      color:#fff;
+      border-bottom:1px solid rgba(255,255,255,.05);
+    }
+
+    .module-title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:14px;
+      font-weight:800;
+      text-align:left;
+      min-width:0;
+    }
+
+    .module-title .icon{
+      font-size:15px;
+      flex:0 0 auto;
+    }
+
+    .module-body{
+      display:block;
+    }
+
+    .module-inner{
+      padding:12px;
+    }
+
+    .module-links{
+      display:grid;
+      gap:10px;
+    }
+
+    .module-link{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 13px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.025);
+      transition:.2s ease;
+      min-width:0;
+    }
+
+    .module-link:hover{
+      background:rgba(255,255,255,.05);
+      border-color:rgba(255,122,26,.20);
+      transform:translateY(-1px);
+    }
+
+    .module-link strong{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      margin-bottom:4px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .module-link span{
+      display:block;
+      font-size:10px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    .module-link .arrow{
+      font-size:20px;
+      font-weight:800;
+      color:#eef2fb;
+      flex:0 0 auto;
+      line-height:1;
+    }
+
+    .module-card.hidden-by-search,
+    .module-link.hidden-by-search{
+      display:none !important;
+    }
+
+    .promo-card{
+      min-height:242px;
+      padding:16px 14px;
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      background:
+        linear-gradient(180deg, rgba(20,20,20,.90), rgba(12,12,12,.96)),
+        url("/images/plano de fundo.png") center/cover no-repeat;
+      overflow:hidden;
+      transition:.2s ease;
+    }
+
+    .promo-card img{
+      width:138px;
+      max-width:100%;
+      object-fit:contain;
+      margin-bottom:15px;
+      filter:drop-shadow(0 10px 28px rgba(0,0,0,.45));
+    }
+
+    .promo-card h3{
+      font-size:14px;
+      font-weight:800;
+      margin-bottom:9px;
+      line-height:1.2;
+    }
+
+    .promo-card p{
+      font-size:11px;
+      line-height:1.45;
+      color:#d2d9e7;
+      max-width:210px;
+    }
+
+    .promo-link{
+      transition:.2s ease;
+    }
+
+    .promo-link:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,122,26,.22);
+      box-shadow:0 16px 36px rgba(0,0,0,.38);
+    }
+
+    @media (max-width: 1280px){
+      .topbar{
+        grid-template-columns:280px 1fr 64px 330px;
+      }
+
+      .portal-layout{
+        grid-template-columns:220px minmax(0, 1fr) 220px;
+      }
+
+      .promo-card img{
+        width:120px;
+      }
+
+      .hero-image{
+        width:250px;
+      }
+    }
+
+    @media (max-width: 1150px){
+      .topbar{
+        grid-template-columns:1fr;
+        padding:12px;
+      }
+
+      .brand{
+        border-right:none;
+        border-bottom:1px solid rgba(255,255,255,.06);
+        border-radius:16px;
+      }
+
+      .profile-menu{
+        width:100%;
+        max-width:360px;
+        justify-self:start;
+      }
+
+      .icon-btn{
+        width:52px;
+        height:52px;
+      }
+
+      .portal-layout{
+        grid-template-columns:1fr;
+      }
+
+      .side-column,
+      .side-column-right,
+      .center-column{
+        width:100%;
+      }
+
+      .accordion-grid{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 860px){
+      .accordion-grid{
+        grid-template-columns:1fr;
+      }
+
+      .hero{
+        padding:24px 20px;
+        min-height:230px;
+      }
+
+      .hero-image{
+        width:230px;
+        max-width:42%;
+        right:16px;
+      }
+    }
+
+    @media (max-width: 640px){
+      .page{
+        padding:10px;
+      }
+
+      .hero{
+        min-height:auto;
+      }
+
+      .hero-content{
+        max-width:100%;
+        padding-right:0;
+      }
+
+      .hero h1{
+        font-size:18px;
+      }
+
+      .hero p{
+        font-size:12px;
+      }
+
+      .hero-image{
+        opacity:.16;
+        right:-30px;
+        width:78%;
+        max-width:none;
+      }
+
+      .module-header{
+        padding:16px 14px;
+      }
+
+      .module-inner{
+        padding:10px;
+      }
+
+      .profile-dropdown{
+        min-width:100%;
+      }
+
+      .promo-card{
+        min-height:210px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/images/logo.png" alt="Logo Security">
+        <span>Shopee Security</span>
+        <img src="/images/BS.png" alt="Brasil + Singapura">
+      </div>
+
+      <div class="top-spacer"></div>
+
+      <button class="icon-btn" id="searchToggle" type="button" aria-label="Buscar">⌕</button>
+
+      <div class="profile-menu" id="profileMenu">
+        <button class="profile-trigger" type="button" id="profileToggle">
+          <img id="topUserPhoto" src="/images/logo.png" alt="Foto do usuário">
+          <div class="mini-user-info">
+            <strong id="topUserName">Usuário</strong>
+            <span id="topUserRole">Aprovador</span>
+            <small id="topUserEmail">usuario@shopee.com</small>
+          </div>
+          <span class="profile-arrow">⌄</span>
+        </button>
+
+        <div class="profile-dropdown" id="profileDropdown">
+          <a class="profile-option" href="/aprovacoes">
+            <div>
+              <strong>Cadastros & Aprovações</strong>
+              <span>Acesse os cadastros solicitados</span>
+            </div>
+            <div>›</div>
+          </a>
+
+          <form action="/logout" method="GET" style="margin:0;">
+            <button class="profile-option danger" type="submit">
+              <div>
+                <strong>Sair</strong>
+                <span>Encerrar sessão</span>
+              </div>
+              <div>⎋</div>
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <section class="search-panel" id="searchPanel">
+      <div class="search-box">
+        <span>⌕</span>
+        <input
+          type="text"
+          id="portalSearch"
+          placeholder="Pesquisar dashboard, módulo ou processo..."
+          autocomplete="off"
+        />
+      </div>
+      <div class="search-tip">
+        Pesquise por exemplo: Access, HC, Desligados, Rondas, CCO, Auditorias...
+      </div>
+    </section>
+
+    <div class="portal-layout">
+      <aside class="side-column">
+        <a class="promo-card promo-link" href="https://sites.google.com/shopee.com/security-center-brasil?usp=sharing" target="_blank" rel="noopener noreferrer">
+          <img src="/images/site.png" alt="Website Security">
+          <h3>WEBSITE SECURITY FBS</h3>
+          <p>Clique para acessar o portal oficial do Security Center Brasil.</p>
+        </a>
+
+        <a class="promo-card promo-link" href="https://www.appsheet.com/start/5703b81d-f6f3-44a2-adb1-eaff4dac10f1" target="_blank" rel="noopener noreferrer">
+          <img src="/images/access.png" alt="ACCESS FBS">
+          <h3>CONTROLE DE ACESSO FBS</h3>
+          <p>Clique para acessar o ACCESS.</p>
+        </a>
+      </aside>
+
+      <main class="center-column">
+        <section class="hero">
+          <div class="hero-content">
+            <h1>Bem-vindo ao Security FBS</h1>
+            <p>
+              Protegendo a operação com monitoramento de acessos, aprovações,
+              eventos críticos e dashboards operacionais em tempo real.
+            </p>
+          </div>
+
+          <img class="hero-image" src="/images/logo.png" alt="Imagem Security">
+        </section>
+
+        <section class="accordion-grid">
+          <div class="module-card">
+            <div class="module-header">
+              <div class="module-title">
+                <span class="icon">🧾</span>
+                <span>Auditorias</span>
+              </div>
+            </div>
+
+            <div class="module-body">
+              <div class="module-inner">
+                <div class="module-links">
+                  <a class="module-link" href="/dashboard">
+                    <div>
+                      <strong>AV - Lost</strong>
+                      <span>AV recuperado</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/checklist">
+                    <div>
+                      <strong>Checklist</strong>
+                      <span>Gestão de checklist</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-card">
+            <div class="module-header">
+              <div class="module-title">
+                <span class="icon">🔐</span>
+                <span>Controle de Acesso</span>
+              </div>
+            </div>
+
+            <div class="module-body">
+              <div class="module-inner">
+                <div class="module-links">
+                  <a class="module-link" href="/access">
+                    <div>
+                      <strong>Access</strong>
+                      <span>Acessos e liberações</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/first-mile-access.html">
+                    <div>
+                      <strong>First Mile</strong>
+                      <span>Rotas e coletas</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-card">
+            <div class="module-header">
+              <div class="module-title">
+                <span class="icon">👥</span>
+                <span>HC</span>
+              </div>
+            </div>
+
+            <div class="module-body">
+              <div class="module-inner">
+                <div class="module-links">
+                  <a class="module-link" href="/hc-fbs">
+                    <div>
+                      <strong>Headcount FBS Reps</strong>
+                      <span>HC e presença</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/faltas-altum">
+                    <div>
+                      <strong>ABS Grupo Altum</strong>
+                      <span>Gestão de presença</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/marcacao">
+                    <div>
+                      <strong>Controle de presenteísmo - Altum</strong>
+                      <span>Lançamento diário de efetivo de segurança</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/desligados">
+                    <div>
+                      <strong>Desligados</strong>
+                      <span>Controle de acessos removidos</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-card">
+            <div class="module-header">
+              <div class="module-title">
+                <span class="icon">⚙️</span>
+                <span>Processos</span>
+              </div>
+            </div>
+
+            <div class="module-body">
+              <div class="module-inner">
+                <div class="module-links">
+                  <a class="module-link" href="/cco-fbs">
+                    <div>
+                      <strong>CCO</strong>
+                      <span>Solicitações de imagens</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/matriz-consequencia">
+                    <div>
+                      <strong>Matriz de consequência</strong>
+                      <span>Medidas disciplinares</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/registro-lacres">
+                    <div>
+                      <strong>Registros de lacres</strong>
+                      <span>Registros de veículos de outbound</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+
+                  <a class="module-link" href="/rondas.html">
+                    <div>
+                      <strong>Rondas</strong>
+                      <span>Monitoramento</span>
+                    </div>
+                    <div class="arrow">›</div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="side-column-right">
+        <a class="promo-card promo-link" href="https://wms.ssc.shopee.com.br/v2/home" target="_blank" rel="noopener noreferrer">
+          <img src="/images/wms.png" alt="WMS">
+          <h3>WAREHOUSE MANAGEMENT SYSTEM</h3>
+          <p>Clique para acessar o WMS.</p>
+        </a>
+
+        <a class="promo-card promo-link" href="https://spx.shopee.com.br/#/index" target="_blank" rel="noopener noreferrer">
+          <img src="/images/SPX.PNG" alt="SPX">
+          <h3>SHOPEE EXPRESS</h3>
+          <p>Clique para acessar o SPX.</p>
+        </a>
+
+        <a class="promo-card promo-link" href="https://soup.shopee.io/" target="_blank" rel="noopener noreferrer">
+          <img src="/images/soup.png" alt="SOUP">
+          <h3>SOUP</h3>
+          <p>Clique para acessar o SOUP.</p>
+        </a>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const fallbackPhoto = "/images/logo.png";
+    const fallbackName = "Usuário";
+    const fallbackEmail = "usuario@shopee.com";
+    const fallbackRole = "Aprovador";
+
+    async function loadUserProfile() {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { "Accept": "application/json" }
+        });
+
+        if (!response.ok) {
+          throw new Error("Falha ao carregar /api/me");
+        }
+
+        const user = await response.json();
+
+        const nome = user.nome || fallbackName;
+        const foto = user.foto || fallbackPhoto;
+        const email = user.email || fallbackEmail;
+        const perfil = user.perfil || fallbackRole;
+
+        const topUserPhoto = document.getElementById("topUserPhoto");
+        const topUserName = document.getElementById("topUserName");
+        const topUserRole = document.getElementById("topUserRole");
+        const topUserEmail = document.getElementById("topUserEmail");
+
+        if (topUserPhoto) {
+          topUserPhoto.src = foto;
+          topUserPhoto.onerror = function () {
+            this.src = fallbackPhoto;
+          };
+        }
+
+        if (topUserName) topUserName.textContent = nome;
+        if (topUserRole) topUserRole.textContent = perfil;
+        if (topUserEmail) topUserEmail.textContent = email;
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+
+        const topUserPhoto = document.getElementById("topUserPhoto");
+        const topUserName = document.getElementById("topUserName");
+        const topUserRole = document.getElementById("topUserRole");
+        const topUserEmail = document.getElementById("topUserEmail");
+
+        if (topUserPhoto) topUserPhoto.src = fallbackPhoto;
+        if (topUserName) topUserName.textContent = fallbackName;
+        if (topUserRole) topUserRole.textContent = fallbackRole;
+        if (topUserEmail) topUserEmail.textContent = fallbackEmail;
+      }
+    }
+
+    function setupSearch() {
+      const searchToggle = document.getElementById("searchToggle");
+      const searchPanel = document.getElementById("searchPanel");
+      const searchInput = document.getElementById("portalSearch");
+      const moduleCards = document.querySelectorAll(".module-card");
+
+      if (!searchToggle || !searchPanel || !searchInput) return;
+
+      searchToggle.addEventListener("click", () => {
+        searchPanel.classList.toggle("active");
+
+        if (searchPanel.classList.contains("active")) {
+          setTimeout(() => searchInput.focus(), 100);
+        } else {
+          searchInput.value = "";
+          applySearch("");
+        }
+      });
+
+      searchInput.addEventListener("input", (e) => {
+        applySearch(e.target.value);
+      });
+
+      function applySearch(term) {
+        const normalized = term.trim().toLowerCase();
+
+        moduleCards.forEach(card => {
+          const title = card.querySelector(".module-title")?.innerText.toLowerCase() || "";
+          const links = card.querySelectorAll(".module-link");
+          let hasVisibleLink = false;
+
+          links.forEach(link => {
+            const text = link.innerText.toLowerCase();
+            const match = !normalized || text.includes(normalized) || title.includes(normalized);
+
+            link.classList.toggle("hidden-by-search", !match);
+
+            if (match) hasVisibleLink = true;
+          });
+
+          card.classList.toggle("hidden-by-search", !hasVisibleLink);
+        });
+      }
+    }
+
+    function setupProfileMenu() {
+      const profileMenu = document.getElementById("profileMenu");
+      const profileToggle = document.getElementById("profileToggle");
+
+      if (!profileMenu || !profileToggle) return;
+
+      profileToggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        profileMenu.classList.toggle("open");
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!profileMenu.contains(event.target)) {
+          profileMenu.classList.remove("open");
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          profileMenu.classList.remove("open");
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadUserProfile();
+      setupSearch();
+      setupProfileMenu();
+    });
+  </script>
+</body>
+</html>      background:rgba(10,10,10,.82);
       border:1px solid var(--line);
       border-radius:18px;
       box-shadow:var(--shadow);

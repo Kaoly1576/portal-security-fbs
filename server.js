@@ -6455,6 +6455,476 @@ app.get("/api/faltas-altum-detalhes", requireAuth, async (req, res) => {
   }
 });
 
+// ================== APP MARCACAO DIARIA ==================
+
+app.get("/marcacao", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "marcacao.html"));
+});
+
+const MARCACAO_SPREADSHEET_ID = "1DivjZdxzDES6Nu_ZJI_1gmrJgKqlrlqYgg3I-ybPr5k";
+const MARCACAO_BASE_RANGE = "'BASE DE AGENTES'!A1:Z200000";
+const MARCACAO_REGISTRO_RANGE = "'REGISTRO DE PRESENTEÍSMO'!A1:Z200000";
+
+// ================== HELPERS ==================
+
+function mcNorm(v) {
+  return String(v || "").trim();
+}
+
+function mcNormLower(v) {
+  return mcNorm(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function mcFormatDateBR(iso) {
+  if (!iso) return "";
+  const [y, m, d] = String(iso).split("-");
+  if (!y || !m || !d) return "";
+  return `${d}/${m}/${y}`;
+}
+
+function mcMesNome(dateObj) {
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+  return dateObj.toLocaleDateString("pt-BR", { month: "long" }).toUpperCase();
+}
+
+function mcFindHeader(headers, possibilities) {
+  const normalized = headers.map(h => mcNormLower(h));
+  for (const p of possibilities) {
+    const idx = normalized.findIndex(h => h === mcNormLower(p));
+    if (idx !== -1) return headers[idx];
+  }
+  return null;
+}
+
+function mcStatusMap(codigo) {
+  const map = {
+    P: {
+      status: "PRESENTE",
+      cobertura: "",
+      abs: "00:00:00",
+      cobrindo: "",
+      horaCobertura: "",
+    },
+    F: {
+      status: "FALTA",
+      cobertura: "Sem cobertura",
+      abs: "12:00:00",
+      cobrindo: "",
+      horaCobertura: "",
+    },
+    FE: {
+      status: "FÉRIAS",
+      cobertura: "",
+      abs: "12:00:00",
+      cobrindo: "",
+      horaCobertura: "",
+    },
+    FC: {
+      status: "FALTA C/ COBERTURA",
+      cobertura: "Cobertura parcial",
+      abs: "12:00:00",
+      cobrindo: "",
+      horaCobertura: "",
+    },
+    PV: {
+      status: "POSTO VAGO",
+      cobertura: "",
+      abs: "12:00:00",
+      cobrindo: "",
+      horaCobertura: "",
+    },
+  };
+
+  return map[codigo] || {
+    status: "",
+    cobertura: "",
+    abs: "00:00:00",
+    cobrindo: "",
+    horaCobertura: "",
+  };
+}
+
+// ================== LOAD BASE DE AGENTES ==================
+
+async function mcLoadBaseAgentes() {
+  const sheets = await conectarSheets();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: MARCACAO_SPREADSHEET_ID,
+    range: MARCACAO_BASE_RANGE,
+  });
+
+  const values = res.data.values || [];
+  if (!values.length) {
+    return { headers: [], rows: [] };
+  }
+
+  const headers = values[0].map((h, i) => mcNorm(h) || `COL_${i + 1}`);
+
+  const rows = values.slice(1).map((row) => {
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = row[i] || "";
+    });
+    return obj;
+  });
+
+  return { headers, rows };
+}
+
+// ================== LOAD REGISTRO ==================
+
+async function mcLoadRegistro() {
+  const sheets = await conectarSheets();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: MARCACAO_SPREADSHEET_ID,
+    range: MARCACAO_REGISTRO_RANGE,
+  });
+
+  const values = res.data.values || [];
+  if (!values.length) {
+    return { headers: [], rows: [] };
+  }
+
+  const headers = values[0].map((h, i) => mcNorm(h) || `COL_${i + 1}`);
+
+  const rows = values.slice(1).map((row, idx) => {
+    const obj = { _sheetRow: idx + 2 };
+    headers.forEach((h, i) => {
+      obj[h] = row[i] || "";
+    });
+    return obj;
+  });
+
+  return { headers, rows };
+}
+
+// ================== FILTROS ==================
+
+app.get("/api/marcacao-unidades", requireAuth, async (req, res) => {
+  try {
+    const base = await mcLoadBaseAgentes();
+    const headers = base.headers;
+    const rows = base.rows;
+
+    const hUnidade = mcFindHeader(headers, ["UNIDADE", "UNIDADE OPERACIONAL"]);
+
+    if (!hUnidade) {
+      return res.status(400).json({
+        ok: false,
+        message: "Coluna UNIDADE não encontrada na BASE DE AGENTES."
+      });
+    }
+
+    const unidades = [...new Set(
+      rows.map(r => mcNorm(r[hUnidade])).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return res.json({ ok: true, unidades });
+  } catch (error) {
+    console.error("Erro /api/marcacao-unidades:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/marcacao-lideres", requireAuth, async (req, res) => {
+  try {
+    const unidade = mcNorm(req.query.unidade);
+
+    if (!unidade) {
+      return res.json({ ok: true, lideres: [] });
+    }
+
+    const base = await mcLoadBaseAgentes();
+    const headers = base.headers;
+    const rows = base.rows;
+
+    const hUnidade = mcFindHeader(headers, ["UNIDADE", "UNIDADE OPERACIONAL"]);
+    const hPlantao = mcFindHeader(headers, ["PLANTÃO", "PLANTAO", "LÍDER", "LIDER"]);
+
+    if (!hUnidade || !hPlantao) {
+      return res.status(400).json({
+        ok: false,
+        message: "Colunas UNIDADE/PLANTÃO não encontradas na BASE DE AGENTES."
+      });
+    }
+
+    const lideres = [...new Set(
+      rows
+        .filter(r => mcNorm(r[hUnidade]) === unidade)
+        .map(r => mcNorm(r[hPlantao]))
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return res.json({ ok: true, lideres });
+  } catch (error) {
+    console.error("Erro /api/marcacao-lideres:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== CARREGAR EFETIVO ==================
+
+app.get("/api/marcacao-efetivo", requireAuth, async (req, res) => {
+  try {
+    const unidade = mcNorm(req.query.unidade);
+    const lider = mcNorm(req.query.lider);
+    const dataISO = mcNorm(req.query.data);
+
+    if (!unidade || !lider || !dataISO) {
+      return res.status(400).json({
+        ok: false,
+        message: "Informe unidade, líder e data."
+      });
+    }
+
+    const base = await mcLoadBaseAgentes();
+    const registro = await mcLoadRegistro();
+
+    const bh = base.headers;
+    const br = base.rows;
+    const rh = registro.headers;
+    const rr = registro.rows;
+
+    const hBaseUnidade = mcFindHeader(bh, ["UNIDADE", "UNIDADE OPERACIONAL"]);
+    const hBasePlantao = mcFindHeader(bh, ["PLANTÃO", "PLANTAO", "LÍDER", "LIDER"]);
+    const hBaseAgente = mcFindHeader(bh, ["AGENTE", "COLABORADOR", "NOME"]);
+    const hBaseRE = mcFindHeader(bh, ["RE", "MATRÍCULA", "MATRICULA"]);
+    const hBaseCargo = mcFindHeader(bh, ["CARGO", "FUNÇÃO", "FUNCAO"]);
+    const hBaseTurno = mcFindHeader(bh, ["TURNO", "ESCALA"]);
+    const hBaseEmpresa = mcFindHeader(bh, ["EMPRESA"]);
+    const hBaseStatus = mcFindHeader(bh, ["STATUS"]);
+
+    if (!hBaseUnidade || !hBasePlantao || !hBaseAgente) {
+      return res.status(400).json({
+        ok: false,
+        message: "Colunas mínimas não encontradas na BASE DE AGENTES."
+      });
+    }
+
+    let efetivo = br
+      .filter(r =>
+        mcNorm(r[hBaseUnidade]) === unidade &&
+        mcNorm(r[hBasePlantao]) === lider
+      )
+      .map(r => ({
+        UNIDADE: mcNorm(r[hBaseUnidade]),
+        EMPRESA: mcNorm(hBaseEmpresa ? r[hBaseEmpresa] : ""),
+        "PLANTÃO": mcNorm(r[hBasePlantao]),
+        TURNO: mcNorm(hBaseTurno ? r[hBaseTurno] : ""),
+        AGENTE: mcNorm(r[hBaseAgente]),
+        RE: mcNorm(hBaseRE ? r[hBaseRE] : ""),
+        CARGO: mcNorm(hBaseCargo ? r[hBaseCargo] : ""),
+        STATUS_BASE: mcNorm(hBaseStatus ? r[hBaseStatus] : ""),
+      }));
+
+    const existeLider = efetivo.some(r => mcNormLower(r.AGENTE) === mcNormLower(lider));
+    if (!existeLider) {
+      const ref = efetivo[0] || {};
+      efetivo.unshift({
+        UNIDADE: unidade,
+        EMPRESA: ref.EMPRESA || "",
+        "PLANTÃO": lider,
+        TURNO: ref.TURNO || "",
+        AGENTE: lider,
+        RE: "",
+        CARGO: "LÍDER",
+        STATUS_BASE: "ATIVO",
+      });
+    }
+
+    const hRegData = mcFindHeader(rh, ["DATA"]);
+    const hRegUnidade = mcFindHeader(rh, ["UNIDADE"]);
+    const hRegPlantao = mcFindHeader(rh, ["PLANTÃO", "PLANTAO"]);
+    const hRegAgente = mcFindHeader(rh, ["AGENTE"]);
+    const hRegStatus = mcFindHeader(rh, ["STATUS"]);
+    const hRegCobertura = mcFindHeader(rh, ["STATUS DE COBERTURA"]);
+    const hRegAbs = mcFindHeader(rh, ["ABSENTEISMO", "ABSENTEÍSMO"]);
+    const hRegCobrindo = mcFindHeader(rh, ["COLABORADOR COBRINDO POSTO"]);
+    const hRegHoraCobertura = mcFindHeader(rh, ["HORA COBERTURA"]);
+
+    const dataBR = mcFormatDateBR(dataISO);
+
+    const rows = efetivo.map(item => {
+      const jaLancado = rr.find(r =>
+        mcNorm(hRegData ? r[hRegData] : "") === dataBR &&
+        mcNorm(hRegUnidade ? r[hRegUnidade] : "") === unidade &&
+        mcNorm(hRegPlantao ? r[hRegPlantao] : "") === lider &&
+        mcNormLower(hRegAgente ? r[hRegAgente] : "") === mcNormLower(item.AGENTE)
+      );
+
+      let marcacao = "";
+
+      if (jaLancado) {
+        const st = mcNormLower(hRegStatus ? jaLancado[hRegStatus] : "");
+        if (st === "presente") marcacao = "P";
+        else if (st === "férias" || st === "ferias") marcacao = "FE";
+        else if (st.includes("c/ cobertura")) marcacao = "FC";
+        else if (st === "posto vago") marcacao = "PV";
+        else if (st === "falta") marcacao = "F";
+      }
+
+      return {
+        ...item,
+        marcacao,
+        status: jaLancado && hRegStatus ? jaLancado[hRegStatus] : "",
+        statusCobertura: jaLancado && hRegCobertura ? jaLancado[hRegCobertura] : "",
+        cobrindo: jaLancado && hRegCobrindo ? jaLancado[hRegCobrindo] : "",
+        horaCobertura: jaLancado && hRegHoraCobertura ? jaLancado[hRegHoraCobertura] : "",
+        abs: jaLancado && hRegAbs ? jaLancado[hRegAbs] : "00:00:00",
+      };
+    });
+
+    return res.json({ ok: true, rows });
+  } catch (error) {
+    console.error("Erro /api/marcacao-efetivo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== SALVAR MARCACAO ==================
+
+app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
+  try {
+    const { unidade, lider, data, rows } = req.body || {};
+
+    if (!unidade || !lider || !data || !Array.isArray(rows)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Payload inválido."
+      });
+    }
+
+    const sheets = await conectarSheets();
+    const registro = await mcLoadRegistro();
+
+    let headers = registro.headers;
+    if (!headers.length) {
+      headers = [
+        "MÊS",
+        "DATA",
+        "UNIDADE",
+        "EMPRESA",
+        "PLANTÃO",
+        "TURNO",
+        "AGENTE",
+        "STATUS",
+        "STATUS DE COBERTURA",
+        "ABSENTEISMO",
+        "COLABORADOR COBRINDO POSTO",
+        "HORA COBERTURA"
+      ];
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: MARCACAO_SPREADSHEET_ID,
+        range: `'REGISTRO DE PRESENTEÍSMO'!A1:L1`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: { values: [headers] }
+      });
+
+      registro.headers = headers;
+      registro.rows = [];
+    }
+
+    const hRegData = mcFindHeader(headers, ["DATA"]);
+    const hRegUnidade = mcFindHeader(headers, ["UNIDADE"]);
+    const hRegPlantao = mcFindHeader(headers, ["PLANTÃO", "PLANTAO"]);
+    const hRegAgente = mcFindHeader(headers, ["AGENTE"]);
+
+    const dataObj = new Date(`${data}T00:00:00`);
+    if (isNaN(dataObj.getTime())) {
+      return res.status(400).json({
+        ok: false,
+        message: "Data inválida."
+      });
+    }
+
+    const dataBR = mcFormatDateBR(data);
+    const mesNome = mcMesNome(dataObj);
+
+    const updates = [];
+    const appends = [];
+
+    for (const row of rows) {
+      const codigo = mcNorm(row.marcacao);
+      if (!codigo) continue;
+
+      const meta = mcStatusMap(codigo);
+
+      const payloadRow = [
+        mesNome,
+        dataBR,
+        mcNorm(row.UNIDADE || unidade),
+        mcNorm(row.EMPRESA || ""),
+        mcNorm(row["PLANTÃO"] || lider),
+        mcNorm(row.TURNO || ""),
+        mcNorm(row.AGENTE || ""),
+        mcNorm(meta.status),
+        mcNorm(codigo === "FC" ? "Cobertura parcial" : meta.cobertura),
+        mcNorm(codigo === "FC" ? (row.abs || meta.abs) : (row.abs || meta.abs)),
+        mcNorm(codigo === "FC" ? (row.cobrindo || "") : ""),
+        mcNorm(codigo === "FC" ? (row.horaCobertura || "") : "")
+      ];
+
+      const existente = registro.rows.find(r =>
+        mcNorm(hRegData ? r[hRegData] : "") === dataBR &&
+        mcNorm(hRegUnidade ? r[hRegUnidade] : "") === mcNorm(row.UNIDADE || unidade) &&
+        mcNorm(hRegPlantao ? r[hRegPlantao] : "") === mcNorm(row["PLANTÃO"] || lider) &&
+        mcNormLower(hRegAgente ? r[hRegAgente] : "") === mcNormLower(row.AGENTE || "")
+      );
+
+      if (existente) {
+        updates.push({
+          rowNumber: existente._sheetRow,
+          values: payloadRow
+        });
+      } else {
+        appends.push(payloadRow);
+      }
+    }
+
+    for (const upd of updates) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: MARCACAO_SPREADSHEET_ID,
+        range: `'REGISTRO DE PRESENTEÍSMO'!A${upd.rowNumber}:L${upd.rowNumber}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [upd.values]
+        }
+      });
+    }
+
+    if (appends.length) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: MARCACAO_SPREADSHEET_ID,
+        range: `'REGISTRO DE PRESENTEÍSMO'!A:L`,
+        valueInputOption: "USER_ENTERED",
+        insertDataOption: "INSERT_ROWS",
+        requestBody: {
+          values: appends
+        }
+      });
+    }
+
+    return res.json({
+      ok: true,
+      message: `Salvo com sucesso. Atualizados: ${updates.length} | Novos: ${appends.length}`
+    });
+  } catch (error) {
+    console.error("Erro /api/marcacao-salvar:", error?.response?.data || error.message || error);
+    return res.status(500).json({
+      ok: false,
+      message: error?.response?.data?.error?.message || error.message || "Erro ao salvar marcação."
+    });
+  }
+});
+
+
+
 
 // ================== ERROS ==================
 

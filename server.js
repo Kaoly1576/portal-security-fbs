@@ -411,12 +411,12 @@ if (googleOAuthEnabled) {
 // ================== ROTAS PÚBLICAS ==================
 
 app.get("/", (req, res) => {
-  if (req.session?.userId) return res.redirect("/porta.html");
+  if (req.session?.userId) return res.redirect("/portal.html");
   return res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 app.get("/login", (req, res) => {
-  if (req.session?.userId) return res.redirect("/porta.html");
+  if (req.session?.userId) return res.redirect("/portal.html");
   return res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 

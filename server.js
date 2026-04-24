@@ -505,7 +505,7 @@ app.get("/auth/google/callback", (req, res, next) => {
     req.session.aprovador = user.aprovador || "0";
 
     return req.session.save(() => {
-      return res.redirect("/porta.html");
+      return res.redirect("/portal.html");
     });
   })(req, res, next);
 });
@@ -671,16 +671,16 @@ app.get("/api/niveis-acesso", async (req, res) => {
 
 // ================== ROTAS PROTEGIDAS ==================
 
-app.get("/porta.html", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "porta.html"));
+app.get("/portal.html", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "portal.html"));
 });
 
 app.get("/portal", requireAuth, (req, res) => {
-  return res.redirect("/porta.html");
+  return res.redirect("/portal.html");
 });
 
 app.get("/portal.html", requireAuth, (req, res) => {
-  return res.redirect("/porta.html");
+  return res.redirect("/portal.html");
 });
 
 app.get("/dashboard", requireAuth, (req, res) => {
@@ -903,7 +903,7 @@ app.get("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Erro ao destruir sessão:", err);
-      return res.redirect("/porta.html");
+      return res.redirect("/portal.html");
     }
 
     res.clearCookie("portal_security_sid");

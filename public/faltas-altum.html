@@ -6,6 +6,7 @@
   <title>FALTAS ALTUM</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
     :root{
@@ -115,9 +116,7 @@
     .filters-grid.row-1{ z-index:9001; }
     .filters-grid.row-2{ z-index:9000; }
 
-    .filters-grid + .filters-grid{
-      margin-top:10px;
-    }
+    .filters-grid + .filters-grid{margin-top:10px}
 
     .field{
       min-width:0;
@@ -150,15 +149,8 @@
     .field input::placeholder{color:#94a3b8}
     input[type="date"]{color-scheme:dark}
 
-    .multi-select{
-      position:relative;
-      width:100%;
-      z-index:20;
-    }
-
-    .multi-select.open{
-      z-index:99999 !important;
-    }
+    .multi-select{position:relative;width:100%;z-index:20}
+    .multi-select.open{z-index:99999 !important}
 
     .multi-trigger{
       width:100%;
@@ -203,9 +195,7 @@
       padding:6px;
     }
 
-    .multi-select.open .multi-menu{
-      display:block;
-    }
+    .multi-select.open .multi-menu{display:block}
 
     .multi-option{
       display:flex;
@@ -219,11 +209,7 @@
     }
 
     .multi-option:hover{background:#1a2942}
-    .multi-option input{
-      width:auto;
-      height:auto;
-      accent-color:var(--orange);
-    }
+    .multi-option input{width:auto;height:auto;accent-color:var(--orange)}
 
     .multi-actions{
       display:flex;
@@ -281,16 +267,11 @@
     }
 
     .kpis{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:12px;
-}
-
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(6,minmax(0,1fr));
-      gap:12px;
-      margin-bottom:12px;
+      display:grid !important;
+      grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+      gap:12px !important;
+      margin-bottom:12px !important;
+      width:100% !important;
       position:relative;
       z-index:1 !important;
     }
@@ -378,16 +359,8 @@
       z-index:1;
     }
 
-    .chart-box.line{
-      height:290px;
-      position:relative;
-      z-index:1;
-    }
-
-    canvas{
-      position:relative !important;
-      z-index:1 !important;
-    }
+    .chart-box.line{height:290px}
+    canvas{position:relative !important;z-index:1 !important}
 
     .wide-panel{
       padding:14px;
@@ -443,36 +416,27 @@
       align-items:center;
     }
 
-    body.dropdown-open .filters{
-      z-index:99999 !important;
-    }
-
+    body.dropdown-open .filters{z-index:99999 !important}
     body.dropdown-open .kpis,
     body.dropdown-open .grid-top,
     body.dropdown-open .grid-middle,
-    body.dropdown-open .wide-panel{
-      z-index:1 !important;
-    }
-
-    @media (max-width:1400px){
-      .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
-    }
+    body.dropdown-open .wide-panel{z-index:1 !important}
 
     @media (max-width:1280px){
-  .filters-grid{grid-template-columns:repeat(2,minmax(180px,1fr))}
-  .grid-top,.grid-middle{grid-template-columns:1fr}
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
+      .filters-grid{grid-template-columns:repeat(2,minmax(180px,1fr))}
+      .grid-top,.grid-middle{grid-template-columns:1fr}
+      .kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+    }
 
-@media (max-width:768px){
-  .filters-grid,.kpis{grid-template-columns:1fr}
-  .hero-right{text-align:left}
-  .kpi-value{font-size:20px}
-  .topbar,.hero{flex-direction:column;align-items:flex-start}
-}
+    @media (max-width:768px){
+      .filters-grid,.kpis{grid-template-columns:1fr !important}
+      .hero-right{text-align:left}
+      .kpi-value{font-size:20px}
+      .topbar,.hero{flex-direction:column;align-items:flex-start}
     }
   </style>
 </head>
+
 <body>
 <div class="page">
   <header class="topbar">
@@ -770,9 +734,7 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
     const wrapper = trigger.closest(".multi-select");
     const willOpen = !wrapper.classList.contains("open");
 
-    document.querySelectorAll(".multi-select").forEach(wrap => {
-      wrap.classList.remove("open");
-    });
+    document.querySelectorAll(".multi-select").forEach(wrap => wrap.classList.remove("open"));
 
     if (willOpen) {
       wrapper.classList.add("open");
@@ -808,9 +770,7 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
 }
 
 document.addEventListener("click", () => {
-  document.querySelectorAll(".multi-select").forEach(wrap => {
-    wrap.classList.remove("open");
-  });
+  document.querySelectorAll(".multi-select").forEach(wrap => wrap.classList.remove("open"));
   document.body.classList.remove("dropdown-open");
 });
 

@@ -7044,6 +7044,92 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
   }
 });
 
+// ================== AV- LOST ==================  
+  
+function normalizeText(value) {  
+  return String(value || "")  
+    .trim()  
+    .replace(/\s+/g, " ");  
+}  
+  
+function normalizeName(value) {  
+  if (!value) return "";  
+  
+  let name = normalizeText(value)  
+    .toUpperCase()  
+    .normalize("NFD")  
+    .replace(/[\u0300-\u036f]/g, ""); // remove acento  
+  
+  // ✅ Correções oficiais (adicione aqui se precisar)  
+  const corrections = {  
+    "ERICK": "ERIK",  
+    "ERIC": "ERIK",  
+    "BIANKA": "BIANCA",  
+    "BIANCA ": "BIANCA",  
+    "HEITOR ": "HEITOR",  
+  };  
+  
+  return corrections[name] || name;  
+}  
+  
+function normalizeStatus(value) {  
+  return normalizeText(value).toUpperCase();  
+}  
+  
+function normalizeUnidade(value) {  
+  return normalizeText(value).toUpperCase();  
+}  
+  
+async function buscarPlanilha() {  
+  const sheets = await conectarSheets();  
+  
+  const response = await sheets.spreadsheets.values.get({  
+    spreadsheetId: "1Fo62wRlUULj3lAQJYl8lcimGg-7YSIHpy7kZYr8rLlY",  
+    range: "AV!A:M",  
+  });  
+  
+  return response.data.values || [];  
+}  
+  
+app.get("/api/dados", requireAuth, async (req, res) => {  
+  try {  
+    const dados = await buscarPlanilha();  
+    const cabecalho = dados[0] || [];  
+    const linhas = dados.slice(1);  
+  
+    const objetos = linhas.map((linha) => {  
+      const obj = {};  
+  
+      cabecalho.forEach((col, i) => {  
+        const columnName = normalizeText(col);  
+        let value = linha[i] ?? "";  
+  
+        // 🔥 NORMALIZAÇÕES AUTOMÁTICAS  
+        if (columnName.toUpperCase().includes("PROBLEM SOLVER") || columnName.toUpperCase().includes("COLABORADOR")) {  
+          value = normalizeName(value);  
+        }  
+  
+        if (columnName.toUpperCase().includes("STATUS")) {  
+          value = normalizeStatus(value);  
+        }  
+  
+        if (columnName.toUpperCase().includes("UNIDADE")) {  
+          value = normalizeUnidade(value);  
+        }  
+  
+        obj[columnName] = normalizeText(value);  
+      });  
+  
+      return obj;  
+    });  
+  
+    return res.json(objetos);  
+  } catch (e) {  
+    console.log("Erro /api/dados:", e);  
+    return res.json([]);  
+  }  
+});
+
 
 
 // ================== ERROS ==================

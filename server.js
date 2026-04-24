@@ -81,6 +81,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 async function conectarSheets() {
   const auth = new google.auth.GoogleAuth({
+    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
 
@@ -94,6 +95,7 @@ async function conectarSheets() {
 
 async function conectarSheetsEdicao() {
   const auth = new google.auth.GoogleAuth({
+    credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
@@ -104,7 +106,6 @@ async function conectarSheetsEdicao() {
     auth: client,
   });
 }
-
 // ================== HELPERS ==================
 
 function requireAuth(req, res, next) {

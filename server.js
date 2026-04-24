@@ -5,17 +5,25 @@ const session = require("express-session");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const path = require("path");
+const { google } = require("googleapis");
 
 const app = express();
 const PORT = Number(process.env.PORT || 8080);
 
-// ================== CONSTANTES ==================
+// ================== ENV ==================
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL ||
-  `http://localhost:3000/auth/google/callback`;
+  "http://localhost:3000/auth/google/callback";
+
+const SESSION_SECRET = process.env.SESSION_SECRET || "troque_essa_chave";
+
+const CADASTRO_SHEET_ID = process.env.CADASTRO_SHEET_ID || "";
+const CADASTRO_USUARIOS_RANGE = process.env.CADASTRO_USUARIOS_RANGE || "usuarios!A:R";
+const CADASTRO_CARGOS_RANGE = process.env.CADASTRO_CARGOS_RANGE || "cargos!A:Z";
+const CADASTRO_NIVEIS_RANGE = process.env.CADASTRO_NIVEIS_RANGE || "niveis_acesso!A:Z";
 
 const googleOAuthEnabled =
   Boolean(GOOGLE_CLIENT_ID) && Boolean(GOOGLE_CLIENT_SECRET);
@@ -30,7 +38,7 @@ app.use(express.json());
 app.use(
   session({
     name: "portal_security_sid",
-    secret: process.env.SESSION_SECRET || "segredo_super_secreto",
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     proxy: true,
@@ -46,17 +54,46 @@ app.use(
 app.use(passport.initialize());
 app.use(express.static(path.join(__dirname, "public")));
 
+// ================== GOOGLE SHEETS ==================
+
+async function conectarSheets() {
+  const auth = new google.auth.GoogleAuth({
+    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+  });
+
+  const client = await auth.getClient();
+
+  return google.sheets({
+    version: "v4",
+    auth: client,
+  });
+}
+
+async function conectarSheetsEdicao() {
+  const auth = new google.auth.GoogleAuth({
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+
+  const client = await auth.getClient();
+
+  return google.sheets({
+    version: "v4",
+    auth: client,
+  });
+}
+
 // ================== HELPERS ==================
 
 function requireAuth(req, res, next) {
-  if (!req.session.userId) {
+  if (!req.session?.userId) {
     return res.redirect("/login");
   }
-  next();
+
+  return next();
 }
 
 function requireAprovador(req, res, next) {
-  if (!req.session.userId) {
+  if (!req.session?.userId) {
     return res.redirect("/login");
   }
 
@@ -70,224 +107,15 @@ function requireAprovador(req, res, next) {
     perfil === "master" ||
     perfil === "admin" ||
     nivel === "master" ||
-    nivel === "admin";
+    nivel === "admin" ||
+    nivel === "aprovador";
 
   if (!podeAprovar) {
     return res.status(403).send("Acesso negado.");
   }
 
-  next();
+  return next();
 }
-
-function normalizeText(value = "") {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toUpperCase();
-}
-
-function formatDateBR(dateInput) {
-  if (!dateInput) return "";
-
-  const value = String(dateInput).trim();
-
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-    return value;
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split("-");
-    return `${day}/${month}/${year}`;
-  }
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-
-  return `${day}/${month}/${year}`;
-}
-
-// ================== GOOGLE OAUTH ==================
-
-if (googleOAuthEnabled) {
-  passport.use(
-    new GoogleStrategy(
-      {
-        clientID: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: GOOGLE_CALLBACK_URL,
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          const email = profile.emails?.[0]?.value || "";
-          const foto = profile.photos?.[0]?.value || "";
-
-          return done(null, {
-            id: profile.id,
-            nome: profile.displayName || "",
-            email,
-            foto,
-            perfil: "usuario",
-            aprovador: "0",
-            nivel_acesso: "1",
-          });
-        } catch (error) {
-          return done(error, null);
-        }
-      }
-    )
-  );
-
-  console.log("Google OAuth habilitado.");
-} else {
-  console.warn(
-    "Google OAuth desabilitado: faltam GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET."
-  );
-}
-
-// ================== ROTAS ==================
-
-app.get("/login", (req, res) => {
-  if (!googleOAuthEnabled) {
-    return res.status(500).send(`
-      <h1>Login indisponível</h1>
-      <p>As variáveis do Google OAuth não foram configuradas.</p>
-    `);
-  }
-
-  return res.send(`
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Login</title>
-      </head>
-      <body style="font-family: Arial; padding: 40px;">
-        <h1>Portal Security</h1>
-        <p>Faça login com sua conta Google.</p>
-        <a href="/auth/google" style="display:inline-block;padding:12px 18px;background:#111;color:#fff;text-decoration:none;border-radius:8px;">
-          Entrar com Google
-        </a>
-      </body>
-    </html>
-  `);
-});
-
-app.get(
-  "/auth/google",
-  (req, res, next) => {
-    if (!googleOAuthEnabled) {
-      return res.status(500).send("Google OAuth não configurado.");
-    }
-    next();
-  },
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-    session: false,
-  })
-);
-
-app.get("/auth/google/callback", (req, res, next) => {
-  if (!googleOAuthEnabled) {
-    return res.status(500).send("Google OAuth não configurado.");
-  }
-
-  passport.authenticate(
-    "google",
-    {
-      failureRedirect: "/login",
-      session: false,
-    },
-    (err, user) => {
-      if (err) {
-        console.error("Erro no callback Google:", err);
-        return res.status(500).send("Erro no login com Google.");
-      }
-
-      if (!user) {
-        return res.redirect("/login");
-      }
-
-      req.session.userId = user.id;
-      req.session.nome = user.nome;
-      req.session.email = user.email;
-      req.session.foto = user.foto;
-      req.session.perfil = user.perfil;
-      req.session.aprovador = user.aprovador;
-      req.session.nivel_acesso = user.nivel_acesso;
-
-      req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error("Erro ao salvar sessão:", saveErr);
-          return res.status(500).send("Erro ao salvar sessão.");
-        }
-
-        return res.redirect("/");
-      });
-    }
-  )(req, res, next);
-});
-
-app.get("/", requireAuth, (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Painel</title>
-      </head>
-      <body style="font-family: Arial; padding: 40px;">
-        <h1>Usuário autenticado</h1>
-        <p><strong>Nome:</strong> ${req.session.nome || "-"}</p>
-        <p><strong>Email:</strong> ${req.session.email || "-"}</p>
-        <p><strong>Perfil:</strong> ${req.session.perfil || "-"}</p>
-        <p><strong>Nível:</strong> ${req.session.nivel_acesso || "-"}</p>
-        <p><a href="/aprovacoes">Área de aprovações</a></p>
-        <p><a href="/logout">Sair</a></p>
-      </body>
-    </html>
-  `);
-});
-
-app.get("/aprovacoes", requireAprovador, (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Aprovações</title>
-      </head>
-      <body style="font-family: Arial; padding: 40px;">
-        <h1>Área de aprovações</h1>
-        <p>Você tem permissão de aprovador.</p>
-        <p><a href="/">Voltar</a></p>
-      </body>
-    </html>
-  `);
-});
-
-app.get("/logout", (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie("portal_security_sid");
-    res.redirect("/login");
-  });
-});
-
-// ================== ERROS ==================
-
-app.use((err, req, res, next) => {
-  console.error("Erro não tratado:", err);
-  res.status(500).send("Erro interno do servidor.");
-});
-
-// ================== START ==================
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando: http://localhost:${PORT}`);
-});
-
-// ================== HELPERS CADASTRO / PLANILHA ==================
 
 function cadastroNormalize(value) {
   return String(value || "").trim();
@@ -299,13 +127,16 @@ function cadastroNormalizeLower(value) {
 
 function sheetRowsToObjects(rows) {
   if (!rows || !rows.length) return [];
+
   const headers = rows[0].map((h) => cadastroNormalize(h));
 
   return rows.slice(1).map((row) => {
     const obj = {};
+
     headers.forEach((header, index) => {
       obj[header] = row[index] ?? "";
     });
+
     return obj;
   });
 }
@@ -313,15 +144,27 @@ function sheetRowsToObjects(rows) {
 function columnToLetter(column) {
   let temp = "";
   let letter = "";
+
   while (column > 0) {
     temp = (column - 1) % 26;
     letter = String.fromCharCode(temp + 65) + letter;
     column = (column - temp - 1) / 26;
   }
+
   return letter;
 }
 
+function findHeaderIndex(headers, headerName) {
+  return headers.findIndex(
+    (h) => cadastroNormalizeLower(h) === cadastroNormalizeLower(headerName)
+  );
+}
+
 async function getCadastroSheetObjects(range, writable = false) {
+  if (!CADASTRO_SHEET_ID) {
+    throw new Error("CADASTRO_SHEET_ID não configurado.");
+  }
+
   const sheets = writable ? await conectarSheetsEdicao() : await conectarSheets();
 
   const response = await sheets.spreadsheets.values.get({
@@ -330,6 +173,7 @@ async function getCadastroSheetObjects(range, writable = false) {
   });
 
   const rows = response.data.values || [];
+
   return sheetRowsToObjects(rows);
 }
 
@@ -347,14 +191,20 @@ async function getNiveisCadastroSheet() {
 
 async function findUsuarioCadastroByEmail(email) {
   const usuarios = await getUsuariosCadastroSheet();
+
   return (
     usuarios.find(
-      (user) => cadastroNormalizeLower(user.email) === cadastroNormalizeLower(email)
+      (user) =>
+        cadastroNormalizeLower(user.email) === cadastroNormalizeLower(email)
     ) || null
   );
 }
 
-async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
+async function getUsuariosSheetRaw() {
+  if (!CADASTRO_SHEET_ID) {
+    throw new Error("CADASTRO_SHEET_ID não configurado.");
+  }
+
   const sheets = await conectarSheetsEdicao();
 
   const response = await sheets.spreadsheets.values.get({
@@ -363,24 +213,21 @@ async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
   });
 
   const rows = response.data.values || [];
+  const headers = rows[0] || [];
+
+  return { sheets, rows, headers };
+}
+
+async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
+  const { sheets, rows, headers } = await getUsuariosSheetRaw();
+
   if (!rows.length) return false;
 
-  const headers = rows[0].map((h) => cadastroNormalize(h));
-  const emailCol = headers.findIndex(
-    (h) => cadastroNormalizeLower(h) === "email"
-  );
-  const nomeCol = headers.findIndex(
-    (h) => cadastroNormalizeLower(h) === "nome"
-  );
-  const fotoCol = headers.findIndex(
-    (h) => cadastroNormalizeLower(h) === "foto"
-  );
-  const googleIdCol = headers.findIndex(
-    (h) => cadastroNormalizeLower(h) === "google_id"
-  );
-  const atualizadoCol = headers.findIndex(
-    (h) => cadastroNormalizeLower(h) === "atualizado_em"
-  );
+  const emailCol = findHeaderIndex(headers, "email");
+  const nomeCol = findHeaderIndex(headers, "nome");
+  const fotoCol = findHeaderIndex(headers, "foto");
+  const googleIdCol = findHeaderIndex(headers, "google_id");
+  const atualizadoCol = findHeaderIndex(headers, "atualizado_em");
 
   if (emailCol === -1) return false;
 
@@ -434,26 +281,6 @@ async function updateUsuarioGoogleInfoByEmail(email, googleProfile = {}) {
   });
 
   return true;
-}
-
-async function getUsuariosSheetRaw() {
-  const sheets = await conectarSheetsEdicao();
-
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: CADASTRO_SHEET_ID,
-    range: CADASTRO_USUARIOS_RANGE,
-  });
-
-  const rows = response.data.values || [];
-  const headers = rows[0] || [];
-
-  return { sheets, rows, headers };
-}
-
-function findHeaderIndex(headers, headerName) {
-  return headers.findIndex(
-    (h) => cadastroNormalizeLower(h) === cadastroNormalizeLower(headerName)
-  );
 }
 
 // ================== PASSPORT GOOGLE ==================
@@ -560,130 +387,16 @@ if (googleOAuthEnabled) {
 // ================== ROTAS PÚBLICAS ==================
 
 app.get("/", (req, res) => {
-  if (req.session.userId) return res.redirect("/portal");
+  if (req.session?.userId) return res.redirect("/portal");
   return res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 app.get("/login", (req, res) => {
-  if (req.session.userId) return res.redirect("/portal");
+  if (req.session?.userId) return res.redirect("/portal");
   return res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// ================== LOGIN / CADASTRO / GOOGLE ==================
-
-app.get("/cadastro", (req, res) => {
-  if (!req.session?.preCadastroUser) {
-    return res.redirect("/auth/google/register");
-  }
-
-  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
-});
-
-app.get("/api/login-status", (req, res) => {
-  const erro = req.session?.loginError || "";
-  req.session.loginError = "";
-  return res.json({ erro });
-});
-
-app.get("/api/cargos", async (req, res) => {
-  try {
-    const cargos = await getCargosCadastroSheet();
-    const ativos = cargos.filter(
-      (item) => cadastroNormalizeLower(item.status) === "ativo"
-    );
-    return res.json(ativos);
-  } catch (err) {
-    console.error("Erro ao buscar cargos:", err);
-    return res.status(500).json({ erro: "Erro ao buscar cargos" });
-  }
-});
-
-app.get("/api/niveis-acesso", async (req, res) => {
-  try {
-    const niveis = await getNiveisCadastroSheet();
-    const ativos = niveis.filter(
-      (item) => cadastroNormalizeLower(item.status) === "ativo"
-    );
-    return res.json(ativos);
-  } catch (err) {
-    console.error("Erro ao buscar níveis de acesso:", err);
-    return res.status(500).json({ erro: "Erro ao buscar níveis de acesso" });
-  }
-});
-
-app.get("/api/pre-cadastro-user", (req, res) => {
-  const preUser = req.session?.preCadastroUser || null;
-  if (!preUser) {
-    return res.status(401).json({ erro: "Usuário de pré-cadastro não autenticado." });
-  }
-  return res.json(preUser);
-});
-
-app.post("/api/usuarios/cadastrar", async (req, res) => {
-  try {
-    const dados = req.body || {};
-    const now = new Date().toISOString();
-
-    if (!cadastroNormalize(dados.nome) || !cadastroNormalize(dados.email)) {
-      return res.status(400).json({ erro: "Nome e e-mail são obrigatórios." });
-    }
-
-    if (!cadastroNormalize(dados.cargo)) {
-      return res.status(400).json({ erro: "Cargo é obrigatório." });
-    }
-
-    if (!cadastroNormalize(dados.nivel_acesso)) {
-      return res.status(400).json({ erro: "Nível de acesso é obrigatório." });
-    }
-
-    const existente = await findUsuarioCadastroByEmail(dados.email);
-    if (existente) {
-      return res.status(400).json({
-        erro: "Já existe um cadastro para este e-mail.",
-      });
-    }
-
-    const sheets = await conectarSheetsEdicao();
-    const novoId = String(Date.now());
-
-    const novaLinha = [
-      novoId,                     // id
-      dados.nome || "",           // nome
-      dados.email || "",          // email
-      dados.login || "",          // login
-      "",                         // senha
-      dados.cargo || "",          // cargo
-      dados.area || "",           // area
-      "pendente",                 // status
-      dados.nivel_acesso || "",   // nivel_acesso
-      dados.unidade || "",        // unidade
-      dados.google_id || "",      // google_id
-      "",                         // permissoes
-      0,                          // aprovador
-      dados.foto || "",           // foto
-      1,                          // cadastro_pendente
-      now,                        // criado_em
-      dados.empresa || "",        // empresa
-      now                         // atualizado_em
-    ];
-
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: CADASTRO_SHEET_ID,
-      range: "usuarios!A1",
-      valueInputOption: "USER_ENTERED",
-      resource: {
-        values: [novaLinha],
-      },
-    });
-
-    req.session.preCadastroUser = null;
-
-    return res.json({ sucesso: true });
-  } catch (err) {
-    console.error("Erro ao cadastrar usuário:", err);
-    return res.status(500).json({ erro: "Erro ao cadastrar usuário" });
-  }
-});
+// ================== GOOGLE LOGIN / CADASTRO ==================
 
 app.get("/auth/google", (req, res, next) => {
   if (!googleOAuthEnabled) {
@@ -710,6 +423,7 @@ app.get("/auth/google/register", (req, res, next) => {
 
 app.get("/auth/google/callback", (req, res, next) => {
   if (!googleOAuthEnabled) {
+    req.session.loginError = "Login Google não configurado no servidor.";
     return res.redirect("/login");
   }
 
@@ -732,12 +446,17 @@ app.get("/auth/google/callback", (req, res, next) => {
         foto: user.foto || "",
         google_id: user.google_id || "",
       };
+
       req.session.loginError = "";
-      return res.redirect("/cadastro");
+
+      return req.session.save(() => {
+        return res.redirect("/cadastro");
+      });
     }
 
     req.session.loginError = "";
     req.session.preCadastroUser = null;
+
     req.session.userId = user.id;
     req.session.nome = user.nome;
     req.session.email = user.email;
@@ -752,98 +471,109 @@ app.get("/auth/google/callback", (req, res, next) => {
     req.session.permissoes = user.permissoes || "";
     req.session.aprovador = user.aprovador || "0";
 
-    return res.redirect("/portal");
+    return req.session.save(() => {
+      return res.redirect("/portal");
+    });
   })(req, res, next);
 });
 
-// ================== LOGIN LOCAL LEGADO ==================
+// ================== CADASTRO ==================
 
-app.post("/cadastro", async (req, res) => {
-  const { nome, email, senha } = req.body;
-
-  if (!email || !senha || !nome) {
-    return res.send("Preencha nome, e-mail e senha.");
+app.get("/cadastro", (req, res) => {
+  if (!req.session?.preCadastroUser) {
+    return res.redirect("/auth/google/register");
   }
 
-  if (!email.endsWith("@shopee.com")) {
-    return res.send("Somente e-mails @shopee.com permitidos.");
+  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
+});
+
+app.get("/api/pre-cadastro-user", (req, res) => {
+  const preUser = req.session?.preCadastroUser || null;
+
+  if (!preUser) {
+    return res
+      .status(401)
+      .json({ erro: "Usuário de pré-cadastro não autenticado." });
   }
 
-  const senhaHash = await bcrypt.hash(senha, 10);
-
-  db.run(
-    `INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)`,
-    [nome, email, senhaHash],
-    function (err) {
-      if (err) return res.send("Usuário já existe ou erro no cadastro.");
-      return res.send("Cadastro realizado! Aguarde aprovação do Security.");
-    }
-  );
+  return res.json(preUser);
 });
 
-app.post("/login", (req, res) => {
-  const { email, senha } = req.body;
+app.post("/api/usuarios/cadastrar", async (req, res) => {
+  try {
+    const dados = req.body || {};
+    const now = new Date().toISOString();
 
-  if (!email || !senha) {
-    return res.send("Informe e-mail e senha.");
+    if (!cadastroNormalize(dados.nome) || !cadastroNormalize(dados.email)) {
+      return res.status(400).json({ erro: "Nome e e-mail são obrigatórios." });
+    }
+
+    if (!cadastroNormalize(dados.cargo)) {
+      return res.status(400).json({ erro: "Cargo é obrigatório." });
+    }
+
+    if (!cadastroNormalize(dados.nivel_acesso)) {
+      return res.status(400).json({ erro: "Nível de acesso é obrigatório." });
+    }
+
+    const existente = await findUsuarioCadastroByEmail(dados.email);
+
+    if (existente) {
+      return res.status(400).json({
+        erro: "Já existe um cadastro para este e-mail.",
+      });
+    }
+
+    const sheets = await conectarSheetsEdicao();
+    const novoId = String(Date.now());
+
+    const novaLinha = [
+      novoId,
+      dados.nome || "",
+      dados.email || "",
+      dados.login || "",
+      "",
+      dados.cargo || "",
+      dados.area || "",
+      "pendente",
+      dados.nivel_acesso || "",
+      dados.unidade || "",
+      dados.google_id || "",
+      "",
+      "0",
+      dados.foto || "",
+      "1",
+      now,
+      dados.empresa || "",
+      now,
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: CADASTRO_SHEET_ID,
+      range: "usuarios!A1",
+      valueInputOption: "USER_ENTERED",
+      resource: {
+        values: [novaLinha],
+      },
+    });
+
+    req.session.preCadastroUser = null;
+
+    return req.session.save(() => {
+      return res.json({ sucesso: true });
+    });
+  } catch (err) {
+    console.error("Erro ao cadastrar usuário:", err);
+    return res.status(500).json({ erro: "Erro ao cadastrar usuário" });
   }
-
-  db.get("SELECT * FROM usuarios WHERE email = ?", [email], async (err, user) => {
-    if (err) return res.send("Erro no servidor.");
-    if (!user) return res.send("Usuário não encontrado.");
-
-    if (user.status !== "aprovado") {
-      return res.send("Usuário ainda não aprovado pelo Security.");
-    }
-
-    const senhaValida = await bcrypt.compare(senha, user.senha || "");
-    if (!senhaValida) return res.send("Senha incorreta.");
-
-    req.session.userId = user.id;
-    req.session.nome = user.nome;
-    req.session.email = user.email;
-    req.session.perfil = user.perfil;
-    req.session.foto = user.foto || "";
-
-    return res.redirect("/portal");
-  });
 });
 
-// ================== LOGOUT =================
+// ================== APIs LOGIN ==================
 
-app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Erro ao destruir sessão:", err);
-      return res.redirect("/portal");
-    }
-
-    res.clearCookie("connect.sid");
-    return res.redirect("/login");
-  });
-});
-
-
-// ================== ROTAS PROTEGIDAS ==================
-
-app.get("/portal", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "portal.html"));
-});
-
-app.get("/dashboard", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "av-lost.html"));
-});
-
-app.get("/hc", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "hc.html"));
-});
-
-app.get("/agentes-fbs", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "agentes-fbs.html"));
-});
-
-app.get("/chamada-agentes", requireAuth, (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "chamada-agentes.html"));
+app.get("/api/login-status", (req, res) => {
+  const erro = req.session?.loginError || "";
+  req.session.loginError = "";
+  return res.json({ erro });
 });
 
 app.get("/api/me", (req, res) => {
@@ -870,6 +600,60 @@ app.get("/api/me", (req, res) => {
   }
 
   return res.status(401).json({ erro: "Não autenticado" });
+});
+
+// ================== APIs CADASTRO AUXILIARES ==================
+
+app.get("/api/cargos", async (req, res) => {
+  try {
+    const cargos = await getCargosCadastroSheet();
+
+    const ativos = cargos.filter(
+      (item) => cadastroNormalizeLower(item.status) === "ativo"
+    );
+
+    return res.json(ativos);
+  } catch (err) {
+    console.error("Erro ao buscar cargos:", err);
+    return res.status(500).json({ erro: "Erro ao buscar cargos" });
+  }
+});
+
+app.get("/api/niveis-acesso", async (req, res) => {
+  try {
+    const niveis = await getNiveisCadastroSheet();
+
+    const ativos = niveis.filter(
+      (item) => cadastroNormalizeLower(item.status) === "ativo"
+    );
+
+    return res.json(ativos);
+  } catch (err) {
+    console.error("Erro ao buscar níveis de acesso:", err);
+    return res.status(500).json({ erro: "Erro ao buscar níveis de acesso" });
+  }
+});
+
+// ================== ROTAS PROTEGIDAS ==================
+
+app.get("/portal", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "portal.html"));
+});
+
+app.get("/dashboard", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "av-lost.html"));
+});
+
+app.get("/hc", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "hc.html"));
+});
+
+app.get("/agentes-fbs", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "agentes-fbs.html"));
+});
+
+app.get("/chamada-agentes", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "chamada-agentes.html"));
 });
 
 // ================== APROVAÇÕES / GESTÃO USUÁRIOS ==================
@@ -915,6 +699,7 @@ app.get("/api/usuarios/pendentes", requireAprovador, async (req, res) => {
 app.post("/api/usuarios/aprovar/:id", requireAprovador, async (req, res) => {
   try {
     const id = String(req.params.id || "").trim();
+
     if (!id) {
       return res.status(400).json({ erro: "ID inválido." });
     }
@@ -946,13 +731,16 @@ app.post("/api/usuarios/aprovar/:id", requireAprovador, async (req, res) => {
     }
 
     const sheetRowNumber = rowIndex + 1;
+
     const updates = [
       {
         range: `usuarios!${columnToLetter(statusCol + 1)}${sheetRowNumber}`,
         values: [["ativo"]],
       },
       {
-        range: `usuarios!${columnToLetter(cadastroPendenteCol + 1)}${sheetRowNumber}`,
+        range: `usuarios!${columnToLetter(
+          cadastroPendenteCol + 1
+        )}${sheetRowNumber}`,
         values: [["0"]],
       },
     ];
@@ -995,6 +783,7 @@ app.put("/api/usuarios/:id", requireAprovador, async (req, res) => {
     }
 
     const idCol = findHeaderIndex(headers, "id");
+
     if (idCol === -1) {
       return res.status(500).json({ erro: "Coluna id não encontrada." });
     }
@@ -1026,6 +815,7 @@ app.put("/api/usuarios/:id", requireAprovador, async (req, res) => {
 
     editableFields.forEach((field) => {
       const col = findHeaderIndex(headers, field);
+
       if (col !== -1 && Object.prototype.hasOwnProperty.call(dados, field)) {
         updates.push({
           range: `usuarios!${columnToLetter(col + 1)}${sheetRowNumber}`,
@@ -1035,6 +825,7 @@ app.put("/api/usuarios/:id", requireAprovador, async (req, res) => {
     });
 
     const atualizadoCol = findHeaderIndex(headers, "atualizado_em");
+
     if (atualizadoCol !== -1) {
       updates.push({
         range: `usuarios!${columnToLetter(atualizadoCol + 1)}${sheetRowNumber}`,
@@ -1043,7 +834,9 @@ app.put("/api/usuarios/:id", requireAprovador, async (req, res) => {
     }
 
     if (!updates.length) {
-      return res.status(400).json({ erro: "Nenhum campo válido para atualizar." });
+      return res
+        .status(400)
+        .json({ erro: "Nenhum campo válido para atualizar." });
     }
 
     await sheets.spreadsheets.values.batchUpdate({
@@ -1061,260 +854,7 @@ app.put("/api/usuarios/:id", requireAprovador, async (req, res) => {
   }
 });
 
-
-// ================== ROTAS PÚBLICAS ==================
-
-app.get("/", (req, res) => {
-  if (req.session.userId) return res.redirect("/portal");
-  return res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-app.get("/login", (req, res) => {
-  if (req.session.userId) return res.redirect("/portal");
-  return res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-// ================== LOGIN / CADASTRO / GOOGLE ==================
-
-app.get("/cadastro", (req, res) => {
-  if (!req.session?.preCadastroUser) {
-    return res.redirect("/auth/google/register");
-  }
-
-  return res.sendFile(path.join(__dirname, "public", "cadastro.html"));
-});
-
-app.get("/api/login-status", (req, res) => {
-  const erro = req.session?.loginError || "";
-  req.session.loginError = "";
-  return res.json({ erro });
-});
-
-app.get("/api/cargos", async (req, res) => {
-  try {
-    const cargos = await getCargosCadastroSheet();
-    const ativos = cargos.filter(
-      (item) => cadastroNormalizeLower(item.status) === "ativo"
-    );
-    return res.json(ativos);
-  } catch (err) {
-    console.error("Erro ao buscar cargos:", err);
-    return res.status(500).json({ erro: "Erro ao buscar cargos" });
-  }
-});
-
-app.get("/api/niveis-acesso", async (req, res) => {
-  try {
-    const niveis = await getNiveisCadastroSheet();
-    const ativos = niveis.filter(
-      (item) => cadastroNormalizeLower(item.status) === "ativo"
-    );
-    return res.json(ativos);
-  } catch (err) {
-    console.error("Erro ao buscar níveis de acesso:", err);
-    return res.status(500).json({ erro: "Erro ao buscar níveis de acesso" });
-  }
-});
-
-app.get("/api/pre-cadastro-user", (req, res) => {
-  const preUser = req.session?.preCadastroUser || null;
-  if (!preUser) {
-    return res.status(401).json({ erro: "Usuário de pré-cadastro não autenticado." });
-  }
-  return res.json(preUser);
-});
-
-app.post("/api/usuarios/cadastrar", async (req, res) => {
-  try {
-    const dados = req.body || {};
-    const now = new Date().toISOString();
-
-    if (!cadastroNormalize(dados.nome) || !cadastroNormalize(dados.email)) {
-      return res.status(400).json({ erro: "Nome e e-mail são obrigatórios." });
-    }
-
-    if (!cadastroNormalize(dados.cargo)) {
-      return res.status(400).json({ erro: "Cargo é obrigatório." });
-    }
-
-    if (!cadastroNormalize(dados.nivel_acesso)) {
-      return res.status(400).json({ erro: "Nível de acesso é obrigatório." });
-    }
-
-    const existente = await findUsuarioCadastroByEmail(dados.email);
-    if (existente) {
-      return res.status(400).json({
-        erro: "Já existe um cadastro para este e-mail.",
-      });
-    }
-
-    const sheets = await conectarSheetsEdicao();
-    const novoId = String(Date.now());
-
-    const novaLinha = [
-      novoId,                     // id
-      dados.nome || "",           // nome
-      dados.email || "",          // email
-      dados.login || "",          // login
-      "",                         // senha
-      dados.cargo || "",          // cargo
-      dados.area || "",           // area
-      "pendente",                 // status
-      dados.nivel_acesso || "",   // nivel_acesso
-      dados.unidade || "",        // unidade
-      dados.google_id || "",      // google_id
-      "",                         // permissoes
-      0,                          // aprovador
-      dados.foto || "",           // foto
-      1,                          // cadastro_pendente
-      now,                        // criado_em
-      dados.empresa || "",        // empresa
-      now                         // atualizado_em
-    ];
-
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: CADASTRO_SHEET_ID,
-      range: "usuarios!A1",
-      valueInputOption: "USER_ENTERED",
-      resource: {
-        values: [novaLinha],
-      },
-    });
-
-    req.session.preCadastroUser = null;
-
-    return res.json({ sucesso: true });
-  } catch (err) {
-    console.error("Erro ao cadastrar usuário:", err);
-    return res.status(500).json({ erro: "Erro ao cadastrar usuário" });
-  }
-});
-
-app.get("/auth/google", (req, res, next) => {
-  if (!googleOAuthEnabled) {
-    return res.status(503).send("Login Google não configurado no servidor.");
-  }
-
-  return passport.authenticate("google", {
-    scope: ["openid", "profile", "email"],
-    session: false,
-  })(req, res, next);
-});
-
-app.get("/auth/google/register", (req, res, next) => {
-  if (!googleOAuthEnabled) {
-    return res.status(503).send("Login Google não configurado no servidor.");
-  }
-
-  return passport.authenticate("google", {
-    scope: ["openid", "profile", "email"],
-    session: false,
-    state: "register",
-  })(req, res, next);
-});
-
-app.get("/auth/google/callback", (req, res, next) => {
-  if (!googleOAuthEnabled) {
-    return res.redirect("/login");
-  }
-
-  return passport.authenticate("google", { session: false }, (err, user, info) => {
-    if (err) {
-      console.error("Erro no callback Google:", err);
-      req.session.loginError = "Erro ao autenticar com Google.";
-      return res.redirect("/login");
-    }
-
-    if (!user) {
-      req.session.loginError = info?.message || "Acesso não autorizado.";
-      return res.redirect("/login");
-    }
-
-    if (user._registerFlow) {
-      req.session.preCadastroUser = {
-        nome: user.nome || "",
-        email: user.email || "",
-        foto: user.foto || "",
-        google_id: user.google_id || "",
-      };
-      req.session.loginError = "";
-      return res.redirect("/cadastro");
-    }
-
-    req.session.loginError = "";
-    req.session.preCadastroUser = null;
-    req.session.userId = user.id;
-    req.session.nome = user.nome;
-    req.session.email = user.email;
-    req.session.perfil = user.perfil;
-    req.session.foto = user.foto || "";
-    req.session.google_id = user.google_id || "";
-    req.session.cargo = user.cargo || "";
-    req.session.nivel_acesso = user.nivel_acesso || "";
-    req.session.area = user.area || "";
-    req.session.unidade = user.unidade || "";
-    req.session.empresa = user.empresa || "";
-    req.session.permissoes = user.permissoes || "";
-    req.session.aprovador = user.aprovador || "0";
-
-    return res.redirect("/portal");
-  })(req, res, next);
-});
-
-// ================== LOGIN LOCAL LEGADO ==================
-
-app.post("/cadastro", async (req, res) => {
-  const { nome, email, senha } = req.body;
-
-  if (!email || !senha || !nome) {
-    return res.send("Preencha nome, e-mail e senha.");
-  }
-
-  if (!email.endsWith("@shopee.com")) {
-    return res.send("Somente e-mails @shopee.com permitidos.");
-  }
-
-  const senhaHash = await bcrypt.hash(senha, 10);
-
-  db.run(
-    `INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)`,
-    [nome, email, senhaHash],
-    function (err) {
-      if (err) return res.send("Usuário já existe ou erro no cadastro.");
-      return res.send("Cadastro realizado! Aguarde aprovação do Security.");
-    }
-  );
-});
-
-app.post("/login", (req, res) => {
-  const { email, senha } = req.body;
-
-  if (!email || !senha) {
-    return res.send("Informe e-mail e senha.");
-  }
-
-  db.get("SELECT * FROM usuarios WHERE email = ?", [email], async (err, user) => {
-    if (err) return res.send("Erro no servidor.");
-    if (!user) return res.send("Usuário não encontrado.");
-
-    if (user.status !== "aprovado") {
-      return res.send("Usuário ainda não aprovado pelo Security.");
-    }
-
-    const senhaValida = await bcrypt.compare(senha, user.senha || "");
-    if (!senhaValida) return res.send("Senha incorreta.");
-
-    req.session.userId = user.id;
-    req.session.nome = user.nome;
-    req.session.email = user.email;
-    req.session.perfil = user.perfil;
-    req.session.foto = user.foto || "";
-
-    return res.redirect("/portal");
-  });
-});
-
-// ================== LOGOUT =================
+// ================== LOGOUT ==================
 
 app.get("/logout", (req, res) => {
   req.session.destroy((err) => {
@@ -1323,8 +863,24 @@ app.get("/logout", (req, res) => {
       return res.redirect("/portal");
     }
 
-    res.clearCookie("connect.sid");
+    res.clearCookie("portal_security_sid");
     return res.redirect("/login");
   });
 });
 
+// ================== ERROS ==================
+
+app.use((req, res) => {
+  return res.status(404).send("Página não encontrada.");
+});
+
+app.use((err, req, res, next) => {
+  console.error("Erro não tratado:", err);
+  return res.status(500).send("Erro interno do servidor.");
+});
+
+// ================== START ==================
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+});

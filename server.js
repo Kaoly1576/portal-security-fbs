@@ -2602,7 +2602,6 @@ app.get("/registro-lacres", requireAuth, (req, res) => {
 });
 
 const LACRES_SPREADSHEET_ID = "1kxyx3nSpltdddSQkEGHHjOwcEtHMBd3RuQdk-w9q218";
-// ajuste o nome da aba se necessário
 const LACRES_RANGE = "'Registro de lacres'!A1:R200000";
 
 let lacresCache = null;
@@ -2620,6 +2619,29 @@ function lacreNormLower(value) {
     .toLowerCase();
 }
 
+function lacreGet(row, ...keys) {
+  for (const key of keys) {
+    if (
+      row[key] !== undefined &&
+      row[key] !== null &&
+      String(row[key]).trim() !== ""
+    ) {
+      return row[key];
+    }
+  }
+  return "";
+}
+
+function lacreVigilante(row) {
+  return lacreGet(
+    row,
+    "NOME DO VIGILANTE",
+    "NOME DO VIGILANTE ",
+    "VIGILANTE",
+    "NOME VIGILANTE"
+  );
+}
+
 function lacreParseDate(value) {
   const str = lacreNorm(value);
   if (!str) return null;
@@ -2627,6 +2649,7 @@ function lacreParseDate(value) {
   let m = str.match(
     /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/
   );
+
   if (m) {
     const [, dd, mm, yyyy, hh = "00", mi = "00", ss = "00"] = m;
     const d = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}`);
@@ -2672,7 +2695,7 @@ function lacreMatchesMulti(fieldValue, selectedValues) {
 }
 
 function lacreUnique(values) {
-  return [...new Set(values.filter(Boolean))].sort((a, b) =>
+  return [...new Set(values.map(lacreNorm).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, "pt-BR")
   );
 }
@@ -2680,18 +2703,57 @@ function lacreUnique(values) {
 function lacrePercentChange(current, previous) {
   current = Number(current || 0);
   previous = Number(previous || 0);
+
   if (previous === 0 && current === 0) return 0;
   if (previous === 0) return 100;
+
   return ((current - previous) / previous) * 100;
 }
 
 function lacreGroupCount(rows, field) {
   const map = {};
+
   rows.forEach((row) => {
     const key = lacreNorm(row[field]) || "NÃO INFORMADO";
     map[key] = (map[key] || 0) + 1;
   });
+
   return map;
+}
+
+function lacreGroupCountCustom(rows, getter) {
+  const map = {};
+
+  rows.forEach((row) => {
+    const key = lacreNorm(getter(row)) || "NÃO INFORMADO";
+    map[key] = (map[key] || 0) + 1;
+  });
+
+  return map;
+}
+
+function buildTopFromMap(map, limit = 10) {
+  const entries = Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+
+  return {
+    labels: entries.map(([k]) => k),
+    valores: entries.map(([, v]) => v),
+  };
+}
+
+function buildTopCustom(rows, getter, limit = 10) {
+  return buildTopFromMap(lacreGroupCountCustom(rows, getter), limit);
+}
+
+function getHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 async function carregarLacresRaw() {
@@ -2711,15 +2773,20 @@ async function carregarLacresRaw() {
   const rows = linhas
     .map((linha) => {
       const obj = {};
+
       headers.forEach((header, index) => {
         obj[header] = linha[index] ?? "";
       });
 
       obj._dataObj = lacreParseDate(obj["DATA"]);
       obj._isoDate = obj._dataObj ? lacreFormatISO(obj._dataObj) : "";
-      obj._dia = obj._dataObj ? String(obj._dataObj.getDate()).padStart(2, "0") : "";
+      obj._dia = obj._dataObj
+        ? String(obj._dataObj.getDate()).padStart(2, "0")
+        : "";
       obj._mes = obj._dataObj
-        ? `${obj._dataObj.getFullYear()}-${String(obj._dataObj.getMonth() + 1).padStart(2, "0")}`
+        ? `${obj._dataObj.getFullYear()}-${String(
+            obj._dataObj.getMonth() + 1
+          ).padStart(2, "0")}`
         : "";
 
       return obj;
@@ -2728,7 +2795,7 @@ async function carregarLacresRaw() {
       return (
         lacreNorm(row["DATA"]) ||
         lacreNorm(row["UNIDADE"]) ||
-        lacreNorm(row["NOME DO VIGILANTE "]) ||
+        lacreNorm(lacreVigilante(row)) ||
         lacreNorm(row["PLACA"])
       );
     });
@@ -2762,7 +2829,6 @@ function filtrarLacres(rows, query) {
   const vigilantes = lacreSplitMulti(query.vigilante);
   const motoristas = lacreSplitMulti(query.motorista);
   const placas = lacreSplitMulti(query.placa);
-  const statusEnvio = lacreSplitMulti(query.statusEnvio);
   const lacreCorreto = lacreSplitMulti(query.lacreCorreto);
 
   const busca = lacreNormLower(query.busca);
@@ -2775,16 +2841,15 @@ function filtrarLacres(rows, query) {
     if (!lacreMatchesMulti(row["TIPO DE CARGA"], tiposCarga)) return false;
     if (!lacreMatchesMulti(row["ORIGEM"], origens)) return false;
     if (!lacreMatchesMulti(row["DESTINO"], destinos)) return false;
-    if (!lacreMatchesMulti(row["NOME DO VIGILANTE "], vigilantes)) return false;
+    if (!lacreMatchesMulti(lacreVigilante(row), vigilantes)) return false;
     if (!lacreMatchesMulti(row["NOME DO MOTORISTA"], motoristas)) return false;
     if (!lacreMatchesMulti(row["PLACA"], placas)) return false;
-    if (!lacreMatchesMulti(row["STATUS DE ENVIO"], statusEnvio)) return false;
     if (!lacreMatchesMulti(String(row["O LACRE ESTÁ CORRETO?"]), lacreCorreto)) return false;
 
     if (busca) {
       const text = [
         row["UNIDADE"],
-        row["NOME DO VIGILANTE "],
+        lacreVigilante(row),
         row["TIPO DE CARGA"],
         row["ORIGEM"],
         row["NOME DO MOTORISTA"],
@@ -2811,15 +2876,17 @@ app.get("/api/registro-lacres-filtros", requireAuth, async (req, res) => {
     const dados = await carregarLacresComCache();
 
     return res.json({
-      unidades: lacreUnique(dados.map((r) => lacreNorm(r["UNIDADE"]))),
-      tiposCarga: lacreUnique(dados.map((r) => lacreNorm(r["TIPO DE CARGA"]))),
-      origens: lacreUnique(dados.map((r) => lacreNorm(r["ORIGEM"]))),
-      destinos: lacreUnique(dados.map((r) => lacreNorm(r["DESTINO"]))),
-      vigilantes: lacreUnique(dados.map((r) => lacreNorm(r["NOME DO VIGILANTE "]))),
-      motoristas: lacreUnique(dados.map((r) => lacreNorm(r["NOME DO MOTORISTA"]))),
-      placas: lacreUnique(dados.map((r) => lacreNorm(r["PLACA"]))),
-      statusEnvio: lacreUnique(dados.map((r) => lacreNorm(r["STATUS DE ENVIO"]))),
-      lacreCorreto: lacreUnique(dados.map((r) => lacreNorm(String(r["O LACRE ESTÁ CORRETO?"])))),
+      unidades: lacreUnique(dados.map((r) => r["UNIDADE"])),
+      tiposCarga: lacreUnique(dados.map((r) => r["TIPO DE CARGA"])),
+      origens: lacreUnique(dados.map((r) => r["ORIGEM"])),
+      destinos: lacreUnique(dados.map((r) => r["DESTINO"])),
+      vigilantes: lacreUnique(dados.map((r) => lacreVigilante(r))),
+      motoristas: lacreUnique(dados.map((r) => r["NOME DO MOTORISTA"])),
+      placas: lacreUnique(dados.map((r) => r["PLACA"])),
+      lacreCorreto: lacreUnique(
+        dados.map((r) => String(r["O LACRE ESTÁ CORRETO?"]))
+      ),
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
     });
   } catch (error) {
     console.error("Erro /api/registro-lacres-filtros:", error);
@@ -2834,7 +2901,6 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
 
     const total = filtrados.length;
 
-    // base para descobrir o mês atual a partir do filtro aplicado
     const validDates = filtrados
       .map((r) => r._dataObj)
       .filter(Boolean)
@@ -2852,7 +2918,6 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
       const prevMonth = prevRef.getMonth();
       const prevYear = prevRef.getFullYear();
 
-      // mês atual: respeita todos os filtros
       mesAtual = filtrados.filter(
         (r) =>
           r._dataObj &&
@@ -2860,7 +2925,6 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
           r._dataObj.getFullYear() === currYear
       ).length;
 
-      // mês anterior: ignora apenas o filtro de data, mas respeita os demais
       const querySemData = { ...req.query };
       delete querySemData.dataInicio;
       delete querySemData.dataFim;
@@ -2875,22 +2939,11 @@ app.get("/api/registro-lacres-resumo", requireAuth, async (req, res) => {
       ).length;
     }
 
-    const corretos = filtrados.filter(
-      (r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true"
-    ).length;
-
-    const incorretos = filtrados.filter((r) => {
-      const v = lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"]));
-      return v && v !== "true";
-    }).length;
-
     return res.json({
       total,
       mesAtual,
       mesAnterior,
       variacaoMensal: lacrePercentChange(mesAtual, mesAnterior),
-      corretos,
-      incorretos,
       ultimaAtualizacao: getHoraAtualizacaoBR(),
     });
   } catch (error) {
@@ -2905,21 +2958,13 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
     const filtrados = filtrarLacres(dados, req.query);
 
     function buildTop(field, limit = 10) {
-      const map = lacreGroupCount(filtrados, field);
-      const entries = Object.entries(map)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, limit);
-
-      return {
-        labels: entries.map(([k]) => k),
-        valores: entries.map(([, v]) => v),
-      };
+      return buildTopFromMap(lacreGroupCount(filtrados, field), limit);
     }
 
-    // por dia sempre de 01 a 31
     const dias = Array.from({ length: 31 }, (_, i) =>
       String(i + 1).padStart(2, "0")
     );
+
     const porDiaMap = Object.fromEntries(dias.map((d) => [d, 0]));
 
     filtrados.forEach((r) => {
@@ -2944,7 +2989,6 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
       const prevMonth = prevRef.getMonth();
       const prevYear = prevRef.getFullYear();
 
-      // mês atual respeita os filtros completos
       mesAtual = filtrados.filter(
         (r) =>
           r._dataObj &&
@@ -2952,7 +2996,6 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
           r._dataObj.getFullYear() === currYear
       ).length;
 
-      // mês anterior ignora apenas dataInicio/dataFim
       const querySemData = { ...req.query };
       delete querySemData.dataInicio;
       delete querySemData.dataFim;
@@ -2967,25 +3010,10 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
       ).length;
     }
 
-    const corretoMap = {
-      Correto: filtrados.filter(
-        (r) => lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"])) === "true"
-      ).length,
-      Incorreto: filtrados.filter((r) => {
-        const v = lacreNormLower(String(r["O LACRE ESTÁ CORRETO?"]));
-        return v && v !== "true";
-      }).length,
-      "Sem resposta": filtrados.filter(
-        (r) => !lacreNorm(String(r["O LACRE ESTÁ CORRETO?"]))
-      ).length,
-    };
-
-    const statusMap = lacreGroupCount(filtrados, "STATUS DE ENVIO");
-
     return res.json({
       porUnidade: buildTop("UNIDADE"),
       porTipoCarga: buildTop("TIPO DE CARGA"),
-      porVigilante: buildTop("NOME DO VIGILANTE "),
+      porVigilante: buildTopCustom(filtrados, lacreVigilante),
       porDia: {
         labels: dias,
         valores: dias.map((d) => porDiaMap[d] || 0),
@@ -2994,14 +3022,7 @@ app.get("/api/registro-lacres-graficos", requireAuth, async (req, res) => {
         mesAtual,
         mesAnterior,
       },
-      lacreCorreto: {
-        labels: Object.keys(corretoMap),
-        valores: Object.values(corretoMap),
-      },
-      statusEnvio: {
-        labels: Object.keys(statusMap),
-        valores: Object.values(statusMap),
-      },
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
     });
   } catch (error) {
     console.error("Erro /api/registro-lacres-graficos:", error);
@@ -3031,7 +3052,7 @@ app.get("/api/registro-lacres-detalhes", requireAuth, async (req, res) => {
     const items = ordenados.slice(start, start + limit).map((r) => ({
       data: r._dataObj ? lacreFormatBR(r._dataObj) : r["DATA"] || "",
       unidade: r["UNIDADE"] || "",
-      vigilante: r["NOME DO VIGILANTE "] || "",
+      vigilante: lacreVigilante(r),
       tipoCarga: r["TIPO DE CARGA"] || "",
       origem: r["ORIGEM"] || "",
       motorista: r["NOME DO MOTORISTA"] || "",
@@ -3060,9 +3081,12 @@ app.get("/api/registro-lacres-detalhes", requireAuth, async (req, res) => {
 app.get("/api/registro-lacres-debug", requireAuth, async (req, res) => {
   try {
     const dados = await carregarLacresComCache();
+
     return res.json({
       total: dados.length,
+      headers: dados.length ? Object.keys(dados[0]).filter((h) => !h.startsWith("_")) : [],
       amostra: dados.slice(0, 5),
+      vigilantesEncontrados: lacreUnique(dados.map((r) => lacreVigilante(r))).slice(0, 20),
     });
   } catch (error) {
     console.error("Erro /api/registro-lacres-debug:", error);

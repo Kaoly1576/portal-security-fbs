@@ -4762,6 +4762,1700 @@ app.get("/api/checklist-debug", requireAuth, async (req, res) => {
   }
 });
 
+// ================== PRESENTEISMO DASHBOARD ==================
+
+app.get("/presenteismo", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "presenteismo.html"));
+});
+
+const PRESENTEISMO_SPREADSHEET_ID = "1DivjZdxzDES6Nu_ZJI_1gmrJgKqlrlqYgg3I-ybPr5k";
+const PRESENTEISMO_RANGE = "'REGISTRO DE PRESENTEÍSMO'!A1:L200000";
+
+let presenteismoCache = null;
+let presenteismoCacheTime = 0;
+const PRESENTEISMO_TTL = 5 * 60 * 1000;
+
+// ================== UTIL ==================
+
+function n(v) {
+  return String(v || "").trim();
+}
+
+function nLower(v) {
+  return n(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function parseDate(v) {
+  const m = n(v).match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
+
+function parseHours(v) {
+  const p = n(v).split(":").map(Number);
+  if (p.length !== 3 || p.some(isNaN)) return 0;
+  return p[0] + (p[1] / 60) + (p[2] / 3600);
+}
+
+function parseMoney(v) {
+  return Number(
+    n(v)
+      .replace(/[R$\s]/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
+}
+
+function formatBR(date) {
+  if (!date) return "";
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function getHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function endOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function diffDaysInclusive(start, end) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.floor((startOfDay(end) - startOfDay(start)) / msPerDay) + 1;
+}
+
+function splitMulti(value) {
+  if (!value) return [];
+  return String(value).split("|").map((v) => n(v)).filter(Boolean);
+}
+
+function matchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(n(fieldValue));
+}
+
+// ================== PERÍODO ==================
+
+function resolvePeriodFromQuery(query, rows) {
+  const periodoTipo = nLower(query.periodoTipo || "mes");
+  const dataRef = n(query.dataRef);
+
+  if (dataRef) {
+    const ref = new Date(`${dataRef}T00:00:00`);
+
+    if (!isNaN(ref.getTime())) {
+      if (periodoTipo === "dia") {
+        return {
+          start: startOfDay(ref),
+          end: endOfDay(ref),
+        };
+      }
+
+      if (periodoTipo === "semana") {
+        const weekStart = new Date(ref);
+        const day = weekStart.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        weekStart.setDate(weekStart.getDate() + diff);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return {
+          start: startOfDay(weekStart),
+          end: endOfDay(weekEnd),
+        };
+      }
+
+      if (periodoTipo === "ano") {
+        return {
+          start: new Date(ref.getFullYear(), 0, 1, 0, 0, 0, 0),
+          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
+        };
+      }
+
+      return {
+        start: new Date(ref.getFullYear(), ref.getMonth(), 1, 0, 0, 0, 0),
+        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
+      };
+    }
+  }
+
+  const validDates = rows
+    .map((r) => r._date)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!validDates.length) {
+    return { start: null, end: null };
+  }
+
+  return {
+    start: startOfDay(validDates[0]),
+    end: endOfDay(validDates[validDates.length - 1]),
+  };
+}
+
+function getComparisonWindow(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return {
+      currentStart: null,
+      currentEnd: null,
+      previousStart: null,
+      previousEnd: null,
+      label: "base anterior",
+    };
+  }
+
+  const start = startOfDay(startDate);
+  const end = endOfDay(endDate);
+
+  const isSingleDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const isFullMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === 1 &&
+    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+  const isFullYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === 0 &&
+    start.getDate() === 1 &&
+    end.getMonth() === 11 &&
+    end.getDate() === 31;
+
+  const totalDays = diffDaysInclusive(start, end);
+
+  if (isSingleDay) {
+    const prev = new Date(start);
+    prev.setDate(prev.getDate() - 1);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: startOfDay(prev),
+      previousEnd: endOfDay(prev),
+      label: "dia anterior",
+    };
+  }
+
+  if (isFullMonth) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
+      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
+      label: "mês anterior",
+    };
+  }
+
+  if (isFullYear) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear() - 1, 0, 1),
+      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
+      label: "ano anterior",
+    };
+  }
+
+  const previousEnd = new Date(start);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  previousEnd.setHours(23, 59, 59, 999);
+
+  const previousStart = new Date(previousEnd);
+  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
+  previousStart.setHours(0, 0, 0, 0);
+
+  return {
+    currentStart: start,
+    currentEnd: end,
+    previousStart,
+    previousEnd,
+    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
+  };
+}
+
+// ================== LOAD ==================
+
+async function loadData() {
+  const now = Date.now();
+  if (presenteismoCache && now - presenteismoCacheTime < PRESENTEISMO_TTL) {
+    return presenteismoCache;
+  }
+
+  const sheets = await conectarSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: PRESENTEISMO_SPREADSHEET_ID,
+    range: PRESENTEISMO_RANGE,
+  });
+
+  const values = res.data.values || [];
+  if (!values.length || values.length < 2) {
+    presenteismoCache = [];
+    presenteismoCacheTime = now;
+    return presenteismoCache;
+  }
+
+  const headers = values[0].map((h, i) => n(h) || `COL_${i + 1}`);
+  const filldownColumns = [
+    "MÊS",
+    "DATA",
+    "UNIDADE",
+    "EMPRESA",
+    "PLANTÃO",
+    "TURNO",
+    "AGENTE",
+    "STATUS",
+    "STATUS DE COBERTURA",
+    "ABSENTEISMO",
+    "DESCONTO",
+    "COLABORADOR COBRINDO POSTO"
+  ];
+
+  const lastSeen = {};
+
+  const data = values.slice(1).map((r) => {
+    const obj = {};
+
+    headers.forEach((h, i) => {
+      let value = r[i] || "";
+
+      if (!n(value) && filldownColumns.includes(h) && lastSeen[h] !== undefined) {
+        value = lastSeen[h];
+      }
+
+      if (n(value)) {
+        lastSeen[h] = value;
+      }
+
+      obj[h] = value;
+    });
+
+    obj._date = parseDate(obj["DATA"]);
+    obj._day = obj._date ? obj._date.getDate() : null;
+    obj._abs = parseHours(obj["ABSENTEISMO"]);
+    obj._desconto = parseMoney(obj["DESCONTO"]);
+
+    return obj;
+  }).filter((row) =>
+    n(row["DATA"]) ||
+    n(row["PLANTÃO"]) ||
+    n(row["AGENTE"]) ||
+    n(row["STATUS DE COBERTURA"])
+  );
+
+  presenteismoCache = data;
+  presenteismoCacheTime = now;
+
+  return data;
+}
+
+// ================== FILTROS ==================
+
+function applyFilters(rows, query) {
+  const unidade = splitMulti(query.unidade);
+  const empresa = splitMulti(query.empresa);
+  const plantao = splitMulti(query.plantao);
+  const turno = splitMulti(query.turno);
+  const agente = splitMulti(query.agente);
+  const status = splitMulti(query.status);
+  const cobertura = splitMulti(query.cobertura);
+  const busca = nLower(query.busca);
+
+  return rows.filter((r) => {
+    if (!matchesMulti(r["UNIDADE"], unidade)) return false;
+    if (!matchesMulti(r["EMPRESA"], empresa)) return false;
+    if (!matchesMulti(r["PLANTÃO"], plantao)) return false;
+    if (!matchesMulti(r["TURNO"], turno)) return false;
+    if (!matchesMulti(r["AGENTE"], agente)) return false;
+    if (!matchesMulti(r["STATUS"], status)) return false;
+    if (!matchesMulti(r["STATUS DE COBERTURA"], cobertura)) return false;
+
+    if (busca) {
+      const text = Object.values(r)
+        .filter((v) => typeof v !== "object")
+        .join(" ")
+        .toLowerCase();
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function applyFiltersWithoutPeriod(rows, query) {
+  return applyFilters(rows, {
+    ...query,
+    periodoTipo: "",
+    dataRef: "",
+  });
+}
+
+function filterByPeriod(rows, query) {
+  const period = resolvePeriodFromQuery(query, rows);
+
+  if (!period.start || !period.end) {
+    return {
+      rows,
+      period,
+    };
+  }
+
+  return {
+    rows: rows.filter((r) => r._date && r._date >= period.start && r._date <= period.end),
+    period,
+  };
+}
+
+// ================== FILTROS API ==================
+
+app.get("/api/presenteismo-filtros", requireAuth, async (req, res) => {
+  try {
+    const rows = await loadData();
+
+    const uniq = (f) =>
+      [...new Set(rows.map((r) => n(r[f])).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    return res.json({
+      unidade: uniq("UNIDADE"),
+      empresa: uniq("EMPRESA"),
+      plantao: uniq("PLANTÃO"),
+      turno: uniq("TURNO"),
+      agente: uniq("AGENTE"),
+      status: uniq("STATUS"),
+      cobertura: uniq("STATUS DE COBERTURA"),
+    });
+  } catch (error) {
+    console.error("Erro /api/presenteismo-filtros:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== RESUMO API ==================
+
+app.get("/api/presenteismo-resumo", requireAuth, async (req, res) => {
+  try {
+    const rows = await loadData();
+
+    const filteredRows = applyFilters(rows, req.query);
+    const { rows: periodRows, period } = filterByPeriod(filteredRows, req.query);
+
+    const total = periodRows.length;
+    const horasAbs = periodRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
+    const descontoTotal = periodRows.reduce((sum, row) => sum + Number(row._desconto || 0), 0);
+
+    const registrosComAbs = periodRows.filter((row) => Number(row._abs || 0) > 0).length;
+    const percentualAbsenteismo = total ? (registrosComAbs / total) * 100 : 0;
+
+    const coberturaIntegral = periodRows.filter((row) =>
+      nLower(row["STATUS DE COBERTURA"]).includes("integral")
+    ).length;
+
+    const coberturaParcial = periodRows.filter((row) =>
+      nLower(row["STATUS DE COBERTURA"]).includes("parcial")
+    ).length;
+
+    const semCobertura = periodRows.filter((row) => {
+      const c = nLower(row["STATUS DE COBERTURA"]);
+      return !c || c.includes("sem cobertura") || c.includes("nao coberto") || c.includes("não coberto");
+    }).length;
+
+    const comparison = getComparisonWindow(period.start, period.end);
+    const baseNoPeriod = applyFiltersWithoutPeriod(rows, req.query);
+
+    const anteriorRows = baseNoPeriod.filter((row) => {
+      const dt = row._date;
+      return (
+        dt &&
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
+      );
+    });
+
+    const anteriorHoras = anteriorRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
+
+    return res.json({
+      total,
+      horasAbs,
+      descontoTotal,
+      registrosComAbs,
+      percentualAbsenteismo,
+      coberturaIntegral,
+      coberturaParcial,
+      semCobertura,
+      anteriorHoras,
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? formatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? formatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? formatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? formatBR(comparison.previousEnd) : "",
+      ultimaAtualizacao: getHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/presenteismo-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== GRAFICOS API ==================
+
+app.get("/api/presenteismo-graficos", requireAuth, async (req, res) => {
+  try {
+    const rows = await loadData();
+
+    const filteredRows = applyFilters(rows, req.query);
+    const { rows: periodRows, period } = filterByPeriod(filteredRows, req.query);
+
+    let empresa = {};
+    let plantao = {};
+    let unidade = {};
+    let cobertura = {};
+    let dia = {};
+    let agente = {};
+    let desconto = {};
+
+    for (let i = 1; i <= 31; i++) dia[i] = 0;
+
+    periodRows.forEach((r) => {
+      const p = n(r["PLANTÃO"]) || "SEM";
+      const u = n(r["UNIDADE"]) || "SEM";
+      const c = n(r["STATUS DE COBERTURA"]) || "SEM";
+      const a = n(r["AGENTE"]) || "SEM";
+      const e = n(r["EMPRESA"]) || "SEM";
+
+      plantao[p] = (plantao[p] || 0) + Number(r._abs || 0);
+      unidade[u] = (unidade[u] || 0) + 1;
+      cobertura[c] = (cobertura[c] || 0) + 1;
+      agente[a] = (agente[a] || 0) + Number(r._abs || 0);
+      desconto[p] = (desconto[p] || 0) + Number(r._desconto || 0);
+      empresa[e] = (empresa[e] || 0) + 1;
+
+      if (r._day) dia[r._day] += Number(r._abs || 0);
+    });
+
+    const top = (obj, limit = 10) =>
+      Object.fromEntries(Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, limit));
+
+    const comparison = getComparisonWindow(period.start, period.end);
+    const baseNoPeriod = applyFiltersWithoutPeriod(rows, req.query);
+
+    const anterior = baseNoPeriod
+      .filter((row) => {
+        const dt = row._date;
+        return (
+          dt &&
+          comparison.previousStart &&
+          comparison.previousEnd &&
+          dt >= comparison.previousStart &&
+          dt <= comparison.previousEnd
+        );
+      })
+      .reduce((sum, row) => sum + Number(row._abs || 0), 0);
+
+    const atual = periodRows.reduce((sum, row) => sum + Number(row._abs || 0), 0);
+
+    return res.json({
+      horasPorPlantao: top(plantao, 12),
+      empresas: top(empresa, 12),
+      registrosPorUnidade: top(unidade, 12),
+      cobertura: top(cobertura, 10),
+      horasPorDia: dia,
+      horasPorAgente: top(agente, 12),
+      descontoPorPlantao: top(desconto, 12),
+      comparativo: {
+        atual,
+        anterior,
+        label: comparison.label || "base anterior",
+      }
+    });
+  } catch (error) {
+    console.error("Erro /api/presenteismo-graficos:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== DETALHES API ==================
+
+app.get("/api/presenteismo-detalhes", requireAuth, async (req, res) => {
+  try {
+    const rows = await loadData();
+
+    const filteredRows = applyFilters(rows, req.query);
+    const { rows: periodRows } = filterByPeriod(filteredRows, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 200);
+
+    const sorted = [...periodRows].sort((a, b) => {
+      const ad = a._date ? a._date.getTime() : 0;
+      const bd = b._date ? b._date.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    return res.json({
+      page: currentPage,
+      totalPages,
+      rows: sorted.slice(start, start + limit).map((r) => ({
+        mes: r["MÊS"] || "",
+        data: r["DATA"] || "",
+        unidade: r["UNIDADE"] || "",
+        empresa: r["EMPRESA"] || "",
+        plantao: r["PLANTÃO"] || "",
+        turno: r["TURNO"] || "",
+        agente: r["AGENTE"] || "",
+        status: r["STATUS"] || "",
+        statusCobertura: r["STATUS DE COBERTURA"] || "",
+        abs: r["ABSENTEISMO"] || "",
+        desconto: r["DESCONTO"] || "",
+        cobrindo: r["COLABORADOR COBRINDO POSTO"] || "",
+      })),
+    });
+  } catch (error) {
+    console.error("Erro /api/presenteismo-detalhes:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== HC FBS DASHBOARD ==================
+
+app.get("/hc-fbs", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "hc-fbs.html"));
+});
+
+const HCFBS_SPREADSHEET_ID = "1s7ZG9N7pS0pafmYb-4QfQXZPily21gp16_-Vzdy7m5I";
+const HCFBS_RANGE = "A:H";
+
+let hcfbsCache = null;
+let hcfbsCacheTime = 0;
+const HCFBS_CACHE_TTL = 5 * 60 * 1000;
+
+function hcNorm(v) {
+  return String(v || "").trim();
+}
+
+function hcNormLower(v) {
+  return hcNorm(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function hcGetHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function hcParseDate(value) {
+  const str = hcNorm(value);
+  if (!str) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const [d, m, y] = str.split("/").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  return null;
+}
+
+function hcFormatBR(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function hcSplitMulti(value) {
+  if (!value) return [];
+  return String(value).split("|").map(v => hcNorm(v)).filter(Boolean);
+}
+
+function hcMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(hcNorm(fieldValue));
+}
+
+function hcPercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+
+  return ((current - previous) / previous) * 100;
+}
+
+function hcStartOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function hcEndOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function hcDiffDaysInclusive(start, end) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const s = hcStartOfDay(start);
+  const e = hcStartOfDay(end);
+  return Math.floor((e - s) / msPerDay) + 1;
+}
+
+function hcResolvePeriodFromQuery(query, rows) {
+  const periodoTipo = hcNormLower(query.periodoTipo || "mes");
+  const dataRef = hcNorm(query.dataRef);
+
+  if (dataRef) {
+    const ref = new Date(`${dataRef}T00:00:00`);
+
+    if (!isNaN(ref.getTime())) {
+      if (periodoTipo === "dia") {
+        return {
+          start: hcStartOfDay(ref),
+          end: hcEndOfDay(ref),
+        };
+      }
+
+      if (periodoTipo === "semana") {
+        const weekStart = new Date(ref);
+        const day = weekStart.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        weekStart.setDate(weekStart.getDate() + diff);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return {
+          start: hcStartOfDay(weekStart),
+          end: hcEndOfDay(weekEnd),
+        };
+      }
+
+      if (periodoTipo === "ano") {
+        return {
+          start: new Date(ref.getFullYear(), 0, 1),
+          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
+        };
+      }
+
+      return {
+        start: new Date(ref.getFullYear(), ref.getMonth(), 1),
+        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
+      };
+    }
+  }
+
+  const validDates = rows
+    .map((r) => r._dateObj)
+    .filter(Boolean)
+    .sort((a, b) => a - b);
+
+  if (!validDates.length) return { start: null, end: null };
+
+  const latest = validDates[validDates.length - 1];
+
+  return {
+    start: new Date(latest.getFullYear(), latest.getMonth(), 1),
+    end: new Date(latest.getFullYear(), latest.getMonth() + 1, 0, 23, 59, 59, 999),
+  };
+}
+
+function hcGetComparisonWindow(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return {
+      currentStart: null,
+      currentEnd: null,
+      previousStart: null,
+      previousEnd: null,
+      label: "base anterior",
+    };
+  }
+
+  const start = hcStartOfDay(startDate);
+  const end = hcEndOfDay(endDate);
+
+  const isSingleDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const isFullMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === 1 &&
+    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+  const isFullYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === 0 &&
+    start.getDate() === 1 &&
+    end.getMonth() === 11 &&
+    end.getDate() === 31;
+
+  const totalDays = hcDiffDaysInclusive(start, end);
+
+  if (isSingleDay) {
+    const prev = new Date(start);
+    prev.setDate(prev.getDate() - 1);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: hcStartOfDay(prev),
+      previousEnd: hcEndOfDay(prev),
+      label: "dia anterior",
+    };
+  }
+
+  if (isFullMonth) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
+      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
+      label: "mês anterior",
+    };
+  }
+
+  if (isFullYear) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear() - 1, 0, 1),
+      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
+      label: "ano anterior",
+    };
+  }
+
+  const previousEnd = new Date(start);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  previousEnd.setHours(23, 59, 59, 999);
+
+  const previousStart = new Date(previousEnd);
+  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
+  previousStart.setHours(0, 0, 0, 0);
+
+  return {
+    currentStart: start,
+    currentEnd: end,
+    previousStart,
+    previousEnd,
+    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
+  };
+}
+
+async function hcLoadRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: HCFBS_SPREADSHEET_ID,
+    range: HCFBS_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const rows = values.slice(1);
+
+  return rows.map((line) => {
+    const obj = {
+      data: line[0] ?? "",
+      bpo: line[1] ?? "",
+      qtd_admitidos: Number(line[2] || 0),
+      qtd_desligados: line[3] ?? "",
+      num_semana: line[4] ?? "",
+      num_mes: line[5] ?? "",
+      turno_g: line[6] ?? "",
+      turno: line[7] ?? "", // coluna H
+    };
+
+    obj._dateObj = hcParseDate(obj.data);
+    obj._day = obj._dateObj ? obj._dateObj.getDate() : null;
+    obj._year = obj._dateObj ? obj._dateObj.getFullYear() : null;
+    obj._month = obj._dateObj ? obj._dateObj.getMonth() + 1 : null;
+
+    return obj;
+  });
+}
+
+async function hcLoadWithCache() {
+  const now = Date.now();
+
+  if (hcfbsCache && now - hcfbsCacheTime < HCFBS_CACHE_TTL) {
+    return hcfbsCache;
+  }
+
+  const rows = await hcLoadRaw();
+  hcfbsCache = rows;
+  hcfbsCacheTime = now;
+
+  console.log("HC FBS cache atualizado:", rows.length);
+
+  return hcfbsCache;
+}
+
+function hcApplyFilters(rows, query) {
+  const bpo = hcSplitMulti(query.bpo);
+  const turno = hcSplitMulti(query.turno);
+  const ano = hcSplitMulti(query.ano);
+  const mes = hcSplitMulti(query.mes);
+  const semana = hcSplitMulti(query.semana);
+  const dia = hcSplitMulti(query.dia);
+  const busca = hcNormLower(query.busca);
+
+  return rows.filter((row) => {
+    if (!hcMatchesMulti(row.bpo, bpo)) return false;
+    if (!hcMatchesMulti(row.turno, turno)) return false;
+    if (ano.length && !ano.includes(String(row._year || ""))) return false;
+    if (mes.length && !mes.includes(String(row._month || ""))) return false;
+    if (semana.length && !semana.includes(String(row.num_semana || ""))) return false;
+    if (dia.length && !dia.includes(String(row._day || ""))) return false;
+
+    if (busca) {
+      const text = Object.values(row)
+        .filter((v) => typeof v !== "object")
+        .join(" ")
+        .toLowerCase();
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function hcApplyFiltersWithoutPeriod(rows, query) {
+  return hcApplyFilters(rows, {
+    ...query,
+    periodoTipo: "",
+    dataRef: "",
+  });
+}
+
+function hcFilterRowsByPeriod(rows, query) {
+  const period = hcResolvePeriodFromQuery(query, rows);
+
+  if (!period.start || !period.end) {
+    return { rows, period };
+  }
+
+  const filtered = rows.filter((row) => {
+    const dt = row._dateObj;
+    return dt && dt >= period.start && dt <= period.end;
+  });
+
+  return { rows: filtered, period };
+}
+
+app.get("/api/hc-fbs-filtros", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const uniq = (getter) =>
+      [...new Set(rows.map(getter).map(v => hcNorm(v)).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const uniqNum = (getter) =>
+      [...new Set(rows.map(getter).map(v => String(v || "")).filter(Boolean))]
+        .sort((a, b) => Number(a) - Number(b));
+
+    return res.json({
+      bpo: uniq(r => r.bpo),
+      turno: uniq(r => r.turno),
+      ano: uniqNum(r => r._year),
+      mes: uniqNum(r => r._month),
+      semana: uniqNum(r => r.num_semana),
+      dia: uniqNum(r => r._day),
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-filtros:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const filteredRows = hcApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = hcFilterRowsByPeriod(filteredRows, req.query);
+
+    const totalAdmitidos = periodRows.reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
+    const totalRegistros = periodRows.length;
+    const totalBpos = new Set(periodRows.map(r => hcNorm(r.bpo)).filter(Boolean)).size;
+    const totalTurnos = new Set(periodRows.map(r => hcNorm(r.turno)).filter(Boolean)).size;
+
+    const comparison = hcGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
+
+    const previousRows = baseNoPeriodRows.filter((row) => {
+      const dt = row._dateObj;
+      return (
+        dt &&
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
+      );
+    });
+
+    const admitidosAnterior = previousRows.reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
+
+    return res.json({
+      totalAdmitidos,
+      totalRegistros,
+      totalBpos,
+      totalTurnos,
+      admitidosAnterior,
+      variacaoAdmitidos: hcPercentChange(totalAdmitidos, admitidosAnterior),
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? hcFormatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? hcFormatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? hcFormatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? hcFormatBR(comparison.previousEnd) : "",
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const filteredRows = hcApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = hcFilterRowsByPeriod(filteredRows, req.query);
+
+    const porDia = {};
+    for (let i = 1; i <= 31; i++) porDia[i] = 0;
+
+    const porBpo = {};
+    const porTurno = {};
+    const porSemana = {};
+
+    periodRows.forEach((row) => {
+      const qtd = Number(row.qtd_admitidos || 0);
+
+      if (row._day) porDia[row._day] += qtd;
+
+      const bpo = hcNorm(row.bpo) || "Sem BPO";
+      porBpo[bpo] = (porBpo[bpo] || 0) + qtd;
+
+      const turno = hcNorm(row.turno) || "Sem Turno";
+      porTurno[turno] = (porTurno[turno] || 0) + qtd;
+
+      const semana = `Semana ${row.num_semana || "?"}`;
+      porSemana[semana] = (porSemana[semana] || 0) + qtd;
+    });
+
+    const comparison = hcGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
+
+    const atual = periodRows.reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
+
+    const anterior = baseNoPeriodRows
+      .filter((row) => {
+        const dt = row._dateObj;
+        return (
+          dt &&
+          comparison.previousStart &&
+          comparison.previousEnd &&
+          dt >= comparison.previousStart &&
+          dt <= comparison.previousEnd
+        );
+      })
+      .reduce((sum, row) => sum + Number(row.qtd_admitidos || 0), 0);
+
+    return res.json({
+      porDia,
+      porBpo,
+      porTurno,
+      porSemana,
+      comparativo: {
+        atual,
+        anterior,
+        label: comparison.label || "base anterior",
+      },
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-graficos:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
+  try {
+    const rows = await hcLoadWithCache();
+
+    const filteredRows = hcApplyFilters(rows, req.query);
+    const { rows: periodRows } = hcFilterRowsByPeriod(filteredRows, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 30), 1), 200);
+
+    const sorted = [...periodRows].sort((a, b) => {
+      const ad = a._dateObj ? a._dateObj.getTime() : 0;
+      const bd = b._dateObj ? b._dateObj.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    const rowsOut = sorted.slice(start, start + limit).map((row) => ({
+      data: row._dateObj ? hcFormatBR(row._dateObj) : row.data || "",
+      bpo: row.bpo || "",
+      qtdAdmitidos: Number(row.qtd_admitidos || 0),
+      semana: row.num_semana || "",
+      mes: row.num_mes || "",
+      turno: row.turno || "",
+    }));
+
+    return res.json({
+      total,
+      page: currentPage,
+      limit,
+      totalPages,
+      rows: rowsOut,
+      ultimaAtualizacao: hcGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/hc-fbs-detalhes:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+// ================== FALTAS ALTUM DASHBOARD ==================
+
+app.get("/faltas-altum", requireAuth, (req, res) => {
+  return res.sendFile(path.join(__dirname, "public", "faltas-altum.html"));
+});
+
+const FALTAS_ALTUM_SPREADSHEET_ID = "1XtP5ylCpA42aLE1EklytzHH2hUzik5JdY8meAg84Et4";
+const FALTAS_ALTUM_RANGE = "'CONTROLE DE FALTAS FBS'!A:M";
+
+let faltasAltumCache = null;
+let faltasAltumCacheTime = 0;
+const FALTAS_ALTUM_CACHE_TTL = 5 * 60 * 1000;
+
+function faNorm(v) {
+  return String(v || "").trim();
+}
+
+function faNormLower(v) {
+  return faNorm(v)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function faGetHoraAtualizacaoBR() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function faParseDate(value) {
+  const str = faNorm(value);
+  if (!str) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const [d, m, y] = str.split("/").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  return null;
+}
+
+function faFormatBR(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+function faSplitMulti(value) {
+  if (!value) return [];
+  return String(value).split("|").map(v => faNorm(v)).filter(Boolean);
+}
+
+function faMatchesMulti(fieldValue, selectedValues) {
+  if (!selectedValues.length) return true;
+  return selectedValues.includes(faNorm(fieldValue));
+}
+
+function faPercentChange(current, previous) {
+  current = Number(current || 0);
+  previous = Number(previous || 0);
+
+  if (previous === 0 && current === 0) return 0;
+  if (previous === 0) return 100;
+
+  return ((current - previous) / previous) * 100;
+}
+
+function faStartOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+function faEndOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
+function faDiffDaysInclusive(start, end) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const s = faStartOfDay(start);
+  const e = faStartOfDay(end);
+  return Math.floor((e - s) / msPerDay) + 1;
+}
+
+function faResolvePeriodFromQuery(query, rows) {
+  const periodoTipo = faNormLower(query.periodoTipo || "mes");
+  const dataRef = faNorm(query.dataRef);
+
+  if (dataRef) {
+    const ref = new Date(`${dataRef}T00:00:00`);
+
+    if (!isNaN(ref.getTime())) {
+      if (periodoTipo === "dia") {
+        return { start: faStartOfDay(ref), end: faEndOfDay(ref) };
+      }
+
+      if (periodoTipo === "semana") {
+        const weekStart = new Date(ref);
+        const day = weekStart.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        weekStart.setDate(weekStart.getDate() + diff);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+
+        return { start: faStartOfDay(weekStart), end: faEndOfDay(weekEnd) };
+      }
+
+      if (periodoTipo === "ano") {
+        return {
+          start: new Date(ref.getFullYear(), 0, 1),
+          end: new Date(ref.getFullYear(), 11, 31, 23, 59, 59, 999),
+        };
+      }
+
+      return {
+        start: new Date(ref.getFullYear(), ref.getMonth(), 1),
+        end: new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59, 999),
+      };
+    }
+  }
+
+  const validDates = rows.map(r => r._dateObj).filter(Boolean).sort((a, b) => a - b);
+  if (!validDates.length) return { start: null, end: null };
+
+  const latest = validDates[validDates.length - 1];
+  return {
+    start: new Date(latest.getFullYear(), latest.getMonth(), 1),
+    end: new Date(latest.getFullYear(), latest.getMonth() + 1, 0, 23, 59, 59, 999),
+  };
+}
+
+function faGetComparisonWindow(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return {
+      currentStart: null,
+      currentEnd: null,
+      previousStart: null,
+      previousEnd: null,
+      label: "base anterior",
+    };
+  }
+
+  const start = faStartOfDay(startDate);
+  const end = faEndOfDay(endDate);
+
+  const isSingleDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const isFullMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === 1 &&
+    end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+
+  const isFullYear =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === 0 &&
+    start.getDate() === 1 &&
+    end.getMonth() === 11 &&
+    end.getDate() === 31;
+
+  const totalDays = faDiffDaysInclusive(start, end);
+
+  if (isSingleDay) {
+    const prev = new Date(start);
+    prev.setDate(prev.getDate() - 1);
+
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: faStartOfDay(prev),
+      previousEnd: faEndOfDay(prev),
+      label: "dia anterior",
+    };
+  }
+
+  if (isFullMonth) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear(), start.getMonth() - 1, 1),
+      previousEnd: new Date(start.getFullYear(), start.getMonth(), 0, 23, 59, 59, 999),
+      label: "mês anterior",
+    };
+  }
+
+  if (isFullYear) {
+    return {
+      currentStart: start,
+      currentEnd: end,
+      previousStart: new Date(start.getFullYear() - 1, 0, 1),
+      previousEnd: new Date(start.getFullYear() - 1, 11, 31, 23, 59, 59, 999),
+      label: "ano anterior",
+    };
+  }
+
+  const previousEnd = new Date(start);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  previousEnd.setHours(23, 59, 59, 999);
+
+  const previousStart = new Date(previousEnd);
+  previousStart.setDate(previousStart.getDate() - (totalDays - 1));
+  previousStart.setHours(0, 0, 0, 0);
+
+  return {
+    currentStart: start,
+    currentEnd: end,
+    previousStart,
+    previousEnd,
+    label: totalDays === 7 ? "semana anterior" : `período anterior (${totalDays} dias)`,
+  };
+}
+
+function faParseHoursToDecimal(value) {
+  const str = faNorm(value);
+  if (!str || !/^\d{1,2}:\d{2}:\d{2}$/.test(str)) return 0;
+
+  const [h, m, s] = str.split(":").map(Number);
+  return h + (m / 60) + (s / 3600);
+}
+
+function faFormatHoursDecimal(value) {
+  const total = Number(value || 0);
+  const hours = Math.floor(total);
+  const minutes = Math.round((total - hours) * 60);
+
+  return `${hours}h${String(minutes).padStart(2, "0")}`;
+}
+
+function faIsFaltaOuPostoVago(row) {
+  const ocorrencia = faNormLower(row.ocorrencia);
+
+  return (
+    ocorrencia === "falta" ||
+    ocorrencia === "posto vago"
+  );
+}
+
+async function faLoadRaw() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: FALTAS_ALTUM_SPREADSHEET_ID,
+    range: FALTAS_ALTUM_RANGE,
+  });
+
+  const values = response.data.values || [];
+  if (!values.length || values.length < 2) return [];
+
+  const rows = values.slice(1);
+
+  return rows.map((line) => {
+    const obj = {
+      mes: line[0] ?? "",
+      data: line[1] ?? "",
+      unidade: line[2] ?? "",
+      plantao: line[3] ?? "",
+      turno: line[4] ?? "",
+      ocorrencia: line[5] ?? "",
+      qtd: Number(line[6] || 0),
+      tempoNaoCoberto: line[7] ?? "",
+      absenteismo: line[8] ?? "",
+      desconto: line[9] ?? "",
+      colaborador: line[10] ?? "",
+      cobertura: line[11] ?? "",
+      pctAbs: line[12] ?? "",
+    };
+
+    obj._dateObj = faParseDate(obj.data);
+    obj._day = obj._dateObj ? obj._dateObj.getDate() : null;
+    obj._year = obj._dateObj ? obj._dateObj.getFullYear() : null;
+    obj._month = obj._dateObj ? obj._dateObj.getMonth() + 1 : null;
+    obj._absHours = faParseHoursToDecimal(obj.absenteismo);
+    obj._naoCobertoHours = faParseHoursToDecimal(obj.tempoNaoCoberto);
+
+    return obj;
+  });
+}
+
+async function faLoadWithCache() {
+  const now = Date.now();
+
+  if (faltasAltumCache && now - faltasAltumCacheTime < FALTAS_ALTUM_CACHE_TTL) {
+    return faltasAltumCache;
+  }
+
+  const rows = await faLoadRaw();
+  faltasAltumCache = rows;
+  faltasAltumCacheTime = now;
+
+  console.log("FALTAS ALTUM cache atualizado:", rows.length);
+
+  return faltasAltumCache;
+}
+
+function faApplyFilters(rows, query) {
+  const unidade = faSplitMulti(query.unidade);
+  const plantao = faSplitMulti(query.plantao);
+  const turno = faSplitMulti(query.turno);
+  const ocorrencia = faSplitMulti(query.ocorrencia);
+  const colaborador = faSplitMulti(query.colaborador);
+  const cobertura = faSplitMulti(query.cobertura);
+  const ano = faSplitMulti(query.ano);
+  const mes = faSplitMulti(query.mes);
+  const dia = faSplitMulti(query.dia);
+  const busca = faNormLower(query.busca);
+
+  return rows.filter((row) => {
+    if (!faMatchesMulti(row.unidade, unidade)) return false;
+    if (!faMatchesMulti(row.plantao, plantao)) return false;
+    if (!faMatchesMulti(row.turno, turno)) return false;
+    if (!faMatchesMulti(row.ocorrencia, ocorrencia)) return false;
+    if (!faMatchesMulti(row.colaborador, colaborador)) return false;
+    if (!faMatchesMulti(row.cobertura, cobertura)) return false;
+    if (ano.length && !ano.includes(String(row._year || ""))) return false;
+    if (mes.length && !mes.includes(String(row._month || ""))) return false;
+    if (dia.length && !dia.includes(String(row._day || ""))) return false;
+
+    if (busca) {
+      const text = Object.values(row)
+        .filter((v) => typeof v !== "object")
+        .join(" ")
+        .toLowerCase();
+
+      if (!text.includes(busca)) return false;
+    }
+
+    return true;
+  });
+}
+
+function faApplyFiltersWithoutPeriod(rows, query) {
+  return faApplyFilters(rows, {
+    ...query,
+    periodoTipo: "",
+    dataRef: "",
+  });
+}
+
+function faFilterRowsByPeriod(rows, query) {
+  const period = faResolvePeriodFromQuery(query, rows);
+
+  if (!period.start || !period.end) {
+    return { rows, period };
+  }
+
+  const filtered = rows.filter((row) => {
+    const dt = row._dateObj;
+    return dt && dt >= period.start && dt <= period.end;
+  });
+
+  return { rows: filtered, period };
+}
+
+app.get("/api/faltas-altum-filtros", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const uniq = (getter) =>
+      [...new Set(rows.map(getter).map(v => faNorm(v)).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const uniqNum = (getter) =>
+      [...new Set(rows.map(getter).map(v => String(v || "")).filter(Boolean))]
+        .sort((a, b) => Number(a) - Number(b));
+
+    return res.json({
+      unidade: uniq(r => r.unidade),
+      plantao: uniq(r => r.plantao),
+      turno: uniq(r => r.turno),
+      ocorrencia: uniq(r => r.ocorrencia),
+      colaborador: uniq(r => r.colaborador),
+      cobertura: uniq(r => r.cobertura),
+      ano: uniqNum(r => r._year),
+      mes: uniqNum(r => r._month),
+      dia: uniqNum(r => r._day),
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-filtros:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const filteredRows = faApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = faFilterRowsByPeriod(filteredRows, req.query);
+
+    const baseFalta = periodRows.filter(faIsFaltaOuPostoVago);
+
+    const totalOcorrencias = periodRows.length;
+    const totalQtd = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const totalHorasAbs = baseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
+    const totalHorasNaoCobertas = periodRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
+    const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
+    const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
+
+    const horasPrevistas = totalQtd * 12;
+    const absPercentual = horasPrevistas > 0 ? (totalHorasAbs / horasPrevistas) * 100 : 0;
+
+    const comparison = faGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
+
+    const previousRows = baseNoPeriodRows.filter((row) => {
+      const dt = row._dateObj;
+      return (
+        dt &&
+        comparison.previousStart &&
+        comparison.previousEnd &&
+        dt >= comparison.previousStart &&
+        dt <= comparison.previousEnd
+      );
+    });
+
+    const previousBaseFalta = previousRows.filter(faIsFaltaOuPostoVago);
+
+    const qtdAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const horasAbsAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row._absHours || 0), 0);
+    const horasPrevistasAnterior = qtdAnterior * 12;
+    const absPercentualAnterior =
+      horasPrevistasAnterior > 0 ? (horasAbsAnterior / horasPrevistasAnterior) * 100 : 0;
+
+    return res.json({
+      totalOcorrencias,
+      totalQtd,
+      totalHorasAbs,
+      totalHorasAbsFmt: faFormatHoursDecimal(totalHorasAbs),
+      totalHorasNaoCobertas,
+      totalHorasNaoCobertasFmt: faFormatHoursDecimal(totalHorasNaoCobertas),
+      totalColaboradores,
+      totalUnidades,
+
+      absPercentual,
+      absPercentualAnterior,
+      variacaoQtd: faPercentChange(totalQtd, qtdAnterior),
+      variacaoAbs: faPercentChange(absPercentual, absPercentualAnterior),
+
+      comparativoLabel: comparison.label || "base anterior",
+      periodoAtualInicio: comparison.currentStart ? faFormatBR(comparison.currentStart) : "",
+      periodoAtualFim: comparison.currentEnd ? faFormatBR(comparison.currentEnd) : "",
+      periodoAnteriorInicio: comparison.previousStart ? faFormatBR(comparison.previousStart) : "",
+      periodoAnteriorFim: comparison.previousEnd ? faFormatBR(comparison.previousEnd) : "",
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-resumo:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/faltas-altum-graficos", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const filteredRows = faApplyFilters(rows, req.query);
+    const { rows: periodRows, period } = faFilterRowsByPeriod(filteredRows, req.query);
+
+    const baseFalta = periodRows.filter(faIsFaltaOuPostoVago);
+
+    const porDia = {};
+    for (let i = 1; i <= 31; i++) porDia[i] = 0;
+
+    const porOcorrencia = {};
+    const porUnidade = {};
+    const porTurno = {};
+    const porPlantao = {};
+
+    baseFalta.forEach((row) => {
+      const qtd = Number(row.qtd || 0);
+
+      if (row._day) porDia[row._day] += qtd;
+
+      const ocorrencia = faNorm(row.ocorrencia) || "Sem ocorrência";
+      porOcorrencia[ocorrencia] = (porOcorrencia[ocorrencia] || 0) + qtd;
+
+      const unidade = faNorm(row.unidade) || "Sem unidade";
+      porUnidade[unidade] = (porUnidade[unidade] || 0) + qtd;
+
+      const turno = faNorm(row.turno) || "Sem turno";
+      porTurno[turno] = (porTurno[turno] || 0) + qtd;
+
+      const plantao = faNorm(row.plantao) || "Sem plantão";
+      porPlantao[plantao] = (porPlantao[plantao] || 0) + qtd;
+    });
+
+    const comparison = faGetComparisonWindow(period.start, period.end);
+    const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
+    const previousBaseFalta = baseNoPeriodRows
+      .filter((row) => {
+        const dt = row._dateObj;
+        return (
+          dt &&
+          comparison.previousStart &&
+          comparison.previousEnd &&
+          dt >= comparison.previousStart &&
+          dt <= comparison.previousEnd
+        );
+      })
+      .filter(faIsFaltaOuPostoVago);
+
+    const atual = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+    const anterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
+
+    return res.json({
+      porDia,
+      porOcorrencia,
+      porUnidade,
+      porTurno,
+      porPlantao,
+      comparativo: {
+        atual,
+        anterior,
+        label: comparison.label || "base anterior",
+      },
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-graficos:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+app.get("/api/faltas-altum-detalhes", requireAuth, async (req, res) => {
+  try {
+    const rows = await faLoadWithCache();
+
+    const filteredRows = faApplyFilters(rows, req.query);
+    const { rows: periodRows } = faFilterRowsByPeriod(filteredRows, req.query);
+
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 30), 1), 200);
+
+    const sorted = [...periodRows].sort((a, b) => {
+      const ad = a._dateObj ? a._dateObj.getTime() : 0;
+      const bd = b._dateObj ? b._dateObj.getTime() : 0;
+      return bd - ad;
+    });
+
+    const total = sorted.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const currentPage = Math.min(page, totalPages);
+    const start = (currentPage - 1) * limit;
+
+    const rowsOut = sorted.slice(start, start + limit).map((row) => ({
+      data: row._dateObj ? faFormatBR(row._dateObj) : row.data || "",
+      unidade: row.unidade || "",
+      plantao: row.plantao || "",
+      turno: row.turno || "",
+      ocorrencia: row.ocorrencia || "",
+      qtd: Number(row.qtd || 0),
+      absenteismo: row.absenteismo || "",
+      colaborador: row.colaborador || "",
+      cobertura: row.cobertura || "",
+    }));
+
+    return res.json({
+      total,
+      page: currentPage,
+      limit,
+      totalPages,
+      rows: rowsOut,
+      ultimaAtualizacao: faGetHoraAtualizacaoBR(),
+    });
+  } catch (error) {
+    console.error("Erro /api/faltas-altum-detalhes:", error);
+    return res.status(500).json({ ok: false, message: error.message });
+  }
+});
+
+
 // ================== ERROS ==================
 
 app.use((req, res) => {

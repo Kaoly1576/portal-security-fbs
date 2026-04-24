@@ -6338,17 +6338,45 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
     const baseFalta = periodRows.filter(faIsFaltaOuPostoVago);
 
     const totalOcorrencias = periodRows.length;
-    const totalQtd = baseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const totalHorasNaoCobertas = periodRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
-    const totalColaboradores = new Set(periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)).size;
-    const totalUnidades = new Set(periodRows.map(r => faNorm(r.unidade)).filter(Boolean)).size;
 
+    // Total de pessoas que faltaram ou posto vago
+    const totalQtd = baseFalta.reduce((sum, row) => {
+      return sum + Number(row.qtd || 0);
+    }, 0);
+
+    // Horas descobertas / não cobertas
+    const totalHorasNaoCobertas = periodRows.reduce((sum, row) => {
+      return sum + Number(row._naoCobertoHours || 0);
+    }, 0);
+
+    const totalColaboradores = new Set(
+      periodRows.map(r => faNorm(r.colaborador)).filter(Boolean)
+    ).size;
+
+    const totalUnidades = new Set(
+      periodRows.map(r => faNorm(r.unidade)).filter(Boolean)
+    ).size;
+
+    // Base fixa de agentes considerando filtros de unidade e turno
     const baseAgentes = faGetBaseAgentesFromQuery(req.query);
-    const baseHoras = baseAgentes * 12;
 
-    // ABS = (faltas/posto vago * 12h + horas descobertas) / base planejada
-    const horasImpactadas = (totalQtd * 12) + totalHorasNaoCobertas;
-    const absPercentual = baseHoras > 0 ? (horasImpactadas / baseHoras) * 100 : 0;
+    // Quantidade de dias do período filtrado
+    const diasPeriodo =
+      period.start && period.end
+        ? faDiffDaysInclusive(period.start, period.end)
+        : 1;
+
+    // Horas planejadas corretas
+    // Exemplo mês completo: 168 agentes x 12h x dias do mês
+    const baseHoras = baseAgentes * 12 * diasPeriodo;
+
+    // Horas impactadas
+    // Falta/posto vago conta 12h cada + tempo realmente descoberto
+    const horasFaltasPostoVago = totalQtd * 12;
+    const horasImpactadas = horasFaltasPostoVago + totalHorasNaoCobertas;
+
+    const absPercentual =
+      baseHoras > 0 ? (horasImpactadas / baseHoras) * 100 : 0;
 
     const comparison = faGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = faApplyFiltersWithoutPeriod(rows, req.query);
@@ -6366,25 +6394,52 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
 
     const previousBaseFalta = previousRows.filter(faIsFaltaOuPostoVago);
 
-    const qtdAnterior = previousBaseFalta.reduce((sum, row) => sum + Number(row.qtd || 0), 0);
-    const horasNaoCobertasAnterior = previousRows.reduce((sum, row) => sum + Number(row._naoCobertoHours || 0), 0);
-    const horasImpactadasAnterior = (qtdAnterior * 12) + horasNaoCobertasAnterior;
-    const absPercentualAnterior = baseHoras > 0 ? (horasImpactadasAnterior / baseHoras) * 100 : 0;
+    const qtdAnterior = previousBaseFalta.reduce((sum, row) => {
+      return sum + Number(row.qtd || 0);
+    }, 0);
+
+    const horasNaoCobertasAnterior = previousRows.reduce((sum, row) => {
+      return sum + Number(row._naoCobertoHours || 0);
+    }, 0);
+
+    const diasPeriodoAnterior =
+      comparison.previousStart && comparison.previousEnd
+        ? faDiffDaysInclusive(comparison.previousStart, comparison.previousEnd)
+        : diasPeriodo;
+
+    const baseHorasAnterior = baseAgentes * 12 * diasPeriodoAnterior;
+
+    const horasImpactadasAnterior =
+      (qtdAnterior * 12) + horasNaoCobertasAnterior;
+
+    const absPercentualAnterior =
+      baseHorasAnterior > 0
+        ? (horasImpactadasAnterior / baseHorasAnterior) * 100
+        : 0;
 
     return res.json({
       totalOcorrencias,
       totalQtd,
+
       totalHorasNaoCobertas,
       totalHorasNaoCobertasFmt: faFormatHoursDecimal(totalHorasNaoCobertas),
+
       totalColaboradores,
       totalUnidades,
+
       baseAgentes,
+      diasPeriodo,
       baseHoras,
+
+      horasFaltasPostoVago,
+      horasFaltasPostoVagoFmt: faFormatHoursDecimal(horasFaltasPostoVago),
+
       horasImpactadas,
       horasImpactadasFmt: faFormatHoursDecimal(horasImpactadas),
 
       absPercentual,
       absPercentualAnterior,
+
       variacaoQtd: faPercentChange(totalQtd, qtdAnterior),
       variacaoAbs: faPercentChange(absPercentual, absPercentualAnterior),
 
@@ -6393,6 +6448,7 @@ app.get("/api/faltas-altum-resumo", requireAuth, async (req, res) => {
       periodoAtualFim: comparison.currentEnd ? faFormatBR(comparison.currentEnd) : "",
       periodoAnteriorInicio: comparison.previousStart ? faFormatBR(comparison.previousStart) : "",
       periodoAnteriorFim: comparison.previousEnd ? faFormatBR(comparison.previousEnd) : "",
+
       ultimaAtualizacao: faGetHoraAtualizacaoBR(),
     });
   } catch (error) {

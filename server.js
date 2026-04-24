@@ -911,16 +911,7 @@ app.get("/logout", (req, res) => {
   });
 });
 
-// ================== ERROS ==================
 
-app.use((req, res) => {
-  return res.status(404).send("Página não encontrada.");
-});
-
-app.use((err, req, res, next) => {
-  console.error("Erro não tratado:", err);
-  return res.status(500).send("Erro interno do servidor.");
-});
 
 // ================== ACCESS DASHBOARD ==================
 
@@ -4769,6 +4760,17 @@ app.get("/api/checklist-debug", requireAuth, async (req, res) => {
     console.error("Erro /api/checklist-debug:", error);
     return res.status(500).json({ ok: false, message: error.message });
   }
+});
+
+// ================== ERROS ==================
+
+app.use((req, res) => {
+  return res.status(404).send("Página não encontrada.");
+});
+
+app.use((err, req, res, next) => {
+  console.error("Erro não tratado:", err);
+  return res.status(500).send("Erro interno do servidor.");
 });
 
 

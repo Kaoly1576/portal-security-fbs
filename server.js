@@ -7159,6 +7159,51 @@ app.get("/api/dados", requireAuth, async (req, res) => {
   }
 });
 
+// ================== VARREDURA ==================
+
+async function buscarPlanilhaVarredura() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: "1NTliBuXKzIXE99Lj3O2oT1B5PovdL7mTaTCReM-LbvM",
+    range: "VARREDURA!A:Z", // ajuste se necessário
+  });
+
+  return response.data.values || [];
+}
+
+app.get("/api/varredura", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaVarredura();
+
+    if (!dados || dados.length === 0) {
+      return res.json([]);
+    }
+
+    const cabecalho = dados[0];
+    const linhas = dados.slice(1);
+
+    const objetos = linhas.map((linha) => {
+      const obj = {};
+
+      cabecalho.forEach((col, i) => {
+        const columnName = normalizeText(col);
+        const value = linha[i] ?? "";
+
+        obj[columnName] = normalizeText(value);
+      });
+
+      return obj;
+    });
+
+    res.json(objetos);
+
+  } catch (erro) {
+    console.error("Erro VARREDURA:", erro);
+    res.json([]);
+  }
+});
+
 // ================== GOOGLE SHEETS HC ==================
 
 async function buscarPlanilhaHC() {

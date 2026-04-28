@@ -7068,7 +7068,7 @@ app.post("/api/marcacao-salvar", requireAuth, async (req, res) => {
   }
 });
 
-// ================== AV-LOST ==================
+// ================== AV- LOST ==================
 
 function normalizeText(value) {
   return String(value || "")
@@ -7079,15 +7079,15 @@ function normalizeText(value) {
 function normalizeName(value) {
   if (!value) return "";
 
-  let name = normalizeText(value)
+  const name = normalizeText(value)
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
   const corrections = {
-    "ERICK": "ERIK",
-    "ERIC": "ERIK",
-    "BIANKA": "BIANCA",
+    ERICK: "ERIK",
+    ERIC: "ERIK",
+    BIANKA: "BIANCA",
     "BIANCA ": "BIANCA",
     "HEITOR ": "HEITOR",
   };
@@ -7103,30 +7103,26 @@ function normalizeUnidade(value) {
   return normalizeText(value).toUpperCase();
 }
 
-// ================== BUSCAR PLANILHA ==================
-
-async function buscarPlanilhaAVLost() {
+async function buscarPlanilha() {
   const sheets = await conectarSheets();
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: "1NTliBuXKzIXE99Lj3O2oT1B5PovdL7mTaTCReM-LbvM",
-    range: "AV!A:M", // ✅ NOVO RANGE
+    range: "AV!A:M",
   });
 
   return response.data.values || [];
 }
 
-// ================== API ==================
-
 app.get("/api/dados", requireAuth, async (req, res) => {
   try {
-    const dados = await buscarPlanilhaAVLost();
+    const dados = await buscarPlanilha();
 
     if (!dados || dados.length === 0) {
       return res.json([]);
     }
 
-    const cabecalho = dados[0];
+    const cabecalho = dados[0] || [];
     const linhas = dados.slice(1);
 
     const objetos = linhas.map((linha) => {
@@ -7138,7 +7134,6 @@ app.get("/api/dados", requireAuth, async (req, res) => {
 
         const colUpper = columnName.toUpperCase();
 
-        // 🔥 NORMALIZAÇÕES
         if (colUpper.includes("NOME") || colUpper.includes("COLABORADOR")) {
           value = normalizeName(value);
         }
@@ -7158,9 +7153,8 @@ app.get("/api/dados", requireAuth, async (req, res) => {
     });
 
     return res.json(objetos);
-
-  } catch (erro) {
-    console.error("❌ Erro ao buscar dados AV-LOST:", erro);
+  } catch (e) {
+    console.log("Erro /api/dados:", e);
     return res.json([]);
   }
 });

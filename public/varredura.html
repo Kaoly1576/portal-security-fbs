@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Varredura</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<style>
+body{
+  background:#0b0f16;
+  color:#fff;
+  font-family:Arial;
+  padding:20px;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:20px;
+}
+
+.header img{
+  width:40px;
+}
+
+.filters{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-bottom:20px;
+}
+
+select{
+  padding:8px;
+  background:#1a1f29;
+  color:#fff;
+  border:1px solid #333;
+}
+
+.chart{
+  background:#1a1f29;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+
+canvas{
+  max-height:300px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <img src="/images/logo.png">
+  <h2>Dashboard Varredura</h2>
+</div>
+
+<div class="filters">
+  <select id="filtroColaborador"></select>
+  <select id="filtroStatus"></select>
+  <select id="filtroDia"></select>
+  <button onclick="aplicarFiltro()">Aplicar</button>
+</div>
+
+<div class="chart">
+  <h3>Quantidade por Status</h3>
+  <canvas id="chartStatus"></canvas>
+</div>
+
+<div class="chart">
+  <h3>Produtividade por Colaborador</h3>
+  <canvas id="chartColaborador"></canvas>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+let data = [];
+let chartStatus;
+let chartColab;
+
+async function carregar(){
+  const res = await fetch("/api/varredura");
+  data = await res.json();
+
+  montarFiltros();
+  render();
+}
+
+function montarFiltros(){
+  const colabs = [...new Set(data.map(d=>d["colaborador"]))];
+  const status = [...new Set(data.map(d=>d["status"]))];
+
+  const f1 = document.getElementById("filtroColaborador");
+  const f2 = document.getElementById("filtroStatus");
+
+  f1.innerHTML = `<option value="">Todos</option>` + colabs.map(c=>`<option>${c}</option>`).join("");
+  f2.innerHTML = `<option value="">Todos</option>` + status.map(s=>`<option>${s}</option>`).join("");
+}
+
+function aplicarFiltro(){
+  render();
+}
+
+function render(){
+
+  if(chartStatus) chartStatus.destroy();
+  if(chartColab) chartColab.destroy();
+
+  const colabFiltro = document.getElementById("filtroColaborador").value;
+  const statusFiltro = document.getElementById("filtroStatus").value;
+
+  const filtrado = data.filter(d=>{
+    return (!colabFiltro || d.colaborador===colabFiltro)
+    && (!statusFiltro || d.status===statusFiltro);
+  });
+
+  // STATUS
+  const statusMap = {};
+  filtrado.forEach(d=>{
+    const s = d.status || "Sem valor";
+    statusMap[s] = (statusMap[s]||0)+1;
+  });
+
+  chartStatus = new Chart(document.getElementById("chartStatus"),{
+    type:"bar",
+    data:{
+      labels:Object.keys(statusMap),
+      datasets:[{
+        data:Object.values(statusMap),
+        backgroundColor:"#ff7a1a"
+      }]
+    },
+    options:{
+      plugins:{ datalabels:{ color:"#fff" } }
+    }
+  });
+
+  // COLABORADOR
+  const colabMap = {};
+  filtrado.forEach(d=>{
+    const c = d.colaborador || "Sem valor";
+    colabMap[c] = (colabMap[c]||0)+1;
+  });
+
+  chartColab = new Chart(document.getElementById("chartColaborador"),{
+    type:"bar",
+    data:{
+      labels:Object.keys(colabMap),
+      datasets:[{
+        data:Object.values(colabMap),
+        backgroundColor:"#60a5fa"
+      }]
+    },
+    options:{
+      indexAxis:"y",
+      plugins:{ datalabels:{ color:"#fff" } }
+    }
+  });
+}
+
+carregar();
+</script>
+
+</body>
+</html>

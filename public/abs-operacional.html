@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ABS Operacional FBS</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+:root{
+  --bg:#0b0f16;--panel:#1a1f29;--border:rgba(255,255,255,.10);
+  --text:#f3f4f6;--muted:#9ca3af;--orange:#ff7a1a;--orange2:#ff5a00;
+  --blue:#60a5fa;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+  --shadow:0 10px 30px rgba(0,0,0,.28)
+}
+html,body{
+  min-height:100%;
+  background:radial-gradient(circle at top,rgba(255,255,255,.08),transparent 28%),
+  linear-gradient(180deg,#3c424c 0%,#171b22 18%,#0b0f16 42%,#0b0f16 100%);
+  color:var(--text);overflow-x:hidden
+}
+.page{max-width:1440px;margin:0 auto;padding:14px}
+.hero{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:linear-gradient(90deg,rgba(255,122,26,.10),rgba(255,255,255,.03));
+  border:1px solid var(--border);border-radius:18px;padding:12px 16px;
+  box-shadow:var(--shadow);margin-bottom:10px
+}
+.hero-left{display:flex;align-items:center;gap:12px}
+.hero-logo{width:34px;height:34px;border-radius:50%;background:#1c140d;border:1px solid rgba(255,122,26,.2);object-fit:contain;padding:4px}
+.hero-title{font-size:22px;font-weight:800;color:var(--orange)}
+.hero-subtitle{font-size:11px;color:#cbd5e1;margin-top:2px}
+.hero-right{display:flex;align-items:flex-start;gap:10px}
+.top-info{text-align:right;font-size:11px;color:#d1d5db;line-height:1.45}
+.top-info strong{color:var(--orange)}
+.btn-top{
+  background:#2a2f39;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;white-space:nowrap
+}
+.panel{
+  background:linear-gradient(90deg,rgba(255,255,255,.03),rgba(255,255,255,.015));
+  border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);margin-bottom:8px
+}
+.panel-header{padding:10px 12px 6px;border-bottom:1px solid rgba(255,255,255,.06)}
+.panel-title{font-size:18px;font-weight:800}
+.panel-subtitle{font-size:11px;color:#cbd5e1;margin-top:2px}
+.panel-body{padding:10px 12px 12px}
+.filters-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;position:relative}
+.field label{font-size:10px;font-weight:700;color:#e5e7eb}
+.field input{
+  width:100%;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.10);
+  background:#191d25;color:#fff;font-size:11px;padding:8px 10px;outline:none
+}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.btn{height:32px;border:none;border-radius:8px;padding:0 14px;font-size:11px;font-weight:800;cursor:pointer}
+.btn-apply{background:var(--orange2);color:#fff}
+.btn-clear{background:#2b313c;color:#fff;border:1px solid rgba(255,255,255,.08)}
+.filters-help{font-size:10px;color:#d1d5db;margin-top:4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.kpi-card{
+  background:linear-gradient(90deg,rgba(255,255,255,.025),rgba(255,255,255,.018));
+  border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px 12px;min-width:0
+}
+.kpi-label{font-size:10px;font-weight:800;color:#d1d5db;text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-size:34px;font-weight:900;line-height:1;color:var(--orange);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-sub{font-size:11px;margin-top:6px;color:#cbd5e1;min-height:15px}
+.chart-grid-middle{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.chart-card{
+  background:linear-gradient(90deg,rgba(255,255,255,.025),rgba(255,255,255,.018));
+  border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px;min-width:0
+}
+.chart-title{text-align:center;font-size:13px;font-weight:800;color:var(--orange);margin-bottom:8px}
+.chart-wrap{position:relative;width:100%;height:250px}
+.chart-wrap.tall{height:380px}
+.wide-chart .chart-wrap{height:270px}
+.table-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.table-wrap{overflow:auto;max-height:380px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#131820}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:8px 10px;font-size:10px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;text-align:left}
+th{position:sticky;top:0;z-index:2;background:#1d222b;color:#fff;font-weight:800}
+tr:hover td{background:#1a2029}
+.empty{padding:18px;color:#cbd5e1;font-size:12px}
+.multi-select{position:relative;width:100%}
+.multi-select-trigger{
+  width:100%;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.10);
+  background:#191d25;color:#fff;font-size:11px;padding:8px 28px 8px 10px;
+  display:flex;align-items:center;cursor:pointer;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.multi-select-trigger::after{content:"▼";position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:9px;color:#d1d5db}
+.multi-select.open .multi-select-trigger{border-color:rgba(255,122,26,.55);box-shadow:0 0 0 2px rgba(255,122,26,.08)}
+.multi-select-menu{
+  position:absolute;top:36px;left:0;width:100%;background:#171b22;border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;box-shadow:0 12px 24px rgba(0,0,0,.35);display:none;z-index:9999;padding:6px
+}
+.multi-select.open .multi-select-menu{display:block}
+.multi-search{margin-bottom:6px}
+.multi-search input{width:100%;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:#11161d;color:#fff;font-size:11px;padding:7px 9px;outline:none}
+.multi-actions{display:flex;gap:6px;margin-bottom:6px}
+.multi-actions button{flex:1;height:28px;border:none;border-radius:7px;background:#262c37;color:#fff;font-size:10px;font-weight:700;cursor:pointer}
+.multi-options{max-height:180px;overflow:auto}
+.multi-option{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:7px;font-size:11px;color:#fff;cursor:pointer}
+.multi-option:hover{background:#232a35}
+.multi-option input{width:auto;height:auto;accent-color:var(--orange)}
+.multi-empty{padding:8px;color:#cbd5e1;font-size:11px}
+@media(max-width:1300px){.filters-grid{grid-template-columns:repeat(4,1fr)}.kpi-grid{grid-template-columns:repeat(3,1fr)}.chart-grid-middle,.table-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.hero{flex-direction:column;align-items:flex-start}.hero-right{width:100%;justify-content:space-between}.filters-grid,.kpi-grid{grid-template-columns:1fr}.toolbar{flex-direction:column}}
+</style>
+</head>
+
+<body>
+<div class="page">
+
+<section class="hero">
+  <div class="hero-left">
+    <img src="/images/logo.png" class="hero-logo" alt="Logo">
+    <div>
+      <div class="hero-title">ABS OPERACIONAL FBS</div>
+      <div class="hero-subtitle">Headcount, presenteísmo, absenteísmo e turnover operacional</div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="top-info">
+      <div id="userInfo">Carregando usuário...</div>
+      <div id="sheetInfo">Carregando planilha...</div>
+      <div>Última atualização <strong id="updateTime">--:--</strong></div>
+    </div>
+    <a href="/portal" class="btn-top">Voltar ao Portal</a>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <div class="panel-title">Filtros</div>
+    <div class="panel-subtitle">Filtros com multiseleção, busca geral e período.</div>
+  </div>
+  <div class="panel-body">
+    <div class="filters-grid">
+      <div class="field"><label>Data inicial</label><input type="date" id="dateStart"></div>
+      <div class="field"><label>Data final</label><input type="date" id="dateEnd"></div>
+      <div class="field"><label>Busca geral</label><input type="text" id="globalSearch" placeholder="Buscar..."></div>
+
+      <div class="field"><label>Mês</label><div class="multi-select" id="multiMes"><div class="multi-select-trigger" id="triggerMes">Todos</div><div class="multi-select-menu" id="menuMes"></div></div></div>
+      <div class="field"><label>Semana</label><div class="multi-select" id="multiSemana"><div class="multi-select-trigger" id="triggerSemana">Todas</div><div class="multi-select-menu" id="menuSemana"></div></div></div>
+      <div class="field"><label>Turno</label><div class="multi-select" id="multiTurno"><div class="multi-select-trigger" id="triggerTurno">Todos</div><div class="multi-select-menu" id="menuTurno"></div></div></div>
+      <div class="field"><label>Setor</label><div class="multi-select" id="multiSetor"><div class="multi-select-trigger" id="triggerSetor">Todos</div><div class="multi-select-menu" id="menuSetor"></div></div></div>
+
+      <div class="field"><label>Turno/Setor</label><div class="multi-select" id="multiTurnoSetor"><div class="multi-select-trigger" id="triggerTurnoSetor">Todos</div><div class="multi-select-menu" id="menuTurnoSetor"></div></div></div>
+      <div class="field"><label>Station</label><div class="multi-select" id="multiStation"><div class="multi-select-trigger" id="triggerStation">Todas</div><div class="multi-select-menu" id="menuStation"></div></div></div>
+      <div class="field"><label>Processo</label><div class="multi-select" id="multiProcesso"><div class="multi-select-trigger" id="triggerProcesso">Todos</div><div class="multi-select-menu" id="menuProcesso"></div></div></div>
+      <div class="field"><label>BPO</label><div class="multi-select" id="multiBpo"><div class="multi-select-trigger" id="triggerBpo">Todos</div><div class="multi-select-menu" id="menuBpo"></div></div></div>
+      <div class="field"><label>Dia</label><div class="multi-select" id="multiDia"><div class="multi-select-trigger" id="triggerDia">Todos</div><div class="multi-select-menu" id="menuDia"></div></div></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn btn-apply" id="applyFilters">Aplicar</button>
+      <button class="btn btn-clear" id="clearFilters">Limpar</button>
+    </div>
+    <div class="filters-help">Clique no filtro para abrir opções e selecionar vários valores.</div>
+  </div>
+</section>
+
+<section class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Headcount Total</div><div class="kpi-value" id="kpiHC">0</div><div class="kpi-sub">HC Planned</div></div>
+  <div class="kpi-card"><div class="kpi-label">Total de Presenças</div><div class="kpi-value" id="kpiPresenca">0</div><div class="kpi-sub">Soma de presença</div></div>
+  <div class="kpi-card"><div class="kpi-label">Total de Faltas</div><div class="kpi-value" id="kpiFaltas">0</div><div class="kpi-sub">Soma de faltas</div></div>
+  <div class="kpi-card"><div class="kpi-label">Taxa de Absenteísmo</div><div class="kpi-value" id="kpiABS">0%</div><div class="kpi-sub">Faltas / (Faltas + Presenças)</div></div>
+  <div class="kpi-card"><div class="kpi-label">Taxa de Turnover</div><div class="kpi-value" id="kpiTurnover">0%</div><div class="kpi-sub">Turnover / HC</div></div>
+  <div class="kpi-card"><div class="kpi-label">Folgas</div><div class="kpi-value" id="kpiFolgas">0</div><div class="kpi-sub">Soma de folgas</div></div>
+</section>
+
+<section class="panel wide-chart">
+  <div class="panel-body">
+    <div class="chart-title">Tendência HC, Presenças e Faltas por Dia</div>
+    <div class="chart-wrap"><canvas id="chartTendencia"></canvas></div>
+  </div>
+</section>
+
+<section class="chart-grid-middle">
+  <div class="chart-card"><div class="chart-title">Absenteísmo por Setor</div><div class="chart-wrap tall"><canvas id="chartSetor"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Headcount por Station</div><div class="chart-wrap tall"><canvas id="chartStation"></canvas></div></div>
+</section>
+
+<section class="chart-grid-middle">
+  <div class="chart-card"><div class="chart-title">Presença x Faltas por BPO</div><div class="chart-wrap"><canvas id="chartBpo"></canvas></div></div>
+  <div class="chart-card"><div class="chart-title">Turnover por Processo</div><div class="chart-wrap"><canvas id="chartProcesso"></canvas></div></div>
+</section>
+
+<section class="table-grid">
+  <div class="panel">
+    <div class="panel-header"><div class="panel-title" style="font-size:14px;">Análise por Setor</div></div>
+    <div class="panel-body"><div class="table-wrap" id="tableSetor"></div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header"><div class="panel-title" style="font-size:14px;">Análise por Station</div></div>
+    <div class="panel-body"><div class="table-wrap" id="tableStation"></div></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header"><div class="panel-title" style="font-size:14px;text-align:center;">Detalhamento</div></div>
+  <div class="panel-body"><div class="table-wrap" id="tableWrap"></div></div>
+</section>
+
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+
+let rawData=[], filteredData=[], headers=[];
+let chartTendencia, chartSetor, chartStation, chartBpo, chartProcesso;
+
+const C = {
+  dia:["dia","DIA","data","DATA"],
+  turno:["turno","TURNO"],
+  setor:["setor","SETOR"],
+  turnoSetor:["turno_setor","TURNO_SETOR","turno setor"],
+  faltas:["faltas","FALTAS"],
+  presenca:["presenca","PRESENCA","presença","PRESENÇA"],
+  folgas:["folgas","FOLGAS"],
+  turnover:["turnover","TURNOVER"],
+  hc:["hc_planned","HC_PLANNED","hc planned","HC"],
+  abs:["absenteeism_rate","ABSENTEEISM_RATE","absenteismo","absenteeism rate"],
+  semana:["num_semana","NUM_SEMANA","semana"],
+  mes:["num_mes","NUM_MES","mes","mês"],
+  station:["station","STATION","warehouse","WH"],
+  processo:["processo","PROCESSO"],
+  bpo:["bpo","BPO"]
+};
+
+let COL={};
+
+const monthNames={1:"Janeiro",2:"Fevereiro",3:"Março",4:"Abril",5:"Maio",6:"Junho",7:"Julho",8:"Agosto",9:"Setembro",10:"Outubro",11:"Novembro",12:"Dezembro"};
+
+function nText(v){return String(v||"").trim().toLowerCase()}
+function nVal(v){return String(v||"").trim()}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
+function resolve(names){for(const c of names){const f=headers.find(h=>nText(h)===nText(c));if(f)return f}for(const c of names){const f=headers.find(h=>nText(h).includes(nText(c)));if(f)return f}return names[0]}
+function cell(r,c){return r?.[c]??""}
+function num(v){const s=String(v??"").replace("%","").replace(/\./g,"").replace(",",".").replace(/[^\d.-]/g,"");const x=Number(s);return isNaN(x)?0:x}
+function fmt(v){return new Intl.NumberFormat("pt-BR").format(v||0)}
+function pct(v){return `${(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%`}
+
+function parseDate(v){
+  const s=String(v||"").trim();
+  if(!s)return null;
+  const p=s.split("/");
+  if(p.length<2)return null;
+  let d=Number(p[0]), m=Number(p[1]), y=p[2]?Number(p[2]):new Date().getFullYear();
+  if(y<100)y=2000+y;
+  const dt=new Date(y,m-1,d);
+  return isNaN(dt)?null:dt;
+}
+function inputDate(d){if(!(d instanceof Date)||isNaN(d))return"";return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+
+function buildMulti(containerId,triggerId,menuId,values,placeholder){
+  const container=document.getElementById(containerId), trigger=document.getElementById(triggerId), menu=document.getElementById(menuId);
+  menu.innerHTML=`<div class="multi-search"><input type="text" class="multi-search-input" placeholder="Buscar..."></div>
+  <div class="multi-actions"><button type="button" class="select-all">Todos</button><button type="button" class="clear-all">Limpar</button></div>
+  <div class="multi-options"></div>`;
+  const wrap=menu.querySelector(".multi-options"), search=menu.querySelector(".multi-search-input");
+  values.forEach(v=>{
+    const lab=document.createElement("label");
+    lab.className="multi-option";lab.dataset.value=nText(v);
+    lab.innerHTML=`<input type="checkbox" value="${esc(v)}"><span>${esc(v)}</span>`;
+    wrap.appendChild(lab);
+  });
+  if(!values.length)wrap.innerHTML=`<div class="multi-empty">Nenhuma opção disponível</div>`;
+  function upd(){const sel=[...menu.querySelectorAll('input[type="checkbox"]:checked')].map(i=>i.value);trigger.textContent=!sel.length?placeholder:sel.length===1?sel[0]:`${sel.length} selecionados`}
+  trigger.onclick=()=>{document.querySelectorAll(".multi-select").forEach(e=>{if(e!==container)e.classList.remove("open")});container.classList.toggle("open");if(container.classList.contains("open"))setTimeout(()=>search.focus(),30)}
+  menu.querySelector(".select-all").onclick=()=>{menu.querySelectorAll('.multi-option input').forEach(i=>{if(i.closest(".multi-option").style.display!=="none")i.checked=true});upd()}
+  menu.querySelector(".clear-all").onclick=()=>{menu.querySelectorAll('.multi-option input').forEach(i=>i.checked=false);upd()}
+  menu.querySelectorAll('.multi-option input').forEach(i=>i.addEventListener("change",upd));
+  search.addEventListener("input",()=>{const t=nText(search.value);menu.querySelectorAll(".multi-option").forEach(o=>o.style.display=!t||o.dataset.value.includes(t)?"flex":"none")});
+  upd();
+}
+document.addEventListener("click",e=>document.querySelectorAll(".multi-select").forEach(c=>{if(!c.contains(e.target))c.classList.remove("open")}));
+function selected(menuId){return [...document.querySelectorAll(`#${menuId} .multi-option input:checked`)].map(i=>i.value)}
+function unique(col){return [...new Set(rawData.map(r=>nVal(cell(r,col))).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"))}
+function uniqueNum(key){return [...new Set(rawData.map(r=>String(r[key])).filter(Boolean))].sort((a,b)=>Number(a)-Number(b))}
+
+function buildFilters(){
+  buildMulti("multiMes","triggerMes","menuMes",uniqueNum("_month").map(m=>monthNames[Number(m)]),"Todos");
+  buildMulti("multiSemana","triggerSemana","menuSemana",uniqueNum("_week"),"Todas");
+  buildMulti("multiTurno","triggerTurno","menuTurno",unique(COL.turno),"Todos");
+  buildMulti("multiSetor","triggerSetor","menuSetor",unique(COL.setor),"Todos");
+  buildMulti("multiTurnoSetor","triggerTurnoSetor","menuTurnoSetor",unique(COL.turnoSetor),"Todos");
+  buildMulti("multiStation","triggerStation","menuStation",unique(COL.station),"Todas");
+  buildMulti("multiProcesso","triggerProcesso","menuProcesso",unique(COL.processo),"Todos");
+  buildMulti("multiBpo","triggerBpo","menuBpo",unique(COL.bpo),"Todos");
+  buildMulti("multiDia","triggerDia","menuDia",uniqueNum("_day"),"Todos");
+}
+function setDates(){const ds=rawData.map(r=>r._date).filter(Boolean).sort((a,b)=>a-b);if(ds.length){dateStart.value=inputDate(ds[0]);dateEnd.value=inputDate(ds[ds.length-1])}}
+
+function applyFilters(){
+  const search=nText(globalSearch.value), s=dateStart.value?new Date(dateStart.value+"T00:00:00"):null, e=dateEnd.value?new Date(dateEnd.value+"T23:59:59"):null;
+  const meses=selected("menuMes"), semanas=selected("menuSemana"), turnos=selected("menuTurno"), setores=selected("menuSetor"), turnoSetores=selected("menuTurnoSetor"), stations=selected("menuStation"), processos=selected("menuProcesso"), bpos=selected("menuBpo"), dias=selected("menuDia");
+  filteredData=rawData.filter(r=>{
+    const dateOk=(!s||(r._date&&r._date>=s))&&(!e||(r._date&&r._date<=e));
+    const searchOk=!search||headers.some(h=>!h.startsWith("_")&&nText(r[h]).includes(search));
+    return dateOk&&searchOk
+      &&(!meses.length||meses.includes(monthNames[r._month]))
+      &&(!semanas.length||semanas.includes(String(r._week)))
+      &&(!turnos.length||turnos.includes(nVal(cell(r,COL.turno))))
+      &&(!setores.length||setores.includes(nVal(cell(r,COL.setor))))
+      &&(!turnoSetores.length||turnoSetores.includes(nVal(cell(r,COL.turnoSetor))))
+      &&(!stations.length||stations.includes(nVal(cell(r,COL.station))))
+      &&(!processos.length||processos.includes(nVal(cell(r,COL.processo))))
+      &&(!bpos.length||bpos.includes(nVal(cell(r,COL.bpo))))
+      &&(!dias.length||dias.includes(String(r._day)));
+  });
+  updateAll();
+}
+
+function sums(rows){
+  const pres=rows.reduce((a,r)=>a+num(cell(r,COL.presenca)),0);
+  const falt=rows.reduce((a,r)=>a+num(cell(r,COL.faltas)),0);
+  const fol=rows.reduce((a,r)=>a+num(cell(r,COL.folgas)),0);
+  const turn=rows.reduce((a,r)=>a+num(cell(r,COL.turnover)),0);
+  const hc=rows.reduce((a,r)=>a+num(cell(r,COL.hc)),0);
+  const abs=(pres+falt)>0?(falt/(pres+falt))*100:0;
+  const turnRate=hc>0?(turn/hc)*100:0;
+  return {pres,falt,fol,turn,hc,abs,turnRate};
+}
+function updateKpis(){
+  const s=sums(filteredData);
+  kpiHC.textContent=fmt(s.hc);kpiPresenca.textContent=fmt(s.pres);kpiFaltas.textContent=fmt(s.falt);
+  kpiABS.textContent=pct(s.abs);kpiTurnover.textContent=pct(s.turnRate);kpiFolgas.textContent=fmt(s.fol);
+}
+function destroyCharts(){[chartTendencia,chartSetor,chartStation,chartBpo,chartProcesso].forEach(c=>{if(c)c.destroy()})}
+function barOpts(horizontal=false,legend=false){
+  return{indexAxis:horizontal?"y":"x",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:legend,labels:{color:"#e5e7eb",boxWidth:10,font:{size:10}}},tooltip:{backgroundColor:"#111827",titleColor:"#fff",bodyColor:"#e5e7eb"},datalabels:{color:"#fff",anchor:horizontal?"end":"end",align:horizontal?"right":"top",font:{weight:"700",size:10},formatter:v=>v>0?fmt(v):""}},scales:{x:{beginAtZero:true,ticks:{color:"#d1d5db",font:{size:9}},grid:{color:"rgba(255,255,255,.05)"}},y:{beginAtZero:true,ticks:{color:"#d1d5db",font:{size:9}},grid:{color:"rgba(255,255,255,.05)"}}}}
+}
+function group(keyCol){
+  const m={};
+  filteredData.forEach(r=>{const k=nVal(cell(r,keyCol))||"Sem valor";if(!m[k])m[k]=[];m[k].push(r)});
+  return m;
+}
+function topEntries(map,calc,limit=10){return Object.entries(map).map(([k,rows])=>[k,calc(rows)]).sort((a,b)=>b[1]-a[1]).slice(0,limit)}
+
+function renderCharts(){
+  destroyCharts();
+  const days=[...new Set(filteredData.map(r=>r._day).filter(Boolean))].sort((a,b)=>a-b);
+  const byDay={};days.forEach(d=>byDay[d]=[]);
+  filteredData.forEach(r=>{if(r._day)byDay[r._day].push(r)});
+  chartTendencia=new Chart(chartTendenciaEl(),{type:"line",data:{labels:days.map(String),datasets:[
+    {label:"HC Total",data:days.map(d=>sums(byDay[d]).hc),borderColor:"#ff7a1a",backgroundColor:"#ff7a1a",tension:.3,pointRadius:3,fill:false},
+    {label:"Presenças",data:days.map(d=>sums(byDay[d]).pres),borderColor:"#22c55e",backgroundColor:"#22c55e",tension:.3,pointRadius:3,fill:false},
+    {label:"Faltas",data:days.map(d=>sums(byDay[d]).falt),borderColor:"#ef4444",backgroundColor:"#ef4444",tension:.3,pointRadius:3,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:"#e5e7eb",boxWidth:10,font:{size:10}}},datalabels:{color:"#fff",align:"top",anchor:"end",font:{size:9,weight:"700"},formatter:v=>v>0?fmt(v):""}},scales:{x:{ticks:{color:"#d1d5db",font:{size:9}},grid:{color:"rgba(255,255,255,.05)"}},y:{beginAtZero:true,ticks:{color:"#d1d5db",font:{size:9}},grid:{color:"rgba(255,255,255,.05)"}}}}});
+
+  const setor=topEntries(group(COL.setor),r=>sums(r).abs,12);
+  chartSetor=new Chart(document.getElementById("chartSetor"),{type:"bar",data:{labels:setor.map(x=>x[0]),datasets:[{label:"% ABS",data:setor.map(x=>x[1]),backgroundColor:"#ff7a1a",borderRadius:8}]},options:barOpts(true,false)});
+
+  const station=topEntries(group(COL.station),r=>sums(r).hc,12);
+  chartStation=new Chart(document.getElementById("chartStation"),{type:"bar",data:{labels:station.map(x=>x[0]),datasets:[{label:"HC",data:station.map(x=>x[1]),backgroundColor:"#60a5fa",borderRadius:8}]},options:barOpts(true,false)});
+
+  const bpo=Object.entries(group(COL.bpo)).map(([k,rows])=>[k,sums(rows)]).sort((a,b)=>b[1].pres+b[1].falt-a[1].pres-a[1].falt).slice(0,10);
+  chartBpo=new Chart(document.getElementById("chartBpo"),{type:"bar",data:{labels:bpo.map(x=>x[0]),datasets:[{label:"Presenças",data:bpo.map(x=>x[1].pres),backgroundColor:"#22c55e",borderRadius:8},{label:"Faltas",data:bpo.map(x=>x[1].falt),backgroundColor:"#ef4444",borderRadius:8}]},options:barOpts(false,true)});
+
+  const proc=topEntries(group(COL.processo),r=>sums(r).turnRate,10);
+  chartProcesso=new Chart(document.getElementById("chartProcesso"),{type:"bar",data:{labels:proc.map(x=>x[0]),datasets:[{label:"% Turnover",data:proc.map(x=>x[1]),backgroundColor:"#f59e0b",borderRadius:8}]},options:barOpts(true,false)});
+}
+function chartTendenciaEl(){return document.getElementById("chartTendencia")}
+
+function renderTableBy(col,id){
+  const rows=Object.entries(group(col)).map(([k,arr])=>[k,sums(arr)]).sort((a,b)=>b[1].hc-a[1].hc);
+  let html="<table><thead><tr><th>Nome</th><th>HC</th><th>Presença</th><th>Faltas</th><th>% ABS</th><th>% Turn</th></tr></thead><tbody>";
+  rows.forEach(([k,s])=>html+=`<tr><td>${esc(k)}</td><td>${fmt(s.hc)}</td><td>${fmt(s.pres)}</td><td>${fmt(s.falt)}</td><td>${pct(s.abs)}</td><td>${pct(s.turnRate)}</td></tr>`);
+  html+="</tbody></table>";
+  document.getElementById(id).innerHTML=html;
+}
+function renderDetail(){
+  if(!filteredData.length){tableWrap.innerHTML=`<div class="empty">Nenhum dado encontrado.</div>`;return}
+  let html="<table><thead><tr>";
+  headers.filter(h=>!h.startsWith("_")).forEach(h=>html+=`<th>${esc(h)}</th>`);
+  html+="</tr></thead><tbody>";
+  filteredData.slice(0,300).forEach(r=>{html+="<tr>";headers.filter(h=>!h.startsWith("_")).forEach(h=>html+=`<td>${esc(r[h])}</td>`);html+="</tr>"});
+  html+="</tbody></table>";tableWrap.innerHTML=html;
+}
+function updateSheetInfo(){sheetInfo.textContent=`Linhas: ${fmt(rawData.length)} | Filtradas: ${fmt(filteredData.length)} | Colunas: ${headers.filter(h=>!h.startsWith("_")).length}`}
+function updateAll(){updateSheetInfo();updateKpis();renderCharts();renderTableBy(COL.setor,"tableSetor");renderTableBy(COL.station,"tableStation");renderDetail();updateTime.textContent=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}
+
+function clearAll(){
+  globalSearch.value="";dateStart.value="";dateEnd.value="";
+  document.querySelectorAll('.multi-select-menu input[type="checkbox"]').forEach(i=>i.checked=false);
+  document.querySelectorAll('.multi-search-input').forEach(i=>i.value="");
+  document.querySelectorAll('.multi-option').forEach(o=>o.style.display="flex");
+  [["triggerMes","Todos"],["triggerSemana","Todas"],["triggerTurno","Todos"],["triggerSetor","Todos"],["triggerTurnoSetor","Todos"],["triggerStation","Todas"],["triggerProcesso","Todos"],["triggerBpo","Todos"],["triggerDia","Todos"]].forEach(([id,t])=>document.getElementById(id).textContent=t);
+  setDates();applyFilters();
+}
+async function loadUser(){try{const r=await fetch("/api/me");const u=await r.json();userInfo.textContent=`${u.nome||"Usuário"} | ${u.perfil||"usuario"}`}catch{userInfo.textContent="Usuário não identificado"}}
+async function loadData(){
+  try{
+    const r=await fetch("/api/abs-operacional");const data=await r.json();
+    rawData=Array.isArray(data)?data.map(x=>({...x})):[];
+    headers=[...new Set(rawData.flatMap(r=>Object.keys(r)))];
+    Object.keys(C).forEach(k=>COL[k]=resolve(C[k]));
+    rawData=rawData.map(r=>{const dt=parseDate(cell(r,COL.dia));return{...r,_date:dt,_day:dt?dt.getDate():"",_month:num(cell(r,COL.mes))||(dt?dt.getMonth()+1:""),_week:num(cell(r,COL.semana))}});
+    buildFilters();setDates();filteredData=[...rawData];updateAll();
+  }catch(e){console.error(e);tableWrap.innerHTML=`<div class="empty">Erro ao carregar os dados da planilha.</div>`}
+}
+
+applyFiltersBtn=document.getElementById("applyFilters");
+applyFiltersBtn.addEventListener("click",applyFilters);
+clearFilters.addEventListener("click",clearAll);
+globalSearch.addEventListener("input",applyFilters);
+dateStart.addEventListener("change",applyFilters);
+dateEnd.addEventListener("change",applyFilters);
+
+loadUser();
+loadData();
+</script>
+</body>
+</html>

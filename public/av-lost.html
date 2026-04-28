@@ -751,7 +751,7 @@ let chartValidacao;
 let chartDia;
 
 const DATE_COLUMN_CANDIDATES = ["DATA", "Data"];
-const COLABORADOR_COLUMN_CANDIDATES = ["PROBLEM SOLVER LP", "Problem Solver LP", "COLABORADOR", "Colaborador"];
+const COLABORADOR_COLUMN_CANDIDATES = ["NOME", "NOME", "Nome", "Nome"];
 const UNIDADE_COLUMN_CANDIDATES = ["UNIDADE", "Unidade", "unidade"];
 const STATUS_COLUMN_CANDIDATES = ["STATUS RETORNO", "Status retorno", "STATUS"];
 const QTD_COLUMN_CANDIDATES = ["QUANTIDADE ENCONTRADA", "Quantidade Encontrada"];
@@ -760,7 +760,7 @@ const USD_COLUMN_CANDIDATES = ["US$ ENCONTRADO", "US$ Encontrado"];
 const BRL_COLUMN_CANDIDATES = ["R$ ENCONTRADO", "R$ Encontrado"];
 
 let DATE_COLUMN = "DATA";
-let COLABORADOR_COLUMN = "PROBLEM SOLVER LP";
+let COLABORADOR_COLUMN = "Nome";
 let UNIDADE_COLUMN = "UNIDADE";
 let STATUS_COLUMN = "STATUS RETORNO";
 let QTD_COLUMN = "QUANTIDADE ENCONTRADA";
@@ -1060,7 +1060,7 @@ function buildFilters() {
   buildMultiSelect("multiAno", "triggerAno", "menuAno", years, "Todos");
   buildMultiSelect("multiMes", "triggerMes", "menuMes", months, "Todos");
   buildMultiSelect("multiUnidade", "triggerUnidade", "menuUnidade", unidades, "Todas");
-  buildMultiSelect("multiColaborador", "triggerColaborador", "menuColaborador", colaboradores, "Todos");
+  buildMultiSelect("multiNome", "triggerNome", "menuNome", colaboradores, "Todos");
   buildMultiSelect("multiStatus", "triggerStatus", "menuStatus", status, "Todos");
   buildMultiSelect("multiSemana", "triggerSemana", "menuSemana", weeks, "Todas");
   buildMultiSelect("multiDia", "triggerDia", "menuDia", days, "Todos");
@@ -1089,7 +1089,7 @@ function applyFilters() {
   const anos = getSelectedValues("menuAno");
   const meses = getSelectedValues("menuMes");
   const unidades = getSelectedValues("menuUnidade");
-  const colaboradores = getSelectedValues("menuColaborador");
+  const colaboradores = getSelectedValues("menuNome");
   const status = getSelectedValues("menuStatus");
   const semanas = getSelectedValues("menuSemana");
   const dias = getSelectedValues("menuDia");

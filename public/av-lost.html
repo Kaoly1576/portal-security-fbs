@@ -756,6 +756,7 @@ let filteredData = [];
 let headers = [];
 
 let chartResumoStatus;
+let chartQtdEncontradaStatus;
 let chartValidacao;
 let chartDia;
 
@@ -1307,7 +1308,7 @@ function updateKpis() {
 }
 
 function destroyCharts() {
-  [chartResumoStatus, chartValidacao, chartDia].forEach(chart => {
+  [chartResumoStatus, chartQtdEncontradaStatus, chartValidacao, chartDia].forEach(chart => {
     if (chart) chart.destroy();
   });
 }
@@ -1381,6 +1382,7 @@ function renderCharts() {
   destroyCharts();
 
   const statusMap = {};
+  const qtdEncontradaStatusMap = {};
   const colaboradorMap = {};
   const qtdMap = {};
 
@@ -1391,6 +1393,7 @@ function renderCharts() {
     const qtd = parseNumeric(getCell(row, QTD_COLUMN));
 
     statusMap[status] = (statusMap[status] || 0) + 1;
+    qtdEncontradaStatusMap[status] = (qtdEncontradaStatusMap[status] || 0) + qtd;
     colaboradorMap[colaborador] = (colaboradorMap[colaborador] || 0) + av;
     qtdMap[colaborador] = (qtdMap[colaborador] || 0) + qtd;
   });
@@ -1405,6 +1408,24 @@ function renderCharts() {
         label: "Registros",
         data: statusTop.map(([, value]) => value),
         backgroundColor: "#ff7a1a",
+        borderRadius: 8
+      }]
+    },
+    options: baseBarOptions(true, false)
+  });
+
+  const qtdStatusTop = Object.entries(qtdEncontradaStatusMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  chartQtdEncontradaStatus = new Chart(document.getElementById("chartQtdEncontradaStatus"), {
+    type: "bar",
+    data: {
+      labels: qtdStatusTop.map(([label]) => label),
+      datasets: [{
+        label: "Quantidade Encontrada",
+        data: qtdStatusTop.map(([, value]) => value),
+        backgroundColor: "#60a5fa",
         borderRadius: 8
       }]
     },
@@ -1465,9 +1486,7 @@ function renderCharts() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
           backgroundColor: "#111827",
           titleColor: "#fff",
@@ -1512,7 +1531,6 @@ function renderCharts() {
     }
   });
 }
-
 function renderTable() {
   const tableWrap = document.getElementById("tableWrap");
 

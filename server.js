@@ -7129,7 +7129,7 @@ app.get("/api/dados", requireAuth, async (req, res) => {
         let value = linha[i] ?? "";  
   
         // 🔥 NORMALIZAÇÕES AUTOMÁTICAS  
-        if (columnName.toUpperCase().includes("PROBLEM SOLVER") || columnName.toUpperCase().includes("COLABORADOR")) {  
+        if (columnName.toUpperCase().includes("Nome") || columnName.toUpperCase().includes("COLABORADOR")) {  
           value = normalizeName(value);  
         }  
   

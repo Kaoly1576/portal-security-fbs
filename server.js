@@ -7840,6 +7840,73 @@ app.get("/api/hc-onboarding-debug", requireAuth, async (req, res) => {
 });
 
 
+// ================== ABS OPERACIONAL FBS ==================
+
+function normalizeTextABS(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+async function buscarPlanilhaABS() {
+  const sheets = await conectarSheets();
+
+  const spreadsheetId = "1s7ZG9N7pS0pafmYb-4QfQXZPily21gp16_-Vzdy7m5I";
+
+  const rangesPossiveis = [
+    "ABS_BRASIL!A:O",
+    "'ABS_BRASIL'!A:O",
+    "'People KPIs Report - BRASIL - ABS_BRASIL'!A:O",
+    "A:O"
+  ];
+
+  let ultimoErro = null;
+
+  for (const range of rangesPossiveis) {
+    try {
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range,
+      });
+
+      return response.data.values || [];
+    } catch (erro) {
+      ultimoErro = erro;
+    }
+  }
+
+  throw ultimoErro;
+}
+
+app.get("/api/abs-operacional", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaABS();
+
+    if (!dados || dados.length === 0) {
+      return res.json([]);
+    }
+
+    const cabecalho = dados[0] || [];
+    const linhas = dados.slice(1);
+
+    const objetos = linhas.map((linha) => {
+      const obj = {};
+
+      cabecalho.forEach((col, i) => {
+        const columnName = normalizeTextABS(col);
+        const value = linha[i] ?? "";
+        obj[columnName] = normalizeTextABS(value);
+      });
+
+      return obj;
+    });
+
+    return res.json(objetos);
+  } catch (erro) {
+    console.error("Erro /api/abs-operacional:", erro);
+    return res.json([]);
+  }
+});
 
 // ================== ERROS ==================
 

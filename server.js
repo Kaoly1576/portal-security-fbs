@@ -7159,6 +7159,46 @@ app.get("/api/dados", requireAuth, async (req, res) => {
   }
 });
 
+// ================== GOOGLE SHEETS HC ==================
+
+async function buscarPlanilhaHC() {
+  const sheets = await conectarSheets();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: "1fD7pvbKwGwMHsww0IMQjkEqE4ohuBKv81MNoyV8tgbc",
+    range: "'raw_hc'!A:AG",
+  });
+
+  return response.data.values || [];
+}
+
+app.get("/api/hc-dados", requireAuth, async (req, res) => {
+  try {
+    const dados = await buscarPlanilhaHC();
+
+    if (!dados.length) {
+      return res.json([]);
+    }
+
+    const cabecalho = dados[0] || [];
+    const linhas = dados.slice(1);
+
+    const objetos = linhas.map((linha) => {
+      const obj = {};
+      cabecalho.forEach((col, i) => {
+        obj[col] = linha[i] ?? "";
+      });
+      return obj;
+    });
+
+    return res.json(objetos);
+  } catch (e) {
+    console.log("Erro HC nova base:", e);
+    return res.json([]);
+  }
+});
+
+
 
 // ================== ERROS ==================
 

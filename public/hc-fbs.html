@@ -6,15 +6,28 @@
   <title>HC FBS</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+
     :root{
-      --bg1:#4b5563;--bg2:#111827;--bg3:#050c18;--input:#071325;--th:#111c33;
-      --line:rgba(255,255,255,.08);--text:#fff;--muted:#cbd5e1;--orange:#ff7a1a;
-      --blue:#58a6ff;--green:#22c55e;--red:#ef4444;--purple:#a855f7;
+      --bg1:#4b5563;
+      --bg2:#111827;
+      --bg3:#050c18;
+      --input:#071325;
+      --th:#111c33;
+      --line:rgba(255,255,255,.08);
+      --text:#fff;
+      --muted:#cbd5e1;
+      --orange:#ff7a1a;
+      --blue:#58a6ff;
+      --green:#22c55e;
+      --red:#ef4444;
+      --purple:#a855f7;
     }
 
     html,body{min-height:100%;overflow-x:hidden}
+
     body{
       background:
         radial-gradient(circle at top,rgba(255,255,255,.14),transparent 35%),
@@ -49,12 +62,29 @@
     }
 
     .brand{display:flex;align-items:center;gap:14px}
+
     .brand-logo{
-      width:44px;height:44px;object-fit:contain;border-radius:50%;
-      background:#1a120d;padding:6px;border:1px solid rgba(255,255,255,.08)
+      width:44px;
+      height:44px;
+      object-fit:contain;
+      border-radius:50%;
+      background:#1a120d;
+      padding:6px;
+      border:1px solid rgba(255,255,255,.08);
     }
-    .brand-text h1{color:var(--orange);font-size:18px;font-weight:900;line-height:1}
-    .brand-text p{font-size:11px;color:var(--muted);margin-top:4px}
+
+    .brand-text h1{
+      color:var(--orange);
+      font-size:18px;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .brand-text p{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
 
     .btn{
       background:rgba(255,255,255,.08);
@@ -71,6 +101,7 @@
       justify-content:center;
       transition:.2s ease;
     }
+
     .btn:hover{background:rgba(255,255,255,.14)}
 
     .hero{
@@ -84,6 +115,7 @@
     }
 
     .hero h2{font-size:18px;margin-bottom:6px}
+
     .hero p{
       color:var(--muted);
       font-size:12px;
@@ -112,12 +144,9 @@
       overflow:visible !important;
     }
 
-    .filters-grid.row-1{ z-index:9001; }
-    .filters-grid.row-2{ z-index:9000; }
-
-    .filters-grid + .filters-grid{
-      margin-top:10px;
-    }
+    .filters-grid.row-1{z-index:9001}
+    .filters-grid.row-2{z-index:9000}
+    .filters-grid + .filters-grid{margin-top:10px}
 
     .field{
       min-width:0;
@@ -156,9 +185,7 @@
       z-index:20;
     }
 
-    .multi-select.open{
-      z-index:99999 !important;
-    }
+    .multi-select.open{z-index:99999 !important}
 
     .multi-trigger{
       width:100%;
@@ -203,9 +230,7 @@
       padding:6px;
     }
 
-    .multi-select.open .multi-menu{
-      display:block;
-    }
+    .multi-select.open .multi-menu{display:block}
 
     .multi-option{
       display:flex;
@@ -219,6 +244,7 @@
     }
 
     .multi-option:hover{background:#1a2942}
+
     .multi-option input{
       width:auto;
       height:auto;
@@ -282,7 +308,7 @@
 
     .kpis{
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-template-columns:repeat(5,minmax(0,1fr));
       gap:12px;
       margin-bottom:12px;
       position:relative;
@@ -332,9 +358,10 @@
 
     .grid-top{
       display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
+      grid-template-columns:repeat(4,minmax(0,1fr));
       gap:12px;
       margin-bottom:12px;
+      align-items:stretch;
     }
 
     .grid-middle{
@@ -400,7 +427,7 @@
     .detail-table{
       width:100%;
       border-collapse:collapse;
-      min-width:900px;
+      min-width:1000px;
       font-size:12px;
       background:#091322;
     }
@@ -437,9 +464,7 @@
       align-items:center;
     }
 
-    body.dropdown-open .filters{
-      z-index:99999 !important;
-    }
+    body.dropdown-open .filters{z-index:99999 !important}
 
     body.dropdown-open .kpis,
     body.dropdown-open .grid-top,
@@ -449,22 +474,24 @@
     }
 
     @media (max-width:1400px){
-      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .grid-top{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
 
     @media (max-width:1280px){
       .filters-grid{grid-template-columns:repeat(2,minmax(180px,1fr))}
-      .grid-top,.grid-middle{grid-template-columns:1fr}
+      .grid-middle{grid-template-columns:1fr}
     }
 
     @media (max-width:768px){
-      .filters-grid,.kpis{grid-template-columns:1fr}
+      .filters-grid,.kpis,.grid-top{grid-template-columns:1fr}
       .hero-right{text-align:left}
       .kpi-value{font-size:20px}
       .topbar,.hero{flex-direction:column;align-items:flex-start}
     }
   </style>
 </head>
+
 <body>
 <div class="page">
   <header class="topbar">
@@ -481,7 +508,7 @@
   <section class="hero">
     <div>
       <h2>Dashboard HC FBS</h2>
-      <p>Monitoramento consolidado de admitidos por período, BPO, turno, semana e evolução diária.</p>
+      <p>Monitoramento consolidado de admitidos por período, station, BPO, turno, semana e evolução diária.</p>
     </div>
     <div class="hero-right">
       <div class="small">Última atualização</div>
@@ -502,12 +529,12 @@
       </div>
 
       <div class="field">
-  <label>Station</label>
-  <div class="multi-select" id="multiStation">
-    <button type="button" class="multi-trigger" id="triggerStation">Todas</button>
-    <div class="multi-menu" id="menuStation"></div>
-  </div>
-</div>
+        <label>Station</label>
+        <div class="multi-select" id="multiStation">
+          <button type="button" class="multi-trigger" id="triggerStation">Todas</button>
+          <div class="multi-menu" id="menuStation"></div>
+        </div>
+      </div>
 
       <div class="field">
         <label>Data de referência</label>
@@ -529,7 +556,9 @@
           <div class="multi-menu" id="menuTurno"></div>
         </div>
       </div>
+    </div>
 
+    <div class="filters-grid row-2">
       <div class="field">
         <label>Ano</label>
         <div class="multi-select" id="multiAno">
@@ -537,9 +566,7 @@
           <div class="multi-menu" id="menuAno"></div>
         </div>
       </div>
-    </div>
 
-    <div class="filters-grid row-2">
       <div class="field">
         <label>Mês</label>
         <div class="multi-select" id="multiMes">
@@ -564,9 +591,9 @@
         </div>
       </div>
 
-      <div class="field" style="grid-column: span 2;">
+      <div class="field">
         <label>Busca geral</label>
-        <input type="text" id="filtroBusca" placeholder="Buscar por data, bpo, turno..." />
+        <input type="text" id="filtroBusca" placeholder="Buscar por data, station, bpo, turno..." />
       </div>
     </div>
 
@@ -590,6 +617,12 @@
     </div>
 
     <div class="kpi">
+      <div class="kpi-title">Stations</div>
+      <div class="kpi-value green" id="cardStations">0</div>
+      <div class="kpi-sub">Stations distintas</div>
+    </div>
+
+    <div class="kpi">
       <div class="kpi-title">BPOs</div>
       <div class="kpi-value green" id="cardBpos">0</div>
       <div class="kpi-sub">BPOs distintos</div>
@@ -610,16 +643,14 @@
     </div>
 
     <div class="panel">
-  <div class="panel-title">Admitidos por Station</div>
-  <div class="panel-subtitle">Distribuição por unidade / station</div>
-  <div class="chart-box">
-    <canvas id="chartStation"></canvas>
-  </div>
-</div>
+      <div class="panel-title">Admitidos por Station</div>
+      <div class="panel-subtitle">Distribuição por unidade / station</div>
+      <div class="chart-box"><canvas id="chartStation"></canvas></div>
+    </div>
 
     <div class="panel">
       <div class="panel-title">Admitidos por Turno</div>
-      <div class="panel-subtitle">Distribuição por turno (coluna H)</div>
+      <div class="panel-subtitle">Distribuição por turno</div>
       <div class="chart-box"><canvas id="chartTurno"></canvas></div>
     </div>
 
@@ -651,11 +682,12 @@
         <thead>
           <tr>
             <th>Data</th>
+            <th>Station</th>
             <th>BPO</th>
+            <th>Turno</th>
             <th>QTD Admitidos</th>
             <th>Semana</th>
             <th>Mês</th>
-            <th>Turno</th>
           </tr>
         </thead>
         <tbody id="tbodyDetalhes"></tbody>
@@ -681,19 +713,32 @@ let chartTurno = null;
 let chartSemana = null;
 let chartDia = null;
 let chartComparativo = null;
-let chartStationInstance = null;
+let chartStation = null;
 
-function esc(v){return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
-function fmt(n){return new Intl.NumberFormat("pt-BR").format(Number(n||0));}
+function esc(v){
+  return String(v ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function fmt(n){
+  return new Intl.NumberFormat("pt-BR").format(Number(n || 0));
+}
 
 function destroyCharts() {
-  [chartBpo, chartTurno, chartSemana, chartDia, chartComparativo].forEach(c => { if (c) c.destroy(); });
+  [chartBpo, chartTurno, chartSemana, chartDia, chartComparativo, chartStation].forEach(c => {
+    if (c) c.destroy();
+  });
+
   chartBpo = null;
   chartTurno = null;
   chartSemana = null;
   chartDia = null;
   chartComparativo = null;
-  if (chartStationInstance) chartStationInstance.destroy();
+  chartStation = null;
 }
 
 function horizontalBarOptions() {
@@ -712,8 +757,36 @@ function horizontalBarOptions() {
       }
     },
     scales:{
-      x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true},
-      y:{ticks:{color:"#ffffff",font:{size:10}},grid:{display:false}}
+      x:{
+        ticks:{color:"#cfcfcf",font:{size:10}},
+        grid:{color:"rgba(255,255,255,0.05)"},
+        beginAtZero:true
+      },
+      y:{
+        ticks:{color:"#ffffff",font:{size:10}},
+        grid:{display:false}
+      }
+    }
+  };
+}
+
+function verticalBarOptions() {
+  return {
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{
+      legend:{labels:{color:"#fff"}},
+      datalabels:{
+        color:"#ffffff",
+        anchor:"end",
+        align:"top",
+        font:{size:10,weight:"700"},
+        formatter:(v)=>v>0?fmt(v):""
+      }
+    },
+    scales:{
+      x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{display:false}},
+      y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
     }
   };
 }
@@ -733,7 +806,7 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
   values.forEach(value => {
     const label = document.createElement("label");
     label.className = "multi-option";
-    label.innerHTML = `<input type="checkbox" value="${String(value).replace(/"/g,'&quot;')}" /><span>${value}</span>`;
+    label.innerHTML = `<input type="checkbox" value="${esc(value)}" /><span>${esc(value)}</span>`;
     menu.appendChild(label);
   });
 
@@ -751,9 +824,7 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
     const wrapper = trigger.closest(".multi-select");
     const willOpen = !wrapper.classList.contains("open");
 
-    document.querySelectorAll(".multi-select").forEach(wrap => {
-      wrap.classList.remove("open");
-    });
+    document.querySelectorAll(".multi-select").forEach(wrap => wrap.classList.remove("open"));
 
     if (willOpen) {
       wrapper.classList.add("open");
@@ -789,9 +860,7 @@ function createMultiSelect(menuId, triggerId, values, placeholder){
 }
 
 document.addEventListener("click", () => {
-  document.querySelectorAll(".multi-select").forEach(wrap => {
-    wrap.classList.remove("open");
-  });
+  document.querySelectorAll(".multi-select").forEach(wrap => wrap.classList.remove("open"));
   document.body.classList.remove("dropdown-open");
 });
 
@@ -803,6 +872,7 @@ function getMultiValues(menuId){
 
 function getFiltersQuery(page=1){
   const qs = new URLSearchParams();
+
   qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
   qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
   qs.set("station", getMultiValues("menuStation"));
@@ -815,6 +885,7 @@ function getFiltersQuery(page=1){
   qs.set("busca", document.getElementById("filtroBusca").value || "");
   qs.set("page", page);
   qs.set("limit", 30);
+
   return qs.toString();
 }
 
@@ -822,12 +893,13 @@ async function loadFiltros(){
   const res = await fetch("/api/hc-fbs-filtros", { credentials:"same-origin" });
   const data = await res.json();
 
-  createMultiSelect("menuBpo","triggerBpo",data.bpo||[],"Todos");
-  createMultiSelect("menuTurno","triggerTurno",data.turno||[],"Todos");
-  createMultiSelect("menuAno","triggerAno",data.ano||[],"Todos");
-  createMultiSelect("menuMes","triggerMes",data.mes||[],"Todos");
-  createMultiSelect("menuSemana","triggerSemana",data.semana||[],"Todas");
-  createMultiSelect("menuDia","triggerDia",data.dia||[],"Todos");
+  createMultiSelect("menuStation","triggerStation",data.station || [],"Todas");
+  createMultiSelect("menuBpo","triggerBpo",data.bpo || [],"Todos");
+  createMultiSelect("menuTurno","triggerTurno",data.turno || [],"Todos");
+  createMultiSelect("menuAno","triggerAno",data.ano || [],"Todos");
+  createMultiSelect("menuMes","triggerMes",data.mes || [],"Todos");
+  createMultiSelect("menuSemana","triggerSemana",data.semana || [],"Todas");
+  createMultiSelect("menuDia","triggerDia",data.dia || [],"Todos");
 
   if (data.ultimaAtualizacao) {
     document.getElementById("ultimaAtualizacao").textContent = data.ultimaAtualizacao;
@@ -840,13 +912,14 @@ async function loadResumo(page=1){
 
   document.getElementById("cardAdmitidos").textContent = fmt(data.totalAdmitidos);
   document.getElementById("cardRegistros").textContent = fmt(data.totalRegistros);
+  document.getElementById("cardStations").textContent = fmt(data.totalStations || 0);
   document.getElementById("cardBpos").textContent = fmt(data.totalBpos);
   document.getElementById("cardTurnos").textContent = fmt(data.totalTurnos);
-  document.getElementById("triggerStation").textContent = "Todas";
 
   const varNum = Number(data.variacaoAdmitidos || 0);
   const cls = varNum > 0 ? "green" : varNum < 0 ? "red" : "";
   const arrow = varNum > 0 ? "↑" : varNum < 0 ? "↓" : "→";
+
   document.getElementById("cardAdmitidosSub").innerHTML =
     `<span class="${cls}">${arrow} ${Math.abs(varNum).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})}% vs base anterior</span>`;
 
@@ -865,30 +938,40 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.porBpo || {}),
-      datasets:[{ label:"Admitidos", data:Object.values(data.porBpo || {}), backgroundColor:"#ff7a1a", borderRadius:8 }]
+      datasets:[{
+        label:"Admitidos",
+        data:Object.values(data.porBpo || {}),
+        backgroundColor:"#ff7a1a",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions()
   });
 
-  chartStationInstance = new Chart(document.getElementById("chartStation"), {
-  type: "bar",
-  data: {
-    labels: Object.keys(data.porStation || {}),
-    datasets: [{
-      label: "Admitidos",
-      data: Object.values(data.porStation || {}),
-      backgroundColor: "#22c55e",
-      borderRadius: 8
-    }]
-  },
-  options: horizontalOptions()
-});
+  chartStation = new Chart(document.getElementById("chartStation"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(data.porStation || {}),
+      datasets:[{
+        label:"Admitidos",
+        data:Object.values(data.porStation || {}),
+        backgroundColor:"#22c55e",
+        borderRadius:8
+      }]
+    },
+    options: horizontalBarOptions()
+  });
 
   chartTurno = new Chart(document.getElementById("chartTurno"), {
     type:"bar",
     data:{
       labels:Object.keys(data.porTurno || {}),
-      datasets:[{ label:"Admitidos", data:Object.values(data.porTurno || {}), backgroundColor:"#58a6ff", borderRadius:8 }]
+      datasets:[{
+        label:"Admitidos",
+        data:Object.values(data.porTurno || {}),
+        backgroundColor:"#58a6ff",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions()
   });
@@ -897,7 +980,12 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:Object.keys(data.porSemana || {}),
-      datasets:[{ label:"Admitidos", data:Object.values(data.porSemana || {}), backgroundColor:"#a855f7", borderRadius:8 }]
+      datasets:[{
+        label:"Admitidos",
+        data:Object.values(data.porSemana || {}),
+        backgroundColor:"#a855f7",
+        borderRadius:8
+      }]
     },
     options: horizontalBarOptions()
   });
@@ -909,26 +997,14 @@ async function loadGraficos(page=1){
     type:"bar",
     data:{
       labels:dias,
-      datasets:[{ label:"Admitidos", data:valoresDia, backgroundColor:"#ff7a1a", borderRadius:4 }]
+      datasets:[{
+        label:"Admitidos",
+        data:valoresDia,
+        backgroundColor:"#ff7a1a",
+        borderRadius:4
+      }]
     },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{labels:{color:"#fff"}},
-        datalabels:{
-          color:"#ffffff",
-          anchor:"end",
-          align:"top",
-          font:{size:10,weight:"700"},
-          formatter:(v)=>v>0?fmt(v):""
-        }
-      },
-      scales:{
-        x:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{display:false}},
-        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
-      }
-    }
+    options: verticalBarOptions()
   });
 
   chartComparativo = new Chart(document.getElementById("chartComparativo"), {
@@ -942,24 +1018,7 @@ async function loadGraficos(page=1){
         borderRadius:8
       }]
     },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{labels:{color:"#fff"}},
-        datalabels:{
-          color:"#ffffff",
-          anchor:"end",
-          align:"top",
-          font:{size:10,weight:"700"},
-          formatter:(v)=>v>0?fmt(v):""
-        }
-      },
-      scales:{
-        x:{ticks:{color:"#fff",font:{size:10}},grid:{display:false}},
-        y:{ticks:{color:"#cfcfcf",font:{size:10}},grid:{color:"rgba(255,255,255,0.05)"},beginAtZero:true}
-      }
-    }
+    options: verticalBarOptions()
   });
 }
 
@@ -974,11 +1033,12 @@ async function loadDetalhes(page=1){
   document.getElementById("tbodyDetalhes").innerHTML = (data.rows || []).map(row => `
     <tr>
       <td>${esc(row.data)}</td>
+      <td>${esc(row.station)}</td>
       <td>${esc(row.bpo)}</td>
+      <td>${esc(row.turno)}</td>
       <td>${esc(row.qtdAdmitidos)}</td>
       <td>${esc(row.semana)}</td>
       <td>${esc(row.mes)}</td>
-      <td>${esc(row.turno)}</td>
     </tr>
   `).join("");
 }
@@ -998,6 +1058,7 @@ document.getElementById("btnLimpar").addEventListener("click", () => {
 
   document.querySelectorAll('.multi-menu input[type="checkbox"]').forEach(input => input.checked = false);
 
+  document.getElementById("triggerStation").textContent = "Todas";
   document.getElementById("triggerBpo").textContent = "Todos";
   document.getElementById("triggerTurno").textContent = "Todos";
   document.getElementById("triggerAno").textContent = "Todos";

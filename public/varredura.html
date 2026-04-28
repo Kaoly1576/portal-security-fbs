@@ -1,171 +1,1558 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard Varredura</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <style>
-body{
-  background:#0b0f16;
-  color:#fff;
-  font-family:Arial;
-  padding:20px;
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial, Helvetica, sans-serif;
 }
 
-.header{
+:root{
+  --bg-1:#0b0f16;
+  --bg-2:#141922;
+  --panel:#1a1f29;
+  --panel-2:#202633;
+  --border:rgba(255,255,255,0.10);
+  --text:#f3f4f6;
+  --muted:#9ca3af;
+  --orange:#ff7a1a;
+  --orange-strong:#ff5a00;
+  --blue:#60a5fa;
+  --green:#22c55e;
+  --red:#ef4444;
+  --yellow:#facc15;
+  --shadow:0 10px 30px rgba(0,0,0,0.28);
+}
+
+html, body{
+  min-height:100%;
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 28%),
+    linear-gradient(180deg,#3c424c 0%, #171b22 18%, #0b0f16 42%, #0b0f16 100%);
+  color:var(--text);
+  overflow-x:hidden;
+}
+
+.page{
+  max-width:1440px;
+  margin:0 auto;
+  padding:14px;
+}
+
+.hero{
   display:flex;
   align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  background:linear-gradient(90deg, rgba(255,122,26,0.10), rgba(255,255,255,0.03));
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:12px 16px;
+  box-shadow:var(--shadow);
+  margin-bottom:10px;
+}
+
+.hero-left{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+
+.hero-logo{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#1c140d;
+  border:1px solid rgba(255,122,26,0.20);
+  object-fit:contain;
+  padding:4px;
+  flex-shrink:0;
+}
+
+.hero-title{
+  font-size:22px;
+  font-weight:800;
+  color:var(--orange);
+  line-height:1.1;
+}
+
+.hero-subtitle{
+  font-size:11px;
+  color:#cbd5e1;
+  margin-top:2px;
+}
+
+.hero-right{
+  display:flex;
+  align-items:flex-start;
   gap:10px;
-  margin-bottom:20px;
+  flex-shrink:0;
 }
 
-.header img{
-  width:40px;
+.top-info{
+  text-align:right;
+  font-size:11px;
+  color:#d1d5db;
+  line-height:1.45;
 }
 
-.filters{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-  margin-bottom:20px;
+.top-info strong{
+  color:var(--orange);
+  font-size:12px;
 }
 
-select{
-  padding:8px;
-  background:#1a1f29;
+.btn-top{
+  background:#2a2f39;
   color:#fff;
-  border:1px solid #333;
-}
-
-.chart{
-  background:#1a1f29;
-  padding:15px;
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,0.10);
   border-radius:10px;
-  margin-bottom:15px;
+  padding:8px 12px;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
 }
 
-canvas{
-  max-height:300px;
+.btn-top:hover{
+  background:#353b47;
+}
+
+.panel{
+  background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  margin-bottom:8px;
+}
+
+.panel-header{
+  padding:10px 12px 6px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+
+.panel-title{
+  font-size:18px;
+  font-weight:800;
+  color:#f8fafc;
+}
+
+.panel-subtitle{
+  font-size:11px;
+  color:#cbd5e1;
+  margin-top:2px;
+}
+
+.panel-body{
+  padding:10px 12px 12px;
+}
+
+.filters-grid{
+  display:grid;
+  grid-template-columns:repeat(7, minmax(0, 1fr));
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+  position:relative;
+}
+
+.field label{
+  font-size:10px;
+  font-weight:700;
+  color:#e5e7eb;
+}
+
+.field input{
+  width:100%;
+  height:32px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.10);
+  background:#191d25;
+  color:#fff;
+  font-size:11px;
+  padding:8px 10px;
+  outline:none;
+}
+
+.field input::placeholder{
+  color:#6b7280;
+}
+
+.toolbar{
+  display:flex;
+  align-items:end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.btn{
+  height:32px;
+  border:none;
+  border-radius:8px;
+  padding:0 14px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.btn-apply{
+  background:var(--orange-strong);
+  color:#fff;
+}
+
+.btn-clear{
+  background:#2b313c;
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.08);
+}
+
+.filters-help{
+  font-size:10px;
+  color:#d1d5db;
+  margin-top:4px;
+}
+
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(6, minmax(0, 1fr));
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.kpi-card{
+  background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:12px;
+  padding:10px 12px;
+  min-width:0;
+}
+
+.kpi-label{
+  font-size:10px;
+  font-weight:800;
+  color:#d1d5db;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+
+.kpi-value{
+  font-size:34px;
+  font-weight:900;
+  line-height:1;
+  color:var(--orange);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.kpi-sub{
+  font-size:11px;
+  margin-top:6px;
+  color:#cbd5e1;
+  min-height:15px;
+}
+
+.variation{
+  font-weight:800;
+}
+
+.variation.positive{
+  color:var(--green);
+}
+
+.variation.negative{
+  color:var(--red);
+}
+
+.variation.neutral{
+  color:#e5e7eb;
+}
+
+.chart-grid-middle{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px;
+  margin-bottom:8px;
+  align-items:stretch;
+}
+
+.chart-card{
+  background:linear-gradient(90deg, rgba(255,255,255,0.025), rgba(255,255,255,0.018));
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:12px;
+  padding:10px 10px 8px;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
+
+.chart-title{
+  text-align:center;
+  font-size:13px;
+  font-weight:800;
+  color:var(--orange);
+  margin-bottom:8px;
+}
+
+.chart-wrap{
+  position:relative;
+  width:100%;
+  height:240px;
+}
+
+.chart-wrap.tall{
+  height:380px;
+}
+
+.wide-chart{
+  margin-bottom:8px;
+}
+
+.wide-chart .chart-wrap{
+  height:250px;
+}
+
+.table-panel .panel-body{
+  padding-top:8px;
+}
+
+.table-wrap{
+  overflow:auto;
+  max-height:360px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:#131820;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1400px;
+}
+
+th, td{
+  padding:8px 10px;
+  font-size:10px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  white-space:nowrap;
+  text-align:left;
+}
+
+th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#1d222b;
+  color:#fff;
+  font-weight:800;
+}
+
+tr:hover td{
+  background:#1a2029;
+}
+
+.empty{
+  padding:18px;
+  color:#cbd5e1;
+  font-size:12px;
+}
+
+.multi-select{
+  position:relative;
+  width:100%;
+}
+
+.multi-select-trigger{
+  width:100%;
+  height:32px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.10);
+  background:#191d25;
+  color:#fff;
+  font-size:11px;
+  padding:8px 28px 8px 10px;
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  position:relative;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.multi-select-trigger::after{
+  content:"▼";
+  position:absolute;
+  right:9px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:9px;
+  color:#d1d5db;
+  pointer-events:none;
+}
+
+.multi-select.open .multi-select-trigger{
+  border-color:rgba(255,122,26,0.55);
+  box-shadow:0 0 0 2px rgba(255,122,26,0.08);
+}
+
+.multi-select-menu{
+  position:absolute;
+  top:36px;
+  left:0;
+  width:100%;
+  background:#171b22;
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:10px;
+  box-shadow:0 12px 24px rgba(0,0,0,0.35);
+  display:none;
+  z-index:9999;
+  padding:6px;
+}
+
+.multi-select.open .multi-select-menu{
+  display:block;
+}
+
+.multi-search{
+  margin-bottom:6px;
+}
+
+.multi-search input{
+  width:100%;
+  height:30px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:#11161d;
+  color:#fff;
+  font-size:11px;
+  padding:7px 9px;
+  outline:none;
+}
+
+.multi-actions{
+  display:flex;
+  gap:6px;
+  margin-bottom:6px;
+}
+
+.multi-actions button{
+  flex:1;
+  height:28px;
+  border:none;
+  border-radius:7px;
+  background:#262c37;
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.multi-options{
+  max-height:180px;
+  overflow:auto;
+}
+
+.multi-option{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 8px;
+  border-radius:7px;
+  font-size:11px;
+  color:#fff;
+  cursor:pointer;
+}
+
+.multi-option:hover{
+  background:#232a35;
+}
+
+.multi-option input{
+  width:auto;
+  height:auto;
+  accent-color:var(--orange);
+}
+
+.multi-empty{
+  padding:8px;
+  color:#cbd5e1;
+  font-size:11px;
+}
+
+@media (max-width: 1300px){
+  .filters-grid{
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+  }
+
+  .kpi-grid{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+
+  .chart-grid-middle{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width: 900px){
+  .hero{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .hero-right{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .filters-grid,
+  .kpi-grid{
+    grid-template-columns:1fr;
+  }
+
+  .toolbar{
+    flex-direction:column;
+    align-items:stretch;
+  }
 }
 </style>
 </head>
 
 <body>
+<div class="page">
 
-<div class="header">
-  <img src="/images/logo.png">
-  <h2>Dashboard Varredura</h2>
-</div>
+  <section class="hero">
+    <div class="hero-left">
+      <img src="/images/logo.png" alt="Logo" class="hero-logo" />
+      <div>
+        <div class="hero-title">VARREDURA</div>
+        <div class="hero-subtitle">Dashboard operacional de varredura de estoque</div>
+      </div>
+    </div>
 
-<div class="filters">
-  <select id="filtroColaborador"></select>
-  <select id="filtroStatus"></select>
-  <select id="filtroDia"></select>
-  <button onclick="aplicarFiltro()">Aplicar</button>
-</div>
+    <div class="hero-right">
+      <div class="top-info">
+        <div id="userInfo">Carregando usuário...</div>
+        <div id="sheetInfo">Carregando planilha...</div>
+        <div>Última atualização <strong id="updateTime">--:--</strong></div>
+      </div>
+      <a href="/portal" class="btn-top">Voltar ao Portal</a>
+    </div>
+  </section>
 
-<div class="chart">
-  <h3>Quantidade por Status</h3>
-  <canvas id="chartStatus"></canvas>
-</div>
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-title">Dashboard Varredura</div>
+      <div class="panel-subtitle">
+        Filtros compactos com multiseleção, rótulos nos gráficos e visão operacional da varredura.
+      </div>
+    </div>
 
-<div class="chart">
-  <h3>Produtividade por Colaborador</h3>
-  <canvas id="chartColaborador"></canvas>
+    <div class="panel-body">
+      <div class="filters-grid">
+        <div class="field">
+          <label>Data inicial</label>
+          <input type="date" id="dateStart" />
+        </div>
+
+        <div class="field">
+          <label>Data final</label>
+          <input type="date" id="dateEnd" />
+        </div>
+
+        <div class="field">
+          <label>Busca geral</label>
+          <input type="text" id="globalSearch" placeholder="Buscar..." />
+        </div>
+
+        <div class="field">
+          <label>Ano</label>
+          <div class="multi-select" id="multiAno">
+            <div class="multi-select-trigger" id="triggerAno">Todos</div>
+            <div class="multi-select-menu" id="menuAno"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Mês</label>
+          <div class="multi-select" id="multiMes">
+            <div class="multi-select-trigger" id="triggerMes">Todos</div>
+            <div class="multi-select-menu" id="menuMes"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Unidade</label>
+          <div class="multi-select" id="multiUnidade">
+            <div class="multi-select-trigger" id="triggerUnidade">Todas</div>
+            <div class="multi-select-menu" id="menuUnidade"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Colaborador</label>
+          <div class="multi-select" id="multiColaborador">
+            <div class="multi-select-trigger" id="triggerColaborador">Todos</div>
+            <div class="multi-select-menu" id="menuColaborador"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Turno</label>
+          <div class="multi-select" id="multiTurno">
+            <div class="multi-select-trigger" id="triggerTurno">Todos</div>
+            <div class="multi-select-menu" id="menuTurno"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Processo</label>
+          <div class="multi-select" id="multiProcesso">
+            <div class="multi-select-trigger" id="triggerProcesso">Todos</div>
+            <div class="multi-select-menu" id="menuProcesso"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Validação</label>
+          <div class="multi-select" id="multiValidacao">
+            <div class="multi-select-trigger" id="triggerValidacao">Todas</div>
+            <div class="multi-select-menu" id="menuValidacao"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Status</label>
+          <div class="multi-select" id="multiStatus">
+            <div class="multi-select-trigger" id="triggerStatus">Todos</div>
+            <div class="multi-select-menu" id="menuStatus"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Dia</label>
+          <div class="multi-select" id="multiDia">
+            <div class="multi-select-trigger" id="triggerDia">Todos</div>
+            <div class="multi-select-menu" id="menuDia"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn btn-apply" id="applyFilters">Aplicar</button>
+        <button class="btn btn-clear" id="clearFilters">Limpar</button>
+      </div>
+
+      <div class="filters-help">
+        Clique no filtro para abrir opções e selecionar vários valores sem usar Ctrl.
+      </div>
+    </div>
+  </section>
+
+  <section class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Endereços Contados</div>
+      <div class="kpi-value" id="kpiEnderecos">0</div>
+      <div class="kpi-sub" id="kpiEnderecosSub">Endereços únicos</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Itens Físicos</div>
+      <div class="kpi-value" id="kpiFisico">0</div>
+      <div class="kpi-sub" id="kpiFisicoSub">Quantidade física</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Itens Sistêmicos</div>
+      <div class="kpi-value" id="kpiSistema">0</div>
+      <div class="kpi-sub" id="kpiSistemaSub">Quantidade sistêmica</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Sobra</div>
+      <div class="kpi-value" id="kpiSobra">0</div>
+      <div class="kpi-sub" id="kpiSobraSub">Total de sobra</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Falta</div>
+      <div class="kpi-value" id="kpiFalta">0</div>
+      <div class="kpi-sub" id="kpiFaltaSub">Total de falta</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label">Divergentes</div>
+      <div class="kpi-value" id="kpiDivergentes">0</div>
+      <div class="kpi-sub" id="kpiDivergentesSub">Registros divergentes</div>
+    </div>
+  </section>
+
+  <section class="chart-grid-middle">
+    <div class="chart-card">
+      <div class="chart-title">Status da Varredura</div>
+      <div class="chart-wrap">
+        <canvas id="chartStatus"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Validação de Quantidade</div>
+      <div class="chart-wrap">
+        <canvas id="chartValidacao"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="chart-grid-middle">
+    <div class="chart-card">
+      <div class="chart-title">Sobra x Falta por Colaborador</div>
+      <div class="chart-wrap tall">
+        <canvas id="chartColaborador"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Quantidade Física x Sistêmica por Colaborador</div>
+      <div class="chart-wrap tall">
+        <canvas id="chartFisicoSistema"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel wide-chart">
+    <div class="panel-body">
+      <div class="chart-title">Divergências por Dia do Mês</div>
+      <div class="chart-wrap">
+        <canvas id="chartDia"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel table-panel">
+    <div class="panel-header">
+      <div class="panel-title" style="font-size:14px; text-align:center;">Detalhamento</div>
+    </div>
+
+    <div class="panel-body">
+      <div class="table-wrap" id="tableWrap"></div>
+    </div>
+  </section>
+
 </div>
 
 <script>
 Chart.register(ChartDataLabels);
 
-let data = [];
+let rawData = [];
+let filteredData = [];
+let headers = [];
+
 let chartStatus;
-let chartColab;
+let chartValidacao;
+let chartColaborador;
+let chartFisicoSistema;
+let chartDia;
 
-async function carregar(){
-  const res = await fetch("/api/varredura");
-  data = await res.json();
+const DATE_COLUMN_CANDIDATES = ["DATA", "Data"];
+const COLABORADOR_COLUMN_CANDIDATES = ["NOME", "Nome", "COLABORADOR", "NOME DO COLABORADOR"];
+const UNIDADE_COLUMN_CANDIDATES = ["Unidade", "UNIDADE"];
+const TURNO_COLUMN_CANDIDATES = ["TURNO", "Turno"];
+const PROCESSO_COLUMN_CANDIDATES = ["PROCESSO", "Processo"];
+const ENDERECO_COLUMN_CANDIDATES = ["ENDEREÇO ESTOQUE", "ENDERECO ESTOQUE", "ENDEREÇO", "Endereco"];
+const QTD_FISICA_COLUMN_CANDIDATES = ["QUANTIDADE FISICA", "QUANTIDADE FÍSICA", "Quantidade Fisica"];
+const VALIDACAO_COLUMN_CANDIDATES = ["VALIDAÇÃO DE QUANTIDADE", "VALIDACAO DE QUANTIDADE", "VALIDAÇÃO"];
+const QTD_SISTEMA_COLUMN_CANDIDATES = ["QUANTIDADE SISTÊMICA", "QUANTIDADE SISTEMICA", "Quantidade Sistemica"];
+const SOBRA_COLUMN_CANDIDATES = ["SOBRA", "Sobra"];
+const FALTA_COLUMN_CANDIDATES = ["FALTA", "Falta"];
+const SKU_ID_COLUMN_CANDIDATES = ["SKU ID", "SKU"];
+const SKU_NAME_COLUMN_CANDIDATES = ["SKU NAME", "SKU NOME", "Descrição"];
+const STATUS_COLUMN_CANDIDATES = ["STATUS", "Status"];
+const MES_ANO_COLUMN_CANDIDATES = ["MES/ANO", "MÊS/ANO", "Mes/Ano"];
 
-  montarFiltros();
-  render();
+let DATE_COLUMN = "DATA";
+let COLABORADOR_COLUMN = "NOME";
+let UNIDADE_COLUMN = "Unidade";
+let TURNO_COLUMN = "TURNO";
+let PROCESSO_COLUMN = "PROCESSO";
+let ENDERECO_COLUMN = "ENDEREÇO ESTOQUE";
+let QTD_FISICA_COLUMN = "QUANTIDADE FISICA";
+let VALIDACAO_COLUMN = "VALIDAÇÃO DE QUANTIDADE";
+let QTD_SISTEMA_COLUMN = "QUANTIDADE SISTÊMICA";
+let SOBRA_COLUMN = "SOBRA";
+let FALTA_COLUMN = "FALTA";
+let SKU_ID_COLUMN = "SKU ID";
+let SKU_NAME_COLUMN = "SKU NAME";
+let STATUS_COLUMN = "STATUS";
+let MES_ANO_COLUMN = "MES/ANO";
+
+const monthNames = {
+  1: "Janeiro",
+  2: "Fevereiro",
+  3: "Março",
+  4: "Abril",
+  5: "Maio",
+  6: "Junho",
+  7: "Julho",
+  8: "Agosto",
+  9: "Setembro",
+  10: "Outubro",
+  11: "Novembro",
+  12: "Dezembro"
+};
+
+function normalizeText(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
-function montarFiltros(){
-  const colabs = [...new Set(data.map(d=>d["colaborador"]))];
-  const status = [...new Set(data.map(d=>d["status"]))];
-
-  const f1 = document.getElementById("filtroColaborador");
-  const f2 = document.getElementById("filtroStatus");
-
-  f1.innerHTML = `<option value="">Todos</option>` + colabs.map(c=>`<option>${c}</option>`).join("");
-  f2.innerHTML = `<option value="">Todos</option>` + status.map(s=>`<option>${s}</option>`).join("");
+function normalizeValue(value) {
+  return String(value || "").trim();
 }
 
-function aplicarFiltro(){
-  render();
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-function render(){
+function resolveColumn(candidates) {
+  for (const candidate of candidates) {
+    const found = headers.find(h => normalizeText(h) === normalizeText(candidate));
+    if (found) return found;
+  }
 
-  if(chartStatus) chartStatus.destroy();
-  if(chartColab) chartColab.destroy();
+  for (const candidate of candidates) {
+    const found = headers.find(h => normalizeText(h).includes(normalizeText(candidate)));
+    if (found) return found;
+  }
 
-  const colabFiltro = document.getElementById("filtroColaborador").value;
-  const statusFiltro = document.getElementById("filtroStatus").value;
+  return candidates[0];
+}
 
-  const filtrado = data.filter(d=>{
-    return (!colabFiltro || d.colaborador===colabFiltro)
-    && (!statusFiltro || d.status===statusFiltro);
+function getCell(row, columnName) {
+  return row?.[columnName] ?? "";
+}
+
+function parseNumeric(value) {
+  if (value === null || value === undefined) return 0;
+
+  const cleaned = String(value)
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+
+  const num = Number(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("pt-BR").format(value || 0);
+}
+
+function formatDateToInput(date) {
+  if (!(date instanceof Date) || isNaN(date)) return "";
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function parseDateBR(value) {
+  const str = String(value || "").trim();
+  if (!str) return null;
+
+  const parts = str.split("/");
+  if (parts.length !== 3) return null;
+
+  let [p1, p2, p3] = parts.map(Number);
+  if (!p1 || !p2 || !p3) return null;
+
+  let day = p1;
+  let month = p2;
+  let year = p3;
+
+  if (String(year).length === 2) {
+    year = 2000 + year;
+  }
+
+  const dt = new Date(year, month - 1, day);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function buildMultiSelect(containerId, triggerId, menuId, values, placeholder) {
+  const container = document.getElementById(containerId);
+  const trigger = document.getElementById(triggerId);
+  const menu = document.getElementById(menuId);
+
+  menu.innerHTML = `
+    <div class="multi-search">
+      <input type="text" class="multi-search-input" placeholder="Buscar..." />
+    </div>
+    <div class="multi-actions">
+      <button type="button" class="select-all">Todos</button>
+      <button type="button" class="clear-all">Limpar</button>
+    </div>
+    <div class="multi-options"></div>
+  `;
+
+  const optionsWrap = menu.querySelector(".multi-options");
+  const searchInput = menu.querySelector(".multi-search-input");
+
+  values.forEach(value => {
+    const label = document.createElement("label");
+    label.className = "multi-option";
+    label.dataset.value = normalizeText(value);
+    label.innerHTML = `
+      <input type="checkbox" value="${escapeHtml(value)}">
+      <span>${escapeHtml(value)}</span>
+    `;
+    optionsWrap.appendChild(label);
   });
 
-  // STATUS
+  if (!values.length) {
+    optionsWrap.innerHTML = `<div class="multi-empty">Nenhuma opção disponível</div>`;
+  }
+
+  function updateTriggerText() {
+    const selected = [...menu.querySelectorAll('.multi-option input[type="checkbox"]:checked')].map(i => i.value);
+
+    if (!selected.length) {
+      trigger.textContent = placeholder;
+    } else if (selected.length === 1) {
+      trigger.textContent = selected[0];
+    } else {
+      trigger.textContent = `${selected.length} selecionados`;
+    }
+  }
+
+  trigger.onclick = () => {
+    document.querySelectorAll(".multi-select").forEach(el => {
+      if (el !== container) el.classList.remove("open");
+    });
+
+    container.classList.toggle("open");
+
+    if (container.classList.contains("open")) {
+      setTimeout(() => searchInput.focus(), 30);
+    }
+  };
+
+  menu.querySelector(".select-all").onclick = () => {
+    menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(input => {
+      const option = input.closest(".multi-option");
+      if (option && option.style.display !== "none") input.checked = true;
+    });
+    updateTriggerText();
+  };
+
+  menu.querySelector(".clear-all").onclick = () => {
+    menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(input => {
+      input.checked = false;
+    });
+    updateTriggerText();
+  };
+
+  menu.querySelectorAll('.multi-option input[type="checkbox"]').forEach(input => {
+    input.addEventListener("change", updateTriggerText);
+  });
+
+  searchInput.addEventListener("input", () => {
+    const term = normalizeText(searchInput.value);
+    menu.querySelectorAll(".multi-option").forEach(option => {
+      option.style.display = !term || option.dataset.value.includes(term) ? "flex" : "none";
+    });
+  });
+
+  updateTriggerText();
+}
+
+document.addEventListener("click", (e) => {
+  document.querySelectorAll(".multi-select").forEach(container => {
+    if (!container.contains(e.target)) {
+      container.classList.remove("open");
+    }
+  });
+});
+
+function getSelectedValues(menuId) {
+  return [...document.querySelectorAll(`#${menuId} .multi-option input[type="checkbox"]:checked`)]
+    .map(i => i.value);
+}
+
+function sortNumericStrings(values) {
+  return [...values].sort((a, b) => Number(a) - Number(b));
+}
+
+function uniqueSorted(column) {
+  return [...new Set(rawData.map(r => normalizeValue(getCell(r, column))).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, "pt-BR"));
+}
+
+function buildFilters() {
+  const years = sortNumericStrings(
+    [...new Set(rawData.map(r => String(r._year)).filter(Boolean))]
+  );
+
+  const months = sortNumericStrings(
+    [...new Set(rawData.map(r => String(r._month)).filter(Boolean))]
+  ).map(m => monthNames[Number(m)]);
+
+  const days = sortNumericStrings(
+    [...new Set(rawData.map(r => String(r._day)).filter(Boolean))]
+  );
+
+  buildMultiSelect("multiAno", "triggerAno", "menuAno", years, "Todos");
+  buildMultiSelect("multiMes", "triggerMes", "menuMes", months, "Todos");
+  buildMultiSelect("multiUnidade", "triggerUnidade", "menuUnidade", uniqueSorted(UNIDADE_COLUMN), "Todas");
+  buildMultiSelect("multiColaborador", "triggerColaborador", "menuColaborador", uniqueSorted(COLABORADOR_COLUMN), "Todos");
+  buildMultiSelect("multiTurno", "triggerTurno", "menuTurno", uniqueSorted(TURNO_COLUMN), "Todos");
+  buildMultiSelect("multiProcesso", "triggerProcesso", "menuProcesso", uniqueSorted(PROCESSO_COLUMN), "Todos");
+  buildMultiSelect("multiValidacao", "triggerValidacao", "menuValidacao", uniqueSorted(VALIDACAO_COLUMN), "Todas");
+  buildMultiSelect("multiStatus", "triggerStatus", "menuStatus", uniqueSorted(STATUS_COLUMN), "Todos");
+  buildMultiSelect("multiDia", "triggerDia", "menuDia", days, "Todos");
+}
+
+function setDefaultDates() {
+  const validDates = rawData
+    .map(r => r._date)
+    .filter(Boolean)
+    .sort((a,b) => a - b);
+
+  if (!validDates.length) return;
+
+  document.getElementById("dateStart").value = formatDateToInput(validDates[0]);
+  document.getElementById("dateEnd").value = formatDateToInput(validDates[validDates.length - 1]);
+}
+
+function applyFilters() {
+  const search = normalizeText(document.getElementById("globalSearch").value);
+  const startValue = document.getElementById("dateStart").value;
+  const endValue = document.getElementById("dateEnd").value;
+
+  const startDate = startValue ? new Date(startValue + "T00:00:00") : null;
+  const endDate = endValue ? new Date(endValue + "T23:59:59") : null;
+
+  const anos = getSelectedValues("menuAno");
+  const meses = getSelectedValues("menuMes");
+  const unidades = getSelectedValues("menuUnidade");
+  const colaboradores = getSelectedValues("menuColaborador");
+  const turnos = getSelectedValues("menuTurno");
+  const processos = getSelectedValues("menuProcesso");
+  const validacoes = getSelectedValues("menuValidacao");
+  const status = getSelectedValues("menuStatus");
+  const dias = getSelectedValues("menuDia");
+
+  filteredData = rawData.filter(row => {
+    const dateOk =
+      (!startDate || (row._date && row._date >= startDate)) &&
+      (!endDate || (row._date && row._date <= endDate));
+
+    const searchOk =
+      !search ||
+      headers.some(header => !header.startsWith("_") && normalizeText(row[header]).includes(search));
+
+    const anoOk = anos.length === 0 || anos.includes(String(row._year));
+    const mesOk = meses.length === 0 || meses.includes(monthNames[row._month]);
+    const unidadeOk = unidades.length === 0 || unidades.includes(normalizeValue(getCell(row, UNIDADE_COLUMN)));
+    const colaboradorOk = colaboradores.length === 0 || colaboradores.includes(normalizeValue(getCell(row, COLABORADOR_COLUMN)));
+    const turnoOk = turnos.length === 0 || turnos.includes(normalizeValue(getCell(row, TURNO_COLUMN)));
+    const processoOk = processos.length === 0 || processos.includes(normalizeValue(getCell(row, PROCESSO_COLUMN)));
+    const validacaoOk = validacoes.length === 0 || validacoes.includes(normalizeValue(getCell(row, VALIDACAO_COLUMN)));
+    const statusOk = status.length === 0 || status.includes(normalizeValue(getCell(row, STATUS_COLUMN)));
+    const diaOk = dias.length === 0 || dias.includes(String(row._day));
+
+    return dateOk && searchOk && anoOk && mesOk && unidadeOk && colaboradorOk && turnoOk && processoOk && validacaoOk && statusOk && diaOk;
+  });
+
+  updateSheetInfo();
+  updateKpis();
+  renderCharts();
+  renderTable();
+
+  document.getElementById("updateTime").textContent = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function updateSheetInfo() {
+  const visibleHeaders = headers.filter(h => !h.startsWith("_"));
+  document.getElementById("sheetInfo").textContent =
+    `Linhas: ${formatNumber(rawData.length)} | Filtradas: ${formatNumber(filteredData.length)} | Colunas: ${visibleHeaders.length}`;
+}
+
+function sumByRows(rows, key) {
+  return rows.reduce((sum, row) => sum + parseNumeric(getCell(row, key)), 0);
+}
+
+function updateKpis() {
+  const enderecos = new Set(filteredData.map(r => normalizeValue(getCell(r, ENDERECO_COLUMN))).filter(Boolean)).size;
+  const fisico = sumByRows(filteredData, QTD_FISICA_COLUMN);
+  const sistema = sumByRows(filteredData, QTD_SISTEMA_COLUMN);
+  const sobra = sumByRows(filteredData, SOBRA_COLUMN);
+  const falta = sumByRows(filteredData, FALTA_COLUMN);
+  const divergentes = filteredData.filter(r => normalizeValue(getCell(r, VALIDACAO_COLUMN)).toUpperCase().includes("DIVERGENTE")).length;
+
+  document.getElementById("kpiEnderecos").textContent = formatNumber(enderecos);
+  document.getElementById("kpiFisico").textContent = formatNumber(fisico);
+  document.getElementById("kpiSistema").textContent = formatNumber(sistema);
+  document.getElementById("kpiSobra").textContent = formatNumber(sobra);
+  document.getElementById("kpiFalta").textContent = formatNumber(falta);
+  document.getElementById("kpiDivergentes").textContent = formatNumber(divergentes);
+
+  document.getElementById("kpiEnderecosSub").textContent = `${formatNumber(filteredData.length)} registros filtrados`;
+  document.getElementById("kpiFisicoSub").textContent = "Soma da quantidade física";
+  document.getElementById("kpiSistemaSub").textContent = "Soma da quantidade sistêmica";
+  document.getElementById("kpiSobraSub").textContent = "Soma da coluna SOBRA";
+  document.getElementById("kpiFaltaSub").textContent = "Soma da coluna FALTA";
+  document.getElementById("kpiDivergentesSub").textContent = "Validação = divergente";
+}
+
+function destroyCharts() {
+  [chartStatus, chartValidacao, chartColaborador, chartFisicoSistema, chartDia].forEach(chart => {
+    if (chart) chart.destroy();
+  });
+}
+
+function mapTop(entriesMap, limit = 10) {
+  return Object.entries(entriesMap)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, limit);
+}
+
+function baseBarOptions(horizontal = false, legend = false) {
+  return {
+    indexAxis: horizontal ? "y" : "x",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: legend,
+        labels: {
+          color: "#e5e7eb",
+          boxWidth: 10,
+          font: { size: 10 }
+        }
+      },
+      tooltip: {
+        backgroundColor: "#111827",
+        titleColor: "#fff",
+        bodyColor: "#e5e7eb",
+        borderColor: "rgba(255,255,255,0.08)",
+        borderWidth: 1
+      },
+      datalabels: {
+        color: "#fff",
+        anchor: horizontal ? "end" : "end",
+        align: horizontal ? "right" : "top",
+        offset: 2,
+        clamp: true,
+        font: {
+          weight: "700",
+          size: 10
+        },
+        formatter: value => value > 0 ? formatNumber(value) : ""
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#d1d5db",
+          font: { size: 9 }
+        },
+        grid: {
+          color: "rgba(255,255,255,0.05)"
+        },
+        beginAtZero: true
+      },
+      y: {
+        ticks: {
+          color: "#d1d5db",
+          font: { size: 9 }
+        },
+        grid: {
+          color: "rgba(255,255,255,0.05)"
+        },
+        beginAtZero: true
+      }
+    }
+  };
+}
+
+function renderCharts() {
+  destroyCharts();
+
   const statusMap = {};
-  filtrado.forEach(d=>{
-    const s = d.status || "Sem valor";
-    statusMap[s] = (statusMap[s]||0)+1;
+  const validacaoMap = {};
+  const sobraColaboradorMap = {};
+  const faltaColaboradorMap = {};
+  const fisicoColaboradorMap = {};
+  const sistemaColaboradorMap = {};
+
+  filteredData.forEach(row => {
+    const status = normalizeValue(getCell(row, STATUS_COLUMN)) || "Sem valor";
+    const validacao = normalizeValue(getCell(row, VALIDACAO_COLUMN)) || "Sem valor";
+    const colaborador = normalizeValue(getCell(row, COLABORADOR_COLUMN)) || "Sem valor";
+
+    const sobra = parseNumeric(getCell(row, SOBRA_COLUMN));
+    const falta = parseNumeric(getCell(row, FALTA_COLUMN));
+    const fisico = parseNumeric(getCell(row, QTD_FISICA_COLUMN));
+    const sistema = parseNumeric(getCell(row, QTD_SISTEMA_COLUMN));
+
+    statusMap[status] = (statusMap[status] || 0) + 1;
+    validacaoMap[validacao] = (validacaoMap[validacao] || 0) + 1;
+
+    sobraColaboradorMap[colaborador] = (sobraColaboradorMap[colaborador] || 0) + sobra;
+    faltaColaboradorMap[colaborador] = (faltaColaboradorMap[colaborador] || 0) + falta;
+
+    fisicoColaboradorMap[colaborador] = (fisicoColaboradorMap[colaborador] || 0) + fisico;
+    sistemaColaboradorMap[colaborador] = (sistemaColaboradorMap[colaborador] || 0) + sistema;
   });
 
-  chartStatus = new Chart(document.getElementById("chartStatus"),{
-    type:"bar",
-    data:{
-      labels:Object.keys(statusMap),
-      datasets:[{
-        data:Object.values(statusMap),
-        backgroundColor:"#ff7a1a"
+  const statusTop = mapTop(statusMap, 10);
+
+  chartStatus = new Chart(document.getElementById("chartStatus"), {
+    type: "bar",
+    data: {
+      labels: statusTop.map(([label]) => label),
+      datasets: [{
+        label: "Registros",
+        data: statusTop.map(([, value]) => value),
+        backgroundColor: "#ff7a1a",
+        borderRadius: 8
       }]
     },
-    options:{
-      plugins:{ datalabels:{ color:"#fff" } }
-    }
+    options: baseBarOptions(true, false)
   });
 
-  // COLABORADOR
-  const colabMap = {};
-  filtrado.forEach(d=>{
-    const c = d.colaborador || "Sem valor";
-    colabMap[c] = (colabMap[c]||0)+1;
-  });
+  const validacaoTop = mapTop(validacaoMap, 10);
 
-  chartColab = new Chart(document.getElementById("chartColaborador"),{
-    type:"bar",
-    data:{
-      labels:Object.keys(colabMap),
-      datasets:[{
-        data:Object.values(colabMap),
-        backgroundColor:"#60a5fa"
+  chartValidacao = new Chart(document.getElementById("chartValidacao"), {
+    type: "bar",
+    data: {
+      labels: validacaoTop.map(([label]) => label),
+      datasets: [{
+        label: "Registros",
+        data: validacaoTop.map(([, value]) => value),
+        backgroundColor: "#60a5fa",
+        borderRadius: 8
       }]
     },
-    options:{
-      indexAxis:"y",
-      plugins:{ datalabels:{ color:"#fff" } }
+    options: baseBarOptions(true, false)
+  });
+
+  const colabLabels = Object.keys({
+    ...sobraColaboradorMap,
+    ...faltaColaboradorMap
+  })
+    .sort((a,b) => ((sobraColaboradorMap[b] || 0) + (faltaColaboradorMap[b] || 0)) - ((sobraColaboradorMap[a] || 0) + (faltaColaboradorMap[a] || 0)))
+    .slice(0, 10);
+
+  chartColaborador = new Chart(document.getElementById("chartColaborador"), {
+    type: "bar",
+    data: {
+      labels: colabLabels,
+      datasets: [
+        {
+          label: "Sobra",
+          data: colabLabels.map(label => sobraColaboradorMap[label] || 0),
+          backgroundColor: "#ff7a1a",
+          borderRadius: 8
+        },
+        {
+          label: "Falta",
+          data: colabLabels.map(label => faltaColaboradorMap[label] || 0),
+          backgroundColor: "#ef4444",
+          borderRadius: 8
+        }
+      ]
+    },
+    options: baseBarOptions(true, true)
+  });
+
+  const fisicoLabels = Object.keys({
+    ...fisicoColaboradorMap,
+    ...sistemaColaboradorMap
+  })
+    .sort((a,b) => (fisicoColaboradorMap[b] || 0) - (fisicoColaboradorMap[a] || 0))
+    .slice(0, 10);
+
+  chartFisicoSistema = new Chart(document.getElementById("chartFisicoSistema"), {
+    type: "bar",
+    data: {
+      labels: fisicoLabels,
+      datasets: [
+        {
+          label: "Quantidade Física",
+          data: fisicoLabels.map(label => fisicoColaboradorMap[label] || 0),
+          backgroundColor: "#ff7a1a",
+          borderRadius: 8
+        },
+        {
+          label: "Quantidade Sistêmica",
+          data: fisicoLabels.map(label => sistemaColaboradorMap[label] || 0),
+          backgroundColor: "#60a5fa",
+          borderRadius: 8
+        }
+      ]
+    },
+    options: baseBarOptions(true, true)
+  });
+
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const byDaySobra = {};
+  const byDayFalta = {};
+  days.forEach(day => {
+    byDaySobra[day] = 0;
+    byDayFalta[day] = 0;
+  });
+
+  filteredData.forEach(row => {
+    if (!row._date || !row._day) return;
+    byDaySobra[row._day] += parseNumeric(getCell(row, SOBRA_COLUMN));
+    byDayFalta[row._day] += parseNumeric(getCell(row, FALTA_COLUMN));
+  });
+
+  chartDia = new Chart(document.getElementById("chartDia"), {
+    type: "line",
+    data: {
+      labels: days.map(String),
+      datasets: [
+        {
+          label: "Sobra",
+          data: days.map(day => byDaySobra[day] || 0),
+          borderColor: "#ff7a1a",
+          backgroundColor: "#ff7a1a",
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          fill: false
+        },
+        {
+          label: "Falta",
+          data: days.map(day => byDayFalta[day] || 0),
+          borderColor: "#ef4444",
+          backgroundColor: "#ef4444",
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            color: "#e5e7eb",
+            boxWidth: 10,
+            font: { size: 10 }
+          }
+        },
+        tooltip: {
+          backgroundColor: "#111827",
+          titleColor: "#fff",
+          bodyColor: "#e5e7eb",
+          borderColor: "rgba(255,255,255,0.08)",
+          borderWidth: 1
+        },
+        datalabels: {
+          color: "#fff",
+          align: "top",
+          anchor: "end",
+          offset: 4,
+          clamp: true,
+          font: {
+            weight: "700",
+            size: 9
+          },
+          formatter: value => value > 0 ? formatNumber(value) : ""
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: "#d1d5db",
+            font: { size: 9 }
+          },
+          grid: {
+            color: "rgba(255,255,255,0.05)"
+          }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: "#d1d5db",
+            font: { size: 9 }
+          },
+          grid: {
+            color: "rgba(255,255,255,0.05)"
+          }
+        }
+      }
     }
   });
 }
 
-carregar();
-</script>
+function renderTable() {
+  const tableWrap = document.getElementById("tableWrap");
 
+  if (!filteredData.length) {
+    tableWrap.innerHTML = `<div class="empty">Nenhum dado encontrado com os filtros aplicados.</div>`;
+    return;
+  }
+
+  const visibleHeaders = headers.filter(header => !header.startsWith("_"));
+  let html = "<table><thead><tr>";
+
+  visibleHeaders.forEach(header => {
+    html += `<th>${escapeHtml(header)}</th>`;
+  });
+
+  html += "</tr></thead><tbody>";
+
+  filteredData.slice(0, 300).forEach(row => {
+    html += "<tr>";
+    visibleHeaders.forEach(header => {
+      html += `<td>${escapeHtml(row[header] || "")}</td>`;
+    });
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+  tableWrap.innerHTML = html;
+}
+
+function clearAllFilters() {
+  document.getElementById("globalSearch").value = "";
+  document.getElementById("dateStart").value = "";
+  document.getElementById("dateEnd").value = "";
+
+  document.querySelectorAll('.multi-select-menu input[type="checkbox"]').forEach(input => {
+    input.checked = false;
+  });
+
+  document.querySelectorAll('.multi-search-input').forEach(input => {
+    input.value = "";
+  });
+
+  document.querySelectorAll('.multi-option').forEach(option => {
+    option.style.display = "flex";
+  });
+
+  document.getElementById("triggerAno").textContent = "Todos";
+  document.getElementById("triggerMes").textContent = "Todos";
+  document.getElementById("triggerUnidade").textContent = "Todas";
+  document.getElementById("triggerColaborador").textContent = "Todos";
+  document.getElementById("triggerTurno").textContent = "Todos";
+  document.getElementById("triggerProcesso").textContent = "Todos";
+  document.getElementById("triggerValidacao").textContent = "Todas";
+  document.getElementById("triggerStatus").textContent = "Todos";
+  document.getElementById("triggerDia").textContent = "Todos";
+
+  setDefaultDates();
+  applyFilters();
+}
+
+async function loadUser() {
+  try {
+    const res = await fetch("/api/me");
+    const user = await res.json();
+
+    document.getElementById("userInfo").textContent =
+      `${user.nome || "Usuário"} | ${user.perfil || "usuario"}`;
+  } catch {
+    document.getElementById("userInfo").textContent = "Usuário não identificado";
+  }
+}
+
+async function loadData() {
+  try {
+    const res = await fetch("/api/varredura");
+    const data = await res.json();
+
+    rawData = Array.isArray(data) ? data : [];
+    rawData = rawData.map(row => ({ ...row }));
+
+    headers = [...new Set(rawData.flatMap(row => Object.keys(row)))];
+
+    DATE_COLUMN = resolveColumn(DATE_COLUMN_CANDIDATES);
+    COLABORADOR_COLUMN = resolveColumn(COLABORADOR_COLUMN_CANDIDATES);
+    UNIDADE_COLUMN = resolveColumn(UNIDADE_COLUMN_CANDIDATES);
+    TURNO_COLUMN = resolveColumn(TURNO_COLUMN_CANDIDATES);
+    PROCESSO_COLUMN = resolveColumn(PROCESSO_COLUMN_CANDIDATES);
+    ENDERECO_COLUMN = resolveColumn(ENDERECO_COLUMN_CANDIDATES);
+    QTD_FISICA_COLUMN = resolveColumn(QTD_FISICA_COLUMN_CANDIDATES);
+    VALIDACAO_COLUMN = resolveColumn(VALIDACAO_COLUMN_CANDIDATES);
+    QTD_SISTEMA_COLUMN = resolveColumn(QTD_SISTEMA_COLUMN_CANDIDATES);
+    SOBRA_COLUMN = resolveColumn(SOBRA_COLUMN_CANDIDATES);
+    FALTA_COLUMN = resolveColumn(FALTA_COLUMN_CANDIDATES);
+    SKU_ID_COLUMN = resolveColumn(SKU_ID_COLUMN_CANDIDATES);
+    SKU_NAME_COLUMN = resolveColumn(SKU_NAME_COLUMN_CANDIDATES);
+    STATUS_COLUMN = resolveColumn(STATUS_COLUMN_CANDIDATES);
+    MES_ANO_COLUMN = resolveColumn(MES_ANO_COLUMN_CANDIDATES);
+
+    rawData = rawData.map(row => {
+      const dt = parseDateBR(getCell(row, DATE_COLUMN));
+      return {
+        ...row,
+        _date: dt,
+        _year: dt ? dt.getFullYear() : "",
+        _month: dt ? dt.getMonth() + 1 : "",
+        _day: dt ? dt.getDate() : ""
+      };
+    });
+
+    buildFilters();
+    setDefaultDates();
+
+    filteredData = [...rawData];
+
+    updateSheetInfo();
+    updateKpis();
+    renderCharts();
+    renderTable();
+
+    document.getElementById("updateTime").textContent = new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch (error) {
+    console.error(error);
+    document.getElementById("tableWrap").innerHTML =
+      `<div class="empty">Erro ao carregar os dados da planilha.</div>`;
+  }
+}
+
+document.getElementById("applyFilters").addEventListener("click", applyFilters);
+document.getElementById("clearFilters").addEventListener("click", clearAllFilters);
+document.getElementById("globalSearch").addEventListener("input", applyFilters);
+document.getElementById("dateStart").addEventListener("change", applyFilters);
+document.getElementById("dateEnd").addEventListener("change", applyFilters);
+
+loadUser();
+loadData();
+</script>
 </body>
 </html>

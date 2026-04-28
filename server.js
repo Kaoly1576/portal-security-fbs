@@ -5374,7 +5374,7 @@ app.get("/hc-fbs", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "hc-fbs.html"));
 });
 
-const HCFBS_SPREADSHEET_ID = "1s7ZG9N7pS0pafmYb-4QfQXZPily21gp16_-Vzdy7m5I";
+const HCFBS_SPREADSHEET_ID = "1st8JBVkmLwt0hVW-l9zqv4mIAsUIpZKNPOVhx3Go7xo";
 const HCFBS_RANGE = "A:H";
 
 let hcfbsCache = null;
@@ -5628,7 +5628,7 @@ async function hcLoadRaw() {
       num_semana: line[4] ?? "",
       num_mes: line[5] ?? "",
       turno_g: line[6] ?? "",
-      turno: line[7] ?? "", // coluna H
+      station: line[7] ?? "", // coluna H
     };
 
     obj._dateObj = hcParseDate(obj.data);

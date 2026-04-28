@@ -5370,6 +5370,8 @@ app.get("/api/presenteismo-detalhes", requireAuth, async (req, res) => {
 
 // ================== HC FBS DASHBOARD ==================
 
+// ================== HC FBS DASHBOARD ==================
+
 app.get("/hc-fbs", requireAuth, (req, res) => {
   return res.sendFile(path.join(__dirname, "public", "hc-fbs.html"));
 });
@@ -5393,10 +5395,7 @@ function hcNormLower(v) {
 }
 
 function hcParseNumber(v) {
-  const s = hcNorm(v)
-    .replace(/\./g, "")
-    .replace(",", ".");
-
+  const s = hcNorm(v).replace(/\./g, "").replace(",", ".");
   const n = Number(s);
   return Number.isFinite(n) ? n : 0;
 }
@@ -5662,6 +5661,7 @@ async function hcLoadWithCache() {
 function hcApplyFilters(rows, query) {
   const bpo = hcSplitMulti(query.bpo);
   const turno = hcSplitMulti(query.turno);
+  const station = hcSplitMulti(query.station);
   const ano = hcSplitMulti(query.ano);
   const mes = hcSplitMulti(query.mes);
   const semana = hcSplitMulti(query.semana);
@@ -5671,6 +5671,7 @@ function hcApplyFilters(rows, query) {
   return rows.filter((row) => {
     if (!hcMatchesMulti(row.bpo, bpo)) return false;
     if (!hcMatchesMulti(row.turno, turno)) return false;
+    if (!hcMatchesMulti(row.station, station)) return false;
     if (ano.length && !ano.includes(String(row._year || ""))) return false;
     if (mes.length && !mes.includes(String(row._month || ""))) return false;
     if (semana.length && !semana.includes(String(row.num_semana || ""))) return false;
@@ -5732,6 +5733,7 @@ app.get("/api/hc-fbs-filtros", requireAuth, async (req, res) => {
     return res.json({
       bpo: uniq(r => r.bpo),
       turno: uniq(r => r.turno),
+      station: uniq(r => r.station),
       ano: uniqNum(r => r._year),
       mes: uniqNum(r => r._month),
       semana: uniqNum(r => r.num_semana),
@@ -5755,6 +5757,7 @@ app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
     const totalRegistros = periodRows.length;
     const totalBpos = new Set(periodRows.map(r => hcNorm(r.bpo)).filter(Boolean)).size;
     const totalTurnos = new Set(periodRows.map(r => hcNorm(r.turno)).filter(Boolean)).size;
+    const totalStations = new Set(periodRows.map(r => hcNorm(r.station)).filter(Boolean)).size;
 
     const comparison = hcGetComparisonWindow(period.start, period.end);
     const baseNoPeriodRows = hcApplyFiltersWithoutPeriod(rows, req.query);
@@ -5777,6 +5780,7 @@ app.get("/api/hc-fbs-resumo", requireAuth, async (req, res) => {
       totalRegistros,
       totalBpos,
       totalTurnos,
+      totalStations,
       admitidosAnterior,
       variacaoAdmitidos: hcPercentChange(totalAdmitidos, admitidosAnterior),
       comparativoLabel: comparison.label || "base anterior",
@@ -5906,7 +5910,6 @@ app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
     return res.status(500).json({ ok: false, message: error.message });
   }
 });
-
 // ================== FALTAS ALTUM DASHBOARD ==================
 
 app.get("/faltas-altum", requireAuth, (req, res) => {

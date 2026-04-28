@@ -7082,9 +7082,8 @@ function normalizeName(value) {
   let name = normalizeText(value)
     .toUpperCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, ""); // remove acento
+    .replace(/[\u0300-\u036f]/g, "");
 
-  // Correções de nomes
   const corrections = {
     "ERICK": "ERIK",
     "ERIC": "ERIK",
@@ -7104,21 +7103,24 @@ function normalizeUnidade(value) {
   return normalizeText(value).toUpperCase();
 }
 
-// 🔥 NOVA PLANILHA AQUI
-async function buscarPlanilha() {
+// ================== BUSCAR PLANILHA ==================
+
+async function buscarPlanilhaAVLost() {
   const sheets = await conectarSheets();
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: "1NTliBuXKzIXE99Lj3O2oT1B5PovdL7mTaTCReM-LbvM",
-    range: "AV!A:M", // NOVO RANGE
+    range: "AV!A:M", // ✅ NOVO RANGE
   });
 
   return response.data.values || [];
 }
 
+// ================== API ==================
+
 app.get("/api/dados", requireAuth, async (req, res) => {
   try {
-    const dados = await buscarPlanilha();
+    const dados = await buscarPlanilhaAVLost();
 
     if (!dados || dados.length === 0) {
       return res.json([]);
@@ -7136,7 +7138,7 @@ app.get("/api/dados", requireAuth, async (req, res) => {
 
         const colUpper = columnName.toUpperCase();
 
-        // 🔥 NORMALIZAÇÕES AUTOMÁTICAS
+        // 🔥 NORMALIZAÇÕES
         if (colUpper.includes("NOME") || colUpper.includes("COLABORADOR")) {
           value = normalizeName(value);
         }
@@ -7157,12 +7159,11 @@ app.get("/api/dados", requireAuth, async (req, res) => {
 
     return res.json(objetos);
 
-  } catch (e) {
-    console.log("Erro /api/dados:", e);
+  } catch (erro) {
+    console.error("❌ Erro ao buscar dados AV-LOST:", erro);
     return res.json([]);
   }
 });
-
 
 
 // ================== ERROS ==================

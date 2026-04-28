@@ -502,6 +502,14 @@
       </div>
 
       <div class="field">
+  <label>Station</label>
+  <div class="multi-select" id="multiStation">
+    <button type="button" class="multi-trigger" id="triggerStation">Todas</button>
+    <div class="multi-menu" id="menuStation"></div>
+  </div>
+</div>
+
+      <div class="field">
         <label>Data de referência</label>
         <input type="date" id="filtroDataRef" />
       </div>
@@ -602,6 +610,14 @@
     </div>
 
     <div class="panel">
+  <div class="panel-title">Admitidos por Station</div>
+  <div class="panel-subtitle">Distribuição por unidade / station</div>
+  <div class="chart-box">
+    <canvas id="chartStation"></canvas>
+  </div>
+</div>
+
+    <div class="panel">
       <div class="panel-title">Admitidos por Turno</div>
       <div class="panel-subtitle">Distribuição por turno (coluna H)</div>
       <div class="chart-box"><canvas id="chartTurno"></canvas></div>
@@ -665,6 +681,7 @@ let chartTurno = null;
 let chartSemana = null;
 let chartDia = null;
 let chartComparativo = null;
+let chartStationInstance = null;
 
 function esc(v){return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
 function fmt(n){return new Intl.NumberFormat("pt-BR").format(Number(n||0));}
@@ -676,6 +693,7 @@ function destroyCharts() {
   chartSemana = null;
   chartDia = null;
   chartComparativo = null;
+  if (chartStationInstance) chartStationInstance.destroy();
 }
 
 function horizontalBarOptions() {
@@ -787,6 +805,7 @@ function getFiltersQuery(page=1){
   const qs = new URLSearchParams();
   qs.set("periodoTipo", document.getElementById("filtroPeriodoTipo").value || "mes");
   qs.set("dataRef", document.getElementById("filtroDataRef").value || "");
+  qs.set("station", getMultiValues("menuStation"));
   qs.set("bpo", getMultiValues("menuBpo"));
   qs.set("turno", getMultiValues("menuTurno"));
   qs.set("ano", getMultiValues("menuAno"));
@@ -823,6 +842,7 @@ async function loadResumo(page=1){
   document.getElementById("cardRegistros").textContent = fmt(data.totalRegistros);
   document.getElementById("cardBpos").textContent = fmt(data.totalBpos);
   document.getElementById("cardTurnos").textContent = fmt(data.totalTurnos);
+  document.getElementById("triggerStation").textContent = "Todas";
 
   const varNum = Number(data.variacaoAdmitidos || 0);
   const cls = varNum > 0 ? "green" : varNum < 0 ? "red" : "";
@@ -849,6 +869,20 @@ async function loadGraficos(page=1){
     },
     options: horizontalBarOptions()
   });
+
+  chartStationInstance = new Chart(document.getElementById("chartStation"), {
+  type: "bar",
+  data: {
+    labels: Object.keys(data.porStation || {}),
+    datasets: [{
+      label: "Admitidos",
+      data: Object.values(data.porStation || {}),
+      backgroundColor: "#22c55e",
+      borderRadius: 8
+    }]
+  },
+  options: horizontalOptions()
+});
 
   chartTurno = new Chart(document.getElementById("chartTurno"), {
     type:"bar",

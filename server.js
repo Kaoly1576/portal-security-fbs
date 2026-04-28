@@ -5392,6 +5392,15 @@ function hcNormLower(v) {
     .toLowerCase();
 }
 
+function hcParseNumber(v) {
+  const s = hcNorm(v)
+    .replace(/\./g, "")
+    .replace(",", ".");
+
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function hcGetHoraAtualizacaoBR() {
   return new Date().toLocaleTimeString("pt-BR", {
     timeZone: "America/Sao_Paulo",
@@ -5472,10 +5481,7 @@ function hcResolvePeriodFromQuery(query, rows) {
 
     if (!isNaN(ref.getTime())) {
       if (periodoTipo === "dia") {
-        return {
-          start: hcStartOfDay(ref),
-          end: hcEndOfDay(ref),
-        };
+        return { start: hcStartOfDay(ref), end: hcEndOfDay(ref) };
       }
 
       if (periodoTipo === "semana") {
@@ -5487,10 +5493,7 @@ function hcResolvePeriodFromQuery(query, rows) {
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekEnd.getDate() + 6);
 
-        return {
-          start: hcStartOfDay(weekStart),
-          end: hcEndOfDay(weekEnd),
-        };
+        return { start: hcStartOfDay(weekStart), end: hcEndOfDay(weekEnd) };
       }
 
       if (periodoTipo === "ano") {
@@ -5508,7 +5511,7 @@ function hcResolvePeriodFromQuery(query, rows) {
   }
 
   const validDates = rows
-    .map((r) => r._dateObj)
+    .map(r => r._dateObj)
     .filter(Boolean)
     .sort((a, b) => a - b);
 
@@ -5623,12 +5626,12 @@ async function hcLoadRaw() {
     const obj = {
       data: line[0] ?? "",
       bpo: line[1] ?? "",
-      qtd_admitidos: Number(line[2] || 0),
-      qtd_desligados: line[3] ?? "",
-      num_semana: line[4] ?? "",
-      num_mes: line[5] ?? "",
-      turno_g: line[6] ?? "",
-      station: line[7] ?? "", // coluna H
+      turno: line[2] ?? "",
+      qtd_admitidos: hcParseNumber(line[3]),
+      qtd_desligados: hcParseNumber(line[4]),
+      num_semana: line[5] ?? "",
+      num_mes: line[6] ?? "",
+      station: line[7] ?? "",
     };
 
     obj._dateObj = hcParseDate(obj.data);
@@ -5674,10 +5677,15 @@ function hcApplyFilters(rows, query) {
     if (dia.length && !dia.includes(String(row._day || ""))) return false;
 
     if (busca) {
-      const text = Object.values(row)
-        .filter((v) => typeof v !== "object")
-        .join(" ")
-        .toLowerCase();
+      const text = [
+        row.data,
+        row.bpo,
+        row.turno,
+        row.qtd_admitidos,
+        row.num_semana,
+        row.num_mes,
+        row.station,
+      ].join(" ").toLowerCase();
 
       if (!text.includes(busca)) return false;
     }
@@ -5797,6 +5805,7 @@ app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
     const porBpo = {};
     const porTurno = {};
     const porSemana = {};
+    const porStation = {};
 
     periodRows.forEach((row) => {
       const qtd = Number(row.qtd_admitidos || 0);
@@ -5811,6 +5820,9 @@ app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
 
       const semana = `Semana ${row.num_semana || "?"}`;
       porSemana[semana] = (porSemana[semana] || 0) + qtd;
+
+      const station = hcNorm(row.station) || "Sem Station";
+      porStation[station] = (porStation[station] || 0) + qtd;
     });
 
     const comparison = hcGetComparisonWindow(period.start, period.end);
@@ -5836,6 +5848,7 @@ app.get("/api/hc-fbs-graficos", requireAuth, async (req, res) => {
       porBpo,
       porTurno,
       porSemana,
+      porStation,
       comparativo: {
         atual,
         anterior,
@@ -5873,10 +5886,11 @@ app.get("/api/hc-fbs-detalhes", requireAuth, async (req, res) => {
     const rowsOut = sorted.slice(start, start + limit).map((row) => ({
       data: row._dateObj ? hcFormatBR(row._dateObj) : row.data || "",
       bpo: row.bpo || "",
+      turno: row.turno || "",
       qtdAdmitidos: Number(row.qtd_admitidos || 0),
       semana: row.num_semana || "",
       mes: row.num_mes || "",
-      turno: row.turno || "",
+      station: row.station || "",
     }));
 
     return res.json({

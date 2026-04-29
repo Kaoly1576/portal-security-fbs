@@ -7865,46 +7865,89 @@ function normalizeTextABS(value) {
     .replace(/\s+/g, " ");
 }
 
-async function buscarPlanilhaABS() {
+function toNumber(v) {
+  if (!v) return 0;
+  return Number(
+    String(v)
+      .replace("%", "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+      .replace(/[^\d.-]/g, "")
+  ) || 0;
+}
+
+function parseDateBR(v) {
+  if (!v) return null;
+
+  const p = String(v).split("/");
+  if (p.length < 2) return null;
+
+  let d = Number(p[0]);
+  let m = Number(p[1]);
+  let y = p[2] ? Number(p[2]) : new Date().getFullYear();
+
+  if (y < 100) y = 2000 + y;
+
+  const dt = new Date(y, m - 1, d);
+  return isNaN(dt) ? null : dt;
+}
+
+async function buscarABS() {
   const sheets = await conectarSheets();
 
   const spreadsheetId = "1zxDfK4llY_yEZT96JARsArD8c2rG7MHC-aCPW0cdhsw";
 
-  const rangesPossiveis = [
-    "ABS_BRASIL!A:O",
-    "'ABS_BRASIL'!A:O",
-    "'People KPIs Report - BRASIL - ABS_BRASIL'!A:O",
-    "A:O"
-  ];
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: "ABS_BRASIL!A:O",
+  });
 
-  let ultimoErro = null;
+  return response.data.values || [];
+}
 
-  for (const range of rangesPossiveis) {
-    try {
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-      });
+async function buscarHC() {
+  const sheets = await conectarSheets();
 
-      return response.data.values || [];
-    } catch (erro) {
-      ultimoErro = erro;
-    }
-  }
+  const spreadsheetId = "1zxDfK4llY_yEZT96JARsArD8c2rG7MHC-aCPW0cdhsw";
 
-  throw ultimoErro;
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: "HC_BRASIL!A:B",
+  });
+
+  return response.data.values || [];
 }
 
 app.get("/api/abs-operacional", requireAuth, async (req, res) => {
   try {
-    const dados = await buscarPlanilhaABS();
+    const dadosABS = await buscarABS();
+    const dadosHC = await buscarHC();
 
-    if (!dados || dados.length === 0) {
-      return res.json([]);
-    }
+    if (!dadosABS.length) return res.json([]);
 
-    const cabecalho = dados[0] || [];
-    const linhas = dados.slice(1);
+    // =========================
+    // MAP HC POR DATA
+    // =========================
+    const hcMap = {};
+    const hcHeader = dadosHC[0] || [];
+
+    const hcLinhas = dadosHC.slice(1);
+
+    hcLinhas.forEach((l) => {
+      const data = parseDateBR(l[0]);
+      const hc = toNumber(l[1]);
+
+      if (data) {
+        const key = data.toISOString().split("T")[0];
+        hcMap[key] = hc;
+      }
+    });
+
+    // =========================
+    // PROCESSA ABS
+    // =========================
+    const cabecalho = dadosABS[0];
+    const linhas = dadosABS.slice(1);
 
     const objetos = linhas.map((linha) => {
       const obj = {};
@@ -7912,15 +7955,59 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       cabecalho.forEach((col, i) => {
         const columnName = normalizeTextABS(col);
         const value = linha[i] ?? "";
+
         obj[columnName] = normalizeTextABS(value);
       });
+
+      // =========================
+      // DATA
+      // =========================
+      const data = parseDateBR(obj["data"] || obj["DATA"]);
+      const key = data ? data.toISOString().split("T")[0] : null;
+
+      // =========================
+      // HC VINDO DA OUTRA ABA
+      // =========================
+      obj._HC_CALCULADO = key && hcMap[key] ? hcMap[key] : 0;
+
+      // =========================
+      // TURNO MÊS
+      // =========================
+      obj._MES = data ? data.getMonth() + 1 : null;
+      obj._ANO = data ? data.getFullYear() : null;
+
+      obj._TURNOVER = toNumber(obj["turnover"] || obj["TURNOVER"]);
 
       return obj;
     });
 
+    // =========================
+    // CALCULAR TURNOVER POR MÊS
+    // =========================
+    const turnoverMesMap = {};
+
+    objetos.forEach((row) => {
+      const chave = `${row._ANO}-${row._MES}`;
+
+      if (!turnoverMesMap[chave]) {
+        turnoverMesMap[chave] = 0;
+      }
+
+      turnoverMesMap[chave] += row._TURNOVER;
+    });
+
+    // =========================
+    // INJETAR TURNOVER MENSAL
+    // =========================
+    objetos.forEach((row) => {
+      const chave = `${row._ANO}-${row._MES}`;
+      row._TURNOVER_MES = turnoverMesMap[chave] || 0;
+    });
+
     return res.json(objetos);
+
   } catch (erro) {
-    console.error("Erro /api/abs-operacional:", erro);
+    console.error("Erro ABS:", erro);
     return res.json([]);
   }
 });

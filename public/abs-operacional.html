@@ -761,9 +761,10 @@ function sums(rows){
   const falt = rows.reduce((a,r) => a + num(cell(r,COL.faltas)), 0);
   const fol = rows.reduce((a,r) => a + num(cell(r,COL.folgas)), 0);
 
+  // HC correto
   const hcDiaSet = new Set();
   rows.forEach(r => {
-    if (r._HC_DIA !== undefined && r._HC_DIA !== null) {
+    if (r._HC_DIA !== undefined) {
       hcDiaSet.add(num(r._HC_DIA));
     }
   });
@@ -771,20 +772,17 @@ function sums(rows){
   let hc = 0;
   hcDiaSet.forEach(v => hc += v);
 
-  const turnoverSet = new Set();
-  rows.forEach(r => {
-    if (r._TURNOVER_PERCENTUAL !== undefined && r._TURNOVER_PERCENTUAL !== null) {
-      const valor = num(r._TURNOVER_PERCENTUAL);
-      if (valor > 0) turnoverSet.add(valor);
-    }
-  });
-
+  // ✅ TURNOVER = pega apenas 1 valor (não soma!)
   let turnRate = 0;
-  turnoverSet.forEach(v => {
-    turnRate += v;
-  });
 
-  const turn = rows.reduce((a,r) => a + num(r._TURNOVER_MES), 0);
+  for (let r of rows) {
+    if (r._TURNOVER_PERCENTUAL !== undefined) {
+      turnRate = num(r._TURNOVER_PERCENTUAL);
+      break;
+    }
+  }
+
+  const turn = turnRate;
   const abs = (pres + falt) > 0 ? (falt / (pres + falt)) * 100 : 0;
 
   return { pres, falt, fol, turn, hc, abs, turnRate };

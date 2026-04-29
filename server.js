@@ -8131,20 +8131,24 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
   turnoverMesAteDia: 0,
   hcPlannedDia: 0,
   folgasDia: 0,
+  turnoverPercentual: 0
 };
 
+// ✅ VALORES CORRETOS
 obj._TURNOVER_MES = turnoverCalc.turnoverMesAteDia;
 obj._TURNOVER_HC_DIA = turnoverCalc.hcPlannedDia;
 obj._TURNOVER_FOLGAS_DIA = turnoverCalc.folgasDia;
+obj._TURNOVER_PERCENTUAL = turnoverCalc.turnoverPercentual;
+      obj._HC_DIA =
+  hcDetalhadoMap[keyDetalhado] ||
+  hcStationMap[keyStation] ||
+  hcDiaMap[dateKey] ||
+  0;
 
-      // Mantém compatibilidade com HTML antigo
-      obj["hc_planned"] = String(obj._HC_DIA);
-
-      // Turnover calculado igual à fórmula
-      obj._TURNOVER_MES = toNumberABS(obj["turnover"]);
-      obj._TURNOVER_HC_DIA = turnoverCalc.hcPlannedDia;
-      obj._TURNOVER_FOLGAS_DIA = turnoverCalc.folgasDia;
-      obj._TURNOVER_PERCENTUAL = toNumberABS(obj["turnover"]);
+// ❗ NÃO sobrescrever mais aqui
+// ❌ REMOVER essas linhas antigas:
+// obj._TURNOVER_MES = toNumberABS(obj["turnover"]);
+// obj._TURNOVER_PERCENTUAL = toNumberABS(obj["turnover"]);
 
       obj._MES = data ? data.getMonth() + 1 : null;
       obj._ANO = data ? data.getFullYear() : null;

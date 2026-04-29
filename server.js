@@ -7860,9 +7860,7 @@ app.get("/api/hc-onboarding-debug", requireAuth, async (req, res) => {
 // ================== ABS OPERACIONAL FBS ==================
 
 function normalizeTextABS(value) {
-  return String(value || "")
-    .trim()
-    .replace(/\s+/g, " ");
+  return String(value || "").trim().replace(/\s+/g, " ");
 }
 
 function normalizeKeyABS(value) {
@@ -7890,14 +7888,12 @@ function parseDateABS(value) {
 
   const str = String(value).trim();
 
-  // Formato ISO: 2026-04-28
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const [yyyy, mm, dd] = str.split("T")[0].split("-").map(Number);
     const dt = new Date(yyyy, mm - 1, dd);
     return isNaN(dt.getTime()) ? null : dt;
   }
 
-  // Formato BR: 28/04 ou 28/04/2026
   const parts = str.split("/");
   if (parts.length >= 2) {
     let day = Number(parts[0]);
@@ -7934,7 +7930,6 @@ function monthKeyABS(date) {
 
 async function buscarABS() {
   const sheets = await conectarSheets();
-
   const spreadsheetId = "1zxDfK4llY_yEZT96JARsArD8c2rG7MHC-aCPW0cdhsw";
 
   const response = await sheets.spreadsheets.values.get({
@@ -7947,7 +7942,6 @@ async function buscarABS() {
 
 async function buscarHC() {
   const sheets = await conectarSheets();
-
   const spreadsheetId = "1zxDfK4llY_yEZT96JARsArD8c2rG7MHC-aCPW0cdhsw";
 
   const response = await sheets.spreadsheets.values.get({
@@ -7967,18 +7961,6 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       return res.json([]);
     }
 
-    // =====================================================
-    // HC_BRASIL
-    // A = data
-    // B = qtd_registros
-    // C = turno
-    // D = setor
-    // E = turno_setor
-    // F = processo
-    // G = station
-    // J = bpo
-    // =====================================================
-
     const hcLinhas = dadosHC.slice(1);
 
     const hcDiaMap = {};
@@ -7991,13 +7973,13 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
 
       const dateKey = formatDateKeyABS(data);
 
-      const hc = toNumberABS(linha[1]);
-      const turno = normalizeKeyABS(linha[2]);
-      const setor = normalizeKeyABS(linha[3]);
-      const turnoSetor = normalizeKeyABS(linha[4]);
-      const processo = normalizeKeyABS(linha[5]);
-      const station = normalizeKeyABS(linha[6]);
-      const bpo = normalizeKeyABS(linha[9]);
+      const hc = toNumberABS(linha[1]);             // B = HC
+      const turno = normalizeKeyABS(linha[2]);      // C
+      const setor = normalizeKeyABS(linha[3]);      // D
+      const turnoSetor = normalizeKeyABS(linha[4]); // E
+      const processo = normalizeKeyABS(linha[5]);   // F
+      const station = normalizeKeyABS(linha[6]);    // G
+      const bpo = normalizeKeyABS(linha[9]);        // J
 
       const keyStation = `${dateKey}|${station}`;
       const keyDetalhado = [
@@ -8015,25 +7997,9 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       hcDetalhadoMap[keyDetalhado] = (hcDetalhadoMap[keyDetalhado] || 0) + hc;
     });
 
-    // =====================================================
-    // ABS_BRASIL
-    // A = dia
-    // G = folgas
-    // H = turnover
-    // I = hc_planned
-    // M = station
-    //
-    // Cabeçalho real:
-    // dia, turno, setor, turno_setor, faltas, presenca, folgas,
-    // turnover, hc_planned, absenteeism_rate, num_semana, num_mes,
-    // station, processo, bpo
-    // =====================================================
-
     const cabecalho = dadosABS[0] || [];
     const linhasABS = dadosABS.slice(1);
 
-    // Mapa para calcular turnover igual à fórmula da planilha:
-    // turnover acumulado do mês até a data / (hc_planned do dia + folgas do dia + turnover acumulado do mês até a data)
     const turnoverBaseMap = {};
 
     linhasABS.forEach((linha) => {
@@ -8042,7 +8008,6 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
 
       const dateKey = formatDateKeyABS(data);
       const monthKey = monthKeyABS(data);
-
       const station = normalizeKeyABS(linha[12]); // M = station
 
       if (!station) return;
@@ -8057,7 +8022,7 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
         date: data,
         dateKey,
         turnover: toNumberABS(linha[7]),  // H = turnover
-        hcPlanned: toNumberABS(linha[8]), // I = hc_planned
+        hcPlanned: toNumberABS(linha[8]), // I = hc_planned ABS
         folgas: toNumberABS(linha[6]),    // G = folgas
       });
     });
@@ -8088,7 +8053,9 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
           ? (turnoverMesAteDia / denominador) * 100
           : 0;
 
-        turnoverCalcMap[`${rowRef.dateKey}|${key.split("|")[1]}`] = {
+        const station = key.split("|")[1];
+
+        turnoverCalcMap[`${rowRef.dateKey}|${station}`] = {
           turnoverMesAteDia,
           hcPlannedDia,
           folgasDia,
@@ -8128,27 +8095,26 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       ].join("|");
 
       const turnoverCalc = turnoverCalcMap[keyStation] || {
-  turnoverMesAteDia: 0,
-  hcPlannedDia: 0,
-  folgasDia: 0,
-  turnoverPercentual: 0
-};
+        turnoverMesAteDia: 0,
+        hcPlannedDia: 0,
+        folgasDia: 0,
+        turnoverPercentual: 0,
+      };
 
-// ✅ VALORES CORRETOS
-obj._TURNOVER_MES = turnoverCalc.turnoverMesAteDia;
-obj._TURNOVER_HC_DIA = turnoverCalc.hcPlannedDia;
-obj._TURNOVER_FOLGAS_DIA = turnoverCalc.folgasDia;
-obj._TURNOVER_PERCENTUAL = turnoverCalc.turnoverPercentual;
-      obj._HC_DIA =
-  hcDetalhadoMap[keyDetalhado] ||
-  hcStationMap[keyStation] ||
-  hcDiaMap[dateKey] ||
-  0;
+      // HC correto vindo da aba HC_BRASIL
+      obj._DATA_KEY = dateKey;
+      obj._HC_DIA = hcDiaMap[dateKey] || 0;
+      obj._HC_STATION = hcStationMap[keyStation] || 0;
+      obj._HC_CALCULADO = hcDetalhadoMap[keyDetalhado] || 0;
 
-// ❗ NÃO sobrescrever mais aqui
-// ❌ REMOVER essas linhas antigas:
-// obj._TURNOVER_MES = toNumberABS(obj["turnover"]);
-// obj._TURNOVER_PERCENTUAL = toNumberABS(obj["turnover"]);
+      // Mantém compatibilidade se algum gráfico ainda usa hc_planned
+      obj["hc_planned"] = String(obj._HC_CALCULADO);
+
+      // Turnover correto pela fórmula acumulada no mês
+      obj._TURNOVER_MES = turnoverCalc.turnoverMesAteDia;
+      obj._TURNOVER_HC_DIA = turnoverCalc.hcPlannedDia;
+      obj._TURNOVER_FOLGAS_DIA = turnoverCalc.folgasDia;
+      obj._TURNOVER_PERCENTUAL = turnoverCalc.turnoverPercentual;
 
       obj._MES = data ? data.getMonth() + 1 : null;
       obj._ANO = data ? data.getFullYear() : null;
@@ -8163,7 +8129,6 @@ obj._TURNOVER_PERCENTUAL = turnoverCalc.turnoverPercentual;
     return res.json([]);
   }
 });
-
 
 // ================== ERROS ==================
 

@@ -7196,7 +7196,7 @@ async function buscarPlanilhaVarredura() {
   const sheets = await conectarSheets();
 
   const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: "1NTliBuXKzIXE99Lj3O2oT1B5PovdL7mTaTCReM-LbvM",
+    spreadsheetId: "1YKJBGGYHsreiEvC84MzoBGoTlSbEBJPcCfaoLCB31gs",
     range: "VARREDURA!A:O",
   });
 

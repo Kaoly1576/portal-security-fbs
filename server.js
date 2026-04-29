@@ -7896,14 +7896,12 @@ function parseDateABS(value) {
 
   const str = String(value).trim();
 
-  // Formato ISO: 2026-01-01
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const [yyyy, mm, dd] = str.split("T")[0].split("-").map(Number);
     const dt = new Date(yyyy, mm - 1, dd);
     return isNaN(dt) ? null : dt;
   }
 
-  // Formato BR: 01/01 ou 01/01/2026
   const p = str.split("/");
   if (p.length >= 2) {
     let d = Number(p[0]);
@@ -7939,7 +7937,7 @@ async function buscarHC() {
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: "HC_BRASIL!A:J",
+    range: "HC_BRASIL!A:S",
   });
 
   return response.data.values || [];
@@ -7952,24 +7950,25 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
 
     if (!dadosABS.length) return res.json([]);
 
-    // =========================
-    // MONTA MAPA HC_BRASIL
-    // =========================
     const hcLinhas = dadosHC.slice(1);
 
-    const hcMapDetalhado = {};
-    const hcMapStation = {};
     const hcMapDia = {};
+    const hcMapStation = {};
+    const hcMapDetalhado = {};
+    const turnoverMapDia = {};
 
     hcLinhas.forEach((linha) => {
-      const data = parseDateABS(linha[0]);       // A = data
-      const hc = toNumberABS(linha[1]);          // B = qtd_registros
-      const turno = normalizeKeyABS(linha[2]);   // C = turno
-      const setor = normalizeKeyABS(linha[3]);   // D = setor
-      const turnoSetor = normalizeKeyABS(linha[4]); // E = turno_setor
-      const processo = normalizeKeyABS(linha[5]);   // F = processo
-      const station = normalizeKeyABS(linha[6]);    // G = station
-      const bpo = normalizeKeyABS(linha[9]);        // J = bpo
+      const data = parseDateABS(linha[0]);          // A = data
+      const hc = toNumberABS(linha[1]);             // B = HC
+      const turno = normalizeKeyABS(linha[2]);      // C
+      const setor = normalizeKeyABS(linha[3]);      // D
+      const turnoSetor = normalizeKeyABS(linha[4]); // E
+      const processo = normalizeKeyABS(linha[5]);   // F
+      const station = normalizeKeyABS(linha[6]);    // G
+      const bpo = normalizeKeyABS(linha[9]);        // J
+
+      // Coluna S = turnover correto da planilha
+      const turnoverReal = toNumberABS(linha[18]);
 
       if (!data) return;
 
@@ -7993,11 +7992,12 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       hcMapDetalhado[keyDetalhado] = (hcMapDetalhado[keyDetalhado] || 0) + hc;
       hcMapStation[keyStation] = (hcMapStation[keyStation] || 0) + hc;
       hcMapDia[dateKey] = (hcMapDia[dateKey] || 0) + hc;
+
+      if (turnoverReal > 0) {
+        turnoverMapDia[dateKey] = turnoverReal;
+      }
     });
 
-    // =========================
-    // PROCESSA ABS_BRASIL
-    // =========================
     const cabecalho = dadosABS[0] || [];
     const linhasABS = dadosABS.slice(1);
 
@@ -8043,26 +8043,10 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       obj._MES = data ? data.getMonth() + 1 : null;
       obj._ANO = data ? data.getFullYear() : null;
 
-      obj._TURNOVER_MES = obj._TURNOVER;
+      // turnover correto vindo da HC_BRASIL coluna S
+      obj._TURNOVER_MES = turnoverMapDia[dateKey] || 0;
 
       return obj;
-    });
-
-    // =========================
-    // TURNOVER POR MÊS
-    // =========================
-    const turnoverMesMap = {};
-
-    objetos.forEach((row) => {
-      if (!row._ANO || !row._MES) return;
-
-      const chave = `${row._ANO}-${String(row._MES).padStart(2, "0")}`;
-      turnoverMesMap[chave] = (turnoverMesMap[chave] || 0) + row._TURNOVER;
-    });
-
-    objetos.forEach((row) => {
-      const chave = `${row._ANO}-${String(row._MES).padStart(2, "0")}`;
-      row._TURNOVER_MES = turnoverMesMap[chave] || 0;
     });
 
     return res.json(objetos);

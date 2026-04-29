@@ -8043,7 +8043,7 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       obj._MES = data ? data.getMonth() + 1 : null;
       obj._ANO = data ? data.getFullYear() : null;
 
-      obj._TURNOVER = toNumberABS(obj["turnover"]);
+      obj._TURNOVER_MES = obj._TURNOVER;
 
       return obj;
     });

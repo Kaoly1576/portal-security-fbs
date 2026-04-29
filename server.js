@@ -7868,7 +7868,7 @@ function normalizeTextABS(value) {
 async function buscarPlanilhaABS() {
   const sheets = await conectarSheets();
 
-  const spreadsheetId = "1s7ZG9N7pS0pafmYb-4QfQXZPily21gp16_-Vzdy7m5I";
+  const spreadsheetId = "1zxDfK4llY_yEZT96JARsArD8c2rG7MHC-aCPW0cdhsw";
 
   const rangesPossiveis = [
     "ABS_BRASIL!A:O",

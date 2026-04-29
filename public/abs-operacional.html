@@ -773,13 +773,9 @@ function sums(rows){
 
   const turnoverSet = new Set();
   rows.forEach(r => {
-    const valorTurnover =
-      r._TURNOVER_MES !== undefined && r._TURNOVER_MES !== null
-        ? num(r._TURNOVER_MES)
-        : num(cell(r, COL.turnover));
-
-    if (valorTurnover > 0) {
-      turnoverSet.add(valorTurnover);
+    if (r._TURNOVER_PERCENTUAL !== undefined && r._TURNOVER_PERCENTUAL !== null) {
+      const valor = num(r._TURNOVER_PERCENTUAL);
+      if (valor > 0) turnoverSet.add(valor);
     }
   });
 
@@ -788,7 +784,7 @@ function sums(rows){
     turnRate += v;
   });
 
-  const turn = turnRate;
+  const turn = rows.reduce((a,r) => a + num(r._TURNOVER_MES), 0);
   const abs = (pres + falt) > 0 ? (falt / (pres + falt)) * 100 : 0;
 
   return { pres, falt, fol, turn, hc, abs, turnRate };

@@ -757,41 +757,36 @@ function applyFilters(){
 }
 
 function sums(rows){
-
   const pres = rows.reduce((a,r) => a + num(cell(r,COL.presenca)), 0);
   const falt = rows.reduce((a,r) => a + num(cell(r,COL.faltas)), 0);
-  const fol  = rows.reduce((a,r) => a + num(cell(r,COL.folgas)), 0);
+  const fol = rows.reduce((a,r) => a + num(cell(r,COL.folgas)), 0);
 
-  // ✅ HC vindo da aba HC_BRASIL (seguro)
-  const hc = rows.reduce((a,r) => a + (r._HC_CALCULADO ? num(r._HC_CALCULADO) : 0), 0);
+  const hcDiaSet = new Set();
+  rows.forEach(r => {
+    if (r._HC_DIA !== undefined && r._HC_DIA !== null) {
+      hcDiaSet.add(num(r._HC_DIA));
+    }
+  });
 
-  // ✅ TURNOVER MENSAL (pega valor único do mês sem quebrar)
-  let turn = 0;
+  let hc = 0;
+  hcDiaSet.forEach(v => hc += v);
 
   const turnoverSet = new Set();
-
   rows.forEach(r => {
     if (r._TURNOVER_MES !== undefined && r._TURNOVER_MES !== null) {
       turnoverSet.add(num(r._TURNOVER_MES));
     }
   });
 
-  // pega o valor do mês (não soma duplicado)
+  let turn = 0;
   turnoverSet.forEach(v => turn += v);
 
   const abs = (pres + falt) > 0 ? (falt / (pres + falt)) * 100 : 0;
   const turnRate = hc > 0 ? (turn / hc) * 100 : 0;
 
-  return {
-    pres,
-    falt,
-    fol,
-    turn,
-    hc,
-    abs,
-    turnRate
-  };
+  return {pres, falt, fol, turn, hc, abs, turnRate};
 }
+  
 function updateKpis(){
   const s = sums(filteredData);
 

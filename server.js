@@ -8128,17 +8128,14 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       ].join("|");
 
       const turnoverCalc = turnoverCalcMap[keyStation] || {
-        turnoverMesAteDia: 0,
-        hcPlannedDia: 0,
-        folgasDia: 0,
-        turnoverPercentual: 0,
-      };
+  turnoverMesAteDia: 0,
+  hcPlannedDia: 0,
+  folgasDia: 0,
+};
 
-      // HC vindo da aba HC_BRASIL
-      obj._DATA_KEY = dateKey;
-      obj._HC_DIA = hcDiaMap[dateKey] || 0;
-      obj._HC_STATION = hcStationMap[keyStation] || 0;
-      obj._HC_CALCULADO = hcDetalhadoMap[keyDetalhado] || 0;
+obj._TURNOVER_MES = turnoverCalc.turnoverMesAteDia;
+obj._TURNOVER_HC_DIA = turnoverCalc.hcPlannedDia;
+obj._TURNOVER_FOLGAS_DIA = turnoverCalc.folgasDia;
 
       // Mantém compatibilidade com HTML antigo
       obj["hc_planned"] = String(obj._HC_DIA);

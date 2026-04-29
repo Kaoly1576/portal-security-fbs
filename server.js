@@ -7866,23 +7866,55 @@ function normalizeTextABS(value) {
 }
 
 function normalizeKeyABS(value) {
-  return normalizeTextABS(value).toUpperCase();
+  return normalizeTextABS(value)
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
-function toNumberABS(v) {
-  if (v === null || v === undefined || v === "") return 0;
+function toNumberABS(value) {
+  if (value === null || value === undefined || value === "") return 0;
 
-  return Number(
-    String(v)
-      .replace("%", "")
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .replace(/[^\d.-]/g, "")
-  ) || 0;
+  const cleaned = String(value)
+    .replace("%", "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+
+  const n = Number(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+function parseDateABS(value) {
+  if (!value) return null;
+
+  const str = String(value).trim();
+
+  // Formato ISO: 2026-04-28
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [yyyy, mm, dd] = str.split("T")[0].split("-").map(Number);
+    const dt = new Date(yyyy, mm - 1, dd);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  // Formato BR: 28/04 ou 28/04/2026
+  const parts = str.split("/");
+  if (parts.length >= 2) {
+    let day = Number(parts[0]);
+    let month = Number(parts[1]);
+    let year = parts[2] ? Number(parts[2]) : 2026;
+
+    if (year < 100) year = 2000 + year;
+
+    const dt = new Date(year, month - 1, day);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
+  return null;
 }
 
 function formatDateKeyABS(date) {
-  if (!(date instanceof Date) || isNaN(date)) return "";
+  if (!(date instanceof Date) || isNaN(date.getTime())) return "";
 
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
@@ -7891,30 +7923,13 @@ function formatDateKeyABS(date) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function parseDateABS(value) {
-  if (!value) return null;
+function monthKeyABS(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return "";
 
-  const str = String(value).trim();
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
 
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    const [yyyy, mm, dd] = str.split("T")[0].split("-").map(Number);
-    const dt = new Date(yyyy, mm - 1, dd);
-    return isNaN(dt) ? null : dt;
-  }
-
-  const p = str.split("/");
-  if (p.length >= 2) {
-    let d = Number(p[0]);
-    let m = Number(p[1]);
-    let y = p[2] ? Number(p[2]) : 2026;
-
-    if (y < 100) y = 2000 + y;
-
-    const dt = new Date(y, m - 1, d);
-    return isNaN(dt) ? null : dt;
-  }
-
-  return null;
+  return `${yyyy}-${mm}`;
 }
 
 async function buscarABS() {
@@ -7937,7 +7952,7 @@ async function buscarHC() {
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: "HC_BRASIL!A:S",
+    range: "HC_BRASIL!A:J",
   });
 
   return response.data.values || [];
@@ -7948,76 +7963,43 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
     const dadosABS = await buscarABS();
     const dadosHC = await buscarHC();
 
-    if (!dadosABS.length) return res.json([]);
+    if (!dadosABS || dadosABS.length === 0) {
+      return res.json([]);
+    }
+
+    // =====================================================
+    // HC_BRASIL
+    // A = data
+    // B = qtd_registros
+    // C = turno
+    // D = setor
+    // E = turno_setor
+    // F = processo
+    // G = station
+    // J = bpo
+    // =====================================================
 
     const hcLinhas = dadosHC.slice(1);
 
-    const hcMapDia = {};
-    const hcMapStation = {};
-    const hcMapDetalhado = {};
-    const turnoverMapDia = {};
+    const hcDiaMap = {};
+    const hcStationMap = {};
+    const hcDetalhadoMap = {};
 
     hcLinhas.forEach((linha) => {
-      const data = parseDateABS(linha[0]);          // A = data
-      const hc = toNumberABS(linha[1]);             // B = HC
-      const turno = normalizeKeyABS(linha[2]);      // C
-      const setor = normalizeKeyABS(linha[3]);      // D
-      const turnoSetor = normalizeKeyABS(linha[4]); // E
-      const processo = normalizeKeyABS(linha[5]);   // F
-      const station = normalizeKeyABS(linha[6]);    // G
-      const bpo = normalizeKeyABS(linha[9]);        // J
-
-      // Coluna S = turnover correto da planilha
-      const turnoverReal = toNumberABS(linha[18]);
-
-      const turnoverFormulaMap = {};
-
-linhasABS.forEach((linhaBase) => {
-  const dataRef = parseDateABS(linhaBase[0]); // Coluna A
-  const stationRef = normalizeKeyABS(linhaBase[12]); // Coluna M
-
-  if (!dataRef || !stationRef) return;
-
-  const dateKey = formatDateKeyABS(dataRef);
-  const mesInicio = new Date(dataRef.getFullYear(), dataRef.getMonth(), 1);
-
-  let turnoverMes = 0;
-  let presencaDia = 0;
-  let faltasDia = 0;
-
-  linhasABS.forEach((linhaCalc) => {
-    const dataCalc = parseDateABS(linhaCalc[0]); // A
-    const stationCalc = normalizeKeyABS(linhaCalc[12]); // M
-
-    if (!dataCalc || stationCalc !== stationRef) return;
-
-    // H = turnover / desligamentos
-    if (dataCalc >= mesInicio && dataCalc <= dataRef) {
-      turnoverMes += toNumberABS(linhaCalc[7]);
-    }
-
-    // I = presenças do dia
-    if (formatDateKeyABS(dataCalc) === dateKey) {
-      presencaDia += toNumberABS(linhaCalc[8]);
-      faltasDia += toNumberABS(linhaCalc[6]); // G = faltas
-    }
-  });
-
-  const denominador = presencaDia + faltasDia + turnoverMes;
-  const turnoverPercentual = denominador > 0 ? (turnoverMes / denominador) * 100 : 0;
-
-  turnoverFormulaMap[`${dateKey}|${stationRef}`] = {
-    turnoverMes,
-    presencaDia,
-    faltasDia,
-    turnoverPercentual
-  };
-});
-
+      const data = parseDateABS(linha[0]);
       if (!data) return;
 
       const dateKey = formatDateKeyABS(data);
 
+      const hc = toNumberABS(linha[1]);
+      const turno = normalizeKeyABS(linha[2]);
+      const setor = normalizeKeyABS(linha[3]);
+      const turnoSetor = normalizeKeyABS(linha[4]);
+      const processo = normalizeKeyABS(linha[5]);
+      const station = normalizeKeyABS(linha[6]);
+      const bpo = normalizeKeyABS(linha[9]);
+
+      const keyStation = `${dateKey}|${station}`;
       const keyDetalhado = [
         dateKey,
         turno,
@@ -8025,25 +8007,95 @@ linhasABS.forEach((linhaBase) => {
         turnoSetor,
         processo,
         station,
-        bpo
+        bpo,
       ].join("|");
 
-      const keyStation = [
-        dateKey,
-        station
-      ].join("|");
-
-      hcMapDetalhado[keyDetalhado] = (hcMapDetalhado[keyDetalhado] || 0) + hc;
-      hcMapStation[keyStation] = (hcMapStation[keyStation] || 0) + hc;
-      hcMapDia[dateKey] = (hcMapDia[dateKey] || 0) + hc;
-
-      if (turnoverReal > 0) {
-        turnoverMapDia[dateKey] = turnoverReal;
-      }
+      hcDiaMap[dateKey] = (hcDiaMap[dateKey] || 0) + hc;
+      hcStationMap[keyStation] = (hcStationMap[keyStation] || 0) + hc;
+      hcDetalhadoMap[keyDetalhado] = (hcDetalhadoMap[keyDetalhado] || 0) + hc;
     });
+
+    // =====================================================
+    // ABS_BRASIL
+    // A = dia
+    // G = folgas
+    // H = turnover
+    // I = hc_planned
+    // M = station
+    //
+    // Cabeçalho real:
+    // dia, turno, setor, turno_setor, faltas, presenca, folgas,
+    // turnover, hc_planned, absenteeism_rate, num_semana, num_mes,
+    // station, processo, bpo
+    // =====================================================
 
     const cabecalho = dadosABS[0] || [];
     const linhasABS = dadosABS.slice(1);
+
+    // Mapa para calcular turnover igual à fórmula da planilha:
+    // turnover acumulado do mês até a data / (hc_planned do dia + folgas do dia + turnover acumulado do mês até a data)
+    const turnoverBaseMap = {};
+
+    linhasABS.forEach((linha) => {
+      const data = parseDateABS(linha[0]); // A = dia
+      if (!data) return;
+
+      const dateKey = formatDateKeyABS(data);
+      const monthKey = monthKeyABS(data);
+
+      const station = normalizeKeyABS(linha[12]); // M = station
+
+      if (!station) return;
+
+      const key = `${monthKey}|${station}`;
+
+      if (!turnoverBaseMap[key]) {
+        turnoverBaseMap[key] = [];
+      }
+
+      turnoverBaseMap[key].push({
+        date: data,
+        dateKey,
+        turnover: toNumberABS(linha[7]),  // H = turnover
+        hcPlanned: toNumberABS(linha[8]), // I = hc_planned
+        folgas: toNumberABS(linha[6]),    // G = folgas
+      });
+    });
+
+    const turnoverCalcMap = {};
+
+    Object.entries(turnoverBaseMap).forEach(([key, rows]) => {
+      rows.sort((a, b) => a.date - b.date);
+
+      rows.forEach((rowRef) => {
+        let turnoverMesAteDia = 0;
+        let hcPlannedDia = 0;
+        let folgasDia = 0;
+
+        rows.forEach((rowCalc) => {
+          if (rowCalc.date <= rowRef.date) {
+            turnoverMesAteDia += rowCalc.turnover;
+          }
+
+          if (rowCalc.dateKey === rowRef.dateKey) {
+            hcPlannedDia += rowCalc.hcPlanned;
+            folgasDia += rowCalc.folgas;
+          }
+        });
+
+        const denominador = hcPlannedDia + folgasDia + turnoverMesAteDia;
+        const turnoverPercentual = denominador > 0
+          ? (turnoverMesAteDia / denominador) * 100
+          : 0;
+
+        turnoverCalcMap[`${rowRef.dateKey}|${key.split("|")[1]}`] = {
+          turnoverMesAteDia,
+          hcPlannedDia,
+          folgasDia,
+          turnoverPercentual,
+        };
+      });
+    });
 
     const objetos = linhasABS.map((linha) => {
       const obj = {};
@@ -8064,6 +8116,7 @@ linhasABS.forEach((linhaBase) => {
       const station = normalizeKeyABS(obj["station"]);
       const bpo = normalizeKeyABS(obj["bpo"]);
 
+      const keyStation = `${dateKey}|${station}`;
       const keyDetalhado = [
         dateKey,
         turno,
@@ -8071,24 +8124,33 @@ linhasABS.forEach((linhaBase) => {
         turnoSetor,
         processo,
         station,
-        bpo
+        bpo,
       ].join("|");
 
-      const keyStation = [
-        dateKey,
-        station
-      ].join("|");
+      const turnoverCalc = turnoverCalcMap[keyStation] || {
+        turnoverMesAteDia: 0,
+        hcPlannedDia: 0,
+        folgasDia: 0,
+        turnoverPercentual: 0,
+      };
 
+      // HC vindo da aba HC_BRASIL
       obj._DATA_KEY = dateKey;
-      obj._HC_CALCULADO = hcMapDetalhado[keyDetalhado] || 0;
-      obj._HC_STATION = hcMapStation[keyStation] || 0;
-      obj._HC_DIA = hcMapDia[dateKey] || 0;
+      obj._HC_DIA = hcDiaMap[dateKey] || 0;
+      obj._HC_STATION = hcStationMap[keyStation] || 0;
+      obj._HC_CALCULADO = hcDetalhadoMap[keyDetalhado] || 0;
+
+      // Mantém compatibilidade com HTML antigo
+      obj["hc_planned"] = String(obj._HC_DIA);
+
+      // Turnover calculado igual à fórmula
+      obj._TURNOVER_MES = turnoverCalc.turnoverMesAteDia;
+      obj._TURNOVER_HC_DIA = turnoverCalc.hcPlannedDia;
+      obj._TURNOVER_FOLGAS_DIA = turnoverCalc.folgasDia;
+      obj._TURNOVER_PERCENTUAL = turnoverCalc.turnoverPercentual;
 
       obj._MES = data ? data.getMonth() + 1 : null;
       obj._ANO = data ? data.getFullYear() : null;
-
-      // turnover correto vindo da HC_BRASIL coluna S
-      obj._TURNOVER_MES = turnoverMapDia[dateKey] || 0;
 
       return obj;
     });

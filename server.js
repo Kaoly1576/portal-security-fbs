@@ -7865,8 +7865,13 @@ function normalizeTextABS(value) {
     .replace(/\s+/g, " ");
 }
 
-function toNumber(v) {
-  if (!v) return 0;
+function normalizeKeyABS(value) {
+  return normalizeTextABS(value).toUpperCase();
+}
+
+function toNumberABS(v) {
+  if (v === null || v === undefined || v === "") return 0;
+
   return Number(
     String(v)
       .replace("%", "")
@@ -7876,20 +7881,42 @@ function toNumber(v) {
   ) || 0;
 }
 
-function parseDateBR(v) {
-  if (!v) return null;
+function formatDateKeyABS(date) {
+  if (!(date instanceof Date) || isNaN(date)) return "";
 
-  const p = String(v).split("/");
-  if (p.length < 2) return null;
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
 
-  let d = Number(p[0]);
-  let m = Number(p[1]);
-  let y = p[2] ? Number(p[2]) : new Date().getFullYear();
+  return `${yyyy}-${mm}-${dd}`;
+}
 
-  if (y < 100) y = 2000 + y;
+function parseDateABS(value) {
+  if (!value) return null;
 
-  const dt = new Date(y, m - 1, d);
-  return isNaN(dt) ? null : dt;
+  const str = String(value).trim();
+
+  // Formato ISO: 2026-01-01
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [yyyy, mm, dd] = str.split("T")[0].split("-").map(Number);
+    const dt = new Date(yyyy, mm - 1, dd);
+    return isNaN(dt) ? null : dt;
+  }
+
+  // Formato BR: 01/01 ou 01/01/2026
+  const p = str.split("/");
+  if (p.length >= 2) {
+    let d = Number(p[0]);
+    let m = Number(p[1]);
+    let y = p[2] ? Number(p[2]) : 2026;
+
+    if (y < 100) y = 2000 + y;
+
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt) ? null : dt;
+  }
+
+  return null;
 }
 
 async function buscarABS() {
@@ -7912,7 +7939,7 @@ async function buscarHC() {
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: "HC_BRASIL!A:B",
+    range: "HC_BRASIL!A:J",
   });
 
   return response.data.values || [];
@@ -7926,91 +7953,126 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
     if (!dadosABS.length) return res.json([]);
 
     // =========================
-    // MAP HC POR DATA
+    // MONTA MAPA HC_BRASIL
     // =========================
-    const hcMap = {};
-    const hcHeader = dadosHC[0] || [];
-
     const hcLinhas = dadosHC.slice(1);
 
-    hcLinhas.forEach((l) => {
-      const data = parseDateBR(l[0]);
-      const hc = toNumber(l[1]);
+    const hcMapDetalhado = {};
+    const hcMapStation = {};
+    const hcMapDia = {};
 
-      if (data) {
-        const key = data.toISOString().split("T")[0];
-        hcMap[key] = hc;
-      }
+    hcLinhas.forEach((linha) => {
+      const data = parseDateABS(linha[0]);       // A = data
+      const hc = toNumberABS(linha[1]);          // B = qtd_registros
+      const turno = normalizeKeyABS(linha[2]);   // C = turno
+      const setor = normalizeKeyABS(linha[3]);   // D = setor
+      const turnoSetor = normalizeKeyABS(linha[4]); // E = turno_setor
+      const processo = normalizeKeyABS(linha[5]);   // F = processo
+      const station = normalizeKeyABS(linha[6]);    // G = station
+      const bpo = normalizeKeyABS(linha[9]);        // J = bpo
+
+      if (!data) return;
+
+      const dateKey = formatDateKeyABS(data);
+
+      const keyDetalhado = [
+        dateKey,
+        turno,
+        setor,
+        turnoSetor,
+        processo,
+        station,
+        bpo
+      ].join("|");
+
+      const keyStation = [
+        dateKey,
+        station
+      ].join("|");
+
+      hcMapDetalhado[keyDetalhado] = (hcMapDetalhado[keyDetalhado] || 0) + hc;
+      hcMapStation[keyStation] = (hcMapStation[keyStation] || 0) + hc;
+      hcMapDia[dateKey] = (hcMapDia[dateKey] || 0) + hc;
     });
 
     // =========================
-    // PROCESSA ABS
+    // PROCESSA ABS_BRASIL
     // =========================
-    const cabecalho = dadosABS[0];
-    const linhas = dadosABS.slice(1);
+    const cabecalho = dadosABS[0] || [];
+    const linhasABS = dadosABS.slice(1);
 
-    const objetos = linhas.map((linha) => {
+    const objetos = linhasABS.map((linha) => {
       const obj = {};
 
       cabecalho.forEach((col, i) => {
         const columnName = normalizeTextABS(col);
         const value = linha[i] ?? "";
-
         obj[columnName] = normalizeTextABS(value);
       });
 
-      // =========================
-      // DATA
-      // =========================
-      const data = parseDateBR(obj["data"] || obj["DATA"]);
-      const key = data ? data.toISOString().split("T")[0] : null;
+      const data = parseDateABS(obj["dia"] || obj["data"] || obj["DATA"]);
+      const dateKey = data ? formatDateKeyABS(data) : "";
 
-      // =========================
-      // HC VINDO DA OUTRA ABA
-      // =========================
-      obj._HC_CALCULADO = key && hcMap[key] ? hcMap[key] : 0;
+      const turno = normalizeKeyABS(obj["turno"]);
+      const setor = normalizeKeyABS(obj["setor"]);
+      const turnoSetor = normalizeKeyABS(obj["turno_setor"]);
+      const processo = normalizeKeyABS(obj["processo"]);
+      const station = normalizeKeyABS(obj["station"]);
+      const bpo = normalizeKeyABS(obj["bpo"]);
 
-      // =========================
-      // TURNO MÊS
-      // =========================
+      const keyDetalhado = [
+        dateKey,
+        turno,
+        setor,
+        turnoSetor,
+        processo,
+        station,
+        bpo
+      ].join("|");
+
+      const keyStation = [
+        dateKey,
+        station
+      ].join("|");
+
+      obj._DATA_KEY = dateKey;
+      obj._HC_CALCULADO = hcMapDetalhado[keyDetalhado] || 0;
+      obj._HC_STATION = hcMapStation[keyStation] || 0;
+      obj._HC_DIA = hcMapDia[dateKey] || 0;
+
       obj._MES = data ? data.getMonth() + 1 : null;
       obj._ANO = data ? data.getFullYear() : null;
 
-      obj._TURNOVER = toNumber(obj["turnover"] || obj["TURNOVER"]);
+      obj._TURNOVER = toNumberABS(obj["turnover"]);
 
       return obj;
     });
 
     // =========================
-    // CALCULAR TURNOVER POR MÊS
+    // TURNOVER POR MÊS
     // =========================
     const turnoverMesMap = {};
 
     objetos.forEach((row) => {
-      const chave = `${row._ANO}-${row._MES}`;
+      if (!row._ANO || !row._MES) return;
 
-      if (!turnoverMesMap[chave]) {
-        turnoverMesMap[chave] = 0;
-      }
-
-      turnoverMesMap[chave] += row._TURNOVER;
+      const chave = `${row._ANO}-${String(row._MES).padStart(2, "0")}`;
+      turnoverMesMap[chave] = (turnoverMesMap[chave] || 0) + row._TURNOVER;
     });
 
-    // =========================
-    // INJETAR TURNOVER MENSAL
-    // =========================
     objetos.forEach((row) => {
-      const chave = `${row._ANO}-${row._MES}`;
+      const chave = `${row._ANO}-${String(row._MES).padStart(2, "0")}`;
       row._TURNOVER_MES = turnoverMesMap[chave] || 0;
     });
 
     return res.json(objetos);
 
   } catch (erro) {
-    console.error("Erro ABS:", erro);
+    console.error("Erro /api/abs-operacional:", erro);
     return res.json([]);
   }
 });
+
 
 // ================== ERROS ==================
 

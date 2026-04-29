@@ -7970,6 +7970,50 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       // Coluna S = turnover correto da planilha
       const turnoverReal = toNumberABS(linha[18]);
 
+      const turnoverFormulaMap = {};
+
+linhasABS.forEach((linhaBase) => {
+  const dataRef = parseDateABS(linhaBase[0]); // Coluna A
+  const stationRef = normalizeKeyABS(linhaBase[12]); // Coluna M
+
+  if (!dataRef || !stationRef) return;
+
+  const dateKey = formatDateKeyABS(dataRef);
+  const mesInicio = new Date(dataRef.getFullYear(), dataRef.getMonth(), 1);
+
+  let turnoverMes = 0;
+  let presencaDia = 0;
+  let faltasDia = 0;
+
+  linhasABS.forEach((linhaCalc) => {
+    const dataCalc = parseDateABS(linhaCalc[0]); // A
+    const stationCalc = normalizeKeyABS(linhaCalc[12]); // M
+
+    if (!dataCalc || stationCalc !== stationRef) return;
+
+    // H = turnover / desligamentos
+    if (dataCalc >= mesInicio && dataCalc <= dataRef) {
+      turnoverMes += toNumberABS(linhaCalc[7]);
+    }
+
+    // I = presenças do dia
+    if (formatDateKeyABS(dataCalc) === dateKey) {
+      presencaDia += toNumberABS(linhaCalc[8]);
+      faltasDia += toNumberABS(linhaCalc[6]); // G = faltas
+    }
+  });
+
+  const denominador = presencaDia + faltasDia + turnoverMes;
+  const turnoverPercentual = denominador > 0 ? (turnoverMes / denominador) * 100 : 0;
+
+  turnoverFormulaMap[`${dateKey}|${stationRef}`] = {
+    turnoverMes,
+    presencaDia,
+    faltasDia,
+    turnoverPercentual
+  };
+});
+
       if (!data) return;
 
       const dateKey = formatDateKeyABS(data);

@@ -773,18 +773,25 @@ function sums(rows){
 
   const turnoverSet = new Set();
   rows.forEach(r => {
-    if (r._TURNOVER_MES !== undefined && r._TURNOVER_MES !== null) {
-      turnoverSet.add(num(r._TURNOVER_MES));
+    const valorTurnover =
+      r._TURNOVER_MES !== undefined && r._TURNOVER_MES !== null
+        ? num(r._TURNOVER_MES)
+        : num(cell(r, COL.turnover));
+
+    if (valorTurnover > 0) {
+      turnoverSet.add(valorTurnover);
     }
   });
 
-  let turn = 0;
-  turnoverSet.forEach(v => turn += v);
+  let turnRate = 0;
+  turnoverSet.forEach(v => {
+    turnRate += v;
+  });
 
+  const turn = turnRate;
   const abs = (pres + falt) > 0 ? (falt / (pres + falt)) * 100 : 0;
-  const turnRate = hc > 0 ? (turn / hc) * 100 : 0;
 
-  return {pres, falt, fol, turn, hc, abs, turnRate};
+  return { pres, falt, fol, turn, hc, abs, turnRate };
 }
   
 function updateKpis(){

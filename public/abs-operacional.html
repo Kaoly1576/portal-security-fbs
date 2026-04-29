@@ -760,8 +760,13 @@ function sums(rows){
   const pres = rows.reduce((a,r) => a + num(cell(r,COL.presenca)), 0);
   const falt = rows.reduce((a,r) => a + num(cell(r,COL.faltas)), 0);
   const fol = rows.reduce((a,r) => a + num(cell(r,COL.folgas)), 0);
-  const turn = rows.reduce((a,r) => a + num(cell(r,COL.turnover)), 0);
-  const hc = rows.reduce((a,r) => a + num(cell(r,COL.hc)), 0);
+
+  // Turnover agora vem calculado pelo server como soma do mês
+  const turn = rows.length > 0 ? num(rows[0]._TURNOVER_MES) : 0;
+
+  // HC agora vem da aba HC_BRASIL, coluna B
+  const hc = rows.reduce((a,r) => a + num(r._HC_CALCULADO), 0);
+
   const abs = (pres + falt) > 0 ? (falt / (pres + falt)) * 100 : 0;
   const turnRate = hc > 0 ? (turn / hc) * 100 : 0;
 

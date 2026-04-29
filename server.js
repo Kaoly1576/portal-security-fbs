@@ -8144,10 +8144,10 @@ app.get("/api/abs-operacional", requireAuth, async (req, res) => {
       obj["hc_planned"] = String(obj._HC_DIA);
 
       // Turnover calculado igual à fórmula
-      obj._TURNOVER_MES = turnoverCalc.turnoverMesAteDia;
+      obj._TURNOVER_MES = toNumberABS(obj["turnover"]);
       obj._TURNOVER_HC_DIA = turnoverCalc.hcPlannedDia;
       obj._TURNOVER_FOLGAS_DIA = turnoverCalc.folgasDia;
-      obj._TURNOVER_PERCENTUAL = turnoverCalc.turnoverPercentual;
+      obj._TURNOVER_PERCENTUAL = toNumberABS(obj["turnover"]);
 
       obj._MES = data ? data.getMonth() + 1 : null;
       obj._ANO = data ? data.getFullYear() : null;
